@@ -16,16 +16,8 @@ messaging.onBackgroundMessage((payload) => {
     const notificationTitle = payload.notification.title;
     const notificationOptions = {
         body: payload.notification.body,
-        icon: 'logo.png' // Henry thay bằng link ảnh logo game của bạn
+        icon: 'https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png' // Henry thay bằng link ảnh logo game của bạn
     };
 
     self.registration.showNotification(notificationTitle, notificationOptions);
 });
-
-self.onnotificationclick = function(event) {
-    event.notification.close();
-    event.waitUntil(
-        clients.openWindow("https://phuongngan300508-coder.github.io/sweetie-game/") 
-        // Thay bằng link GitHub của bạn nhé
-    );
-};
