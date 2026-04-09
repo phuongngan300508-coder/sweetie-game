@@ -11570,7 +11570,6 @@ function initChatSystem() {
             if (currentChatFriend !== data.from || document.getElementById('messenger-box').style.display === 'none') {
                 
                 // --- ĐOẠN Henry CẦN SỬA ĐỂ PHÂN LOẠI ĐÚNG ---
-                // Lấy type từ Firebase gửi về (friend_request, chat, v.v...), nếu không có mới để mặc định open_chat
                 const notiType = data.type || 'open_chat';
                 
                 // 1. Đẩy nội dung vào Chuông thông báo
@@ -11590,6 +11589,28 @@ function initChatSystem() {
                 if (bell) {
                     bell.classList.add('animate__animated', 'animate__swing');
                     setTimeout(() => bell.classList.remove('animate__swing'), 1000);
+                }
+
+                // --- BỔ SUNG: BẮN THÔNG BÁO RA MÁY ĐIỆN THOẠI (Push Notification) ---
+                // Nếu Henry đang không ở trong tab web (hidden) hoặc không mở chat với người đó
+                if (document.visibilityState !== 'visible' || currentChatFriend !== data.from) {
+                    if (Notification.permission === "granted") {
+                        const pushOptions = {
+                            body: data.type === 'friend_request' ? data.text : `${data.from}: ${data.text}`,
+                            icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+                            badge: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+                            tag: data.from ? "msg-" + data.from : "system-noti",
+                            renotify: true
+                        };
+
+                        if ('serviceWorker' in navigator) {
+                            navigator.serviceWorker.ready.then(reg => {
+                                reg.showNotification(data.title || "SWEETIE GAME WORLD", pushOptions);
+                            });
+                        } else {
+                            new Notification(data.title || "SWEETIE GAME WORLD", pushOptions);
+                        }
+                    }
                 }
 
                 // 3. Xóa tín hiệu này trên Firebase sau khi đã nhận (để sạch database)
@@ -11750,13 +11771,9 @@ async function sendMessage() {
     }
         
     // --- LOGIC PHÂN LOẠI BẠN BÈ / NGƯỜI LẠ (GIỮ NGUYÊN 100% - ĐÃ FIX REAL-TIME) ---
-    // Ép hệ thống kiểm tra trực tiếp trên Firebase ngay lúc này thay vì dùng biến cũ
     const friendSnap = await db.ref(`users/${currentUser}/friends/${currentChatFriend}`).once('value');
     const isFriend = friendSnap.exists();
 
-    // Xác định tiêu đề và loại tin nhắn
-    // isFriend = true -> msgType là 'chat'
-    // isFriend = false -> msgType là 'message_request'
     const msgTitle = isFriend ? "💬 TIN NHẮN MỚI" : "📩 TIN NHẮN CHỜ MỚI";
     const msgType = isFriend ? "chat" : "message_request";
 
@@ -11764,15 +11781,25 @@ async function sendMessage() {
     const msgRef = db.ref('chats/' + chatRoomId + '/messages').push(); 
     msgRef.set(messageData).then(() => {
         
-        // 3. BẮN THÔNG BÁO THEO PHÂN LOẠI
+        // 3. BẮN THÔNG BÁO THEO PHÂN LOẠI (Trong App)
         db.ref('notifications_queue/' + currentChatFriend).push({
             from: currentUser,
             friendName: currentUser, 
             text: text,
-            type: msgType, // Gửi đúng type để hệ thống chuông tự phân loại
+            type: msgType, 
             time: Date.now(),
             displayTime: displayTime,
-            title: msgTitle // Tiêu đề sẽ thay đổi linh hoạt
+            title: msgTitle
+        });
+
+        // --- MỚI: BẮN THÔNG BÁO RA MÁY ĐIỆN THOẠI (Push Notification) ---
+        // Gửi tín hiệu vào nhánh để Service Worker trên máy đối phương nhận được và hiện thông báo ngoài màn hình
+        db.ref('push_notifications/' + currentChatFriend).push({
+            title: msgTitle,
+            body: `${currentUser}: ${text}`,
+            icon: (userData.profile && userData.profile.customAvatar) ? userData.profile.customAvatar : "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+            tag: "chat-" + currentUser, // Để các tin nhắn từ cùng 1 người sẽ gộp lại một chỗ trên điện thoại
+            from: currentUser
         });
 
         // 4. Tăng badge số lượng tin chưa đọc
@@ -11780,9 +11807,9 @@ async function sendMessage() {
 
         // 5. XOÁ TRẠNG THÁI TRẢ LỜI (Reset giao diện)
         if (replyingTo) {
-            replyingTo = null; // Xoá biến tạm
+            replyingTo = null; 
             const replyBar = document.getElementById('chat-reply-bar');
-            if (replyBar) replyBar.style.display = 'none'; // Ẩn thanh bar reply
+            if (replyBar) replyBar.style.display = 'none'; 
         }
 
         input.value = ""; // Xoá ô nhập liệu
@@ -11792,7 +11819,6 @@ async function sendMessage() {
         alert("Không thể gửi tin nhắn. Vui lòng kiểm tra kết nối!");
     });
 }
-
 // --- 1. HÀM CẬP NHẬT MÀU QR (Sửa lại cho chuẩn) ---
 function updateQRColor(newColor) {
     // Lưu vào biến dữ liệu của Henry
