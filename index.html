@@ -26,6 +26,7 @@
 <link rel="icon" type="image/png" href="https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png">
 
 <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-messaging.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
@@ -11497,6 +11498,22 @@ function scanFriendQR() {
     });
 }
 
+    const firebaseConfig = {
+    apiKey: "AIzaSyDV8KseaFVPPcpEU0-jrqqxnGG6xLyJGfE",
+    authDomain: "sweetie-game-world.firebaseapp.com",
+    // Henry dùng link mới này nhé:
+    databaseURL: "https://sweetie-game-world-default-rtdb.asia-southeast1.firebasedatabase.app/", 
+    projectId: "sweetie-game-world",
+    storageBucket: "sweetie-game-world.firebasestorage.app",
+    messagingSenderId: "439230414082",
+    appId: "1:439230414082:web:e89f8e86fda4c4dbd2161b",
+    measurementId: "G-VPCT220BGR"
+};
+
+// Khởi tạo Firebase
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
 // --- 5. LẮNG NGHE HỆ THỐNG THÔNG BÁO & TIN NHẮN REAL-TIME ---
 function initChatSystem() {
     if (!currentUser) return;
@@ -13091,21 +13108,6 @@ messaging.getToken({ vapidKey: 'BPFnrd9ax1LeRDNoYkAnCyOW1qxfNCXKBKGGrB383i-gJkV4
         console.log("❌ Lỗi lấy Token:", err);
     });
 
-const firebaseConfig = {
-    apiKey: "AIzaSyDV8KseaFVPPcpEU0-jrqqxnGG6xLyJGfE",
-    authDomain: "sweetie-game-world.firebaseapp.com",
-    // Henry dùng link mới này nhé:
-    databaseURL: "https://sweetie-game-world-default-rtdb.asia-southeast1.firebasedatabase.app/", 
-    projectId: "sweetie-game-world",
-    storageBucket: "sweetie-game-world.firebasestorage.app",
-    messagingSenderId: "439230414082",
-    appId: "1:439230414082:web:e89f8e86fda4c4dbd2161b",
-    measurementId: "G-VPCT220BGR"
-};
-
-// Khởi tạo Firebase
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
 </script>
 </body>
 </html>
