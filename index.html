@@ -27,8 +27,6 @@
 
 <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-messaging-compat.js"></script>
-    
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
@@ -12996,45 +12994,22 @@ document.addEventListener('mousedown', function(event) {
     }
 });
 
-    const messaging = firebase.messaging();
+import { getMessaging, getToken } from "firebase/messaging";
 
-// Hàm này để tự động lấy Token và lưu vào DB
-function setupPushNotifications() {
-    messaging.requestPermission()
-        .then(() => {
-            // Lấy Token định danh thiết bị
-            // Henry nhớ thay 'YOUR_PUBLIC_VAPID_KEY' bằng mã lấy từ Firebase Console nhé!
-            return messaging.getToken({ vapidKey: 'BPFnrd9ax1LeRDNoYkAnCyOW1qxfNCXKBKGGrB383i-gJkV4ltLOqVBUG3EgXfmE_vLZdrNE_yBChJPR_sdlMEs' });
-        })
-        .then((token) => {
-            if (token) {
-                console.log("Token đã sẵn sàng:", token);
-                
-                // Lưu vào Database dưới tên người chơi (hoặc một ID nào đó)
-                // Sau này bạn chỉ cần gửi tin vào cái Token này là điện thoại họ sẽ hiện thông báo
-                db.ref("player_push_tokens/Henry").set({
-                    token: token,
-                    last_online: new Date().getTime()
-                });
-            }
-        })
-        .catch((err) => {
-            console.log("Người dùng từ chối hoặc có lỗi:", err);
-        });
-}
-
-// Chạy hàm ngay khi vào game
-setupPushNotifications();
-
-// Lắng nghe khi có thông báo đến mà người dùng ĐANG MỞ WEB (hiện alert cho họ thấy)
-messaging.onMessage((payload) => {
-    console.log("Thông báo mới trong game:", payload);
-    alert(payload.notification.title + ": " + payload.notification.body);
+const messaging = getMessaging();
+getToken(messaging, { vapidKey: 'BPFnrd9ax1LeRDNoYkAnCyOW1qxfNCXKBKGGrB383i-gJkV4ltLOqVBUG3EgXfmE_vLZdrNE_yBChJPR_sdlMEs' }).then((currentToken) => {
+  if (currentToken) {
+    // Lưu token này vào Database của bạn để gửi thông báo sau này
+    console.log("Token của thiết bị:", currentToken);
+  } else {
+    console.log('Chưa được cấp quyền thông báo.');
+  }
 });
-    
+
 const firebaseConfig = {
     apiKey: "AIzaSyDV8KseaFVPPcpEU0-jrqqxnGG6xLyJGfE",
     authDomain: "sweetie-game-world.firebaseapp.com",
+    // Henry dùng link mới này nhé:
     databaseURL: "https://sweetie-game-world-default-rtdb.asia-southeast1.firebasedatabase.app/", 
     projectId: "sweetie-game-world",
     storageBucket: "sweetie-game-world.firebasestorage.app",
@@ -13043,13 +13018,9 @@ const firebaseConfig = {
     measurementId: "G-VPCT220BGR"
 };
 
-// CHỈ KHỞI TẠO 1 LẦN DUY NHẤT
-if (!firebase.apps.length) {
-    firebase.initializeApp(firebaseConfig);
-}
-
+// Khởi tạo Firebase
+firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
-const messaging = firebase.messaging(); // Dòng này sẽ không gây lỗi nếu đã thêm script ở trên
 </script>
 </body>
 </html>
