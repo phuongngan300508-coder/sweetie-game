@@ -25,12 +25,12 @@
 
 <link rel="icon" type="image/png" href="https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png">
 
-<script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-messaging.min.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-messaging.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Quicksand:wght@500;700&display=swap');
 
@@ -11501,7 +11501,6 @@ function scanFriendQR() {
     const firebaseConfig = {
     apiKey: "AIzaSyDV8KseaFVPPcpEU0-jrqqxnGG6xLyJGfE",
     authDomain: "sweetie-game-world.firebaseapp.com",
-    // Henry dùng link mới này nhé:
     databaseURL: "https://sweetie-game-world-default-rtdb.asia-southeast1.firebasedatabase.app/", 
     projectId: "sweetie-game-world",
     storageBucket: "sweetie-game-world.firebasestorage.app",
@@ -11510,10 +11509,30 @@ function scanFriendQR() {
     measurementId: "G-VPCT220BGR"
 };
 
-// Khởi tạo Firebase
+// Khởi tạo
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
+const messaging = firebase.messaging();
 
+// Đăng ký Service Worker để lấy lại nút "Tải xuống App"
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
+        navigator.serviceWorker.register('firebase-messaging-sw.js')
+        .then(function(registration) {
+            console.log('✅ PWA: App đã sẵn sàng!');
+            
+            // Lấy Token thông báo
+            messaging.getToken({
+                serviceWorkerRegistration: registration,
+                vapidKey: 'BPFnrd9ax1LeRDNoYkAnCyOW1qxfNCXKBKGGrB383i-gJkV4ltLOqVBUG3EgXfmE_vLZdrNE_yBChJPR_sdlMEs'
+            }).then((token) => {
+                if (token) console.log("✅ Token thiết bị:", token);
+            });
+        }).catch(function(err) {
+            console.log('❌ PWA: Lỗi đăng ký:', err);
+        });
+    });
+}
 // --- 5. LẮNG NGHE HỆ THỐNG THÔNG BÁO & TIN NHẮN REAL-TIME ---
 function initChatSystem() {
     if (!currentUser) return;
