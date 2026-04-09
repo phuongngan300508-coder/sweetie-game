@@ -13035,7 +13035,6 @@ messaging.onMessage((payload) => {
 const firebaseConfig = {
     apiKey: "AIzaSyDV8KseaFVPPcpEU0-jrqqxnGG6xLyJGfE",
     authDomain: "sweetie-game-world.firebaseapp.com",
-    // Henry dùng link mới này nhé:
     databaseURL: "https://sweetie-game-world-default-rtdb.asia-southeast1.firebasedatabase.app/", 
     projectId: "sweetie-game-world",
     storageBucket: "sweetie-game-world.firebasestorage.app",
@@ -13044,9 +13043,13 @@ const firebaseConfig = {
     measurementId: "G-VPCT220BGR"
 };
 
-// Khởi tạo Firebase
-firebase.initializeApp(firebaseConfig);
+// CHỈ KHỞI TẠO 1 LẦN DUY NHẤT
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
+
 const db = firebase.database();
+const messaging = firebase.messaging(); // Dòng này sẽ không gây lỗi nếu đã thêm script ở trên
 </script>
 </body>
 </html>
