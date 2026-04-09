@@ -21,11 +21,3 @@ messaging.onBackgroundMessage((payload) => {
 
     self.registration.showNotification(notificationTitle, notificationOptions);
 });
-
-self.onnotificationclick = function(event) {
-    event.notification.close();
-    event.waitUntil(
-        clients.openWindow("https://phuongngan300508-coder.github.io/sweetie-game/") 
-        // Thay bằng link GitHub của bạn nhé
-    );
-};
