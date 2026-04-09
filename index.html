@@ -10190,24 +10190,20 @@ async function requestNotificationPermission() {
 
 // HÀM BỔ SUNG: Lấy Token từ Firebase và lưu vào Database
 function fetchAndSaveFCMToken() {
-    const messaging = firebase.messaging(); // Đảm bảo bạn dùng SDK compat nếu đang dùng firebase v8
+    // Xóa chữ "const" ở đây nếu Henry đã khai báo messaging ở đầu file
+    const fcmMessaging = firebase.messaging(); 
     
-    messaging.getToken({ 
+    fcmMessaging.getToken({ 
         vapidKey: 'BPFnrd9ax1LeRDNoYkAnCyOW1qxfNCXKBKGGrB383i-gJkV4ltLOqVBUG3EgXfmE_vLZdrNE_yBChJPR_sdlMEs' 
     })
     .then((currentToken) => {
-        if (currentToken) {
-            // LƯU VÀO FIREBASE REALTIME DATABASE
-            // Lưu dưới nhánh riêng 'fcm_tokens' để dễ quản lý
+        if (currentToken && currentUser) { // Kiểm tra có currentUser chưa
             firebase.database().ref('fcm_tokens/' + currentUser).set({
                 token: currentToken,
                 lastUpdated: Date.now(),
                 deviceType: 'web'
             });
-            
-            console.log("Hệ thống: Đã lưu Token nhận tin ngầm thành công!");
-        } else {
-            console.log('Không lấy được Token. Hãy kiểm tra lại file firebase-messaging-sw.js');
+            console.log("Hệ thống: Đã lưu Token thành công!");
         }
     })
     .catch((err) => {
