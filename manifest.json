@@ -1,0 +1,22 @@
+{
+  "name": "Sweetie Game World",
+  "short_name": "SweetieGame",
+  "description": "Thế giới minigame ngọt ngào dành riêng cho cư dân Sweetie.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ff69b4",
+  "icons": [
+    {
+      "src": "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
