@@ -16,7 +16,8 @@
     {
       "src": "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     }
-  ]
+]
 }
