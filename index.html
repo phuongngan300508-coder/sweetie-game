@@ -13079,16 +13079,15 @@ document.addEventListener('mousedown', function(event) {
     }
 });
 
-import { getMessaging, getToken } from "firebase/messaging";
-
-const messaging = getMessaging();
-getToken(messaging, { vapidKey: 'BPFnrd9ax1LeRDNoYkAnCyOW1qxfNCXKBKGGrB383i-gJkV4ltLOqVBUG3EgXfmE_vLZdrNE_yBChJPR_sdlMEs' }).then((currentToken) => {
-  if (currentToken) {
-    // Lưu token này vào Database của bạn để gửi thông báo sau này
-    console.log("Token của thiết bị:", currentToken);
-  } else {
-    console.log('Chưa được cấp quyền thông báo.');
-  }
+const messaging = firebase.messaging();
+messaging.getToken({ vapidKey: 'BPFnrd9ax1LeRDNoYkAnCyOW1qxfNCXKBKGGrB383i-gJkV4ltLOqVBUG3EgXfmE_vLZdrNE_yBChJPR_sdlMEs' })
+.then((currentToken) => {
+    if (currentToken) {
+        console.log("Token của thiết bị:", currentToken);
+        // db.ref('fcm_tokens/' + currentUser).set(currentToken); // Mở ra khi đã có currentUser
+    }
+}).catch((err) => {
+    console.log('Lỗi lấy thông báo: ', err);
 });
 
 const firebaseConfig = {
