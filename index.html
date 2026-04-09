@@ -8133,14 +8133,25 @@ function handleLogin() {
     localStorage.setItem('lastLoggedInUser', name);
     sessionStorage.setItem('currentUser', name);
 
-    // --- THÊM: Yêu cầu quyền thông báo ngay tại máy Henry khi đăng nhập ---
-    if ("Notification" in window && Notification.permission === "default") {
+    // --- SỬA LẠI: Yêu cầu quyền thông báo tối ưu cho Web Push ---
+    if ("Notification" in window) {
         Notification.requestPermission().then(permission => {
             if (permission === "granted") {
-                new Notification("🌸 SWEETIE GAME WORLD", {
-                    body: `Chào mừng người chơi! Bạn sẽ nhận được thông báo sự kiện và nhắc nhở nuôi Tim tại đây.`,
-                    icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png"
-                });
+                const notifTitle = "🌸 SWEETIE GAME WORLD";
+                const notifOptions = {
+                    body: `Chào mừng ${name}! Bạn sẽ nhận được thông báo sự kiện và nhắc nhở nuôi Tim tại đây.`,
+                    icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+                    badge: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png"
+                };
+
+                // Nếu có Service Worker, hãy dùng nó để hiện thông báo (giúp báo được khi tắt web)
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.ready.then(reg => {
+                        reg.showNotification(notifTitle, notifOptions);
+                    });
+                } else {
+                    new Notification(notifTitle, notifOptions);
+                }
             }
         });
     }
@@ -8156,25 +8167,17 @@ function handleLogin() {
     checkSystemAlerts(); 
 
     // --- ĐOẠN SỬA ĐỂ FIX LỖI 3 THÔNG BÁO ---
-    // Chỉ kích hoạt lắng nghe nếu hệ thống chưa được khởi tạo
     if (!isSocialInitialized) {
-        // 1. Kích hoạt lắng nghe tin nhắn mới (Chat Realtime)
         initChatSystem(); 
-        
-        // 2. Kích hoạt lắng nghe lời mời kết bạn Realtime
         if (typeof initFriendRequestListener === 'function') {
             initFriendRequestListener();
         }
-        
-        // 3. Kích hoạt lắng nghe trạng thái bạn bè (Đồng ý/Từ chối)
         if (typeof initFriendStatusListener === 'function') {
             initFriendStatusListener();
         }
-
         isSocialInitialized = true; // Cắm cờ để không lặp lại
         console.log("Hệ thống: Đã kích hoạt bộ lắng nghe Social (Duy nhất)");
     }
-    // --------------------------------------------------------------
     
     // Alert chào mừng tùy biến theo trạng thái
     alert(isNewUser ? `🌸 Chào mừng người chơi mới: ${name}!` : `🌸 Chào mừng ${name} đã quay trở lại!`);
@@ -9681,81 +9684,88 @@ function renderEventCarousel() {
     let activeEvents = [];
 
     GAME_SCHEDULE.forEach(game => {
-    // 1. CHUẨN HÓA KHỞI TẠO: Thêm T00:00:00 để trình duyệt hiểu đúng múi giờ địa phương
-    const startDate = new Date(game.start + "T00:00:00");
-    const endDate = new Date(game.end + "T00:00:00");
-    
-    // Mốc thời gian thực từ biến vnNow của Henry
-    const currentTime = vnNow.getTime();
-    const endTime = endDate.getTime();
-
-    // Mốc 0h00 của ngày bắt đầu (Dùng để so sánh "Hôm nay đã đến ngày chưa")
-    const startDayMidnight = startDate.getTime();
-    
-    // 2. TÍNH TOÁN DIFF DAYS CHÍNH XÁC (Dùng Math.ceil để tránh số thập phân do lệch giây)
-    // Khoảng cách từ 0h hôm nay đến 0h ngày bắt đầu
-    const diffDaysStart = Math.ceil((startDayMidnight - todayStart) / (1000 * 60 * 60 * 24));
-    
-    // Khoảng cách từ 0h hôm nay đến 0h ngày kết thúc
-    const endDayMidnight = endDate.getTime();
-    const diffDaysEnd = Math.ceil((endDayMidnight - todayStart) / (1000 * 60 * 60 * 24));
-
-    // 3. LOGIC KIỂM TRA (Giữ nguyên ý đồ của Henry)
-    // Đang diễn ra: Nếu hôm nay >= ngày bắt đầu VÀ chưa tới giờ kết thúc (endTime)
-    const isRunning = (todayStart >= startDayMidnight && currentTime < endTime);
-    
-    // Sắp ra mắt: Nếu ngày bắt đầu ở tương lai (từ ngày mai trở đi) và trong vòng 10 ngày
-    const isComingSoon = (diffDaysStart > 0 && diffDaysStart <= 10);
-
-    if (isRunning || isComingSoon) {
-        let badgeText = isRunning ? "🔥 ĐANG DIỄN RA" : "🕒 SẮP RA MẮT";
-        let timeInfoText = isRunning 
-            ? `Kết thúc: ${endDate.toLocaleDateString('vi-VN')}` 
-            : `Mở sau ${diffDaysStart} ngày nữa`;
+        // 1. CHUẨN HÓA KHỞI TẠO
+        const startDate = new Date(game.start + "T00:00:00");
+        const endDate = new Date(game.end + "T00:00:00");
         
-        // --- Logic thông báo sắp kết thúc (Dưới 3 ngày) ---
-        if (isRunning && diffDaysEnd <= 3 && diffDaysEnd > 0) {
-            badgeText = `⏳ CÒN ${diffDaysEnd} NGÀY`;
-            if (typeof notifiedInThisLoad !== 'undefined' && !notifiedInThisLoad.includes(game.id + "_end")) {
-                const endMsg = `Nhanh chân lên! Sự kiện [${game.title}] chỉ còn ${diffDaysEnd} ngày nữa là khép lại.`;
-                addNotification("⏰ SỰ KIỆN SẮP KẾT THÚC", endMsg);
-                
-                // THÊM: Thông báo ra máy
-                if (Notification.permission === "granted") {
-                    new Notification("SỰ KIỆN SẮP KẾT THÚC", {
-                        body: endMsg,
-                        icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png"
-                    });
+        const currentTime = vnNow.getTime();
+        const endTime = endDate.getTime();
+        const startDayMidnight = startDate.getTime();
+        
+        // 2. TÍNH TOÁN DIFF DAYS
+        const diffDaysStart = Math.ceil((startDayMidnight - todayStart) / (1000 * 60 * 60 * 24));
+        const endDayMidnight = endDate.getTime();
+        const diffDaysEnd = Math.ceil((endDayMidnight - todayStart) / (1000 * 60 * 60 * 24));
+
+        // 3. LOGIC KIỂM TRA
+        const isRunning = (todayStart >= startDayMidnight && currentTime < endTime);
+        const isComingSoon = (diffDaysStart > 0 && diffDaysStart <= 10);
+
+        if (isRunning || isComingSoon) {
+            let badgeText = isRunning ? "🔥 ĐANG DIỄN RA" : "🕒 SẮP RA MẮT";
+            let timeInfoText = isRunning 
+                ? `Kết thúc: ${endDate.toLocaleDateString('vi-VN')}` 
+                : `Mở sau ${diffDaysStart} ngày nữa`;
+            
+            // --- Logic thông báo sắp kết thúc (Dưới 3 ngày) ---
+            if (isRunning && diffDaysEnd <= 3 && diffDaysEnd > 0) {
+                badgeText = `⏳ CÒN ${diffDaysEnd} NGÀY`;
+                if (typeof notifiedInThisLoad !== 'undefined' && !notifiedInThisLoad.includes(game.id + "_end")) {
+                    const endMsg = `Nhanh chân lên! Sự kiện [${game.title}] chỉ còn ${diffDaysEnd} ngày nữa là khép lại.`;
+                    addNotification("⏰ SỰ KIỆN SẮP KẾT THÚC", endMsg);
+                    
+                    // FIX: Thông báo ra máy bằng Service Worker
+                    if (Notification.permission === "granted") {
+                        if ('serviceWorker' in navigator) {
+                            navigator.serviceWorker.ready.then(reg => {
+                                reg.showNotification("⏰ SỰ KIỆN SẮP KẾT THÚC", {
+                                    body: endMsg,
+                                    icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+                                    badge: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+                                    tag: game.id + "_end"
+                                });
+                            });
+                        } else {
+                            new Notification("SỰ KIỆN SẮP KẾT THÚC", { body: endMsg, icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png" });
+                        }
+                    }
+                    notifiedInThisLoad.push(game.id + "_end");
                 }
-                notifiedInThisLoad.push(game.id + "_end");
             }
-        }
 
-        // --- Logic thông báo sắp mở (Đúng 3 ngày trước khi mở) ---
-        if (isComingSoon && diffDaysStart === 3) {
-            if (typeof notifiedInThisLoad !== 'undefined' && !notifiedInThisLoad.includes(game.id + "_soon")) {
-                const soonMsg = `Chuẩn bị tinh thần! Sự kiện [${game.title}] sẽ chính thức bắt đầu sau 3 ngày nữa.`;
-                addNotification("🔔 SỰ KIỆN SẮP MỞ", soonMsg);
+            // --- Logic thông báo sắp mở (Đúng 3 ngày trước khi mở) ---
+            if (isComingSoon && diffDaysStart === 3) {
+                if (typeof notifiedInThisLoad !== 'undefined' && !notifiedInThisLoad.includes(game.id + "_soon")) {
+                    const soonMsg = `Chuẩn bị tinh thần! Sự kiện [${game.title}] sẽ chính thức bắt đầu sau 3 ngày nữa.`;
+                    addNotification("🔔 SỰ KIỆN SẮP MỞ", soonMsg);
 
-                // THÊM: Thông báo ra máy
-                if (Notification.permission === "granted") {
-                    new Notification("🔔 SỰ KIỆN SẮP MỞ", {
-                        body: soonMsg,
-                        icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png"
-                    });
+                    // FIX: Thông báo ra máy bằng Service Worker
+                    if (Notification.permission === "granted") {
+                        if ('serviceWorker' in navigator) {
+                            navigator.serviceWorker.ready.then(reg => {
+                                reg.showNotification("🔔 SỰ KIỆN SẮP MỞ", {
+                                    body: soonMsg,
+                                    icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+                                    badge: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+                                    tag: game.id + "_soon"
+                                });
+                            });
+                        } else {
+                            new Notification("🔔 SỰ KIỆN SẮP MỞ", { body: soonMsg, icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png" });
+                        }
+                    }
+                    notifiedInThisLoad.push(game.id + "_soon");
                 }
-                notifiedInThisLoad.push(game.id + "_soon");
             }
-        }
 
-        activeEvents.push({
-            ...game,
-            badge: badgeText,
-            statusClass: isRunning ? "status-running" : "status-waiting",
-            timeInfo: timeInfoText
-        });
-    }
-});
+            activeEvents.push({
+                ...game,
+                badge: badgeText,
+                statusClass: isRunning ? "status-running" : "status-waiting",
+                timeInfo: timeInfoText
+            });
+        }
+    });
 
     if (activeEvents.length === 0) {
         carouselContainer.style.display = 'none';
@@ -10147,30 +10157,60 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Hàm yêu cầu quyền thông báo từ trình duyệt
-function requestNotificationPermission() {
-    // 1. Kiểm tra trình duyệt có hỗ trợ không và người chơi đã đăng nhập chưa
-    if (!("Notification" in window) || !userData) return;
+async function requestNotificationPermission() {
+    // 1. Kiểm tra trình duyệt và trạng thái đăng nhập
+    if (!("Notification" in window) || !currentUser) return;
 
-    // 2. Kiểm tra xem TÀI KHOẢN này đã được hỏi bao giờ chưa
-    if (userData.hasAskedPermission) {
-        console.log("Tài khoản này đã được hỏi xin quyền trước đó.");
+    // 2. Kiểm tra xem tài khoản này đã cấp quyền chưa (để tránh hỏi lại phiền phức)
+    if (userData.hasAskedPermission && Notification.permission === "granted") {
+        console.log("Quyền thông báo đã được thiết lập trước đó.");
+        // Vẫn nên lấy token lại để cập nhật nếu lỡ người dùng xóa cache
+        fetchAndSaveFCMToken(); 
         return; 
     }
 
-    // 3. Nếu chưa hỏi, tiến hành hỏi
-    Notification.requestPermission().then(permission => {
-        // Lưu trạng thái đã hỏi vào userData của tài khoản này
-        userData.hasAskedPermission = true;
+    // 3. Tiến hành hỏi xin quyền
+    const permission = await Notification.requestPermission();
+    
+    // Lưu trạng thái đã hỏi để không làm phiền lần sau
+    userData.hasAskedPermission = true;
+    saveData();
+
+    if (permission === "granted") {
+        console.log("Người dùng đã cấp quyền.");
+        addNotification("🔔 HỆ THỐNG", "Cảm ơn bạn đã bật thông báo! Token đang được khởi tạo...");
         
-        if (permission === "granted") {
-            console.log("Người dùng đã cấp quyền thông báo.");
-            addNotification("🔔 HỆ THỐNG", "Cảm ơn bạn đã bật thông báo! Bạn sẽ nhận được các nhắc nhở quan trọng.");
+        // GỌI HÀM LẤY TOKEN SAU KHI ĐƯỢC CHO PHÉP
+        fetchAndSaveFCMToken();
+    } else {
+        console.warn("Người dùng đã từ chối thông báo.");
+    }
+}
+
+// HÀM BỔ SUNG: Lấy Token từ Firebase và lưu vào Database
+function fetchAndSaveFCMToken() {
+    const messaging = firebase.messaging(); // Đảm bảo bạn dùng SDK compat nếu đang dùng firebase v8
+    
+    messaging.getToken({ 
+        vapidKey: 'BPFnrd9ax1LeRDNoYkAnCyOW1qxfNCXKBKGGrB383i-gJkV4ltLOqVBUG3EgXfmE_vLZdrNE_yBChJPR_sdlMEs' 
+    })
+    .then((currentToken) => {
+        if (currentToken) {
+            // LƯU VÀO FIREBASE REALTIME DATABASE
+            // Lưu dưới nhánh riêng 'fcm_tokens' để dễ quản lý
+            firebase.database().ref('fcm_tokens/' + currentUser).set({
+                token: currentToken,
+                lastUpdated: Date.now(),
+                deviceType: 'web'
+            });
+            
+            console.log("Hệ thống: Đã lưu Token nhận tin ngầm thành công!");
         } else {
-            console.log("Người dùng đã từ chối hoặc đóng thông báo.");
+            console.log('Không lấy được Token. Hãy kiểm tra lại file firebase-messaging-sw.js');
         }
-        
-        // Lưu dữ liệu ngay để không hỏi lại ở lần load sau
-        saveData();
+    })
+    .catch((err) => {
+        console.error('Lỗi lấy Token:', err);
     });
 }
 
@@ -10500,12 +10540,20 @@ function verifyStreak() {
                 // Thông báo trong web
                 addNotification("💔 ĐỨT CHUỖI", failMsg, true);
                 
-                // Thông báo ra máy (Notification API)
+                // --- FIX: Thông báo ra máy (Dùng Service Worker để ổn định hơn) ---
                 if (Notification.permission === "granted") {
-                    new Notification("SWEETIE GAME WORLD", {
-                        body: failMsg,
-                        icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png" // Thay bằng link ảnh tim vỡ của bạn
-                    });
+                    if ('serviceWorker' in navigator) {
+                        navigator.serviceWorker.ready.then(reg => {
+                            reg.showNotification("SWEETIE GAME WORLD", {
+                                body: failMsg,
+                                icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+                                badge: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+                                tag: `streak-fail-${index}`
+                            });
+                        });
+                    } else {
+                        new Notification("SWEETIE GAME WORLD", { body: failMsg, icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png" });
+                    }
                 }
                 saveData();
             } else {
@@ -10516,11 +10564,19 @@ function verifyStreak() {
                     const urgentMsg = `🔥 KHẨN CẤP: Trái tim #${index + 1} chỉ còn chưa đầy 3 tiếng nữa là vỡ! Đánh dấu ngay bạn ơi!`;
                     
                     if (Notification.permission === "granted") {
-                        new Notification("⚠️ CẢNH BÁO CHUỖI", {
-                            body: urgentMsg,
-                            icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png" // Icon cảnh báo
-                        });
-                        sd.hasNotifiedUrgent = true; // Đánh dấu để không bắn thông báo máy liên tục
+                        if ('serviceWorker' in navigator) {
+                            navigator.serviceWorker.ready.then(reg => {
+                                reg.showNotification("⚠️ CẢNH BÁO CHUỖI", {
+                                    body: urgentMsg,
+                                    icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+                                    badge: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+                                    tag: `streak-urgent-${index}`
+                                });
+                            });
+                        } else {
+                            new Notification("⚠️ CẢNH BÁO CHUỖI", { body: urgentMsg, icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png" });
+                        }
+                        sd.hasNotifiedUrgent = true; 
                         saveData();
                     }
                 } 
@@ -10530,12 +10586,19 @@ function verifyStreak() {
                         const remindMsg = `Trái tim #${index + 1} đang chờ bạn đánh dấu kìa!`;
                         addNotification("🎀 NHẮC NHỞ", remindMsg);
                         
-                        // Nếu Henry đang ở tab khác, bắn thông báo máy để gọi quay lại
                         if (document.visibilityState !== 'visible' && Notification.permission === "granted") {
-                            new Notification("🎀 NUÔI TIM", {
-                                body: remindMsg,
-                                icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png"
-                            });
+                            if ('serviceWorker' in navigator) {
+                                navigator.serviceWorker.ready.then(reg => {
+                                    reg.showNotification("🎀 NUÔI TIM", {
+                                        body: remindMsg,
+                                        icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+                                        badge: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+                                        tag: `streak-remind-${index}`
+                                    });
+                                });
+                            } else {
+                                new Notification("🎀 NUÔI TIM", { body: remindMsg, icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png" });
+                            }
                         }
                     }, 2000 + (index * 500));
                 }
@@ -11380,29 +11443,39 @@ function sendSystemLiveNotification(title, message, gameId = null) {
     // Kiểm tra quyền
     if (Notification.permission === "granted") {
         // Lấy icon game từ card nếu có
-        let gameIcon = "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png"; // Icon mặc định (Trái tim)
+        let gameIcon = "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png"; 
         const gameCard = document.getElementById(gameId);
         if (gameCard) {
-            // Nếu game có icon emoji, chúng ta dùng ảnh emoji làm icon (hoặc dùng link ảnh cố định)
             gameIcon = "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png"; 
         }
 
         const options = {
             body: message,
-            icon: gameIcon, // Ảnh icon game
-            badge: gameIcon,
-            silent: false, // Phát tiếng "Ting" của hệ thống
-            tag: gameId || "sweetie-notif" // Tránh hiện trùng lặp nhiều cái cùng loại
+            icon: gameIcon, 
+            badge: gameIcon, // Icon nhỏ trên thanh trạng thái Android
+            silent: false, 
+            tag: gameId || "sweetie-notif",
+            renotify: true, // Rung/Chuông lại nếu thông báo cùng tag gửi đến
+            data: {
+                url: window.location.href, // Lưu URL để khi click thì mở web
+                gameId: gameId
+            }
         };
 
-        const notification = new Notification(title, options);
-
-        // Click vào thông báo thì quay lại web
-        notification.onclick = function() {
-            window.focus();
-            this.close();
-            if (gameId) scrollToGame(gameId);
-        };
+        // ƯU TIÊN: Dùng Service Worker để hiển thị (giúp thông báo sống sót khi tắt web)
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.ready.then(registration => {
+                registration.showNotification(title, options);
+            });
+        } else {
+            // FALLBACK: Dùng cách cũ nếu Service Worker không sẵn sàng
+            const notification = new Notification(title, options);
+            notification.onclick = function() {
+                window.focus();
+                this.close();
+                if (gameId && typeof scrollToGame === 'function') scrollToGame(gameId);
+            };
+        }
     }
 }
 
@@ -12445,7 +12518,6 @@ function initFriendRequestListener() {
         const senderName = snapshot.key; // Tên người gửi
 
         // --- ĐIỀU KIỆN 2: KIỂM TRA TRÙNG LẶP TRONG DANH SÁCH THÔNG BÁO ---
-        // Henry kiểm tra xem trong mảng notifications của mình đã có lời mời từ người này chưa
         const isNotified = userData.notifications && userData.notifications.some(n => 
             n.extraData && 
             n.extraData.sender === senderName && 
@@ -12458,7 +12530,7 @@ function initFriendRequestListener() {
                 const senderFullData = userSnap.val();
                 if (!senderFullData) return;
                 
-                // BẮN THÔNG BÁO VÀO CHUÔNG
+                // BẮN THÔNG BÁO VÀO CHUÔNG (Giao diện trong web)
                 addNotification(
                     "💌 LỜI MỜI KẾT BẠN", 
                     `${senderName} đã gửi cho bạn một lời mời kết bạn mới!`,
@@ -12470,14 +12542,27 @@ function initFriendRequestListener() {
                     }
                 );
                 
-                // Bắn thông báo ra máy (nếu đang ẩn tab)
+                // --- FIX: Bắn thông báo ra máy thông qua Service Worker ---
                 if (Notification.permission === "granted") {
-                    new Notification("SWEETIE GAME WORLD", {
+                    const title = "SWEETIE GAME WORLD";
+                    const options = {
                         body: `${senderName} muốn kết bạn với bạn!`,
                         icon: (senderFullData.profile && senderFullData.profile.customAvatar) 
                                 ? senderFullData.profile.customAvatar 
-                                : "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png"
-                    });
+                                : "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+                        badge: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+                        tag: "friend-request-" + senderName, // Tránh hiện nhiều thông báo từ cùng 1 người
+                        renotify: true
+                    };
+
+                    if ('serviceWorker' in navigator) {
+                        navigator.serviceWorker.ready.then(reg => {
+                            reg.showNotification(title, options);
+                        });
+                    } else {
+                        // Fallback cho trình duyệt cũ không hỗ trợ SW
+                        new Notification(title, options);
+                    }
                 }
             });
         }
