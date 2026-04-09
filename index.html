@@ -13115,18 +13115,6 @@ document.addEventListener('mousedown', function(event) {
     }
 });
 
-// DÙNG ĐOẠN NÀY THAY THẾ
-const messaging = firebase.messaging();
-// Tự động lấy token khi web load
-messaging.getToken({ vapidKey: 'BPFnrd9ax1LeRDNoYkAnCyOW1qxfNCXKBKGGrB383i-gJkV4ltLOqVBUG3EgXfmE_vLZdrNE_yBChJPR_sdlMEs' })
-    .then((token) => {
-        if (token) {
-            console.log("✅ FCM Token:", token);
-        }
-    }).catch((err) => {
-        console.log("❌ Lỗi lấy Token:", err);
-    });
-
 </script>
 </body>
 </html>
