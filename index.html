@@ -27,8 +27,6 @@
 
 <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-messaging-compat.js"></script>
-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
@@ -12995,37 +12993,6 @@ document.addEventListener('mousedown', function(event) {
         });
     }
 });
-
-const messaging = firebase.messaging();
-
-// Hàm lấy Token
-function getPushToken() {
-    messaging.requestPermission()
-        .then(() => {
-            console.log("Đã được cấp quyền thông báo!");
-            // THAY THẾ 'YOUR_PUBLIC_VAPID_KEY' bằng mã lấy từ Firebase Console (tab Cloud Messaging)
-            return messaging.getToken({ vapidKey: '439230414082' });
-        })
-        .then((token) => {
-            if (token) {
-                console.log("Mã Token của bạn đây (Copy mã này để test):");
-                console.log(token);
-                
-                // Lưu token vào database của Henry để sau này dùng
-                db.ref("tokens/Henry").set({
-                    token: token
-                });
-            } else {
-                console.log("Không lấy được Token. Hãy kiểm tra lại VAPID Key.");
-            }
-        })
-        .catch((err) => {
-            console.log("Lỗi khi lấy quyền:", err);
-        });
-}
-
-// Gọi hàm
-getPushToken();
 
 const firebaseConfig = {
     apiKey: "AIzaSyDV8KseaFVPPcpEU0-jrqqxnGG6xLyJGfE",
