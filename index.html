@@ -12993,6 +12993,42 @@ document.addEventListener('mousedown', function(event) {
         });
     }
 });
+
+    const messaging = firebase.messaging();
+
+// Hàm này để tự động lấy Token và lưu vào DB
+function setupPushNotifications() {
+    messaging.requestPermission()
+        .then(() => {
+            // Lấy Token định danh thiết bị
+            // Henry nhớ thay 'YOUR_PUBLIC_VAPID_KEY' bằng mã lấy từ Firebase Console nhé!
+            return messaging.getToken({ vapidKey: 'YOUR_PUBLIC_VAPID_KEY' });
+        })
+        .then((token) => {
+            if (token) {
+                console.log("Token đã sẵn sàng:", token);
+                
+                // Lưu vào Database dưới tên người chơi (hoặc một ID nào đó)
+                // Sau này bạn chỉ cần gửi tin vào cái Token này là điện thoại họ sẽ hiện thông báo
+                db.ref("player_push_tokens/Henry").set({
+                    token: token,
+                    last_online: new Date().getTime()
+                });
+            }
+        })
+        .catch((err) => {
+            console.log("Người dùng từ chối hoặc có lỗi:", err);
+        });
+}
+
+// Chạy hàm ngay khi vào game
+setupPushNotifications();
+
+// Lắng nghe khi có thông báo đến mà người dùng ĐANG MỞ WEB (hiện alert cho họ thấy)
+messaging.onMessage((payload) => {
+    console.log("Thông báo mới trong game:", payload);
+    alert(payload.notification.title + ": " + payload.notification.body);
+});
     
 const firebaseConfig = {
     apiKey: "AIzaSyDV8KseaFVPPcpEU0-jrqqxnGG6xLyJGfE",
