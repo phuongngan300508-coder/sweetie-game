@@ -16,7 +16,7 @@ messaging.onBackgroundMessage((payload) => {
     const notificationTitle = payload.notification.title;
     const notificationOptions = {
         body: payload.notification.body,
-        icon: 'https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png' // Henry thay bằng link ảnh logo game của bạn
+        icon: 'logo.png' // Henry thay bằng link ảnh logo game của bạn
     };
 
     self.registration.showNotification(notificationTitle, notificationOptions);
