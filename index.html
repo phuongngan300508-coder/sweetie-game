@@ -11529,6 +11529,28 @@ if ('serviceWorker' in navigator) {
         });
     });
 }
+    let deferredPrompt;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  // Ngăn trình duyệt hiện bảng hỏi mặc định quá nhanh
+  e.preventDefault();
+  // Lưu sự kiện lại để dùng sau
+  deferredPrompt = e;
+  
+  // Tự động hiện bảng hỏi sau 3 giây khi người dùng vào web
+  setTimeout(() => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then((choiceResult) => {
+        if (choiceResult.outcome === 'accepted') {
+          console.log('Người dùng đã cài đặt App! 🎉');
+        }
+        deferredPrompt = null;
+      });
+    }
+  }, 3000); 
+});
+    
 // --- 5. LẮNG NGHE HỆ THỐNG THÔNG BÁO & TIN NHẮN REAL-TIME ---
 function initChatSystem() {
     if (!currentUser) return;
