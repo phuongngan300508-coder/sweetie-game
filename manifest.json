@@ -1,8 +1,7 @@
 {
   "name": "Sweetie Game World",
   "short_name": "SweetieGame",
-  "description": "Thế giới minigame ngọt ngào dành riêng cho cư dân Sweetie.",
-  "start_url": "./index.html",
+  "start_url": ".",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#ff69b4",
@@ -19,5 +18,5 @@
       "type": "image/png",
       "purpose": "any"
     }
-]
+  ]
 }
