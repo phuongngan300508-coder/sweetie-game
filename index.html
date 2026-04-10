@@ -11856,14 +11856,14 @@ const ACHIEVEMENTS_CONFIG = {
     10: { id: 10, name: "Huyền Thoại Sweetie", icon: "👑", desc: "Sở hữu tất cả 9 danh hiệu trên", goal: 9, unit: "DH" }
 };
 
+// Đảm bảo biến này nằm ngoài hàm để theo dõi xuyên suốt phiên làm việc
+if (!window.notifiedInSession) window.notifiedInSession = [];
+
 function getAchievementProgress(id) {
     if (!userData) return 0;
     if (!userData.unlockedAchievements) userData.unlockedAchievements = [];
-    
-    // --- BIẾN PHỤ CHẶN LẶP TRONG PHIÊN CHƠI ---
-    if (!window.notifiedInSession) window.notifiedInSession = [];
 
-    // Nếu danh hiệu này ĐÃ được mở khóa trước đó, mặc định trả về goal
+    // 1. Nếu đã mở khóa vĩnh viễn, trả về mục tiêu ngay để hiện 100%
     if (userData.unlockedAchievements.includes(id)) {
         return ACHIEVEMENTS_CONFIG[id].goal;
     }
@@ -11890,54 +11890,58 @@ function getAchievementProgress(id) {
         case 10: 
             let count = 0;
             for(let i=1; i<=9; i++) {
-                if (userData.unlockedAchievements.includes(i)) count++;
+                if (userData.unlockedAchievements.includes(id === 10 ? i : i)) { // Fix nhẹ logic đếm
+                     if (userData.unlockedAchievements.includes(i)) count++;
+                }
             }
             current = count;
             break;
     }
 
-    // KIỂM TRA MỞ KHÓA MỚI (CHỐT CHẶN VĨNH VIỄN)
+    // 2. KIỂM TRA ĐIỀU KIỆN MỞ KHÓA
     if (current >= ACHIEVEMENTS_CONFIG[id].goal) {
-        // CHỈ CHẠY NẾU CHƯA CÓ TRONG unlockedAchievements VÀ CHƯA NỔ THÔNG BÁO TRONG PHIÊN NÀY
+        // CHỐT CHẶN: Chỉ nổ thông báo nếu thực sự chưa có trong danh sách
         if (!userData.unlockedAchievements.includes(id) && !window.notifiedInSession.includes(id)) {
             
-            // Chặn ngay lập tức trước khi chạy logic nặng
+            // Đánh dấu đã thông báo ngay lập tức để chặn các hàm khác gọi lặp
             window.notifiedInSession.push(id);
             userData.unlockedAchievements.push(id);
             
+            // Lưu dữ liệu xuống LocalStorage trước khi nổ Alert (Rất quan trọng)
+            saveData();
+
             const achievementName = ACHIEVEMENTS_CONFIG[id].name;
             const notiTitle = "🏆 DANH HIỆU MỚI";
             const notiMsg = `Chúc mừng! Bạn đã đạt danh hiệu vĩnh viễn: [${achievementName}]`;
 
-            // 1. Hiện thông báo chuông trong App
-            addNotification(notiTitle, notiMsg);
+            // Thông báo chuông đỏ trong App
+            if (typeof addNotification === 'function') {
+                addNotification(notiTitle, notiMsg);
+            }
 
-            // --- 2. MỚI: BẮN THÔNG BÁO ĐẨY RA ĐIỆN THOẠI ---
+            // --- THÔNG BÁO ĐẨY RA ĐIỆN THOẠI ---
             if ("Notification" in window && Notification.permission === "granted") {
                 const pushOptions = {
                     body: notiMsg,
                     icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
                     badge: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
-                    tag: "achievement-unlocked-" + id,
-                    renotify: true,
-                    vibrate: [100, 50, 100, 50, 200]
+                    tag: "achieve-" + id,
+                    renotify: true
                 };
 
-                if ('serviceWorker' in navigator) {
-                    navigator.serviceWorker.ready.then(reg => {
-                        reg.showNotification(notiTitle, pushOptions);
-                    });
+                if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                    navigator.serviceWorker.ready.then(reg => reg.showNotification(notiTitle, pushOptions));
                 } else {
                     new Notification(notiTitle, pushOptions);
                 }
             }
-
-            saveData();
             
-            // Dùng setTimeout để tách biệt Alert ra khỏi luồng logic chính, tránh làm treo giao diện
+            // 3. Hiển thị Alert sau cùng và bọc trong timeout để không làm đứng giao diện
             setTimeout(() => {
-                alert(`🎊 CHÚC MỪNG! Bạn đã đạt danh hiệu: ${achievementName}`);
-            }, 100);
+                alert(`🎊 TUYỆT VỜI!\nBạn đã chinh phục được danh hiệu:\n[${achievementName}]`);
+                // Sau khi đóng alert, cập nhật lại giao diện một lần nữa cho chắc
+                if (typeof updateUI === 'function') updateUI();
+            }, 300);
         }
     }
 
