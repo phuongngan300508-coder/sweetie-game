@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -11795,7 +11794,7 @@ async function sendMessage() {
     const msgRef = db.ref('chats/' + chatRoomId + '/messages').push(); 
     msgRef.set(messageData).then(() => {
         
-        // 3. BẮN THÔNG BÁO THEO PHÂN LOẠI (Trong App)
+        // 3. BẮN THÔNG BÁO THEO PHÂN LOẠI (Trong App - notifications_queue)
         db.ref('notifications_queue/' + currentChatFriend).push({
             from: currentUser,
             friendName: currentUser, 
@@ -11807,12 +11806,12 @@ async function sendMessage() {
         });
 
         // --- MỚI: BẮN THÔNG BÁO RA MÁY ĐIỆN THOẠI (Push Notification) ---
-        // Gửi tín hiệu vào nhánh để Service Worker trên máy đối phương nhận được và hiện thông báo ngoài màn hình
+        // Gửi tín hiệu vào nhánh push_notifications để Service Worker nhận được
         db.ref('push_notifications/' + currentChatFriend).push({
             title: msgTitle,
-            body: `${currentUser}: ${text}`,
+            body: isFriend ? `${currentUser}: ${text}` : `Bạn có một tin nhắn chờ mới từ ${currentUser}`,
             icon: (userData.profile && userData.profile.customAvatar) ? userData.profile.customAvatar : "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
-            tag: "chat-" + currentUser, // Để các tin nhắn từ cùng 1 người sẽ gộp lại một chỗ trên điện thoại
+            tag: isFriend ? "chat-" + currentUser : "msg-request", // Gộp thông báo theo người gửi hoặc loại yêu cầu
             from: currentUser
         });
 
@@ -12886,7 +12885,18 @@ function deleteMessage(msgId, isMe) {
         if (choice) {
             // Chế độ 1: Gỡ với mọi người (Xóa trên Firebase)
             db.ref(`chats/${chatRoomId}/messages/${msgId}`).remove()
-                .then(() => console.log("Đã gỡ tin nhắn với mọi người"));
+                .then(() => {
+                    console.log("Đã gỡ tin nhắn với mọi người");
+
+                    // --- MỚI: BẮN THÔNG BÁO ĐẨY CHO ĐỐI PHƯƠNG ---
+                    db.ref('push_notifications/' + currentChatFriend).push({
+                        title: "🗑️ TIN NHẮN ĐÃ GỠ",
+                        body: `${currentUser} đã thu hồi một tin nhắn`,
+                        icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+                        tag: "delete-msg-" + msgId, // Tag riêng để không bị đè tin nhắn khác
+                        from: currentUser
+                    });
+                });
         } else {
             // Chế độ 2: Gỡ ở phía tôi (Ẩn bằng LocalStorage)
             hideMessageLocally(msgId);
@@ -13050,6 +13060,19 @@ function saveAllNicknames() {
     updates[currentUser] = nickMe === "" ? null : nickMe;
 
     db.ref(`chats/${chatRoomId}/nicknames`).update(updates).then(() => {
+        // --- BẮN THÔNG BÁO ĐẨY ---
+        const msg = nickFriend 
+            ? `${currentUser} đã đặt biệt danh cho bạn là "${nickFriend}"` 
+            : `${currentUser} đã gỡ biệt danh của bạn`;
+
+        db.ref('push_notifications/' + currentChatFriend).push({
+            title: "🏷️ BIỆT DANH MỚI",
+            body: msg,
+            icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+            tag: "nickname-change",
+            from: currentUser
+        });
+
         addNotification("🏷️ HỆ THỐNG", "Đã cập nhật biệt danh mới!");
         toggleModal('modal-nickname');
     });
@@ -13129,7 +13152,8 @@ function toggleReactionPicker(msgId) {
 }
 
 // 3. Gửi cảm xúc lên Firebase
-function sendReaction(msgId, icon) {
+// Thêm tham số isFromBar (mặc định là false)
+function sendReaction(msgId, icon, isFromBar = false) {
     if (!icon || icon === "undefined") return;
     const chatRoomId = [currentUser, currentChatFriend].sort().join('_');
     const reactionPath = `chats/${chatRoomId}/messages/${msgId}/reactions/${currentUser}`;
@@ -13137,16 +13161,18 @@ function sendReaction(msgId, icon) {
     db.ref(reactionPath).once('value', (snap) => {
         const currentIcon = snap.val();
         
-        if (currentIcon === icon) {
-            // NẾU ẤN TRÙNG ICON ĐANG THẢ -> XÓA LUÔN
+        // CHỈ XÓA KHI: Click từ thanh Bar (isFromBar = true) VÀ icon chọn trùng với icon cũ
+        if (isFromBar && currentIcon === icon) {
             db.ref(reactionPath).remove();
-        } else {
-            // NẾU ICON MỚI -> CẬP NHẬT
+        } 
+        // CẬP NHẬT/THÊM MỚI KHI: Click từ thanh Bar (Bất kể icon mới hay trùng nhưng isFromBar phải là true)
+        // Hoặc đơn giản là: Nếu click từ Bar mà không phải lệnh xóa ở trên thì là lệnh Set
+        else if (isFromBar) {
             db.ref(reactionPath).set(icon).then(() => {
-                // Gửi thông báo cho đối phương như Messenger
                 db.ref(`chats/${chatRoomId}/messages/${msgId}`).once('value', (mSnap) => {
                     const mData = mSnap.val();
                     if (mData && mData.sender !== currentUser) {
+                        // 1. Gửi vào Chuông thông báo (Trong App)
                         db.ref('notifications_queue/' + mData.sender).push({
                             from: currentUser,
                             title: "✨ CẢM XÚC MỚI",
@@ -13154,10 +13180,23 @@ function sendReaction(msgId, icon) {
                             type: 'chat',
                             time: Date.now()
                         });
+
+                        // 2. --- MỚI: BẮN THÔNG BÁO ĐẨY RA ĐIỆN THOẠI ---
+                        db.ref('push_notifications/' + mData.sender).push({
+                            title: "✨ CẢM XÚC MỚI",
+                            body: `${currentUser} đã bày tỏ cảm xúc ${icon} vào tin nhắn của bạn`,
+                            icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+                            tag: "reaction-" + msgId,
+                            from: currentUser
+                        });
                     }
                 });
             });
         }
+        
+        // Nếu isFromBar = false (chạm vào icon dưới bong bóng), hàm sẽ không làm gì cả, 
+        // không xóa dữ liệu trên Firebase.
+
         // Đóng thanh cảm xúc sau khi thao tác
         const picker = document.getElementById(`picker-${msgId}`);
         if (picker) picker.style.display = 'none';
