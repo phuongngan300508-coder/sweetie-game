@@ -11400,94 +11400,58 @@ function updatePriceDisplay() {
 
 // 4. Hàm thực hiện mua lượt
 function buyExtraTurn(amount) {
-    const gameId = document.getElementById('extra-game-select').value;
-    if (!gameId) { alert("Vui lòng chọn một trò chơi!"); return; }
+    const gameId = document.getElementById('extra-game-select').value;
+    if (!gameId) { alert("Vui lòng chọn một trò chơi!"); return; }
 
-    const price = getPriceForGame(gameId, amount);
-    const gameName = document.getElementById('extra-game-select').options[document.getElementById('extra-game-select').selectedIndex].text;
+    const price = getPriceForGame(gameId, amount);
+    const gameName = document.getElementById('extra-game-select').options[document.getElementById('extra-game-select').selectedIndex].text;
 
-    if (userData.balance < price) {
-        alert(`Số dư không đủ! Nhóm game này yêu cầu ${price.toLocaleString()}đ.`);
-        return;
-    }
+    if (userData.balance < price) {
+        alert(`Số dư không đủ! Nhóm game này yêu cầu ${price.toLocaleString()}đ.`);
+        return;
+    }
 
-    if (confirm(`Xác nhận dùng ${price.toLocaleString()}đ để thêm ${amount} lượt cho [${gameName}]?`)) {
-        // 1. Lưu cấp VIP cũ để so sánh
-        const oldVipLevel = getVipLevel(userData.totalSpent || 0);
+    if (confirm(`Xác nhận dùng ${price.toLocaleString()}đ để thêm ${amount} lượt cho [${gameName}]?`)) {
+        // 1. Lưu cấp VIP cũ để so sánh
+        const oldVipLevel = getVipLevel(userData.totalSpent || 0);
 
-        // 2. Trừ tiền và tích lũy chi tiêu nâng VIP
-        userData.balance -= price;
-        userData.totalSpent = (Number(userData.totalSpent) || 0) + price;
+        // 2. Trừ tiền và tích lũy chi tiêu nâng VIP
+        userData.balance -= price;
+        userData.totalSpent = (Number(userData.totalSpent) || 0) + price;
 
-        // 3. Xử lý hồi lượt chơi
-        if (!userData.gamePlays[gameId]) {
-            userData.gamePlays[gameId] = { count: 0, firstPlayDate: null };
-        }
-        // Trừ count để hồi lượt (Logic của Henry)
-        userData.gamePlays[gameId].count -= amount;
+        // 3. Xử lý hồi lượt chơi
+        if (!userData.gamePlays[gameId]) {
+            userData.gamePlays[gameId] = { count: 0, firstPlayDate: null };
+        }
+        // Trừ count để hồi lượt (Logic của Henry)
+        userData.gamePlays[gameId].count -= amount;
 
-        // 4. Kiểm tra thăng cấp VIP ngay lập tức
-        const newVipLevel = getVipLevel(userData.totalSpent);
-        if (newVipLevel > oldVipLevel) {
-            const vipName = VIP_CONFIG[newVipLevel].label;
-            const vipMsg = `Tiếp tế lượt chơi đã giúp bạn thăng hạng lên [${vipName}].`;
-            
-            addNotification("🎊 THĂNG CẤP VIP", vipMsg);
-            
-            // ĐẨY THÔNG BÁO THĂNG CẤP VIP RA ĐIỆN THOẠI
-            if (Notification.permission === "granted") {
-                const vipPushOptions = {
-                    body: vipMsg,
-                    icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
-                    badge: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
-                    tag: "vip-up-alert"
-                };
-                if ('serviceWorker' in navigator) {
-                    navigator.serviceWorker.ready.then(reg => reg.showNotification("🎊 THĂNG CẤP VIP", vipPushOptions));
-                }
-            }
-            
-            if (newVipLevel === 5) {
-                addNotification("🎁 ĐẶC QUYỀN HOÀNG GIA", "Bạn đã mở khóa slot nuôi Trái Tim thứ 2 vĩnh viễn!");
-            }
-        }
+        // 4. Kiểm tra thăng cấp VIP ngay lập tức
+        const newVipLevel = getVipLevel(userData.totalSpent);
+        if (newVipLevel > oldVipLevel) {
+            const vipName = VIP_CONFIG[newVipLevel].label;
+            addNotification("🎊 THĂNG CẤP VIP", `Tiếp tế lượt chơi đã giúp bạn thăng hạng lên [${vipName}].`);
+            
+            if (newVipLevel === 5) {
+                addNotification("🎁 ĐẶC QUYỀN HOÀNG GIA", "Bạn đã mở khóa slot nuôi Trái Tim thứ 2 vĩnh viễn!");
+            }
+        }
 
-        // 5. Ghi lịch sử và thông báo
-        const buyMsg = `Đã cộng thành công ${amount} lượt cho game [${gameName}].`;
-        addNotification("🎫 TIẾP TẾ LƯỢT CHƠI", buyMsg);
+        // 5. Ghi lịch sử và thông báo
+        userData.history.push({
+            type: `Mua thêm lượt: ${gameName}`,
+            amount: `-${price.toLocaleString()} VNĐ`,
+            date: getVietnamTime().toLocaleString('vi-VN')
+        });
 
-        // --- MỚI: BẮN THÔNG BÁO ĐẨY MUA LƯỢT THÀNH CÔNG ---
-        if (Notification.permission === "granted") {
-            const buyPushOptions = {
-                body: buyMsg,
-                icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
-                badge: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
-                tag: "extra-turn-" + gameId,
-                renotify: true
-            };
-
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.ready.then(reg => {
-                    reg.showNotification("🎫 TIẾP TẾ LƯỢT CHƠI", buyPushOptions);
-                });
-            } else {
-                new Notification("🎫 TIẾP TẾ LƯỢT CHƠI", buyPushOptions);
-            }
-        }
-
-        userData.history.push({
-            type: `Mua thêm lượt: ${gameName}`,
-            amount: `-${price.toLocaleString()} VNĐ`,
-            date: getVietnamTime().toLocaleString('vi-VN')
-        });
-
-        saveData();
-        updateUI();
-        updateGameLimitsUI();
-        alert(`✨ Thành công! [${gameName}] đã được cộng thêm lượt.`);
-    }
-}
-
+        addNotification("🎫 TIẾP TẾ LƯỢT CHƠI", `Đã cộng thành công ${amount} lượt cho game [${gameName}].`);
+        
+        saveData();
+        updateUI();
+        updateGameLimitsUI();
+        alert(`✨ Thành công! [${gameName}] đã được cộng thêm lượt.`);
+    }
+} 
 // 5. Hàm lọc danh sách hiển thị ban đầu
 function populateGameSelect() {
     const select = document.getElementById('extra-game-select');
@@ -11725,93 +11689,54 @@ const ACHIEVEMENTS_CONFIG = {
 if (!window.notifiedInSession) window.notifiedInSession = [];
 
 function getAchievementProgress(id) {
-    if (!userData) return 0;
-    if (!userData.unlockedAchievements) userData.unlockedAchievements = [];
+    if (!userData) return 0;
+    if (!userData.unlockedAchievements) userData.unlockedAchievements = [];
 
-    // 1. Nếu đã mở khóa vĩnh viễn, trả về mục tiêu ngay để hiện 100%
-    if (userData.unlockedAchievements.includes(id)) {
-        return ACHIEVEMENTS_CONFIG[id].goal;
-    }
+    // Nếu danh hiệu này ĐÃ được mở khóa trước đó, mặc định trả về goal (để luôn hiện 100%)
+    if (userData.unlockedAchievements.includes(id)) {
+        return ACHIEVEMENTS_CONFIG[id].goal;
+    }
 
-    let current = 0;
-    switch(id) {
-        case 1: current = (userData.checkinHistory || []).length; break;
-        case 2: current = userData.balance || 0; break;
-        case 3: 
-            let totalLaps = 0;
-            if (userData.gamePlays) {
-                for (const gId in userData.gamePlays) {
-                    totalLaps += Math.max(0, userData.gamePlays[gId].count || 0);
-                }
-            }
-            current = totalLaps;
-            break;
-        case 4: current = userData.casinoNetProfit || 0; break;
-        case 5: current = userData.eventWinsCount || 0; break;
-        case 6: current = userData.piggyBank ? userData.piggyBank.balance : 0; break;
-        case 7: current = (userData.streakDataArray || []).filter(s => s.isFinished && STREAK_REWARDS[s.chosenReward]?.days >= 45).length; break;
-        case 8: current = Object.keys(userData.zoneAccess || {}).length; break;
-        case 9: current = getVipLevel(userData.totalSpent || 0); break;
-        case 10: 
-            let count = 0;
-            for(let i=1; i<=9; i++) {
-                if (userData.unlockedAchievements.includes(id === 10 ? i : i)) { // Fix nhẹ logic đếm
-                     if (userData.unlockedAchievements.includes(i)) count++;
-                }
-            }
-            current = count;
-            break;
-    }
+    let current = 0;
+    switch(id) {
+        case 1: current = (userData.checkinHistory || []).length; break;
+        case 2: current = userData.balance || 0; break;
+        case 3: 
+            let totalLaps = 0;
+            if (userData.gamePlays) {
+                for (const gId in userData.gamePlays) {
+                    totalLaps += Math.max(0, userData.gamePlays[gId].count || 0);
+                }
+            }
+            current = totalLaps;
+            break;
+        case 4: current = userData.casinoNetProfit || 0; break;
+        case 5: current = userData.eventWinsCount || 0; break;
+        case 6: current = userData.piggyBank ? userData.piggyBank.balance : 0; break;
+        case 7: current = (userData.streakDataArray || []).filter(s => s.isFinished && STREAK_REWARDS[s.chosenReward]?.days >= 45).length; break;
+        case 8: current = Object.keys(userData.zoneAccess || {}).length; break;
+        case 9: current = getVipLevel(userData.totalSpent || 0); break;
+        case 10: 
+            let count = 0;
+            for(let i=1; i<=9; i++) {
+                if (userData.unlockedAchievements.includes(i)) count++;
+            }
+            current = count;
+            break;
+    }
 
-    // 2. KIỂM TRA ĐIỀU KIỆN MỞ KHÓA
-    if (current >= ACHIEVEMENTS_CONFIG[id].goal) {
-        // CHỐT CHẶN: Chỉ nổ thông báo nếu thực sự chưa có trong danh sách
-        if (!userData.unlockedAchievements.includes(id) && !window.notifiedInSession.includes(id)) {
-            
-            // Đánh dấu đã thông báo ngay lập tức để chặn các hàm khác gọi lặp
-            window.notifiedInSession.push(id);
-            userData.unlockedAchievements.push(id);
-            
-            // Lưu dữ liệu xuống LocalStorage trước khi nổ Alert (Rất quan trọng)
-            saveData();
+    // KIỂM TRA MỞ KHÓA MỚI (CHỐT CHẶN VĨNH VIỄN)
+    if (current >= ACHIEVEMENTS_CONFIG[id].goal) {
+        if (!userData.unlockedAchievements.includes(id)) {
+            userData.unlockedAchievements.push(id);
+            addNotification("🏆 DANH HIỆU MỚI", `Chúc mừng! Bạn đã đạt danh hiệu vĩnh viễn: [${ACHIEVEMENTS_CONFIG[id].name}]`);
+            saveData();
+        }
+    }
 
-            const achievementName = ACHIEVEMENTS_CONFIG[id].name;
-            const notiTitle = "🏆 DANH HIỆU MỚI";
-            const notiMsg = `Chúc mừng! Bạn đã đạt danh hiệu vĩnh viễn: [${achievementName}]`;
-
-            // Thông báo chuông đỏ trong App
-            if (typeof addNotification === 'function') {
-                addNotification(notiTitle, notiMsg);
-            }
-
-            // --- THÔNG BÁO ĐẨY RA ĐIỆN THOẠI ---
-            if ("Notification" in window && Notification.permission === "granted") {
-                const pushOptions = {
-                    body: notiMsg,
-                    icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
-                    badge: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
-                    tag: "achieve-" + id,
-                    renotify: true
-                };
-
-                if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-                    navigator.serviceWorker.ready.then(reg => reg.showNotification(notiTitle, pushOptions));
-                } else {
-                    new Notification(notiTitle, pushOptions);
-                }
-            }
-            
-            // 3. Hiển thị Alert sau cùng và bọc trong timeout để không làm đứng giao diện
-            setTimeout(() => {
-                alert(`🎊 TUYỆT VỜI!\nBạn đã chinh phục được danh hiệu:\n[${achievementName}]`);
-                // Sau khi đóng alert, cập nhật lại giao diện một lần nữa cho chắc
-                if (typeof updateUI === 'function') updateUI();
-            }, 300);
-        }
-    }
-
-    return current;
+    return current;
 }
+ 
 // Hàm mở Modal Danh hiệu
 function openAchievementModal() {
     const list = document.getElementById('achievement-list-content');
@@ -11862,47 +11787,21 @@ function openAchievementModal() {
 }
 
 function selectAchievement(achId) {
-    // Kiểm tra xem danh hiệu này đã đạt được chưa
-    if (!userData.unlockedAchievements || !userData.unlockedAchievements.includes(achId)) {
-        alert("🔒 Bạn chưa đạt đủ điều kiện cho danh hiệu này!");
-        return;
-    }
+    // Kiểm tra xem danh hiệu này đã đạt được chưa
+    if (!userData.unlockedAchievements || !userData.unlockedAchievements.includes(achId)) {
+        alert("🔒 Bạn chưa đạt đủ điều kiện cho danh hiệu này!");
+        return;
+    }
 
-    // Đặt làm danh hiệu đang đeo
-    userData.equippedAchievement = achId;
-    
-    // --- THIẾT LẬP NỘI DUNG THÔNG BÁO ---
-    const achName = ACHIEVEMENTS_CONFIG[achId].name;
-    const notiTitle = "✨ THAY ĐỔI DANH HIỆU";
-    const notiMsg = `Bạn đã chọn hiển thị danh hiệu: ${achName}`;
-
-    // 1. Hiện thông báo chuông trong App
-    addNotification(notiTitle, notiMsg);
-
-    // --- 2. MỚI: BẮN THÔNG BÁO ĐẨY RA ĐIỆN THOẠI (Push Notification) ---
-    if ("Notification" in window && Notification.permission === "granted") {
-        const achPushOptions = {
-            body: notiMsg,
-            icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
-            badge: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
-            tag: "achievement-equip", // Dùng tag cố định để các lần đổi danh hiệu sau sẽ ghi đè lên lần trước
-            renotify: true
-        };
-
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.ready.then(reg => {
-                reg.showNotification(notiTitle, achPushOptions);
-            });
-        } else {
-            new Notification(notiTitle, achPushOptions);
-        }
-    }
-    
-    saveData();
-    
-    // Cập nhật giao diện Popup để hiện dấu tích chọn
-    openAchievementModal(); 
-    alert(`✨ Đã chọn danh hiệu: ${achName}`);
+    // Đặt làm danh hiệu đang đeo
+    userData.equippedAchievement = achId;
+    
+    saveData();
+    addNotification("✨ THAY ĐỔI DANH HIỆU", `Bạn đã chọn hiển thị danh hiệu: ${ACHIEVEMENTS_CONFIG[achId].name}`);
+    
+    // Cập nhật giao diện Popup để hiện dấu tích chọn
+    openAchievementModal(); 
+    alert(`✨ Đã chọn danh hiệu: ${ACHIEVEMENTS_CONFIG[achId].name}`);
 }
 
 // Hàm gửi thông báo trực tiếp đến máy (Desktop/Mobile)
