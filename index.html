@@ -4977,6 +4977,50 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
 .noti-interactive {
     pointer-events: auto !important;
 }
+
+    /* Giao diện Popup Nạp Tiền */
+.modal-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(255, 192, 203, 0.5); backdrop-filter: blur(5px);
+    display: flex; align-items: center; justify-content: center; z-index: 10002;
+}
+.modal-content {
+    background: white; width: 90%; max-width: 350px; border-radius: 30px;
+    box-shadow: 0 15px 35px rgba(255, 20, 147, 0.2); overflow: hidden;
+}
+.modal-header-pink {
+    background: linear-gradient(135deg, #ff1493, #ff69b4); color: white;
+    padding: 20px; text-align: center;
+}
+.modal-header-pink i { font-size: 2em; margin-bottom: 10px; }
+.modal-header-pink h3 { margin: 0; letter-spacing: 1px; }
+
+.modal-body-pink { padding: 25px; text-align: center; }
+.modal-body-pink p { font-size: 0.85em; color: #888; margin-bottom: 20px; }
+
+.input-group-pink {
+    display: flex; align-items: center; background: #fff0f5;
+    border-radius: 15px; padding: 10px 15px; border: 2px solid #ffc0cb;
+}
+.input-group-pink input {
+    border: none; background: transparent; width: 100%; outline: none;
+    font-size: 1.2em; font-weight: bold; color: #ff1493; text-align: center;
+}
+.quick-select { display: flex; gap: 8px; justify-content: center; margin-top: 15px; }
+.quick-select button {
+    background: white; border: 1px solid #ffc0cb; padding: 5px 10px;
+    border-radius: 10px; font-size: 0.7em; color: #ff69b4; font-weight: bold;
+    cursor: pointer; transition: 0.3s;
+}
+.quick-select button:hover { background: #ff69b4; color: white; }
+
+.modal-footer-pink { display: flex; padding: 0 20px 20px 20px; gap: 10px; }
+.btn-cancel { flex: 1; border: none; padding: 12px; border-radius: 50px; color: #888; cursor: pointer; }
+.btn-confirm { 
+    flex: 2; background: #ff1493; border: none; padding: 12px; 
+    border-radius: 50px; color: white; font-weight: bold; cursor: pointer;
+    box-shadow: 0 5px 15px rgba(255, 20, 147, 0.3);
+}
 </style>
 </head>
 <body>
@@ -6912,6 +6956,61 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
         </div>
     </div>
 </div>
+
+    <div id="modal-deposit" class="modal-overlay" style="display:none;">
+    <div class="modal-content animate__animated animate__zoomIn">
+        <div class="modal-header-pink">
+            <i class="fas fa-wallet"></i>
+            <h3>NẠP TIỀN VÀO VÍ</h3>
+        </div>
+        <div class="modal-body-pink">
+            <p>Nhập số tiền bạn muốn nạp vào Sweetie Wallet</p>
+            <div class="input-group-pink">
+                <input type="number" id="deposit-amount-input" placeholder="Ví dụ: 50000" min="1000">
+                <span>VNĐ</span>
+            </div>
+            <div class="quick-select">
+                <button onclick="setAmount(20000)">20K</button>
+                <button onclick="setAmount(50000)">50K</button>
+                <button onclick="setAmount(100000)">100K</button>
+                <button onclick="setAmount(200000)">200K</button>
+            </div>
+        </div>
+        <div class="modal-footer-pink">
+            <button class="btn-cancel" onclick="closeDepositModal()">HỦY</button>
+            <button class="btn-confirm" onclick="processDeposit()">XÁC NHẬN NẠP</button>
+        </div>
+    </div>
+</div>
+
+    <div id="modal-withdraw" class="modal-overlay" style="display:none;">
+    <div class="modal-content animate__animated animate__fadeInUp">
+        <div class="modal-header-pink" style="background: linear-gradient(135deg, #ff69b4, #da70d6) !important;">
+            <i class="fas fa-hand-holding-usd"></i>
+            <h3>RÚT TIỀN KHỎI VÍ</h3>
+        </div>
+        <div class="modal-body-pink">
+            <p>Số dư hiện tại: <b id="withdraw-current-balance" style="color:#ff1493;">0 VNĐ</b></p>
+            <p style="font-size: 0.75em; margin-top: -15px;">Nhập số tiền bạn muốn rút về túi</p>
+            
+            <div class="input-group-pink" style="border-color: #da70d6 !important;">
+                <input type="number" id="withdraw-amount-input" placeholder="Ví dụ: 10000" min="1000">
+                <span>VNĐ</span>
+            </div>
+            
+            <div class="quick-select">
+                <button onclick="setWithdrawAmount(10000)">10K</button>
+                <button onclick="setWithdrawAmount(50000)">50K</button>
+                <button onclick="setWithdrawAmount(100000)">100K</button>
+                <button onclick="setWithdrawAmount(userData.balance)">RÚT HẾT</button>
+            </div>
+        </div>
+        <div class="modal-footer-pink">
+            <button class="btn-cancel" onclick="closeWithdrawModal()">ĐÓNG</button>
+            <button class="btn-confirm" onclick="processWithdraw()" style="background: #da70d6 !important;">XÁC NHẬN RÚT</button>
+        </div>
+    </div>
+</div>
 <script>
   let replyingTo = null; // Lưu tin nhắn đang được trả lời {id, text, sender}
   // Biến cờ để đảm bảo mỗi máy chỉ "nghe" Firebase đúng 1 lần duy nhất
@@ -7763,37 +7862,68 @@ function getOrCreateLimitBadge(card) {
     return limitLabel;
 }
 // Nạp tiền
+// Mở Modal nạp tiền thay vì dùng prompt
 function toggleDepositModal() {
-    let amountStr = prompt("Nhập số tiền muốn nạp:", "50000");
-    
-    // Kiểm tra nếu người dùng không hủy bỏ và nhập số hợp lệ
-    if (amountStr !== null && amountStr.trim() !== "") {
-        let amount = parseInt(amountStr);
-        
-        if (!isNaN(amount) && amount > 0) {
-            // Đảm bảo userData.balance là số trước khi cộng
-            userData.balance = (Number(userData.balance) || 0) + amount;
-            
-            // --- DÒNG THÊM MỚI ĐỂ HIỆN THÔNG BÁO Ở CHUÔNG ---
-            addNotification("💰 NẠP TIỀN THÀNH CÔNG", `Bạn vừa nạp thêm ${amount.toLocaleString('vi-VN')} VNĐ vào ví.`);
-            
-            // Thêm vào lịch sử
-            userData.history.push({ 
-                type: 'Nạp tiền', 
-                amount: `+${amount.toLocaleString('vi-VN')} VNĐ`, 
-                date: getVietnamTime().toLocaleString('vi-VN') 
-            });
-            
-            saveData();   // Lưu vào localStorage
-            updateUI();   // CẬP NHẬT HIỂN THỊ LÊN MÀN HÌNH (Quan trọng)
-            
-            alert(`Đã nạp thành công ${amount.toLocaleString('vi-VN')} VNĐ vào tài khoản!`);
-        } else {
-            alert("Số tiền không hợp lệ. Vui lòng nhập số nguyên dương!");
-        }
-    }
+    document.getElementById('modal-deposit').style.display = 'flex';
+    document.getElementById('deposit-amount-input').value = ""; // Reset input
 }
 
+// Đóng Modal
+function closeDepositModal() {
+    document.getElementById('modal-deposit').style.display = 'none';
+}
+
+// Hàm chọn nhanh số tiền
+function setAmount(val) {
+    document.getElementById('deposit-amount-input').value = val;
+}
+
+// Hàm xử lý nạp chính thức
+function processDeposit() {
+    const input = document.getElementById('deposit-amount-input');
+    const amount = parseInt(input.value);
+
+    if (!isNaN(amount) && amount >= 1000) {
+        // Cập nhật số dư
+        userData.balance = (Number(userData.balance) || 0) + amount;
+        
+        // 1. Thông báo trong App
+        addNotification("💰 NẠP TIỀN THÀNH CÔNG", `Bạn vừa nạp thêm ${amount.toLocaleString('vi-VN')} VNĐ vào ví.`);
+
+        // 2. Bắn thông báo đẩy ra máy (Push Notification)
+        if (Notification.permission === "granted") {
+            const pushOptions = {
+                body: `Giao dịch thành công! +${amount.toLocaleString('vi-VN')} VNĐ.`,
+                icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+                badge: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+                tag: "deposit-success",
+                renotify: true
+            };
+
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.ready.then(reg => {
+                    reg.showNotification("💰 NẠP TIỀN THÀNH CÔNG", pushOptions);
+                });
+            }
+        }
+
+        // 3. Thêm vào lịch sử
+        userData.history.push({ 
+            type: 'Nạp tiền', 
+            amount: `+${amount.toLocaleString('vi-VN')} VNĐ`, 
+            date: new Date().toLocaleString('vi-VN') 
+        });
+
+        saveData();   // Lưu dữ liệu
+        updateUI();   // Cập nhật màn hình
+        closeDepositModal(); // Đóng popup
+        
+        // Hiệu ứng ăn mừng nhẹ
+        alert(`🎉 Chúc mừng! Đã nạp thành công ${amount.toLocaleString('vi-VN')} VNĐ.`);
+    } else {
+        alert("Vui lòng nhập số tiền hợp lệ (tối thiểu 1.000 VNĐ)!");
+    }
+}
     function toggleHistoryModal() {
     const modal = document.getElementById('modal-history-v2');
     if (modal.style.display === 'flex') {
@@ -7857,13 +7987,49 @@ function buyCheckinAccess() {
             addNotification("🎊 THĂNG CẤP VIP", `Chúc mừng! Chi tiêu mở khóa điểm danh đã giúp bạn đạt [${vipName}].`);
             
             if (newVipLevel === 5) {
-                addNotification("🎁 ĐẶC QUYỀN HOÀNG GIA", "Bạn đã mở khóa slot nuôi Trái Tim thứ 2 vĩnh viễn!");
+                const royalMsg = "Bạn đã mở khóa slot nuôi Trái Tim thứ 2 vĩnh viễn!";
+                addNotification("🎁 ĐẶC QUYỀN HOÀNG GIA", royalMsg);
+
+                // --- MỚI: ĐẨY THÔNG BÁO ĐẶC QUYỀN HOÀNG GIA RA ĐIỆN THOẠI ---
+                if (Notification.permission === "granted") {
+                    const royalPushOptions = {
+                        body: royalMsg,
+                        icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+                        badge: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+                        tag: "royal-privilege",
+                        renotify: true
+                    };
+                    if ('serviceWorker' in navigator) {
+                        navigator.serviceWorker.ready.then(reg => {
+                            reg.showNotification("🎁 ĐẶC QUYỀN HOÀNG GIA", royalPushOptions);
+                        });
+                    }
+                }
             }
         }
 
         // 5. Thông báo chuông và lịch sử
         const formattedExpiry = new Date(expiryDateMs).toLocaleDateString('vi-VN');
         addNotification("🔑 KÍCH HOẠT ĐIỂM DANH", `Bạn đã mở khóa thành công quyền điểm danh. Hạn dùng đến: ${formattedExpiry}.`);
+
+        // --- BẮN THÔNG BÁO ĐẨY KÍCH HOẠT ĐIỂM DANH ---
+        if (Notification.permission === "granted") {
+            const pushOptions = {
+                body: `Thành công! Quyền điểm danh của bạn đã được kích hoạt đến ngày ${formattedExpiry}.`,
+                icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+                badge: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+                tag: "checkin-activation",
+                renotify: true
+            };
+
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.ready.then(reg => {
+                    reg.showNotification("🔑 KÍCH HOẠT ĐIỂM DANH", pushOptions);
+                });
+            } else {
+                new Notification("🔑 KÍCH HOẠT ĐIỂM DANH", pushOptions);
+            }
+        }
 
         userData.history.push({
             type: 'Mở khóa điểm danh (1 năm)',
@@ -7942,20 +8108,33 @@ function checkDailyCheckinReminder() {
         
         // Tránh spam: Kiểm tra xem trong lượt load này đã báo "thúc giục" chưa
         if (!window.notifiedUrgentCheckin) {
-            const msg = "⏰ SẮP HẾT NGÀY! Còn chưa đầy 3 tiếng nữa là qua ngày mới. Vào điểm danh ngay để không bị đứt chuỗi 7 ngày nhé!";
+            const msg = "⏰ SẮP HẾT NGÀY! Còn chưa đầy 3 tiếng nữa là qua ngày mới. Vào điểm danh ngay để không bị đứt chuỗi nhé!";
             
-            // Hiện trong hệ thống chuông của Web
+            // Hiện trong hệ thống chuông của Web (Giao diện trong App)
             addNotification("🔥 THÚC GIỤC ĐIỂM DANH", msg);
 
-            // Gửi thông báo trực tiếp đến máy (Ngay cả khi đang ẩn tab)
+            // --- FIX: Gửi thông báo đẩy ra điện thoại thông qua Service Worker ---
             if ("Notification" in window && Notification.permission === "granted") {
-                new Notification("SWEETIE GAME WORLD", {
+                const pushOptions = {
                     body: msg,
-                    icon: "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/svgs/solid/calendar-check.svg"
-                });
+                    icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+                    badge: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+                    tag: "urgent-checkin", // Tag này giúp nếu Henry reload trang cũng không bị hiện đè nhiều tin
+                    renotify: true,
+                    vibrate: [200, 100, 200] // Rung máy để thúc giục
+                };
+
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.ready.then(reg => {
+                        reg.showNotification("SWEETIE GAME WORLD", pushOptions);
+                    });
+                } else {
+                    // Fallback cho trình duyệt cũ
+                    new Notification("SWEETIE GAME WORLD", pushOptions);
+                }
             }
             
-            window.notifiedUrgentCheckin = true; // Đánh dấu đã báo
+            window.notifiedUrgentCheckin = true; // Đánh dấu đã báo trong phiên này
         }
     }
 }
@@ -8289,19 +8468,42 @@ function updateUI() {
     
     if (unlockOverlay) {
         // Tìm trong hàm updateUI(), đoạn check hạn dùng:
-if (userData.hasAccess && userData.expiryDate && vnNow < userData.expiryDate) {
-    unlockOverlay.style.display = 'none'; 
-    if (expiryNotice) expiryNotice.style.display = 'block';
-    
-    // --- THÊM LOGIC THÔNG BÁO SẮP HẾT HẠN ---
-    const diffDays = Math.ceil((userData.expiryDate - vnNow) / (1000 * 60 * 60 * 24));
-    if (diffDays <= 3 && !userData.hasNotifiedExpiry) {
-        addNotification("🕒 CẢNH BÁO HẾT HẠN", `Quyền điểm danh của bạn chỉ còn ${diffDays} ngày. Hãy gia hạn sớm nhé!`);
-        userData.hasNotifiedExpiry = true; // Để không hiện liên tục gây phiền
-        saveData();
-    }
-    updateCountdown();
-} else {
+        if (userData.hasAccess && userData.expiryDate && vnNow < userData.expiryDate) {
+            unlockOverlay.style.display = 'none'; 
+            if (expiryNotice) expiryNotice.style.display = 'block';
+            
+            // --- THÊM LOGIC THÔNG BÁO SẮP HẾT HẠN ---
+            const diffDays = Math.ceil((userData.expiryDate - vnNow) / (1000 * 60 * 60 * 24));
+            if (diffDays <= 3 && !userData.hasNotifiedExpiry) {
+                const expiryMsg = `Quyền điểm danh của bạn chỉ còn ${diffDays} ngày. Hãy gia hạn sớm nhé!`;
+                
+                // 1. Hiện chuông trong hệ thống Web
+                addNotification("🕒 CẢNH BÁO HẾT HẠN", expiryMsg);
+
+                // --- 2. MỚI: ĐẨY THÔNG BÁO RA ĐIỆN THOẠI ---
+                if ("Notification" in window && Notification.permission === "granted") {
+                    const pushOptions = {
+                        body: expiryMsg,
+                        icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+                        badge: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+                        tag: "expiry-alert",
+                        renotify: true
+                    };
+
+                    if ('serviceWorker' in navigator) {
+                        navigator.serviceWorker.ready.then(reg => {
+                            reg.showNotification("🕒 CẢNH BÁO HẾT HẠN", pushOptions);
+                        });
+                    } else {
+                        new Notification("🕒 CẢNH BÁO HẾT HẠN", pushOptions);
+                    }
+                }
+
+                userData.hasNotifiedExpiry = true; // Để không hiện liên tục gây phiền
+                saveData();
+            }
+            updateCountdown();
+        } else {
             userData.hasAccess = false;
             userData.expiryDate = null;
             unlockOverlay.style.display = 'flex'; 
@@ -8329,7 +8531,6 @@ if (userData.hasAccess && userData.expiryDate && vnNow < userData.expiryDate) {
         }
     }
 }
-
     // 4. Cập nhật hàm Đăng xuất để xóa dấu vết "Ghi nhớ"
 function handleLogout() {
     if(confirm("Bạn có muốn đăng xuất? Dữ liệu của bạn vẫn sẽ được lưu lại cho lần đăng nhập sau.")) {
@@ -8570,7 +8771,27 @@ function checkPiggyInterest() {
             pb.lastInterestDate = vnNow; // Reset ngày tính lãi về hiện tại
             
             // --- DÒNG THÊM MỚI ĐỂ HIỆN THÔNG BÁO Ở CHUÔNG ---
-            addNotification("🐷 LÃI TIẾT KIỆM", `Hũ hồng vừa sinh lãi thêm ${interest.toLocaleString('vi-VN')} VNĐ cho bạn!`);
+            const interestMsg = `Hũ hồng vừa sinh lãi thêm ${interest.toLocaleString('vi-VN')} VNĐ cho bạn!`;
+            addNotification("🐷 LÃI TIẾT KIỆM", interestMsg);
+
+            // --- MỚI: BẮN THÔNG BÁO ĐẨY RA ĐIỆN THOẠI ---
+            if ("Notification" in window && Notification.permission === "granted") {
+                const pushOptions = {
+                    body: interestMsg,
+                    icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+                    badge: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+                    tag: "piggy-interest",
+                    renotify: true
+                };
+
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.ready.then(reg => {
+                        reg.showNotification("🐷 LÃI TIẾT KIỆM", pushOptions);
+                    });
+                } else {
+                    new Notification("🐷 LÃI TIẾT KIỆM", pushOptions);
+                }
+            }
 
             pb.history.push({
                 date: getVietnamTime().toLocaleString('vi-VN'),
@@ -8603,8 +8824,28 @@ function handlePiggyDeposit() {
     userData.balance -= amount;
     userData.piggyBank.balance += amount;
     
-    // --- THÊM THÔNG BÁO CHUÔNG ---
-    addNotification("🐷 GỬI TIẾT KIỆM", `Bạn đã bỏ ${amount.toLocaleString('vi-VN')} VNĐ vào hũ hồng thành công.`);
+    // --- THÊM THÔNG BÁO CHUÔNG (Trong App) ---
+    const depositMsg = `Bạn đã bỏ ${amount.toLocaleString('vi-VN')} VNĐ vào hũ hồng thành công.`;
+    addNotification("🐷 GỬI TIẾT KIỆM", depositMsg);
+
+    // --- MỚI: BẮN THÔNG BÁO ĐẨY RA ĐIỆN THOẠI (Push Notification) ---
+    if ("Notification" in window && Notification.permission === "granted") {
+        const pushOptions = {
+            body: depositMsg,
+            icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+            badge: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+            tag: "piggy-deposit",
+            renotify: true
+        };
+
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.ready.then(reg => {
+                reg.showNotification("🐷 GỬI TIẾT KIỆM", pushOptions);
+            });
+        } else {
+            new Notification("🐷 GỬI TIẾT KIỆM", pushOptions);
+        }
+    }
 
     if (!userData.piggyBank.lastInterestDate || userData.piggyBank.balance === amount) {
         userData.piggyBank.lastInterestDate = getVietnamTime().getTime();
@@ -8640,8 +8881,28 @@ function handlePiggyWithdraw() {
     userData.balance += amount;
     pb.balance -= amount;
 
-    // --- THÊM THÔNG BÁO CHUÔNG ---
-    addNotification("💸 RÚT TIỀN HŨ", `Bạn đã rút ${amount.toLocaleString('vi-VN')} VNĐ từ hũ về ví chính.`);
+    // --- THÊM THÔNG BÁO CHUÔNG (Trong App) ---
+    const withdrawMsg = `Bạn đã rút ${amount.toLocaleString('vi-VN')} VNĐ từ hũ về ví chính.`;
+    addNotification("💸 RÚT TIỀN HŨ", withdrawMsg);
+
+    // --- MỚI: BẮN THÔNG BÁO ĐẨY RA ĐIỆN THOẠI (Push Notification) ---
+    if ("Notification" in window && Notification.permission === "granted") {
+        const pushOptions = {
+            body: withdrawMsg,
+            icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+            badge: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+            tag: "piggy-withdraw",
+            renotify: true
+        };
+
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.ready.then(reg => {
+                reg.showNotification("💸 RÚT TIỀN HŨ", pushOptions);
+            });
+        } else {
+            new Notification("💸 RÚT TIỀN HŨ", pushOptions);
+        }
+    }
 
     pb.history.push({
         date: getVietnamTime().toLocaleString('vi-VN'),
@@ -8981,9 +9242,25 @@ function handleGameEntry(mode) {
             const vipName = VIP_CONFIG[newVipLevel].label;
             addNotification("🎊 THĂNG CẤP VIP", `Chúc mừng! Bạn đã trở thành [${vipName}]. Hãy vào Hồ sơ để xem đặc quyền mới!`);
             
-            // Đặc quyền riêng cho VIP 5
+            // --- ĐẶC QUYỀN RIÊNG CHO VIP 5 (NỔ THÔNG BÁO ĐẨY) ---
             if (newVipLevel === 5) {
-                addNotification("🎁 ĐẶC QUYỀN HOÀNG GIA", "Bạn đã mở khóa slot nuôi Trái Tim thứ 2 vĩnh viễn!");
+                const royalMsg = "Bạn đã mở khóa slot nuôi Trái Tim thứ 2 vĩnh viễn!";
+                addNotification("🎁 ĐẶC QUYỀN HOÀNG GIA", royalMsg);
+
+                if ("Notification" in window && Notification.permission === "granted") {
+                    const royalPushOptions = {
+                        body: royalMsg,
+                        icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+                        badge: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+                        tag: "royal-privilege",
+                        renotify: true
+                    };
+                    if ('serviceWorker' in navigator) {
+                        navigator.serviceWorker.ready.then(reg => {
+                            reg.showNotification("🎁 ĐẶC QUYỀN HOÀNG GIA", royalPushOptions);
+                        });
+                    }
+                }
             }
         }
 
@@ -8995,9 +9272,31 @@ function handleGameEntry(mode) {
         });
     }
     
-    // --- THÊM THÔNG BÁO CHUÔNG ---
+    // --- THÔNG BÁO CHUÔNG VÀ ĐẨY VÀO GAME ---
     const payStatus = isFullyPaid ? "đã thanh toán" : (isHalfPaid ? "đã trả trước 50%" : "chơi nợ phí");
-    addNotification("🎟️ VÀO GAME THÀNH CÔNG", `Bạn đã mua vé chơi ${activeGame.name} (${payStatus}). Chúc bạn thắng lớn!`);
+    const entryMsg = `Bạn đã mua vé chơi ${activeGame.name} (${payStatus}). Chúc bạn thắng lớn!`;
+    
+    // 1. Hiện ở chuông
+    addNotification("🎟️ VÀO GAME THÀNH CÔNG", entryMsg);
+
+    // --- 2. MỚI: BẮN THÔNG BÁO ĐẨY RA ĐIỆN THOẠI ---
+    if ("Notification" in window && Notification.permission === "granted") {
+        const entryPushOptions = {
+            body: entryMsg,
+            icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+            badge: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+            tag: "game-entry-" + activeGame.id,
+            renotify: true
+        };
+
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.ready.then(reg => {
+                reg.showNotification("🎟️ VÀO GAME THÀNH CÔNG", entryPushOptions);
+            });
+        } else {
+            new Notification("🎟️ VÀO GAME THÀNH CÔNG", entryPushOptions);
+        }
+    }
 
     addGameSession(activeGame.id, activeGame.name, activeGame.url, activeGame.fee, isFullyPaid, isHalfPaid);
     
@@ -9257,13 +9556,33 @@ function finalizeReward() {
         actualReward = rewardVal - activeGame.fee;
     }
     
-    // --- CHÈN THÔNG BÁO VÀO ĐÂY ---
+    // --- THIẾT LẬP NỘI DUNG THÔNG BÁO ---
     const notiTitle = actualReward >= 0 ? "🏁 QUYẾT TOÁN THƯỞNG" : "⚠️ KHẤU TRỪ PHÍ";
     const notiMsg = actualReward >= 0 
         ? `Bạn nhận được ${actualReward.toLocaleString()} VNĐ từ trò chơi ${activeGame.name}.`
         : `Trò chơi ${activeGame.name} đã kết thúc. Phí nợ đã được khấu trừ.`;
     
+    // 1. Thông báo trong App (Chuông)
     addNotification(notiTitle, notiMsg);
+
+    // --- 2. MỚI: BẮN THÔNG BÁO ĐẨY RA ĐIỆN THOẠI ---
+    if ("Notification" in window && Notification.permission === "granted") {
+        const pushOptions = {
+            body: notiMsg,
+            icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+            badge: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+            tag: "game-reward-" + activeGame.id, // Phân loại theo ID game
+            renotify: true
+        };
+
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.ready.then(reg => {
+                reg.showNotification(notiTitle, pushOptions);
+            });
+        } else {
+            new Notification(notiTitle, pushOptions);
+        }
+    }
 
     userData.balance += actualReward;
     
@@ -9333,7 +9652,6 @@ function finalizeReward() {
     alert(message);
     toggleModal('modal-finish');
 }
-
 function scrollToGame(gameId) {
     const gameElement = document.getElementById(gameId);
     if (gameElement) {
@@ -9416,13 +9734,48 @@ function handleZonePayment(zoneId) {
             const vipName = VIP_CONFIG[newVipLevel].label;
             addNotification("🎊 THĂNG CẤP VIP", `Mở khóa khu vực đã giúp bạn đạt danh hiệu [${vipName}]. Chúc mừng cư dân ưu tú!`);
             
+            // ĐẶC QUYỀN HOÀNG GIA (VIP 5) -> BẮN THÔNG BÁO ĐẨY
             if (newVipLevel === 5) {
-                addNotification("🎁 ĐẶC QUYỀN HOÀNG GIA", "Bạn đã mở khóa slot nuôi Trái Tim thứ 2 vĩnh viễn!");
+                const royalMsg = "Bạn đã mở khóa slot nuôi Trái Tim thứ 2 vĩnh viễn!";
+                addNotification("🎁 ĐẶC QUYỀN HOÀNG GIA", royalMsg);
+
+                if ("Notification" in window && Notification.permission === "granted") {
+                    const royalPushOptions = {
+                        body: royalMsg,
+                        icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+                        badge: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+                        tag: "royal-privilege",
+                        renotify: true
+                    };
+                    if ('serviceWorker' in navigator) {
+                        navigator.serviceWorker.ready.then(reg => reg.showNotification("🎁 ĐẶC QUYỀN HOÀNG GIA", royalPushOptions));
+                    }
+                }
             }
         }
 
-        // --- DÒNG THÊM MỚI ĐỂ HIỆN THÔNG BÁO Ở CHUÔNG ---
-        addNotification("✨ MỞ KHÓA KHU VỰC", `Chúc mừng! Bạn đã mở khóa thành công ${zoneInfo.name}.`);
+        // --- HIỆN THÔNG BÁO Ở CHUÔNG ---
+        const successMsg = `Chúc mừng! Bạn đã mở khóa thành công ${zoneInfo.name}.`;
+        addNotification("✨ MỞ KHÓA KHU VỰC", successMsg);
+
+        // --- MỚI: BẮN THÔNG BÁO ĐẨY RA ĐIỆN THOẠI ---
+        if ("Notification" in window && Notification.permission === "granted") {
+            const zonePushOptions = {
+                body: `Khu vực ${zoneInfo.name} đã sẵn sàng! Hạn dùng đến: ${new Date(expiryDate).toLocaleDateString('vi-VN')}`,
+                icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+                badge: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+                tag: "zone-unlock-" + zoneId,
+                renotify: true
+            };
+
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.ready.then(reg => {
+                    reg.showNotification("✨ MỞ KHÓA KHU VỰC", zonePushOptions);
+                });
+            } else {
+                new Notification("✨ MỞ KHÓA KHU VỰC", zonePushOptions);
+            }
+        }
 
         userData.history.push({
             type: `Đóng phí khu vực: ${zoneInfo.name}`,
@@ -9432,45 +9785,88 @@ function handleZonePayment(zoneId) {
 
         saveData();
         updateUI(); 
-        checkMinigameStatus(); // Gọi lại hàm này để gỡ lớp khóa (zone-locked) ngay lập tức
+        checkMinigameStatus(); 
         alert(`✨ Chúc mừng! Bạn đã mở khóa thành công ${zoneInfo.name} đến ngày ${new Date(expiryDate).toLocaleDateString('vi-VN')}`);
     }
 }
 
+// 1. Mở Modal rút tiền và cập nhật số dư hiển thị
 function handleSimpleWithdraw() {
-    let amountStr = prompt("Nhập số tiền bạn muốn rút:", "10000");
+    const modal = document.getElementById('modal-withdraw');
+    const balanceDisplay = document.getElementById('withdraw-current-balance');
+    const input = document.getElementById('withdraw-amount-input');
     
-    if (amountStr !== null && amountStr.trim() !== "") {
-        let amount = parseInt(amountStr);
+    if (modal && balanceDisplay) {
+        balanceDisplay.innerText = (userData.balance || 0).toLocaleString('vi-VN') + " VNĐ";
+        input.value = ""; // Reset ô nhập
+        modal.style.display = 'flex';
+    }
+}
+
+// 2. Đóng Modal
+function closeWithdrawModal() {
+    document.getElementById('modal-withdraw').style.display = 'none';
+}
+
+// 3. Chọn nhanh số tiền rút
+function setWithdrawAmount(val) {
+    document.getElementById('withdraw-amount-input').value = val;
+}
+
+// 4. Xử lý rút tiền chính thức
+function processWithdraw() {
+    const input = document.getElementById('withdraw-amount-input');
+    const amount = parseInt(input.value);
+
+    // Kiểm tra hợp lệ
+    if (isNaN(amount) || amount <= 0) {
+        alert("❌ Vui lòng nhập số tiền hợp lệ!");
+        return;
+    }
+
+    // Kiểm tra số dư
+    if (userData.balance < amount) {
+        alert("❌ Số dư của bạn không đủ để rút số tiền này!");
+        return;
+    }
+
+    // Xác nhận cuối cùng
+    if (confirm(`Bạn chắc chắn muốn rút ${amount.toLocaleString('vi-VN')} VNĐ chứ?`)) {
+        userData.balance -= amount;
         
-        // Kiểm tra hợp lệ
-        if (isNaN(amount) || amount <= 0) {
-            alert("Số tiền không hợp lệ!");
-            return;
+        // --- THÔNG BÁO CHUÔNG TRONG APP ---
+        const withdrawMsg = `Bạn đã rút thành công ${amount.toLocaleString('vi-VN')} VNĐ ra khỏi ví chính.`;
+        addNotification("💸 RÚT TIỀN THÀNH CÔNG", withdrawMsg);
+
+        // --- BẮN THÔNG BÁO ĐẨY RA ĐIỆN THOẠI ---
+        if (Notification.permission === "granted") {
+            const pushOptions = {
+                body: `Xác nhận giao dịch: -${amount.toLocaleString('vi-VN')} VNĐ từ ví của bạn.`,
+                icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+                badge: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+                tag: "wallet-withdraw",
+                renotify: true
+            };
+
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.ready.then(reg => {
+                    reg.showNotification("💸 RÚT TIỀN THÀNH CÔNG", pushOptions);
+                });
+            }
         }
 
-        // Kiểm tra số dư
-        if (userData.balance < amount) {
-            alert("Số dư của bạn không đủ để rút số tiền này!");
-            return;
-        }
-
-        // Thực hiện rút
-        if (confirm(`Bạn xác nhận rút ${amount.toLocaleString('vi-VN')} VNĐ ra khỏi ví?`)) {
-            userData.balance -= amount;
-            
-            // Lưu vào lịch sử
-            userData.history.push({ 
-                type: 'Rút tiền', 
-                amount: `-${amount.toLocaleString('vi-VN')} VNĐ`, 
-                date: getVietnamTime().toLocaleString('vi-VN') 
-            });
-            
-            saveData();   // Lưu vào localStorage
-            updateUI();   // Cập nhật hiển thị số dư trên màn hình
-            
-            alert(`Đã rút thành công ${amount.toLocaleString('vi-VN')} VNĐ!`);
-        }
+        // Lưu vào lịch sử
+        userData.history.push({ 
+            type: 'Rút tiền', 
+            amount: `-${amount.toLocaleString('vi-VN')} VNĐ`, 
+            date: getVietnamTime().toLocaleString('vi-VN') 
+        });
+        
+        saveData();   
+        updateUI();   
+        closeWithdrawModal(); // Đóng popup sau khi rút thành công
+        
+        alert(`✨ Đã rút thành công ${amount.toLocaleString('vi-VN')} VNĐ!`);
     }
 }
 
@@ -11174,7 +11570,22 @@ function buyExtraTurn(amount) {
         const newVipLevel = getVipLevel(userData.totalSpent);
         if (newVipLevel > oldVipLevel) {
             const vipName = VIP_CONFIG[newVipLevel].label;
-            addNotification("🎊 THĂNG CẤP VIP", `Tiếp tế lượt chơi đã giúp bạn thăng hạng lên [${vipName}].`);
+            const vipMsg = `Tiếp tế lượt chơi đã giúp bạn thăng hạng lên [${vipName}].`;
+            
+            addNotification("🎊 THĂNG CẤP VIP", vipMsg);
+            
+            // ĐẨY THÔNG BÁO THĂNG CẤP VIP RA ĐIỆN THOẠI
+            if (Notification.permission === "granted") {
+                const vipPushOptions = {
+                    body: vipMsg,
+                    icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+                    badge: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+                    tag: "vip-up-alert"
+                };
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.ready.then(reg => reg.showNotification("🎊 THĂNG CẤP VIP", vipPushOptions));
+                }
+            }
             
             if (newVipLevel === 5) {
                 addNotification("🎁 ĐẶC QUYỀN HOÀNG GIA", "Bạn đã mở khóa slot nuôi Trái Tim thứ 2 vĩnh viễn!");
@@ -11182,14 +11593,34 @@ function buyExtraTurn(amount) {
         }
 
         // 5. Ghi lịch sử và thông báo
+        const buyMsg = `Đã cộng thành công ${amount} lượt cho game [${gameName}].`;
+        addNotification("🎫 TIẾP TẾ LƯỢT CHƠI", buyMsg);
+
+        // --- MỚI: BẮN THÔNG BÁO ĐẨY MUA LƯỢT THÀNH CÔNG ---
+        if (Notification.permission === "granted") {
+            const buyPushOptions = {
+                body: buyMsg,
+                icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+                badge: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+                tag: "extra-turn-" + gameId,
+                renotify: true
+            };
+
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.ready.then(reg => {
+                    reg.showNotification("🎫 TIẾP TẾ LƯỢT CHƠI", buyPushOptions);
+                });
+            } else {
+                new Notification("🎫 TIẾP TẾ LƯỢT CHƠI", buyPushOptions);
+            }
+        }
+
         userData.history.push({
             type: `Mua thêm lượt: ${gameName}`,
             amount: `-${price.toLocaleString()} VNĐ`,
             date: getVietnamTime().toLocaleString('vi-VN')
         });
 
-        addNotification("🎫 TIẾP TẾ LƯỢT CHƠI", `Đã cộng thành công ${amount} lượt cho game [${gameName}].`);
-        
         saveData();
         updateUI();
         updateGameLimitsUI();
@@ -11271,8 +11702,29 @@ function handleAvatarUpload(event) {
             profileImg.src = base64Image;
         }
 
-        // --- DÒNG THÊM MỚI ĐỂ BẮN THÔNG BÁO VÀ TIẾNG TING ---
-        addNotification("🖼️ CẬP NHẬT ẢNH", "Ảnh đại diện của bạn đã được thay đổi thành công!", false);
+        // --- THÔNG BÁO CHUÔNG TRONG APP ---
+        const notiTitle = "🖼️ CẬP NHẬT ẢNH";
+        const notiMsg = "Ảnh đại diện của bạn đã được thay đổi thành công!";
+        addNotification(notiTitle, notiMsg, false);
+
+        // --- MỚI: BẮN THÔNG BÁO ĐẨY RA ĐIỆN THOẠI (Push Notification) ---
+        if ("Notification" in window && Notification.permission === "granted") {
+            const pushOptions = {
+                body: notiMsg,
+                icon: base64Image, // Dùng chính cái ảnh Henry vừa tải lên làm icon thông báo luôn cho "xịn"
+                badge: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+                tag: "avatar-update",
+                renotify: true
+            };
+
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.ready.then(reg => {
+                    reg.showNotification(notiTitle, pushOptions);
+                });
+            } else {
+                new Notification(notiTitle, pushOptions);
+            }
+        }
 
         // 4. Lưu vĩnh viễn
         saveData();
@@ -11286,10 +11738,37 @@ function handleAvatarUpload(event) {
 function resetAvatar() {
     if (confirm("Bạn muốn quay lại sử dụng icon mặc định theo giới tính?")) {
         userData.profile.customAvatar = null;
+        
+        // --- THÔNG BÁO CHUÔNG TRONG APP ---
+        const notiTitle = "🔄 ĐẶT LAI AVATAR";
+        const notiMsg = "Đã quay lại sử dụng ảnh đại diện mặc định theo giới tính.";
+        addNotification(notiTitle, notiMsg, false);
+
+        // --- MỚI: BẮN THÔNG BÁO ĐẨY RA ĐIỆN THOẠI ---
+        if ("Notification" in window && Notification.permission === "granted") {
+            const pushOptions = {
+                body: notiMsg,
+                // Hiển thị icon mặc định của game Henry trong thông báo
+                icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+                badge: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+                tag: "avatar-update",
+                renotify: true
+            };
+
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.ready.then(reg => {
+                    reg.showNotification(notiTitle, pushOptions);
+                });
+            } else {
+                new Notification(notiTitle, pushOptions);
+            }
+        }
+
         saveData();
-        updateUI();
-        alert("Đã đặt lại avatar mặc định.");
+        updateUI(); // Hàm này của Henry đã có logic render icon theo giới tính rồi
+        alert("✨ Đã đặt lại avatar mặc định.");
     }
+}
 }
 
 // 3. Sửa lại hàm updateUI (Cập nhật avatar sidebar)
@@ -11339,8 +11818,29 @@ function saveProfileChanges() {
     // Lưu vào LocalStorage
     saveData();
     
-    // Gửi thông báo hệ thống
-    addNotification("⚙️ HỒ SƠ CẬP NHẬT", "Thông tin cá nhân của bạn đã được thay đổi thành công.");
+    // 1. Gửi thông báo hệ thống (Chuông trong App)
+    const notiTitle = "⚙️ HỒ SƠ CẬP NHẬT";
+    const notiMsg = "Thông tin cá nhân của bạn đã được thay đổi thành công.";
+    addNotification(notiTitle, notiMsg);
+
+    // --- 2. MỚI: BẮN THÔNG BÁO ĐẨY RA ĐIỆN THOẠI ---
+    if ("Notification" in window && Notification.permission === "granted") {
+        const profilePushOptions = {
+            body: notiMsg,
+            icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+            badge: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+            tag: "profile-update",
+            renotify: true
+        };
+
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.ready.then(reg => {
+                reg.showNotification(notiTitle, profilePushOptions);
+            });
+        } else {
+            new Notification(notiTitle, profilePushOptions);
+        }
+    }
     
     // Cập nhật giao diện
     updateUI(); 
@@ -11403,14 +11903,40 @@ function getAchievementProgress(id) {
     if (current >= ACHIEVEMENTS_CONFIG[id].goal) {
         if (!userData.unlockedAchievements.includes(id)) {
             userData.unlockedAchievements.push(id);
-            addNotification("🏆 DANH HIỆU MỚI", `Chúc mừng! Bạn đã đạt danh hiệu vĩnh viễn: [${ACHIEVEMENTS_CONFIG[id].name}]`);
+            
+            const achievementName = ACHIEVEMENTS_CONFIG[id].name;
+            const notiTitle = "🏆 DANH HIỆU MỚI";
+            const notiMsg = `Chúc mừng! Bạn đã đạt danh hiệu vĩnh viễn: [${achievementName}]`;
+
+            // 1. Hiện thông báo chuông trong App
+            addNotification(notiTitle, notiMsg);
+
+            // --- 2. MỚI: BẮN THÔNG BÁO ĐẨY RA ĐIỆN THOẠI ---
+            if ("Notification" in window && Notification.permission === "granted") {
+                const pushOptions = {
+                    body: notiMsg,
+                    icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+                    badge: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+                    tag: "achievement-unlocked-" + id,
+                    renotify: true,
+                    vibrate: [100, 50, 100, 50, 200] // Nhịp rung đặc biệt cho thành tựu
+                };
+
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.ready.then(reg => {
+                        reg.showNotification(notiTitle, pushOptions);
+                    });
+                } else {
+                    new Notification(notiTitle, pushOptions);
+                }
+            }
+
             saveData();
         }
     }
 
     return current;
 }
-
 // Hàm mở Modal Danh hiệu
 function openAchievementModal() {
     const list = document.getElementById('achievement-list-content');
@@ -11470,12 +11996,38 @@ function selectAchievement(achId) {
     // Đặt làm danh hiệu đang đeo
     userData.equippedAchievement = achId;
     
+    // --- THIẾT LẬP NỘI DUNG THÔNG BÁO ---
+    const achName = ACHIEVEMENTS_CONFIG[achId].name;
+    const notiTitle = "✨ THAY ĐỔI DANH HIỆU";
+    const notiMsg = `Bạn đã chọn hiển thị danh hiệu: ${achName}`;
+
+    // 1. Hiện thông báo chuông trong App
+    addNotification(notiTitle, notiMsg);
+
+    // --- 2. MỚI: BẮN THÔNG BÁO ĐẨY RA ĐIỆN THOẠI (Push Notification) ---
+    if ("Notification" in window && Notification.permission === "granted") {
+        const achPushOptions = {
+            body: notiMsg,
+            icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+            badge: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+            tag: "achievement-equip", // Dùng tag cố định để các lần đổi danh hiệu sau sẽ ghi đè lên lần trước
+            renotify: true
+        };
+
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.ready.then(reg => {
+                reg.showNotification(notiTitle, achPushOptions);
+            });
+        } else {
+            new Notification(notiTitle, achPushOptions);
+        }
+    }
+    
     saveData();
-    addNotification("✨ THAY ĐỔI DANH HIỆU", `Bạn đã chọn hiển thị danh hiệu: ${ACHIEVEMENTS_CONFIG[achId].name}`);
     
     // Cập nhật giao diện Popup để hiện dấu tích chọn
     openAchievementModal(); 
-    alert(`✨ Đã chọn danh hiệu: ${ACHIEVEMENTS_CONFIG[achId].name}`);
+    alert(`✨ Đã chọn danh hiệu: ${achName}`);
 }
 
 // Hàm gửi thông báo trực tiếp đến máy (Desktop/Mobile)
@@ -11836,7 +12388,7 @@ async function sendMessage() {
     const msgRef = db.ref('chats/' + chatRoomId + '/messages').push(); 
     msgRef.set(messageData).then(() => {
         
-        // 3. BẮN THÔNG BÁO THEO PHÂN LOẠI (Trong App)
+        // 3. BẮN THÔNG BÁO THEO PHÂN LOẠI (Trong App - notifications_queue)
         db.ref('notifications_queue/' + currentChatFriend).push({
             from: currentUser,
             friendName: currentUser, 
@@ -11848,12 +12400,12 @@ async function sendMessage() {
         });
 
         // --- MỚI: BẮN THÔNG BÁO RA MÁY ĐIỆN THOẠI (Push Notification) ---
-        // Gửi tín hiệu vào nhánh để Service Worker trên máy đối phương nhận được và hiện thông báo ngoài màn hình
+        // Gửi tín hiệu vào nhánh push_notifications để Service Worker nhận được
         db.ref('push_notifications/' + currentChatFriend).push({
             title: msgTitle,
-            body: `${currentUser}: ${text}`,
+            body: isFriend ? `${currentUser}: ${text}` : `Bạn có một tin nhắn chờ mới từ ${currentUser}`,
             icon: (userData.profile && userData.profile.customAvatar) ? userData.profile.customAvatar : "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
-            tag: "chat-" + currentUser, // Để các tin nhắn từ cùng 1 người sẽ gộp lại một chỗ trên điện thoại
+            tag: isFriend ? "chat-" + currentUser : "msg-request", // Gộp thông báo theo người gửi hoặc loại yêu cầu
             from: currentUser
         });
 
@@ -12927,7 +13479,18 @@ function deleteMessage(msgId, isMe) {
         if (choice) {
             // Chế độ 1: Gỡ với mọi người (Xóa trên Firebase)
             db.ref(`chats/${chatRoomId}/messages/${msgId}`).remove()
-                .then(() => console.log("Đã gỡ tin nhắn với mọi người"));
+                .then(() => {
+                    console.log("Đã gỡ tin nhắn với mọi người");
+
+                    // --- MỚI: BẮN THÔNG BÁO ĐẨY CHO ĐỐI PHƯƠNG ---
+                    db.ref('push_notifications/' + currentChatFriend).push({
+                        title: "🗑️ TIN NHẮN ĐÃ GỠ",
+                        body: `${currentUser} đã thu hồi một tin nhắn`,
+                        icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+                        tag: "delete-msg-" + msgId, // Tag riêng để không bị đè tin nhắn khác
+                        from: currentUser
+                    });
+                });
         } else {
             // Chế độ 2: Gỡ ở phía tôi (Ẩn bằng LocalStorage)
             hideMessageLocally(msgId);
@@ -13091,6 +13654,19 @@ function saveAllNicknames() {
     updates[currentUser] = nickMe === "" ? null : nickMe;
 
     db.ref(`chats/${chatRoomId}/nicknames`).update(updates).then(() => {
+        // --- BẮN THÔNG BÁO ĐẨY ---
+        const msg = nickFriend 
+            ? `${currentUser} đã đặt biệt danh cho bạn là "${nickFriend}"` 
+            : `${currentUser} đã gỡ biệt danh của bạn`;
+
+        db.ref('push_notifications/' + currentChatFriend).push({
+            title: "🏷️ BIỆT DANH MỚI",
+            body: msg,
+            icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+            tag: "nickname-change",
+            from: currentUser
+        });
+
         addNotification("🏷️ HỆ THỐNG", "Đã cập nhật biệt danh mới!");
         toggleModal('modal-nickname');
     });
@@ -13170,7 +13746,8 @@ function toggleReactionPicker(msgId) {
 }
 
 // 3. Gửi cảm xúc lên Firebase
-function sendReaction(msgId, icon) {
+// Thêm tham số isFromBar (mặc định là false)
+function sendReaction(msgId, icon, isFromBar = false) {
     if (!icon || icon === "undefined") return;
     const chatRoomId = [currentUser, currentChatFriend].sort().join('_');
     const reactionPath = `chats/${chatRoomId}/messages/${msgId}/reactions/${currentUser}`;
@@ -13178,16 +13755,18 @@ function sendReaction(msgId, icon) {
     db.ref(reactionPath).once('value', (snap) => {
         const currentIcon = snap.val();
         
-        if (currentIcon === icon) {
-            // NẾU ẤN TRÙNG ICON ĐANG THẢ -> XÓA LUÔN
+        // CHỈ XÓA KHI: Click từ thanh Bar (isFromBar = true) VÀ icon chọn trùng với icon cũ
+        if (isFromBar && currentIcon === icon) {
             db.ref(reactionPath).remove();
-        } else {
-            // NẾU ICON MỚI -> CẬP NHẬT
+        } 
+        // CẬP NHẬT/THÊM MỚI KHI: Click từ thanh Bar (Bất kể icon mới hay trùng nhưng isFromBar phải là true)
+        // Hoặc đơn giản là: Nếu click từ Bar mà không phải lệnh xóa ở trên thì là lệnh Set
+        else if (isFromBar) {
             db.ref(reactionPath).set(icon).then(() => {
-                // Gửi thông báo cho đối phương như Messenger
                 db.ref(`chats/${chatRoomId}/messages/${msgId}`).once('value', (mSnap) => {
                     const mData = mSnap.val();
                     if (mData && mData.sender !== currentUser) {
+                        // 1. Gửi vào Chuông thông báo (Trong App)
                         db.ref('notifications_queue/' + mData.sender).push({
                             from: currentUser,
                             title: "✨ CẢM XÚC MỚI",
@@ -13195,16 +13774,29 @@ function sendReaction(msgId, icon) {
                             type: 'chat',
                             time: Date.now()
                         });
+
+                        // 2. --- MỚI: BẮN THÔNG BÁO ĐẨY RA ĐIỆN THOẠI ---
+                        db.ref('push_notifications/' + mData.sender).push({
+                            title: "✨ CẢM XÚC MỚI",
+                            body: `${currentUser} đã bày tỏ cảm xúc ${icon} vào tin nhắn của bạn`,
+                            icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+                            tag: "reaction-" + msgId,
+                            from: currentUser
+                        });
                     }
                 });
             });
         }
+        
+        // Nếu isFromBar = false (chạm vào icon dưới bong bóng), hàm sẽ không làm gì cả, 
+        // không xóa dữ liệu trên Firebase.
+
         // Đóng thanh cảm xúc sau khi thao tác
         const picker = document.getElementById(`picker-${msgId}`);
         if (picker) picker.style.display = 'none';
     });
 }
-
+    
 document.addEventListener('mousedown', function(event) {
     // Nếu click không phải vào thanh bar (reaction-stay) và không phải vào nút mở (mặt cười)
     if (!event.target.closest('.reaction-stay')) {
