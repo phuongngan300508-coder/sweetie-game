@@ -4966,6 +4966,17 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
 .emoji-btn {
     transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
+
+/* Thêm vào file CSS của Henry */
+.noti-item {
+    cursor: pointer;
+    touch-action: manipulation; /* Giúp iPhone nhận diện chạm nhanh hơn */
+    -webkit-tap-highlight-color: rgba(0,0,0,0); /* Xóa khung xanh xấu xí khi chạm trên iPhone */
+}
+
+.noti-interactive {
+    pointer-events: auto !important;
+}
 </style>
 </head>
 <body>
@@ -9935,10 +9946,13 @@ function renderNotis() {
             actionLabel = "CHẠM ĐỂ PHẢN HỒI";
         }
 
+        // SỬA ĐỔI: Thêm role="button", tabindex="0" và style cursor để iPhone nhận diện click
         return `
             <div class="noti-item ${n.unread ? 'unread' : ''} ${interactiveClass}" 
                  ${clickAttr} 
-                 style="${hasExtra ? 'cursor: pointer; border-left: 4px solid #ff1493; background: #fffaff;' : ''}">
+                 role="button" 
+                 tabindex="0"
+                 style="${hasExtra ? 'cursor: pointer; border-left: 4px solid #ff1493; background: #fffaff; -webkit-tap-highlight-color: transparent; touch-action: manipulation;' : ''}">
                 <h4 style="margin:0; color:#d63384; font-size:0.9em;">${n.title}</h4>
                 <p style="margin:5px 0; font-size:0.8em; color:#555;">${n.message}</p>
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px;">
@@ -9949,7 +9963,6 @@ function renderNotis() {
         `;
     }).join('');
 }
-
 // Hàm xử lý khi nhấn vào thông báo
 function handleNotiClick(index) {
     // 1. Lấy thông báo từ mảng dữ liệu của Henry
