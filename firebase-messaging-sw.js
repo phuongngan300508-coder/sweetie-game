@@ -1,4 +1,3 @@
-// firebase-messaging-sw.js
 importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-messaging-compat.js');
 
@@ -11,41 +10,37 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-// Đây là hàm quan trọng nhất: Xử lý khi có tin nhắn từ Firebase gửi về lúc web ĐANG TẮT
+// QUAN TRỌNG: Cấu hình hiển thị khi web đóng
 messaging.onBackgroundMessage((payload) => {
-    console.log('Đã nhận thông báo ngầm:', payload);
-    const notificationTitle = payload.notification.title;
+    console.log('[sw.js] Nhận tin nhắn ngầm:', payload);
+
+    // Xử lý dữ liệu linh hoạt (vì Firebase Console gửi payload khác với API tự viết)
+    const notificationTitle = payload.notification?.title || payload.data?.title || "SWEETIE GAME WORLD";
     const notificationOptions = {
-        body: payload.notification.body,
-        icon: payload.notification.icon || "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
-        // Giữ nguyên phần data của Henry để chứa link/id game
-        data: payload.data 
+        body: payload.notification?.body || payload.data?.body || "Bạn có tin nhắn mới nè!",
+        icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+        badge: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+        data: payload.data, // Chứa các thông tin thêm như link, id
     };
 
-    self.registration.showNotification(notificationTitle, notificationOptions);
+    // Lệnh này bắt buộc phải có return để đánh thức thiết bị
+    return self.registration.showNotification(notificationTitle, notificationOptions);
 });
 
-// --- PHẦN BỔ SUNG ĐỂ CLICK VÀO LÀ MỞ WEB ---
+// Xử lý click vào thông báo
 self.addEventListener('notificationclick', function(event) {
-    event.notification.close(); // Đóng thông báo khi click
-
-    // Link web của Henry
+    event.notification.close();
     const urlToOpen = 'https://phuongngan300508-coder.github.io/sweetie-game/';
 
     event.waitUntil(
-        clients.matchAll({ type: 'window', includeUncontrolled: true })
-            .then(function(windowClients) {
-                // Nếu game đang mở ở tab nào đó thì nhảy vào tab đó (Focus)
-                for (var i = 0; i < windowClients.length; i++) {
-                    var client = windowClients[i];
-                    if (client.url === urlToOpen && 'focus' in client) {
-                        return client.focus();
-                    }
+        clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(windowClients) {
+            for (var i = 0; i < windowClients.length; i++) {
+                var client = windowClients[i];
+                if (client.url === urlToOpen && 'focus' in client) {
+                    return client.focus();
                 }
-                // Nếu chưa mở thì mở tab mới
-                if (clients.openWindow) {
-                    return clients.openWindow(urlToOpen);
-                }
-            })
+            }
+            if (clients.openWindow) return clients.openWindow(urlToOpen);
+        })
     );
 });
