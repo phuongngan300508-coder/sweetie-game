@@ -4977,50 +4977,6 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
 .noti-interactive {
     pointer-events: auto !important;
 }
-
-    /* Giao diện Popup Nạp/Rút của Henry */
-.modal-overlay {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(255, 192, 203, 0.5); backdrop-filter: blur(5px);
-    display: flex; align-items: center; justify-content: center; z-index: 10002;
-}
-.modal-content {
-    background: white; width: 90%; max-width: 350px; border-radius: 30px;
-    box-shadow: 0 15px 35px rgba(255, 20, 147, 0.2); overflow: hidden;
-}
-.modal-header-pink {
-    background: linear-gradient(135deg, #ff1493, #ff69b4); color: white;
-    padding: 20px; text-align: center;
-}
-.modal-header-pink i { font-size: 2em; margin-bottom: 10px; }
-.modal-header-pink h3 { margin: 0; letter-spacing: 1px; }
-
-.modal-body-pink { padding: 25px; text-align: center; }
-.modal-body-pink p { font-size: 0.85em; color: #888; margin-bottom: 20px; }
-
-.input-group-pink {
-    display: flex; align-items: center; background: #fff0f5;
-    border-radius: 15px; padding: 10px 15px; border: 2px solid #ffc0cb;
-}
-.input-group-pink input {
-    border: none; background: transparent; width: 100%; outline: none;
-    font-size: 1.2em; font-weight: bold; color: #ff1493; text-align: center;
-}
-.quick-select { display: flex; gap: 8px; justify-content: center; margin-top: 15px; }
-.quick-select button {
-    background: white; border: 1px solid #ffc0cb; padding: 5px 10px;
-    border-radius: 10px; font-size: 0.7em; color: #ff69b4; font-weight: bold;
-    cursor: pointer; transition: 0.3s;
-}
-.quick-select button:hover { background: #ff69b4; color: white; }
-
-.modal-footer-pink { display: flex; padding: 0 20px 20px 20px; gap: 10px; }
-.btn-cancel { flex: 1; border: none; padding: 12px; border-radius: 50px; color: #888; cursor: pointer; }
-.btn-confirm { 
-    flex: 2; background: #ff1493; border: none; padding: 12px; 
-    border-radius: 50px; color: white; font-weight: bold; cursor: pointer;
-    box-shadow: 0 5px 15px rgba(255, 20, 147, 0.3);
-}
 </style>
 </head>
 <body>
@@ -6956,61 +6912,6 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
         </div>
     </div>
 </div>
-
-    <div id="modal-deposit" class="modal-overlay" style="display:none;">
-    <div class="modal-content animate__animated animate__zoomIn">
-        <div class="modal-header-pink">
-            <i class="fas fa-wallet"></i>
-            <h3>NẠP TIỀN VÀO VÍ</h3>
-        </div>
-        <div class="modal-body-pink">
-            <p>Nhập số tiền bạn muốn nạp vào Sweetie Wallet</p>
-            <div class="input-group-pink">
-                <input type="number" id="deposit-amount-input" placeholder="Ví dụ: 50000" min="1000">
-                <span>VNĐ</span>
-            </div>
-            <div class="quick-select">
-                <button onclick="setAmount(20000)">20K</button>
-                <button onclick="setAmount(50000)">50K</button>
-                <button onclick="setAmount(100000)">100K</button>
-                <button onclick="setAmount(200000)">200K</button>
-            </div>
-        </div>
-        <div class="modal-footer-pink">
-            <button class="btn-cancel" onclick="closeDepositModal()">HỦY</button>
-            <button class="btn-confirm" onclick="processDeposit()">XÁC NHẬN NẠP</button>
-        </div>
-    </div>
-</div>
-
-    <div id="modal-withdraw" class="modal-overlay" style="display:none;">
-    <div class="modal-content animate__animated animate__fadeInUp">
-        <div class="modal-header-pink" style="background: linear-gradient(135deg, #ff69b4, #da70d6) !important;">
-            <i class="fas fa-hand-holding-usd"></i>
-            <h3>RÚT TIỀN KHỎI VÍ</h3>
-        </div>
-        <div class="modal-body-pink">
-            <p>Số dư hiện tại: <b id="withdraw-current-balance" style="color:#ff1493;">0 VNĐ</b></p>
-            <p style="font-size: 0.75em; margin-top: -15px;">Nhập số tiền bạn muốn rút về túi</p>
-            
-            <div class="input-group-pink" style="border-color: #da70d6 !important;">
-                <input type="number" id="withdraw-amount-input" placeholder="Ví dụ: 10000" min="1000">
-                <span>VNĐ</span>
-            </div>
-            
-            <div class="quick-select">
-                <button onclick="setWithdrawAmount(10000)">10K</button>
-                <button onclick="setWithdrawAmount(50000)">50K</button>
-                <button onclick="setWithdrawAmount(100000)">100K</button>
-                <button onclick="setWithdrawAmount(userData.balance)">RÚT HẾT</button>
-            </div>
-        </div>
-        <div class="modal-footer-pink">
-            <button class="btn-cancel" onclick="closeWithdrawModal()">ĐÓNG</button>
-            <button class="btn-confirm" onclick="processWithdraw()" style="background: #da70d6 !important;">XÁC NHẬN RÚT</button>
-        </div>
-    </div>
-</div>
 <script>
   let replyingTo = null; // Lưu tin nhắn đang được trả lời {id, text, sender}
   // Biến cờ để đảm bảo mỗi máy chỉ "nghe" Firebase đúng 1 lần duy nhất
@@ -7861,68 +7762,53 @@ function getOrCreateLimitBadge(card) {
     }
     return limitLabel;
 }
-// Nạp tiền
-// Mở Modal nạp tiền thay vì dùng prompt
 function toggleDepositModal() {
-    document.getElementById('modal-deposit').style.display = 'flex';
-    document.getElementById('deposit-amount-input').value = ""; // Reset input
-}
-
-// Đóng Modal
-function closeDepositModal() {
-    document.getElementById('modal-deposit').style.display = 'none';
-}
-
-// Hàm chọn nhanh số tiền
-function setAmount(val) {
-    const input = document.getElementById('deposit-amount-input');
-    if(input) input.value = val;
-}
-
-// Hàm xử lý nạp chính thức
-function processDeposit() {
-    const input = document.getElementById('deposit-amount-input');
-    const amount = parseInt(input.value);
-
-    if (!isNaN(amount) && amount >= 1000) {
-        // Cập nhật số dư
-        userData.balance = (Number(userData.balance) || 0) + amount;
+    let amountStr = prompt("Nhập số tiền muốn nạp:", "50000");
+    
+    // Kiểm tra nếu người dùng không hủy bỏ và nhập số hợp lệ
+    if (amountStr !== null && amountStr.trim() !== "") {
+        let amount = parseInt(amountStr);
         
-        // 1. Thông báo trong App
-        addNotification("💰 NẠP TIỀN THÀNH CÔNG", `Bạn vừa nạp thêm ${amount.toLocaleString('vi-VN')} VNĐ vào ví.`);
+        if (!isNaN(amount) && amount > 0) {
+            // Đảm bảo userData.balance là số trước khi cộng
+            userData.balance = (Number(userData.balance) || 0) + amount;
+            
+            // 1. HIỆN THÔNG BÁO Ở CHUÔNG (Trong App)
+            addNotification("💰 NẠP TIỀN THÀNH CÔNG", `Bạn vừa nạp thêm ${amount.toLocaleString('vi-VN')} VNĐ vào ví.`);
+            
+            // --- 2. MỚI: BẮN THÔNG BÁO ĐẨY RA MÁY (Push Notification) ---
+            if (Notification.permission === "granted") {
+                const pushOptions = {
+                    body: `Giao dịch thành công! +${amount.toLocaleString('vi-VN')} VNĐ vào ví của bạn.`,
+                    icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+                    badge: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+                    tag: "deposit-success", // Để không bị hiện lặp lại quá nhiều tin nhắn nạp tiền
+                    renotify: true
+                };
 
-        // 2. Bắn thông báo đẩy ra máy (Push Notification)
-        if (Notification.permission === "granted") {
-            const pushOptions = {
-                body: `Giao dịch thành công! +${amount.toLocaleString('vi-VN')} VNĐ.`,
-                icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
-                badge: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
-                tag: "deposit-success",
-                renotify: true
-            };
-
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.ready.then(reg => {
-                    reg.showNotification("💰 NẠP TIỀN THÀNH CÔNG", pushOptions);
-                });
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.ready.then(reg => {
+                        reg.showNotification("💰 NẠP TIỀN THÀNH CÔNG", pushOptions);
+                    });
+                } else {
+                    new Notification("💰 NẠP TIỀN THÀNH CÔNG", pushOptions);
+                }
             }
+
+            // Thêm vào lịch sử
+            userData.history.push({ 
+                type: 'Nạp tiền', 
+                amount: `+${amount.toLocaleString('vi-VN')} VNĐ`, 
+                date: getVietnamTime().toLocaleString('vi-VN') 
+            });
+            
+            saveData();   // Lưu vào localStorage
+            updateUI();   // CẬP NHẬT HIỂN THỊ LÊN MÀN HÌNH (Quan trọng)
+            
+            alert(`Đã nạp thành công ${amount.toLocaleString('vi-VN')} VNĐ vào tài khoản!`);
+        } else {
+            alert("Số tiền không hợp lệ. Vui lòng nhập số nguyên dương!");
         }
-
-        // 3. Thêm vào lịch sử
-        userData.history.push({ 
-            type: 'Nạp tiền', 
-            amount: `+${amount.toLocaleString('vi-VN')} VNĐ`, 
-            date: new Date().toLocaleString('vi-VN') 
-        });
-
-        saveData();   // Lưu dữ liệu
-        updateUI();   // Cập nhật màn hình
-        closeDepositModal(); // Đóng popup
-        
-        // Hiệu ứng ăn mừng nhẹ
-        alert(`🎉 Chúc mừng! Đã nạp thành công ${amount.toLocaleString('vi-VN')} VNĐ.`);
-    } else {
-        alert("Vui lòng nhập số tiền hợp lệ (tối thiểu 1.000 VNĐ)!");
     }
 }
     function toggleHistoryModal() {
@@ -9786,87 +9672,65 @@ function handleZonePayment(zoneId) {
     }
 }
 
-// 1. Mở Modal rút tiền và cập nhật số dư hiển thị
 function handleSimpleWithdraw() {
-    const modal = document.getElementById('modal-withdraw');
-    const balanceDisplay = document.getElementById('withdraw-current-balance');
-    const input = document.getElementById('withdraw-amount-input');
+    let amountStr = prompt("Nhập số tiền bạn muốn rút:", "10000");
     
-    if (modal && balanceDisplay) {
-        balanceDisplay.innerText = (userData.balance || 0).toLocaleString('vi-VN') + " VNĐ";
-        input.value = ""; // Reset ô nhập
-        modal.style.display = 'flex';
-    }
-}
-
-// 2. Đóng Modal
-function closeWithdrawModal() {
-    document.getElementById('modal-withdraw').style.display = 'none';
-}
-
-// 3. Chọn nhanh số tiền rút
-function setWithdrawAmount(val) {
-    const input = document.getElementById('withdraw-amount-input');
-    if(input) input.value = val;
-}
-
-// 4. Xử lý rút tiền chính thức
-function processWithdraw() {
-    const input = document.getElementById('withdraw-amount-input');
-    const amount = parseInt(input.value);
-
-    // Kiểm tra hợp lệ
-    if (isNaN(amount) || amount <= 0) {
-        alert("❌ Vui lòng nhập số tiền hợp lệ!");
-        return;
-    }
-
-    // Kiểm tra số dư
-    if (userData.balance < amount) {
-        alert("❌ Số dư của bạn không đủ để rút số tiền này!");
-        return;
-    }
-
-    // Xác nhận cuối cùng
-    if (confirm(`Bạn chắc chắn muốn rút ${amount.toLocaleString('vi-VN')} VNĐ chứ?`)) {
-        userData.balance -= amount;
+    if (amountStr !== null && amountStr.trim() !== "") {
+        let amount = parseInt(amountStr);
         
-        // --- THÔNG BÁO CHUÔNG TRONG APP ---
-        const withdrawMsg = `Bạn đã rút thành công ${amount.toLocaleString('vi-VN')} VNĐ ra khỏi ví chính.`;
-        addNotification("💸 RÚT TIỀN THÀNH CÔNG", withdrawMsg);
-
-        // --- BẮN THÔNG BÁO ĐẨY RA ĐIỆN THOẠI ---
-        if (Notification.permission === "granted") {
-            const pushOptions = {
-                body: `Xác nhận giao dịch: -${amount.toLocaleString('vi-VN')} VNĐ từ ví của bạn.`,
-                icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
-                badge: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
-                tag: "wallet-withdraw",
-                renotify: true
-            };
-
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.ready.then(reg => {
-                    reg.showNotification("💸 RÚT TIỀN THÀNH CÔNG", pushOptions);
-                });
-            }
+        // Kiểm tra hợp lệ
+        if (isNaN(amount) || amount <= 0) {
+            alert("Số tiền không hợp lệ!");
+            return;
         }
 
-        // Lưu vào lịch sử
-        userData.history.push({ 
-            type: 'Rút tiền', 
-            amount: `-${amount.toLocaleString('vi-VN')} VNĐ`, 
-            date: getVietnamTime().toLocaleString('vi-VN') 
-        });
-        
-        saveData();   
-        updateUI();   
-        closeWithdrawModal(); // Đóng popup sau khi rút thành công
-        
-        alert(`✨ Đã rút thành công ${amount.toLocaleString('vi-VN')} VNĐ!`);
+        // Kiểm tra số dư
+        if (userData.balance < amount) {
+            alert("Số dư của bạn không đủ để rút số tiền này!");
+            return;
+        }
+
+        // Thực hiện rút
+        if (confirm(`Bạn xác nhận rút ${amount.toLocaleString('vi-VN')} VNĐ ra khỏi ví?`)) {
+            userData.balance -= amount;
+            
+            // 1. Thông báo chuông trong App
+            const withdrawMsg = `Bạn đã rút thành công ${amount.toLocaleString('vi-VN')} VNĐ ra khỏi ví chính.`;
+            addNotification("💸 RÚT TIỀN THÀNH CÔNG", withdrawMsg);
+
+            // --- 2. MỚI: BẮN THÔNG BÁO ĐẨY RA ĐIỆN THOẠI (Push Notification) ---
+            if (Notification.permission === "granted") {
+                const pushOptions = {
+                    body: `Xác nhận giao dịch: -${amount.toLocaleString('vi-VN')} VNĐ từ ví của bạn.`,
+                    icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+                    badge: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+                    tag: "wallet-withdraw",
+                    renotify: true
+                };
+
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.ready.then(reg => {
+                        reg.showNotification("💸 RÚT TIỀN THÀNH CÔNG", pushOptions);
+                    });
+                } else {
+                    new Notification("💸 RÚT TIỀN THÀNH CÔNG", pushOptions);
+                }
+            }
+
+            // Lưu vào lịch sử
+            userData.history.push({ 
+                type: 'Rút tiền', 
+                amount: `-${amount.toLocaleString('vi-VN')} VNĐ`, 
+                date: getVietnamTime().toLocaleString('vi-VN') 
+            });
+            
+            saveData();   // Lưu vào localStorage
+            updateUI();   // Cập nhật hiển thị số dư trên màn hình
+            
+            alert(`Đã rút thành công ${amount.toLocaleString('vi-VN')} VNĐ!`);
+        }
     }
 }
-
 // Hàm này để tự động tạo danh sách khu vực trong form đăng nhập
     function renderRestoreZones() {
     const container = document.getElementById('restore-zones-list');
