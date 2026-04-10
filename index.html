@@ -8542,6 +8542,8 @@ function handleLogout() {
 
    function toggleModal(id) {
     const modal = document.getElementById(id);
+    if (!modal) return; // Bảo vệ nếu không tìm thấy ID
+
     if (modal.style.display === 'flex') {
         modal.style.display = 'none';
     } else {
@@ -8578,145 +8580,138 @@ function handleLogout() {
         // 2. Tính toán thanh tiến độ
         let progressPercent = 100;
         let progressText = "Đã đạt cấp bậc HOÀNG GIA tối thượng 👑";
-        if (vipLvl < 5) {
+        if (vipLvl < 5 && nextCfg) {
             const range = nextCfg.min - cfg.min;
             const currentProgress = totalSpent - cfg.min;
             progressPercent = Math.min(100, (currentProgress / range) * 100);
             progressText = `Chi tiêu thêm <b>${(nextCfg.min - totalSpent).toLocaleString()}đ</b> để lên ${nextCfg.label}`;
         }
 
+        // --- LOGIC HIỂN THỊ 1 DANH HIỆU DUY NHẤT ĐANG ĐEO (BẢN FIX) ---
+        let badgeHtml = "";
+        const myEquippedId = userData.equippedAchievement ? String(userData.equippedAchievement) : null;
 
-       // --- LOGIC HIỂN THỊ 1 DANH HIỆU DUY NHẤT ĐANG ĐEO (BẢN FIX) ---
-let badgeHtml = "";
-// Ép kiểu ID về String để chắc chắn khớp với ACHIEVEMENTS_CONFIG
-const myEquippedId = userData.equippedAchievement ? String(userData.equippedAchievement) : null;
+        if (myEquippedId && ACHIEVEMENTS_CONFIG[myEquippedId]) {
+            const ach = ACHIEVEMENTS_CONFIG[myEquippedId];
+            badgeHtml = `
+                <div style="margin-top: 8px; display: flex; justify-content: center;">
+                    <span class="main-achievement-badge" 
+                          style="background: linear-gradient(135deg, #ff1493, #ff69b4); 
+                                 color: white; padding: 4px 15px; border-radius: 50px; 
+                                 font-size: 0.85em; font-weight: 800; border: 2px solid #fff;
+                                 box-shadow: 0 4px 8px rgba(255, 20, 147, 0.3);
+                                 animation: bounceIn 0.5s;">
+                        ${ach.icon} ${ach.name}
+                    </span>
+                </div>`;
+        } else {
+            badgeHtml = `
+                <div style="margin-top: 8px; cursor: pointer;" onclick="openAchievementModal()">
+                    <span style="font-size: 0.7em; color: #ff69b4; text-decoration: underline;">
+                        <i class="fas fa-plus-circle"></i> Chọn danh hiệu hiển thị
+                    </span>
+                </div>`;
+        }
 
-if (myEquippedId && ACHIEVEMENTS_CONFIG[myEquippedId]) {
-    const ach = ACHIEVEMENTS_CONFIG[myEquippedId];
-    badgeHtml = `
-        <div style="margin-top: 8px; display: flex; justify-content: center;">
-            <span class="main-achievement-badge" 
-                  style="background: linear-gradient(135deg, #ff1493, #ff69b4); 
-                         color: white; padding: 4px 15px; border-radius: 50px; 
-                         font-size: 0.85em; font-weight: 800; border: 2px solid #fff;
-                         box-shadow: 0 4px 8px rgba(255, 20, 147, 0.3);
-                         animation: bounceIn 0.5s;">
-                ${ach.icon} ${ach.name}
-            </span>
-        </div>`;
-} else {
-    badgeHtml = `
-        <div style="margin-top: 8px; cursor: pointer;" onclick="openAchievementModal()">
-            <span style="font-size: 0.7em; color: #ff69b4; text-decoration: underline;">
-                <i class="fas fa-plus-circle"></i> Chọn danh hiệu hiển thị
-            </span>
-        </div>`;
-}
+        let streakHtml = (typeof renderStreakSystem === 'function') ? renderStreakSystem() : "";
 
-        let streakHtml = renderStreakSystem();
+        // --- CẬP NHẬT INNERHTML ---
+        profileArea.innerHTML = `
+            <div style="position: relative; width: fit-content; margin: 0 auto;">
+                <button onclick="openScanChoiceModal()" style="position: absolute; top: 0; left: -15px; background: white; color: #ff1493; border: 2px solid #ff1493; border-radius: 50%; width: 32px; height: 32px; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.1); z-index: 999; display: flex; align-items: center; justify-content: center;">
+                    <i class="fas fa-qrcode" style="pointer-events: none;"></i>
+                </button>
 
-        // --- CẬP NHẬT INNERHTML (GIỮ NGUYÊN 100% NỘI DUNG, THÊM NÚT QUÉT GỌN GÀNG) ---
-profileArea.innerHTML = `
-    <div style="position: relative; width: fit-content; margin: 0 auto;">
-        
-<button onclick="openScanChoiceModal()" style="position: absolute; top: 0; left: -15px; background: white; color: #ff1493; border: 2px solid #ff1493; border-radius: 50%; width: 32px; height: 32px; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.1); z-index: 999; display: flex; align-items: center; justify-content: center;">
-    <i class="fas fa-qrcode" style="pointer-events: none;"></i>
-</button>
+                <div class="profile-avatar ${avatarBorderClass}" style="border-color: ${isVip5 ? 'transparent' : cfg.color}; position: relative; display: flex; align-items: center; justify-content: center; background: white;">
+                    ${displayAvatar}
+                    <div class="vip-tag-small ${vipClass}" style="background: ${isVip5 ? 'none' : cfg.color}; position: absolute; bottom: -5px; right: -5px;">
+                        VIP ${vipLvl}
+                    </div>
+                </div>
 
-        <div class="profile-avatar ${avatarBorderClass}" style="border-color: ${isVip5 ? 'transparent' : cfg.color}; position: relative; display: flex; align-items: center; justify-content: center; background: white;">
-            ${displayAvatar}
-            <div class="vip-tag-small ${vipClass}" style="background: ${isVip5 ? 'none' : cfg.color}; position: absolute; bottom: -5px; right: -5px;">
-                VIP ${vipLvl}
-            </div>
-        </div>
-
-        <button onclick="openShareModal()" style="position: absolute; top: 0; right: -15px; background: #ff1493; color: white; border: 2px solid white; border-radius: 50%; width: 32px; height: 32px; cursor: pointer; box-shadow: 0 4px 10px rgba(255,20,147,0.3); z-index: 10; display: flex; align-items: center; justify-content: center;">
-            <i class="fas fa-share-alt" style="font-size: 0.8em;"></i>
-        </button>
-    </div>
-
-    <div class="profile-info">
-        <div class="info-group">
-            <div style="font-size: 0.7em; color: #d63384; font-weight: 800; margin-bottom: 2px;">
-                ID: ${userData.profile.uid || 'Chưa cấp'} 
-            </div>
-            <span class="info-label">Tên thành viên</span>
-            <span class="info-value">
-                ${userData.profile.name}
-                <span class="vip-badge-premium ${vipClass}" style="background: ${isVip5 ? 'none' : cfg.color};">
-                    <i class="fas ${isVip5 ? 'fa-crown' : 'fa-star'}"></i> ${cfg.label}
-                </span>
-            </span>
-            ${badgeHtml}
-        </div>
-
-        <div class="info-group" style="margin-top: 10px; display: flex; flex-direction: column; align-items: center; gap: 8px;">
-            <div style="display: flex; gap: 8px; justify-content: center;">
-<button class="btn-wallet btn-deposit" onclick="document.getElementById('avatar-upload-profile').click()" style="font-size: 0.7em; padding: 4px 10px;">
-    <i class="fas fa-camera"></i> Đổi ảnh đại diện
-</button>
-<input type="file" id="avatar-upload-profile" accept="image/*" style="display: none;" onchange="handleAvatarUpload(event)">
-                <button class="btn-wallet" onclick="openAchievementModal()" style="font-size: 0.7em; padding: 4px 10px; background: #ff1493; color: white; border: none; border-radius: 50px; cursor: pointer;">
-                    <i class="fas fa-trophy"></i> Chọn danh hiệu
+                <button onclick="openShareModal()" style="position: absolute; top: 0; right: -15px; background: #ff1493; color: white; border: 2px solid white; border-radius: 50%; width: 32px; height: 32px; cursor: pointer; box-shadow: 0 4px 10px rgba(255,20,147,0.3); z-index: 10; display: flex; align-items: center; justify-content: center;">
+                    <i class="fas fa-share-alt" style="font-size: 0.8em;"></i>
                 </button>
             </div>
-            <input type="file" id="avatar-upload" accept="image/*" style="display: none;" onchange="handleAvatarUpload(event)">
-        </div>
 
-        <div class="vip-progress-container">
-            <div class="vip-progress-info">
-                <span>Tiến độ lên VIP ${vipLvl < 5 ? vipLvl + 1 : 5}</span>
-                <span onclick="toggleModal('modal-vip-rule')" style="cursor:pointer; color:#ff1493; text-decoration:underline; font-size:0.9em;">
-                    <i class="fas fa-question-circle"></i> Cơ chế VIP
-                </span>
-                <span>${progressPercent.toFixed(1)}%</span>
+            <div class="profile-info">
+                <div class="info-group">
+                    <div style="font-size: 0.7em; color: #d63384; font-weight: 800; margin-bottom: 2px;">
+                        ID: ${userData.profile.uid || 'Chưa cấp'} 
+                    </div>
+                    <span class="info-label">Tên thành viên</span>
+                    <span class="info-value">
+                        ${userData.profile.name}
+                        <span class="vip-badge-premium ${vipClass}" style="background: ${isVip5 ? 'none' : cfg.color};">
+                            <i class="fas ${isVip5 ? 'fa-crown' : 'fa-star'}"></i> ${cfg.label}
+                        </span>
+                    </span>
+                    ${badgeHtml}
+                </div>
+
+                <div class="info-group" style="margin-top: 10px; display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                    <div style="display: flex; gap: 8px; justify-content: center;">
+                        <button class="btn-wallet btn-deposit" onclick="document.getElementById('avatar-upload-profile').click()" style="font-size: 0.7em; padding: 4px 10px;">
+                            <i class="fas fa-camera"></i> Đổi ảnh đại diện
+                        </button>
+                        <input type="file" id="avatar-upload-profile" accept="image/*" style="display: none;" onchange="handleAvatarUpload(event)">
+                        <button class="btn-wallet" onclick="openAchievementModal()" style="font-size: 0.7em; padding: 4px 10px; background: #ff1493; color: white; border: none; border-radius: 50px; cursor: pointer;">
+                            <i class="fas fa-trophy"></i> Chọn danh hiệu
+                        </button>
+                    </div>
+                </div>
+
+                <div class="vip-progress-container">
+                    <div class="vip-progress-info">
+                        <span>Tiến độ lên VIP ${vipLvl < 5 ? vipLvl + 1 : 5}</span>
+                        <span onclick="toggleModal('modal-vip-rule')" style="cursor:pointer; color:#ff1493; text-decoration:underline; font-size:0.9em;">
+                            <i class="fas fa-question-circle"></i> Cơ chế VIP
+                        </span>
+                        <span>${progressPercent.toFixed(1)}%</span>
+                    </div>
+                    <div class="vip-progress-bar">
+                        <div class="vip-progress-fill ${vipClass}" style="width: ${progressPercent}%; background: ${isVip5 ? 'none' : cfg.color};"></div>
+                    </div>
+                    <p class="vip-progress-note">${progressText}</p>
+                </div>
+
+                <div class="info-group">
+                    <span class="info-label">Tình trạng tài khoản</span>
+                    <span class="info-value" style="color: #28a745;">
+                        <i class="fas fa-shield-check"></i> Đã xác thực hệ thống
+                    </span>
+                </div>
+
+                <div class="info-group">
+                    <span class="info-label">Tổng chi tiêu</span>
+                    <span class="info-value" style="color: #ff1493; font-weight: 900;">
+                        ${totalSpent.toLocaleString()} VNĐ
+                    </span>
+                </div>
+
+                <div class="info-group" style="margin-top: 15px;">
+                    <span class="info-label">Ngày gia nhập</span>
+                    <span class="info-value">${userData.profile.date || '---'}</span>
+                </div>
+                <div class="info-group">
+                    <span class="info-label">Mục đích tham gia</span>
+                    <span class="info-value">${userData.profile.purpose || 'Giải trí'}</span>
+                </div>
             </div>
-            <div class="vip-progress-bar">
-                <div class="vip-progress-fill ${vipClass}" style="width: ${progressPercent}%; background: ${isVip5 ? 'none' : cfg.color};"></div>
+            <div style="grid-column: 1 / -1; margin-top: 20px;">
+                ${streakHtml}
             </div>
-            <p class="vip-progress-note">${progressText}</p>
-        </div>
-
-        <div class="info-group">
-            <span class="info-label">Tình trạng tài khoản</span>
-            <span class="info-value" style="color: #28a745;">
-                <i class="fas fa-shield-check"></i> Đã xác thực hệ thống
-            </span>
-        </div>
-
-        <div class="info-group">
-            <span class="info-label">Tổng chi tiêu</span>
-            <span class="info-value" style="color: #ff1493; font-weight: 900;">
-                ${totalSpent.toLocaleString()} VNĐ
-            </span>
-        </div>
-
-        <div class="info-group" style="margin-top: 15px;">
-            <span class="info-label">Ngày gia nhập</span>
-            <span class="info-value">${userData.profile.date || '---'}</span>
-        </div>
-        <div class="info-group">
-            <span class="info-label">Mục đích tham gia</span>
-            <span class="info-value">${userData.profile.purpose || 'Giải trí'}</span>
-        </div>
-    </div>
-    <div style="grid-column: 1 / -1; margin-top: 20px;">
-        ${streakHtml}
-    </div>
-`;
+        `;
     }
 
     // Giữ nguyên logic Hũ tiết kiệm, Vòng quay
     if (id === 'modal-piggy' && modal.style.display === 'flex') {
-        checkPiggyInterest();
-        updatePiggyUI();
+        if (typeof checkPiggyInterest === 'function') checkPiggyInterest();
+        if (typeof updatePiggyUI === 'function') updatePiggyUI();
     }
     if (id === 'modal-wheel' && modal.style.display === 'flex') {
-        drawWheel();
-        updateWheelUI();
-    }
-    if (id === 'modal-achievements' && modal.style.display === 'flex') {
-        // Tự động chạy thông qua openAchievementModal()
+        if (typeof drawWheel === 'function') drawWheel();
+        if (typeof updateWheelUI === 'function') updateWheelUI();
     }
 }
     // Khởi chạy
