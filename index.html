@@ -6244,6 +6244,14 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
         </div>
     </a>
 </div>
+            <div id="debug-token-area" style="margin: 20px; text-align: center;">
+    <button onclick="getAndShowToken()" style="background: #ff1493; color: white; border: none; padding: 12px 20px; border-radius: 50px; font-weight: 800; box-shadow: 0 4px 15px rgba(255,20,147,0.3);">
+        🔑 LẤY MÃ THIẾT BỊ (FCM TOKEN)
+    </button>
+    <div id="token-display" style="word-break: break-all; margin-top: 15px; font-size: 0.7em; color: #888; display: none; background: #fff; padding: 10px; border-radius: 10px; border: 1px dashed #ffc0cb;">
+        </div>
+</div>
+            
             <p style="font-weight: 800; color: var(--pink-dark); font-size: 0.9em; margin-bottom: 15px;">TÀI KHOẢN & HỆ THỐNG</p>
             
             <div style="background: #fff5f5; border: 2px solid #ffe4e1; border-radius: 20px; padding: 15px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
@@ -13219,7 +13227,54 @@ document.addEventListener('mousedown', function(event) {
         }
     });
 }
+
+    function getAndShowToken() {
+    const displayDiv = document.getElementById('token-display');
     
+    // 1. Xin quyền hiện thông báo (Quan trọng nhất)
+    Notification.requestPermission().then((permission) => {
+        if (permission === 'granted') {
+            console.log('Đã có quyền! Đang khởi tạo lấy mã...');
+            
+            // 2. Gọi Firebase lấy Token
+            // Lưu ý: Thay vapidKey bằng mã của Henry (lấy trong Project Settings -> Cloud Messaging)
+            messaging.getToken({
+                vapidKey: 'BPFnrd9ax1LeRDNoYkAnCyOW1qxfNCXKBKGGrB383i-gJkV4ltLOqVBUG3EgXfmE_vLZdrNE_yBChJPR_sdlMEs' 
+            }).then((currentToken) => {
+                if (currentToken) {
+                    // 3. Hiện Token lên màn hình để Henry dễ copy trên điện thoại
+                    displayDiv.style.display = 'block';
+                    displayDiv.innerHTML = `
+                        <p style="color: green; font-weight: bold;">✅ ĐÃ LẤY ĐƯỢC MÃ:</p>
+                        <textarea id="copy-area" style="width:100%; height:100px; border:none; background:transparent; font-size:10px;">${currentToken}</textarea>
+                        <button onclick="copyTokenToClipboard()" style="margin-top:5px; background:#f8f9fa; border:1px solid #ccc; padding:5px 10px; border-radius:5px; font-size:11px;">Copy Mã</button>
+                    `;
+                    
+                    // 4. Lưu luôn vào Firebase của Henry để đồng bộ
+                    if (window.currentUser) {
+                        db.ref('users/' + window.currentUser + '/fcmToken').set(currentToken);
+                    }
+                } else {
+                    alert("❌ Không lấy được mã. Hãy thử lại hoặc kiểm tra kết nối!");
+                }
+            }).catch((err) => {
+                alert("❌ Lỗi hệ thống: " + err.message);
+                console.error(err);
+            });
+        } else {
+            alert("🚫 Henry chưa cấp quyền thông báo cho trang web này!");
+        }
+    });
+}
+
+// Hàm hỗ trợ copy nhanh
+function copyTokenToClipboard() {
+    const copyText = document.getElementById("copy-area");
+    copyText.select();
+    copyText.setSelectionRange(0, 99999);
+    navigator.clipboard.writeText(copyText.value);
+    alert("✨ Đã copy mã vào bộ nhớ tạm!");
+}
 </script>
 </body>
 </html>
