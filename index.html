@@ -11530,14 +11530,25 @@ if ('serviceWorker' in navigator) {
         .then(function(registration) {
             console.log('✅ PWA: App đã sẵn sàng!');
             
-            // Lấy Token thông báo
-            messaging.getToken({
+            // Ép Service Worker cập nhật bản mới nhất từ server
+            registration.update(); 
+
+            // Lấy Token thông báo (Dùng registration hiện tại)
+            return messaging.getToken({
                 serviceWorkerRegistration: registration,
                 vapidKey: 'BPFnrd9ax1LeRDNoYkAnCyOW1qxfNCXKBKGGrB383i-gJkV4ltLOqVBUG3EgXfmE_vLZdrNE_yBChJPR_sdlMEs'
-            }).then((token) => {
-                if (token) console.log("✅ Token thiết bị:", token);
             });
-        }).catch(function(err) {
+        })
+        .then((token) => {
+            if (token) {
+                console.log("✅ Token thiết bị mới nhất:", token);
+                // Henry nhớ lưu token này vào Firebase Database của User nhé!
+                if (typeof currentUser !== 'undefined' && currentUser) {
+                    db.ref('users/' + currentUser + '/fcmToken').set(token);
+                }
+            }
+        })
+        .catch(function(err) {
             console.log('❌ PWA: Lỗi đăng ký:', err);
         });
     });
