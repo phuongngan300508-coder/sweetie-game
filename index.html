@@ -11859,8 +11859,11 @@ const ACHIEVEMENTS_CONFIG = {
 function getAchievementProgress(id) {
     if (!userData) return 0;
     if (!userData.unlockedAchievements) userData.unlockedAchievements = [];
+    
+    // --- BIẾN PHỤ CHẶN LẶP TRONG PHIÊN CHƠI ---
+    if (!window.notifiedInSession) window.notifiedInSession = [];
 
-    // Nếu danh hiệu này ĐÃ được mở khóa trước đó, mặc định trả về goal (để luôn hiện 100%)
+    // Nếu danh hiệu này ĐÃ được mở khóa trước đó, mặc định trả về goal
     if (userData.unlockedAchievements.includes(id)) {
         return ACHIEVEMENTS_CONFIG[id].goal;
     }
@@ -11895,7 +11898,11 @@ function getAchievementProgress(id) {
 
     // KIỂM TRA MỞ KHÓA MỚI (CHỐT CHẶN VĨNH VIỄN)
     if (current >= ACHIEVEMENTS_CONFIG[id].goal) {
-        if (!userData.unlockedAchievements.includes(id)) {
+        // CHỈ CHẠY NẾU CHƯA CÓ TRONG unlockedAchievements VÀ CHƯA NỔ THÔNG BÁO TRONG PHIÊN NÀY
+        if (!userData.unlockedAchievements.includes(id) && !window.notifiedInSession.includes(id)) {
+            
+            // Chặn ngay lập tức trước khi chạy logic nặng
+            window.notifiedInSession.push(id);
             userData.unlockedAchievements.push(id);
             
             const achievementName = ACHIEVEMENTS_CONFIG[id].name;
@@ -11913,7 +11920,7 @@ function getAchievementProgress(id) {
                     badge: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
                     tag: "achievement-unlocked-" + id,
                     renotify: true,
-                    vibrate: [100, 50, 100, 50, 200] // Nhịp rung đặc biệt cho thành tựu
+                    vibrate: [100, 50, 100, 50, 200]
                 };
 
                 if ('serviceWorker' in navigator) {
@@ -11926,6 +11933,11 @@ function getAchievementProgress(id) {
             }
 
             saveData();
+            
+            // Dùng setTimeout để tách biệt Alert ra khỏi luồng logic chính, tránh làm treo giao diện
+            setTimeout(() => {
+                alert(`🎊 CHÚC MỪNG! Bạn đã đạt danh hiệu: ${achievementName}`);
+            }, 100);
         }
     }
 
