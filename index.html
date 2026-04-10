@@ -4969,9 +4969,6 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
 </style>
 </head>
 <body>
-    <button onclick="askPermission()" style="padding: 15px; background: #ff69b4; color: white; border-radius: 10px; border: none; font-weight: 800;">
-   🔔 BẬT THÔNG BÁO ĐẨY
-</button>
     
   <div id="splash-screen">
     <div class="splash-content">
@@ -13200,33 +13197,6 @@ document.addEventListener('mousedown', function(event) {
         });
     }
 });
-
-    function askPermission() {
-    // 1. Xin quyền
-    Notification.requestPermission().then((permission) => {
-        if (permission === 'granted') {
-            alert('✅ Đã cho phép! Đang lấy Token...');
-            
-            // 2. Lấy Token
-            messaging.getToken({
-                vapidKey: 'BPFnrd9ax1LeRDNoYkAnCyOW1qxfNCXKBKGGrB383i-gJkV4ltLOqVBUG3EgXfmE_vLZdrNE_yBChJPR_sdlMEs' 
-            }).then((token) => {
-                if (token) {
-                    console.log("Token điện thoại:", token);
-                    // Hiện Token ra màn hình để Henry dễ copy trên điện thoại
-                    alert("Token của Henry là:\n" + token);
-                    
-                    // Lưu vào Firebase
-                    if(currentUser) {
-                        db.ref('users/' + currentUser + '/fcmToken').set(token);
-                    }
-                }
-            });
-        } else {
-            alert('❌ Henry chưa cấp quyền thông báo trong cài đặt trình duyệt rồi!');
-        }
-    });
-}
 
     function getAndShowToken() {
     const displayDiv = document.getElementById('token-display');
