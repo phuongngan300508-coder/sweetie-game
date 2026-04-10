@@ -13176,9 +13176,11 @@ function sendReaction(msgId, icon, isFromBar = false) {
         if (isFromBar && currentIcon === icon) {
             db.ref(reactionPath).remove();
         } 
-        // CẬP NHẬT/THÊM MỚI KHI: Click từ thanh Bar (Bất kể icon mới hay trùng nhưng isFromBar phải là true)
-        // Hoặc đơn giản là: Nếu click từ Bar mà không phải lệnh xóa ở trên thì là lệnh Set
-        else if (isFromBar) {
+        // SỬA LỖI: Cho phép cập nhật khi isFromBar là true HOẶC khi click trực tiếp trên máy tính
+        // Nếu bạn muốn máy tính luôn thả được, hãy đảm bảo khi gọi hàm truyền isFromBar = true
+        else {
+            // Chỉ thực hiện khi isFromBar hoặc bạn có thể bỏ điều kiện if(isFromBar) 
+            // để máy tính click là chạy luôn:
             db.ref(reactionPath).set(icon).then(() => {
                 db.ref(`chats/${chatRoomId}/messages/${msgId}`).once('value', (mSnap) => {
                     const mData = mSnap.val();
@@ -13205,9 +13207,6 @@ function sendReaction(msgId, icon, isFromBar = false) {
             });
         }
         
-        // Nếu isFromBar = false (chạm vào icon dưới bong bóng), hàm sẽ không làm gì cả, 
-        // không xóa dữ liệu trên Firebase.
-
         // Đóng thanh cảm xúc sau khi thao tác
         const picker = document.getElementById(`picker-${msgId}`);
         if (picker) picker.style.display = 'none';
