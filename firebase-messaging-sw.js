@@ -10,6 +10,17 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
+// --- THÊM ĐOẠN NÀY ĐỂ GIỮ SW LUÔN ACTIVE ---
+self.addEventListener('install', (event) => {
+    // Ép Service Worker mới thay thế cái cũ ngay lập tức
+    self.skipWaiting(); 
+});
+
+self.addEventListener('activate', (event) => {
+    // Chiếm quyền điều khiển tất cả các tab ngay khi kích hoạt
+    event.waitUntil(clients.claim());
+});
+
 // QUAN TRỌNG: Cấu hình hiển thị khi web đóng
 messaging.onBackgroundMessage((payload) => {
     console.log('[sw.js] Nhận tin nhắn ngầm:', payload);
