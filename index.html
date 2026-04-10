@@ -13201,6 +13201,18 @@ document.addEventListener('mousedown', function(event) {
     }
 });
 
+    // Thêm hàm này vào file JavaScript của Henry
+function closeNotiOnClickOutside(event) {
+    const notiBox = document.getElementById('noti-box'); // Đảm bảo Henry có ID này
+    const notiBell = document.getElementById('noti-bell'); // Và ID này
+
+    // Nếu Henry có logic khác để đóng thông báo, hãy viết vào đây
+    // Ví dụ: Nếu click ra ngoài cái hộp thông báo thì đóng nó lại
+    if (notiBox && !notiBox.contains(event.target) && !notiBell.contains(event.target)) {
+        notiBox.style.display = 'none';
+    }
+}
+    
 </script>
 </body>
 </html>
