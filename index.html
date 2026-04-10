@@ -9683,136 +9683,136 @@ let currentSlide = 0;
 let slideInterval;
 
 function renderEventCarousel() {
-    const vnNow = getVietnamTime();
-    const todayStart = new Date(vnNow.getFullYear(), vnNow.getMonth(), vnNow.getDate()).getTime();
-    const currentTime = vnNow.getTime();
-    
-    const track = document.getElementById('carouselTrack');
-    const dotsContainer = document.getElementById('carouselDots');
-    const carouselContainer = document.getElementById('dynamic-event-carousel');
-    const noEventNotice = document.getElementById('no-event-notice');
+    const vnNow = getVietnamTime();
+    const todayStart = new Date(vnNow.getFullYear(), vnNow.getMonth(), vnNow.getDate()).getTime();
+    const currentTime = vnNow.getTime();
+    
+    const track = document.getElementById('carouselTrack');
+    const dotsContainer = document.getElementById('carouselDots');
+    const carouselContainer = document.getElementById('dynamic-event-carousel');
+    const noEventNotice = document.getElementById('no-event-notice');
 
-    let activeEvents = [];
+    let activeEvents = [];
 
-    GAME_SCHEDULE.forEach(game => {
-        // 1. CHUẨN HÓA KHỞI TẠO
-        const startDate = new Date(game.start + "T00:00:00");
-        const endDate = new Date(game.end + "T00:00:00");
-        
-        const currentTime = vnNow.getTime();
-        const endTime = endDate.getTime();
-        const startDayMidnight = startDate.getTime();
-        
-        // 2. TÍNH TOÁN DIFF DAYS
-        const diffDaysStart = Math.ceil((startDayMidnight - todayStart) / (1000 * 60 * 60 * 24));
-        const endDayMidnight = endDate.getTime();
-        const diffDaysEnd = Math.ceil((endDayMidnight - todayStart) / (1000 * 60 * 60 * 24));
+    GAME_SCHEDULE.forEach(game => {
+        // 1. CHUẨN HÓA KHỞI TẠO
+        const startDate = new Date(game.start + "T00:00:00");
+        const endDate = new Date(game.end + "T00:00:00");
+        
+        const currentTime = vnNow.getTime();
+        const endTime = endDate.getTime();
+        const startDayMidnight = startDate.getTime();
+        
+        // 2. TÍNH TOÁN DIFF DAYS
+        const diffDaysStart = Math.ceil((startDayMidnight - todayStart) / (1000 * 60 * 60 * 24));
+        const endDayMidnight = endDate.getTime();
+        const diffDaysEnd = Math.ceil((endDayMidnight - todayStart) / (1000 * 60 * 60 * 24));
 
-        // 3. LOGIC KIỂM TRA
-        const isRunning = (todayStart >= startDayMidnight && currentTime < endTime);
-        const isComingSoon = (diffDaysStart > 0 && diffDaysStart <= 10);
+        // 3. LOGIC KIỂM TRA
+        const isRunning = (todayStart >= startDayMidnight && currentTime < endTime);
+        const isComingSoon = (diffDaysStart > 0 && diffDaysStart <= 10);
 
-        if (isRunning || isComingSoon) {
-            let badgeText = isRunning ? "🔥 ĐANG DIỄN RA" : "🕒 SẮP RA MẮT";
-            let timeInfoText = isRunning 
-                ? `Kết thúc: ${endDate.toLocaleDateString('vi-VN')}` 
-                : `Mở sau ${diffDaysStart} ngày nữa`;
-            
-            // --- Logic thông báo sắp kết thúc (Dưới 3 ngày) ---
-            if (isRunning && diffDaysEnd <= 3 && diffDaysEnd > 0) {
-                badgeText = `⏳ CÒN ${diffDaysEnd} NGÀY`;
-                if (typeof notifiedInThisLoad !== 'undefined' && !notifiedInThisLoad.includes(game.id + "_end")) {
-                    const endMsg = `Nhanh chân lên! Sự kiện [${game.title}] chỉ còn ${diffDaysEnd} ngày nữa là khép lại.`;
-                    addNotification("⏰ SỰ KIỆN SẮP KẾT THÚC", endMsg);
-                    
-                    // FIX: Thông báo ra máy bằng Service Worker
-                    if (Notification.permission === "granted") {
-                        if ('serviceWorker' in navigator) {
-                            navigator.serviceWorker.ready.then(reg => {
-                                reg.showNotification("⏰ SỰ KIỆN SẮP KẾT THÚC", {
-                                    body: endMsg,
-                                    icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
-                                    badge: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
-                                    tag: game.id + "_end"
-                                });
-                            });
-                        } else {
-                            new Notification("SỰ KIỆN SẮP KẾT THÚC", { body: endMsg, icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png" });
-                        }
-                    }
-                    notifiedInThisLoad.push(game.id + "_end");
-                }
-            }
+        if (isRunning || isComingSoon) {
+            let badgeText = isRunning ? "🔥 ĐANG DIỄN RA" : "🕒 SẮP RA MẮT";
+            let timeInfoText = isRunning 
+                ? `Kết thúc: ${endDate.toLocaleDateString('vi-VN')}` 
+                : `Mở sau ${diffDaysStart} ngày nữa`;
+            
+            // --- Logic thông báo sắp kết thúc (Dưới 3 ngày) ---
+            if (isRunning && diffDaysEnd <= 3 && diffDaysEnd > 0) {
+                badgeText = `⏳ CÒN ${diffDaysEnd} NGÀY`;
+                if (typeof notifiedInThisLoad !== 'undefined' && !notifiedInThisLoad.includes(game.id + "_end")) {
+                    const endMsg = `Nhanh chân lên! Sự kiện [${game.title}] chỉ còn ${diffDaysEnd} ngày nữa là khép lại.`;
+                    addNotification("⏰ SỰ KIỆN SẮP KẾT THÚC", endMsg);
+                    
+                    // FIX: Thông báo ra máy bằng Service Worker
+                    if (Notification.permission === "granted") {
+                        if ('serviceWorker' in navigator) {
+                            navigator.serviceWorker.ready.then(reg => {
+                                reg.showNotification("⏰ SỰ KIỆN SẮP KẾT THÚC", {
+                                    body: endMsg,
+                                    icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+                                    badge: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+                                    tag: game.id + "_end"
+                                });
+                            });
+                        } else {
+                            new Notification("SỰ KIỆN SẮP KẾT THÚC", { body: endMsg, icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png" });
+                        }
+                    }
+                    notifiedInThisLoad.push(game.id + "_end");
+                }
+            }
 
-            // --- Logic thông báo sắp mở (Đúng 3 ngày trước khi mở) ---
-            if (isComingSoon && diffDaysStart === 3) {
-                if (typeof notifiedInThisLoad !== 'undefined' && !notifiedInThisLoad.includes(game.id + "_soon")) {
-                    const soonMsg = `Chuẩn bị tinh thần! Sự kiện [${game.title}] sẽ chính thức bắt đầu sau 3 ngày nữa.`;
-                    addNotification("🔔 SỰ KIỆN SẮP MỞ", soonMsg);
+            // --- Logic thông báo sắp mở (Đúng 3 ngày trước khi mở) ---
+            if (isComingSoon && diffDaysStart === 3) {
+                if (typeof notifiedInThisLoad !== 'undefined' && !notifiedInThisLoad.includes(game.id + "_soon")) {
+                    const soonMsg = `Chuẩn bị tinh thần! Sự kiện [${game.title}] sẽ chính thức bắt đầu sau 3 ngày nữa.`;
+                    addNotification("🔔 SỰ KIỆN SẮP MỞ", soonMsg);
 
-                    // FIX: Thông báo ra máy bằng Service Worker
-                    if (Notification.permission === "granted") {
-                        if ('serviceWorker' in navigator) {
-                            navigator.serviceWorker.ready.then(reg => {
-                                reg.showNotification("🔔 SỰ KIỆN SẮP MỞ", {
-                                    body: soonMsg,
-                                    icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
-                                    badge: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
-                                    tag: game.id + "_soon"
-                                });
-                            });
-                        } else {
-                            new Notification("🔔 SỰ KIỆN SẮP MỞ", { body: soonMsg, icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png" });
-                        }
-                    }
-                    notifiedInThisLoad.push(game.id + "_soon");
-                }
-            }
+                    // FIX: Thông báo ra máy bằng Service Worker
+                    if (Notification.permission === "granted") {
+                        if ('serviceWorker' in navigator) {
+                            navigator.serviceWorker.ready.then(reg => {
+                                reg.showNotification("🔔 SỰ KIỆN SẮP MỞ", {
+                                    body: soonMsg,
+                                    icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+                                    badge: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+                                    tag: game.id + "_soon"
+                                });
+                            });
+                        } else {
+                            new Notification("🔔 SỰ KIỆN SẮP MỞ", { body: soonMsg, icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png" });
+                        }
+                    }
+                    notifiedInThisLoad.push(game.id + "_soon");
+                }
+            }
 
-            activeEvents.push({
-                ...game,
-                badge: badgeText,
-                statusClass: isRunning ? "status-running" : "status-waiting",
-                timeInfo: timeInfoText
-            });
-        }
-    });
+            activeEvents.push({
+                ...game,
+                badge: badgeText,
+                statusClass: isRunning ? "status-running" : "status-waiting",
+                timeInfo: timeInfoText
+            });
+        }
+    });
 
-    if (activeEvents.length === 0) {
-        carouselContainer.style.display = 'none';
-        noEventNotice.style.display = 'block';
-        return;
-    }
+    if (activeEvents.length === 0) {
+        carouselContainer.style.display = 'none';
+        noEventNotice.style.display = 'block';
+        return;
+    }
 
-    carouselContainer.style.display = 'block';
-    noEventNotice.style.display = 'none';
-    
-    track.style.width = `${activeEvents.length * 100}%`;
-    let slideHtml = '';
-    let dotsHtml = '';
+    carouselContainer.style.display = 'block';
+    noEventNotice.style.display = 'none';
+    
+    track.style.width = `${activeEvents.length * 100}%`;
+    let slideHtml = '';
+    let dotsHtml = '';
 
-    activeEvents.forEach((ev, index) => {
-        const isUrgent = ev.badge.includes("CÒN");
-        const badgeClass = isUrgent ? "badge-running animate__animated animate__flash animate__infinite" : (ev.badge.includes("ĐANG DIỄN RA") ? "badge-running" : "badge-waiting");
+    activeEvents.forEach((ev, index) => {
+        const isUrgent = ev.badge.includes("CÒN");
+        const badgeClass = isUrgent ? "badge-running animate__animated animate__flash animate__infinite" : (ev.badge.includes("ĐANG DIỄN RA") ? "badge-running" : "badge-waiting");
 
-        slideHtml += `
-            <div class="carousel-slide" onclick="scrollToGame('${ev.id}')" style="width: ${100 / activeEvents.length}%">
-                <div class="slide-content ${ev.bg}">
-                    <div class="event-badge ${badgeClass}" style="${isUrgent ? 'background: #ff0000; box-shadow: 0 0 15px rgba(255,0,0,0.6);' : ''}">${ev.badge}</div>
-                    <div class="event-info">
-                        <h3><i class="fas ${ev.icon}"></i> ${ev.title}</h3>
-                        <p>${ev.timeInfo}</p>
-                        <span>Xem vị trí game <i class="fas fa-arrow-right"></i></span>
-                    </div>
-                </div>
-            </div>
-        `;
-        dotsHtml += `<span class="dot ${index === 0 ? 'active' : ''}" onclick="goToSlide(${index})"></span>`;
-    });
+        slideHtml += `
+            <div class="carousel-slide" onclick="scrollToGame('${ev.id}')" style="width: ${100 / activeEvents.length}%">
+                <div class="slide-content ${ev.bg}">
+                    <div class="event-badge ${badgeClass}" style="${isUrgent ? 'background: #ff0000; box-shadow: 0 0 15px rgba(255,0,0,0.6);' : ''}">${ev.badge}</div>
+                    <div class="event-info">
+                        <h3><i class="fas ${ev.icon}"></i> ${ev.title}</h3>
+                        <p>${ev.timeInfo}</p>
+                        <span>Xem vị trí game <i class="fas fa-arrow-right"></i></span>
+                    </div>
+                </div>
+            </div>
+        `;
+        dotsHtml += `<span class="dot ${index === 0 ? 'active' : ''}" onclick="goToSlide(${index})"></span>`;
+    });
 
-    track.innerHTML = slideHtml;
-    dotsContainer.innerHTML = dotsHtml;
-    startCarouselLogic(activeEvents.length);
+    track.innerHTML = slideHtml;
+    dotsContainer.innerHTML = dotsHtml;
+    startCarouselLogic(activeEvents.length);
 }
 
 function startCarouselLogic(totalActive) {
@@ -10529,94 +10529,93 @@ function handleStreakCheckin(index) {
 
 // Hàm kiểm tra đứt chuỗi (Chạy khi vừa vào web)
 function verifyStreak() {
-    // Nếu chưa có mảng dữ liệu thì thoát
-    if (!userData.streakDataArray) return;
+    // Nếu chưa có mảng dữ liệu thì thoát
+    if (!userData.streakDataArray) return;
 
-    const vnNow = getVietnamTime().getTime();
+    const vnNow = getVietnamTime().getTime();
 
-    userData.streakDataArray.forEach((sd, index) => {
-        // Bỏ qua nếu chưa chọn quà, đã hỏng hoặc đã hoàn thành
-        if (!sd.chosenReward || sd.isFailed || sd.isFinished) return;
+    userData.streakDataArray.forEach((sd, index) => {
+        // Bỏ qua nếu chưa chọn quà, đã hỏng hoặc đã hoàn thành
+        if (!sd.chosenReward || sd.isFailed || sd.isFinished) return;
 
-        if (sd.lastCheckin) {
-            const deadLine = sd.lastCheckin + (48 * 60 * 60 * 1000); // Mốc vỡ tim (48h)
-            const warningPoint = deadLine - (3 * 60 * 60 * 1000);   // Cảnh báo trước 3 tiếng (từ tiếng thứ 45)
+        if (sd.lastCheckin) {
+            const deadLine = sd.lastCheckin + (48 * 60 * 60 * 1000); // Mốc vỡ tim (48h)
+            const warningPoint = deadLine - (3 * 60 * 60 * 1000);   // Cảnh báo trước 3 tiếng (từ tiếng thứ 45)
 
-            if (vnNow > deadLine) {
-                // --- TRƯỜNG HỢP 1: ĐỨT CHUỖI ---
-                sd.isFailed = true;
-                const failMsg = `Trái tim #${index + 1} đã bị vỡ do quá 48h không tương tác!`;
-                
-                // Thông báo trong web
-                addNotification("💔 ĐỨT CHUỖI", failMsg, true);
-                
-                // --- FIX: Thông báo ra máy (Dùng Service Worker để ổn định hơn) ---
-                if (Notification.permission === "granted") {
-                    if ('serviceWorker' in navigator) {
-                        navigator.serviceWorker.ready.then(reg => {
-                            reg.showNotification("SWEETIE GAME WORLD", {
-                                body: failMsg,
-                                icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
-                                badge: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
-                                tag: `streak-fail-${index}`
-                            });
-                        });
-                    } else {
-                        new Notification("SWEETIE GAME WORLD", { body: failMsg, icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png" });
-                    }
-                }
-                saveData();
-            } else {
-                const nextTurn = sd.lastCheckin + (24 * 60 * 60 * 1000);
-                
-                // --- TRƯỜNG HỢP 2: CẢNH BÁO SẮP VỠ (Còn dưới 3 tiếng) ---
-                if (vnNow >= warningPoint && !sd.hasNotifiedUrgent) {
-                    const urgentMsg = `🔥 KHẨN CẤP: Trái tim #${index + 1} chỉ còn chưa đầy 3 tiếng nữa là vỡ! Đánh dấu ngay bạn ơi!`;
-                    
-                    if (Notification.permission === "granted") {
-                        if ('serviceWorker' in navigator) {
-                            navigator.serviceWorker.ready.then(reg => {
-                                reg.showNotification("⚠️ CẢNH BÁO CHUỖI", {
-                                    body: urgentMsg,
-                                    icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
-                                    badge: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
-                                    tag: `streak-urgent-${index}`
-                                });
-                            });
-                        } else {
-                            new Notification("⚠️ CẢNH BÁO CHUỖI", { body: urgentMsg, icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png" });
-                        }
-                        sd.hasNotifiedUrgent = true; 
-                        saveData();
-                    }
-                } 
-                // --- TRƯỜNG HỢP 3: NHẮC NHỞ BÌNH THƯỜNG (Sau 24h) ---
-                else if (vnNow >= nextTurn) {
-                    setTimeout(() => {
-                        const remindMsg = `Trái tim #${index + 1} đang chờ bạn đánh dấu kìa!`;
-                        addNotification("🎀 NHẮC NHỞ", remindMsg);
-                        
-                        if (document.visibilityState !== 'visible' && Notification.permission === "granted") {
-                            if ('serviceWorker' in navigator) {
-                                navigator.serviceWorker.ready.then(reg => {
-                                    reg.showNotification("🎀 NUÔI TIM", {
-                                        body: remindMsg,
-                                        icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
-                                        badge: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
-                                        tag: `streak-remind-${index}`
-                                    });
-                                });
-                            } else {
-                                new Notification("🎀 NUÔI TIM", { body: remindMsg, icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png" });
-                            }
-                        }
-                    }, 2000 + (index * 500));
-                }
-            }
-        }
-    });
-} 
-    
+            if (vnNow > deadLine) {
+                // --- TRƯỜNG HỢP 1: ĐỨT CHUỖI ---
+                sd.isFailed = true;
+                const failMsg = `Trái tim #${index + 1} đã bị vỡ do quá 48h không tương tác!`;
+                
+                // Thông báo trong web
+                addNotification("💔 ĐỨT CHUỖI", failMsg, true);
+                
+                // --- FIX: Thông báo ra máy (Dùng Service Worker để ổn định hơn) ---
+                if (Notification.permission === "granted") {
+                    if ('serviceWorker' in navigator) {
+                        navigator.serviceWorker.ready.then(reg => {
+                            reg.showNotification("SWEETIE GAME WORLD", {
+                                body: failMsg,
+                                icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+                                badge: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+                                tag: `streak-fail-${index}`
+                            });
+                        });
+                    } else {
+                        new Notification("SWEETIE GAME WORLD", { body: failMsg, icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png" });
+                    }
+                }
+                saveData();
+            } else {
+                const nextTurn = sd.lastCheckin + (24 * 60 * 60 * 1000);
+                
+                // --- TRƯỜNG HỢP 2: CẢNH BÁO SẮP VỠ (Còn dưới 3 tiếng) ---
+                if (vnNow >= warningPoint && !sd.hasNotifiedUrgent) {
+                    const urgentMsg = `🔥 KHẨN CẤP: Trái tim #${index + 1} chỉ còn chưa đầy 3 tiếng nữa là vỡ! Đánh dấu ngay bạn ơi!`;
+                    
+                    if (Notification.permission === "granted") {
+                        if ('serviceWorker' in navigator) {
+                            navigator.serviceWorker.ready.then(reg => {
+                                reg.showNotification("⚠️ CẢNH BÁO CHUỖI", {
+                                    body: urgentMsg,
+                                    icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+                                    badge: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+                                    tag: `streak-urgent-${index}`
+                                });
+                            });
+                        } else {
+                            new Notification("⚠️ CẢNH BÁO CHUỖI", { body: urgentMsg, icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png" });
+                        }
+                        sd.hasNotifiedUrgent = true; 
+                        saveData();
+                    }
+                } 
+                // --- TRƯỜNG HỢP 3: NHẮC NHỞ BÌNH THƯỜNG (Sau 24h) ---
+                else if (vnNow >= nextTurn) {
+                    setTimeout(() => {
+                        const remindMsg = `Trái tim #${index + 1} đang chờ bạn đánh dấu kìa!`;
+                        addNotification("🎀 NHẮC NHỞ", remindMsg);
+                        
+                        if (document.visibilityState !== 'visible' && Notification.permission === "granted") {
+                            if ('serviceWorker' in navigator) {
+                                navigator.serviceWorker.ready.then(reg => {
+                                    reg.showNotification("🎀 NUÔI TIM", {
+                                        body: remindMsg,
+                                        icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+                                        badge: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+                                        tag: `streak-remind-${index}`
+                                    });
+                                });
+                            } else {
+                                new Notification("🎀 NUÔI TIM", { body: remindMsg, icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png" });
+                            }
+                        }
+                    }, 2000 + (index * 500));
+                }
+            }
+        }
+    });
+}
 function closeWheelWidget(event) {
     // Ngăn chặn sự kiện click lan ra ngoài (không mở modal khi nhấn nút X)
     event.stopPropagation();
@@ -11531,25 +11530,14 @@ if ('serviceWorker' in navigator) {
         .then(function(registration) {
             console.log('✅ PWA: App đã sẵn sàng!');
             
-            // Ép Service Worker cập nhật bản mới nhất từ server
-            registration.update(); 
-
-            // Lấy Token thông báo (Dùng registration hiện tại)
-            return messaging.getToken({
+            // Lấy Token thông báo
+            messaging.getToken({
                 serviceWorkerRegistration: registration,
                 vapidKey: 'BPFnrd9ax1LeRDNoYkAnCyOW1qxfNCXKBKGGrB383i-gJkV4ltLOqVBUG3EgXfmE_vLZdrNE_yBChJPR_sdlMEs'
+            }).then((token) => {
+                if (token) console.log("✅ Token thiết bị:", token);
             });
-        })
-        .then((token) => {
-            if (token) {
-                console.log("✅ Token thiết bị mới nhất:", token);
-                // Henry nhớ lưu token này vào Firebase Database của User nhé!
-                if (typeof currentUser !== 'undefined' && currentUser) {
-                    db.ref('users/' + currentUser + '/fcmToken').set(token);
-                }
-            }
-        })
-        .catch(function(err) {
+        }).catch(function(err) {
             console.log('❌ PWA: Lỗi đăng ký:', err);
         });
     });
@@ -11756,95 +11744,94 @@ function toggleChat() {
 
 // --- 2. SỬA HÀM GỬI TIN NHẮN (Giữ nguyên 100% nội dung - Fix lỗi không cần F5) ---
 async function sendMessage() {
-    const input = document.getElementById('chat-input');
-    const text = input.value.trim();
-    
-    // Kiểm tra nội dung và người nhận
-    if (!text || !currentChatFriend) return;
-
-    // --- PHẦN LOGIC KIỂM TRA CHẶN (MỚI THÊM) ---
-    const amIBlocked = await isBlockedBy(currentChatFriend);
-    if (amIBlocked) {
-        alert("🚫 Bạn không thể gửi tin nhắn cho người này vì đã bị chặn.");
-        return;
-    }
-    // ------------------------------------------
-
-    const chatRoomId = [currentUser, currentChatFriend].sort().join('_');
-    const timestamp = firebase.database.ServerValue.TIMESTAMP;
-    
-    // --- PHẦN TẠO THỜI GIAN HIỂN THỊ (MỚI) ---
-    const now = new Date();
-    const displayTime = now.getHours().toString().padStart(2, '0') + ":" + 
-                        now.getMinutes().toString().padStart(2, '0');
-
-    // 1. Chuẩn bị dữ liệu tin nhắn (Có thêm nhánh replyData và displayTime)
-    const messageData = {
-        sender: currentUser,
-        text: text,
-        timestamp: timestamp,
-        displayTime: displayTime // Lưu giờ cụ thể vào tin nhắn để hiển thị dưới bong bóng
-    };
-
-    // Nếu Henry đang trong trạng thái "Trả lời", đính kèm thông tin tin nhắn gốc vào
-    if (replyingTo) {
-        messageData.replyData = {
-            id: replyingTo.id,
-            text: replyingTo.text,
-            sender: replyingTo.sender
-        };
-    }
-        
-    // --- LOGIC PHÂN LOẠI BẠN BÈ / NGƯỜI LẠ (GIỮ NGUYÊN 100% - ĐÃ FIX REAL-TIME) ---
-    const friendSnap = await db.ref(`users/${currentUser}/friends/${currentChatFriend}`).once('value');
-    const isFriend = friendSnap.exists();
-
-    const msgTitle = isFriend ? "💬 TIN NHẮN MỚI" : "📩 TIN NHẮN CHỜ MỚI";
-    const msgType = isFriend ? "chat" : "message_request";
-
-    // 2. Lưu tin nhắn vào phòng chat
-    const msgRef = db.ref('chats/' + chatRoomId + '/messages').push(); 
-    msgRef.set(messageData).then(() => {
-        
-        // 3. BẮN THÔNG BÁO THEO PHÂN LOẠI (Trong App - notifications_queue)
-        db.ref('notifications_queue/' + currentChatFriend).push({
-            from: currentUser,
-            friendName: currentUser, 
-            text: text,
-            type: msgType, 
-            time: Date.now(),
-            displayTime: displayTime,
-            title: msgTitle
-        });
-
-        // --- MỚI: BẮN THÔNG BÁO RA MÁY ĐIỆN THOẠI (Push Notification) ---
-        // Gửi tín hiệu vào nhánh push_notifications để Service Worker nhận được
-        db.ref('push_notifications/' + currentChatFriend).push({
-            title: msgTitle,
-            body: isFriend ? `${currentUser}: ${text}` : `Bạn có một tin nhắn chờ mới từ ${currentUser}`,
-            icon: (userData.profile && userData.profile.customAvatar) ? userData.profile.customAvatar : "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
-            tag: isFriend ? "chat-" + currentUser : "msg-request", // Gộp thông báo theo người gửi hoặc loại yêu cầu
-            from: currentUser
-        });
-
-        // 4. Tăng badge số lượng tin chưa đọc
-        db.ref(`unread_counts/${currentChatFriend}/${currentUser}`).transaction(c => (c || 0) + 1);
-
-        // 5. XOÁ TRẠNG THÁI TRẢ LỜI (Reset giao diện)
-        if (replyingTo) {
-            replyingTo = null; 
-            const replyBar = document.getElementById('chat-reply-bar');
-            if (replyBar) replyBar.style.display = 'none'; 
-        }
-
-        input.value = ""; // Xoá ô nhập liệu
-        input.focus();    // Giữ focus để Henry nhắn tiếp cho lẹ
-    }).catch((err) => {
-        console.error("Lỗi gửi tin nhắn:", err);
-        alert("Không thể gửi tin nhắn. Vui lòng kiểm tra kết nối!");
-    });
-} 
+    const input = document.getElementById('chat-input');
+    const text = input.value.trim();
     
+    // Kiểm tra nội dung và người nhận
+    if (!text || !currentChatFriend) return;
+
+    // --- PHẦN LOGIC KIỂM TRA CHẶN (MỚI THÊM) ---
+    const amIBlocked = await isBlockedBy(currentChatFriend);
+    if (amIBlocked) {
+        alert("🚫 Bạn không thể gửi tin nhắn cho người này vì đã bị chặn.");
+        return;
+    }
+    // ------------------------------------------
+
+    const chatRoomId = [currentUser, currentChatFriend].sort().join('_');
+    const timestamp = firebase.database.ServerValue.TIMESTAMP;
+    
+    // --- PHẦN TẠO THỜI GIAN HIỂN THỊ (MỚI) ---
+    const now = new Date();
+    const displayTime = now.getHours().toString().padStart(2, '0') + ":" + 
+                        now.getMinutes().toString().padStart(2, '0');
+
+    // 1. Chuẩn bị dữ liệu tin nhắn (Có thêm nhánh replyData và displayTime)
+    const messageData = {
+        sender: currentUser,
+        text: text,
+        timestamp: timestamp,
+        displayTime: displayTime // Lưu giờ cụ thể vào tin nhắn để hiển thị dưới bong bóng
+    };
+
+    // Nếu Henry đang trong trạng thái "Trả lời", đính kèm thông tin tin nhắn gốc vào
+    if (replyingTo) {
+        messageData.replyData = {
+            id: replyingTo.id,
+            text: replyingTo.text,
+            sender: replyingTo.sender
+        };
+    }
+        
+    // --- LOGIC PHÂN LOẠI BẠN BÈ / NGƯỜI LẠ (GIỮ NGUYÊN 100% - ĐÃ FIX REAL-TIME) ---
+    const friendSnap = await db.ref(`users/${currentUser}/friends/${currentChatFriend}`).once('value');
+    const isFriend = friendSnap.exists();
+
+    const msgTitle = isFriend ? "💬 TIN NHẮN MỚI" : "📩 TIN NHẮN CHỜ MỚI";
+    const msgType = isFriend ? "chat" : "message_request";
+
+    // 2. Lưu tin nhắn vào phòng chat
+    const msgRef = db.ref('chats/' + chatRoomId + '/messages').push(); 
+    msgRef.set(messageData).then(() => {
+        
+        // 3. BẮN THÔNG BÁO THEO PHÂN LOẠI (Trong App)
+        db.ref('notifications_queue/' + currentChatFriend).push({
+            from: currentUser,
+            friendName: currentUser, 
+            text: text,
+            type: msgType, 
+            time: Date.now(),
+            displayTime: displayTime,
+            title: msgTitle
+        });
+
+        // --- MỚI: BẮN THÔNG BÁO RA MÁY ĐIỆN THOẠI (Push Notification) ---
+        // Gửi tín hiệu vào nhánh để Service Worker trên máy đối phương nhận được và hiện thông báo ngoài màn hình
+        db.ref('push_notifications/' + currentChatFriend).push({
+            title: msgTitle,
+            body: `${currentUser}: ${text}`,
+            icon: (userData.profile && userData.profile.customAvatar) ? userData.profile.customAvatar : "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+            tag: "chat-" + currentUser, // Để các tin nhắn từ cùng 1 người sẽ gộp lại một chỗ trên điện thoại
+            from: currentUser
+        });
+
+        // 4. Tăng badge số lượng tin chưa đọc
+        db.ref(`unread_counts/${currentChatFriend}/${currentUser}`).transaction(c => (c || 0) + 1);
+
+        // 5. XOÁ TRẠNG THÁI TRẢ LỜI (Reset giao diện)
+        if (replyingTo) {
+            replyingTo = null; 
+            const replyBar = document.getElementById('chat-reply-bar');
+            if (replyBar) replyBar.style.display = 'none'; 
+        }
+
+        input.value = ""; // Xoá ô nhập liệu
+        input.focus();    // Giữ focus để Henry nhắn tiếp cho lẹ
+    }).catch((err) => {
+        console.error("Lỗi gửi tin nhắn:", err);
+        alert("Không thể gửi tin nhắn. Vui lòng kiểm tra kết nối!");
+    });
+}
 // --- 1. HÀM CẬP NHẬT MÀU QR (Sửa lại cho chuẩn) ---
 function updateQRColor(newColor) {
     // Lưu vào biến dữ liệu của Henry
@@ -12351,127 +12338,130 @@ function openChatWithOther() {
 // --- HÀM 1: GỬI LỜI MỜI KẾT BẠN (Đã sửa để reset thông báo sau gỡ chặn) ---
 // --- HÀM 1: GỬI LỜI MỜI KẾT BẠN (Đã sửa để hỗ trợ chạm mở Profile) ---
 function sendFriendRequest() {
-    if (!currentViewedUser || currentViewedUser === currentUser) return;
+    if (!currentViewedUser || currentViewedUser === currentUser) return;
 
-    const btn = document.querySelector('.btn-action-pink');
-    if (!btn) return;
+    const btn = document.querySelector('.btn-action-pink');
+    if (!btn) return;
 
-    // Đổi trạng thái nút ngay lập tức
-    btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ĐANG GỬI...`;
-    btn.disabled = true;
+    // Đổi trạng thái nút ngay lập tức
+    btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ĐANG GỬI...`;
+    btn.disabled = true;
 
-    // 1. Gửi yêu cầu vào nhánh friend_requests của người nhận
-    db.ref('friend_requests/' + currentViewedUser + '/' + currentUser).set({
-        from: currentUser,
-        time: firebase.database.ServerValue.TIMESTAMP,
-        status: 'pending' // Chờ phản hồi
-    }).then(() => {
-        btn.innerHTML = `<i class="fas fa-check"></i> ĐÃ GỬI LỜI MỜI`;
-        btn.style.background = "#ccc";
-        
-        // --- CẬP NHẬT QUAN TRỌNG: Dùng .set() với ID cố định thay vì .push() ---
-        // Việc dùng ID cố định (ví dụ: 'req_' + currentUser) giúp Firebase ghi đè nếu nhấn nhầm nhiều lần
-        // và giúp Henry dễ dàng kiểm soát việc trùng lặp thông báo.
-        const requestNotificationId = 'request_from_' + currentUser;
-        
-        db.ref('notifications_queue/' + currentViewedUser + '/' + requestNotificationId).set({
-            from: currentUser,
-            title: "💌 LỜI MỜI KẾT BẠN",
-            text: `${currentUser} vừa gửi cho bạn một lời mời kết bạn mới!`,
-            type: 'friend_request',
-            time: Date.now(),
-            extraData: { 
-                type: 'friend_request', 
-                sender: currentUser, // Tên tài khoản Henry
-                data: userData,      // Dữ liệu hồ sơ Henry (để hiện Profile ngay)
-                friendName: currentUser // Backup thêm trường này cho hàm handleNotiClick
-            }
-        });
+    // 1. Gửi yêu cầu vào nhánh friend_requests của người nhận
+    db.ref('friend_requests/' + currentViewedUser + '/' + currentUser).set({
+        from: currentUser,
+        time: firebase.database.ServerValue.TIMESTAMP,
+        status: 'pending' // Chờ phản hồi
+    }).then(() => {
+        btn.innerHTML = `<i class="fas fa-check"></i> ĐÃ GỬI LỜI MỜI`;
+        btn.style.background = "#ccc";
+        
+        // --- CẬP NHẬT QUAN TRỌNG: Dùng .set() với ID cố định thay vì .push() ---
+        // Việc dùng ID cố định (ví dụ: 'req_' + currentUser) giúp Firebase ghi đè nếu nhấn nhầm nhiều lần
+        // và giúp Henry dễ dàng kiểm soát việc trùng lặp thông báo.
+        const requestNotificationId = 'request_from_' + currentUser;
+        
+        db.ref('notifications_queue/' + currentViewedUser + '/' + requestNotificationId).set({
+            from: currentUser,
+            title: "💌 LỜI MỜI KẾT BẠN",
+            text: `${currentUser} vừa gửi cho bạn một lời mời kết bạn mới!`,
+            type: 'friend_request',
+            time: Date.now(),
+            extraData: { 
+                type: 'friend_request', 
+                sender: currentUser, // Tên tài khoản Henry
+                data: userData,      // Dữ liệu hồ sơ Henry (để hiện Profile ngay)
+                friendName: currentUser // Backup thêm trường này cho hàm handleNotiClick
+            }
+        });
 
-        addNotification("💌 KẾT BẠN", `Đã gửi lời mời đến ${currentViewedUser}.`);
-    }).catch(err => {
-        console.error("Lỗi gửi lời mời:", err);
-        btn.disabled = false;
-        btn.innerHTML = `<i class="fas fa-user-plus"></i> KẾT BẠN`;
-        btn.style.background = ""; // Trả về màu hồng cũ nếu lỗi
-    });
-} 
+        addNotification("💌 KẾT BẠN", `Đã gửi lời mời đến ${currentViewedUser}.`);
+    }).catch(err => {
+        console.error("Lỗi gửi lời mời:", err);
+        btn.disabled = false;
+        btn.innerHTML = `<i class="fas fa-user-plus"></i> KẾT BẠN`;
+        btn.style.background = ""; // Trả về màu hồng cũ nếu lỗi
+    });
+}
+
 // --- HÀM 2: CHẤP NHẬN KẾT BẠN ---
 function acceptFriend(friendName) {
-    if (!friendName || !currentUser) return;
+    if (!friendName || !currentUser) return;
 
-    const updates = {};
-    const timestamp = firebase.database.ServerValue.TIMESTAMP; // Dùng thời gian của server sẽ chính xác hơn Date.now()
+    const updates = {};
+    const timestamp = firebase.database.ServerValue.TIMESTAMP; // Dùng thời gian của server sẽ chính xác hơn Date.now()
 
-    // 1. Kết bạn 2 chiều vĩnh viễn (nhánh /friends bên trong mỗi User)
-    updates[`users/${friendName}/friends/${currentUser}`] = { addedAt: timestamp };
-    updates[`users/${currentUser}/friends/${friendName}`] = { addedAt: timestamp };
+    // 1. Kết bạn 2 chiều vĩnh viễn (nhánh /friends bên trong mỗi User)
+    updates[`users/${friendName}/friends/${currentUser}`] = { addedAt: timestamp };
+    updates[`users/${currentUser}/friends/${friendName}`] = { addedAt: timestamp };
 
-    // 2. Dọn dẹp yêu cầu kết bạn (Xóa cả 2 chiều để sạch sẽ Database)
-    // Xóa lời mời người đó gửi cho Henry
-    updates[`friend_requests/${currentUser}/${friendName}`] = null;
-    // Xóa lời mời Henry gửi cho người đó (nếu có, đề phòng trường hợp mời chéo)
-    updates[`friend_requests/${friendName}/${currentUser}`] = null;
+    // 2. Dọn dẹp yêu cầu kết bạn (Xóa cả 2 chiều để sạch sẽ Database)
+    // Xóa lời mời người đó gửi cho Henry
+    updates[`friend_requests/${currentUser}/${friendName}`] = null;
+    // Xóa lời mời Henry gửi cho người đó (nếu có, đề phòng trường hợp mời chéo)
+    updates[`friend_requests/${friendName}/${currentUser}`] = null;
 
-    // 3. Cập nhật trạng thái để máy đối phương nhận biết và hiện thông báo Realtime
-    updates[`friend_requests_status/${friendName}/${currentUser}`] = {
-        status: 'accepted',
-        time: timestamp
-    };
+    // 3. Cập nhật trạng thái để máy đối phương nhận biết và hiện thông báo Realtime
+    updates[`friend_requests_status/${friendName}/${currentUser}`] = {
+        status: 'accepted',
+        time: timestamp
+    };
 
-    // Thực hiện Update tất cả các nhánh cùng một lúc
-    db.ref().update(updates).then(() => {
-        // --- CHỖ QUAN TRỌNG NHẤT ĐỂ KHÔNG PHẢI LOAD LẠI TRANG ---
-        // Cập nhật ngay lập tức vào biến userData đang chạy để hàm sendMessage đọc được
-        if (typeof userData !== 'undefined') {
-            if (!userData.friends) userData.friends = {};
-            userData.friends[friendName] = { addedAt: Date.now() };
-        }
+    // Thực hiện Update tất cả các nhánh cùng một lúc
+    db.ref().update(updates).then(() => {
+        // --- CHỖ QUAN TRỌNG NHẤT ĐỂ KHÔNG PHẢI LOAD LẠI TRANG ---
+        // Cập nhật ngay lập tức vào biến userData đang chạy để hàm sendMessage đọc được
+        if (typeof userData !== 'undefined') {
+            if (!userData.friends) userData.friends = {};
+            userData.friends[friendName] = { addedAt: Date.now() };
+        }
 
-        // Thông báo cho Henry biết
-        addNotification(
-            "🤝 BẠN BÈ MỚI", 
-            `Bạn và ${friendName} đã chính thức trở thành bạn bè vĩnh viễn!`,
-            true // Phát tiếng Ting
-        );
+        // Thông báo cho Henry biết
+        addNotification(
+            "🤝 BẠN BÈ MỚI", 
+            `Bạn và ${friendName} đã chính thức trở thành bạn bè vĩnh viễn!`,
+            true // Phát tiếng Ting
+        );
 
-        alert(`🎉 Chúc mừng! ${friendName} đã được thêm vào danh sách cư dân thân thiết.`);
-        
-        // Đóng các bảng hồ sơ đang mở
-        if (typeof closeOtherProfile === 'function') closeOtherProfile();
-        
-        // Tự động chuyển về Tab Bạn Bè để Henry thấy ngay danh sách mới
-        if (typeof switchTab === 'function') {
-            switchTab('tab-friends');
-        } else {
-            // Nếu không dùng switchTab, Henry có thể dùng logic hiện div của riêng mình
-            const friendsTab = document.getElementById('tab-friends');
-            if (friendsTab) friendsTab.click();
-        }
+        alert(`🎉 Chúc mừng! ${friendName} đã được thêm vào danh sách cư dân thân thiết.`);
+        
+        // Đóng các bảng hồ sơ đang mở
+        if (typeof closeOtherProfile === 'function') closeOtherProfile();
+        
+        // Tự động chuyển về Tab Bạn Bè để Henry thấy ngay danh sách mới
+        if (typeof switchTab === 'function') {
+            switchTab('tab-friends');
+        } else {
+            // Nếu không dùng switchTab, Henry có thể dùng logic hiện div của riêng mình
+            const friendsTab = document.getElementById('tab-friends');
+            if (friendsTab) friendsTab.click();
+        }
 
-        // Vẽ lại danh sách bạn bè ngay lập tức (nếu có hàm này)
-        if (typeof renderFriendsList === 'function') renderFriendsList();
+        // Vẽ lại danh sách bạn bè ngay lập tức (nếu có hàm này)
+        if (typeof renderFriendsList === 'function') renderFriendsList();
 
-    }).catch(err => {
-        console.error("Lỗi kết bạn nghiêm trọng:", err);
-        alert("❌ Hệ thống gặp sự cố khi lưu bạn bè. Vui lòng kiểm tra kết nối mạng!");
-    });
+    }).catch(err => {
+        console.error("Lỗi kết bạn nghiêm trọng:", err);
+        alert("❌ Hệ thống gặp sự cố khi lưu bạn bè. Vui lòng kiểm tra kết nối mạng!");
+    });
 }
-    
+
 // --- HÀM 3: TỪ CHỐI KẾT BẠN ---
 function rejectFriend(friendName) {
-    if (confirm(`Bạn muốn từ chối lời mời từ ${friendName}?`)) {
-        const updates = {};
-        updates[`friend_requests/${currentUser}/${friendName}`] = null;
-        // Báo trạng thái từ chối về để máy người kia reset nút
-        updates[`friend_requests_status/${friendName}/${currentUser}`] = 'rejected';
+    if (confirm(`Bạn muốn từ chối lời mời từ ${friendName}?`)) {
+        const updates = {};
+        updates[`friend_requests/${currentUser}/${friendName}`] = null;
+        // Báo trạng thái từ chối về để máy người kia reset nút
+        updates[`friend_requests_status/${friendName}/${currentUser}`] = 'rejected';
 
-        db.ref().update(updates).then(() => {
-            addNotification("🔕 TỪ CHỐI", `Đã từ chối lời mời từ ${friendName}.`);
-            closeOtherProfile();
-        });
-    }
-} 
+        db.ref().update(updates).then(() => {
+            addNotification("🔕 TỪ CHỐI", `Đã từ chối lời mời từ ${friendName}.`);
+            closeOtherProfile();
+        });
+    }
+}
+
+
 
 function showFriendRequestProfile(friendData) {
     // 1. Lưu người đang xem
@@ -12583,95 +12573,95 @@ function showFriendRequestProfileByTarget(targetName) {
 }
 
 function initFriendStatusListener() {
-    // Lắng nghe xem có ai từ chối hoặc đồng ý mình không để hiện thông báo
-    db.ref(`friend_requests_status/${currentUser}`).on('value', (snapshot) => {
-        const data = snapshot.val();
-        if (!data) return;
+    // Lắng nghe xem có ai từ chối hoặc đồng ý mình không để hiện thông báo
+    db.ref(`friend_requests_status/${currentUser}`).on('value', (snapshot) => {
+        const data = snapshot.val();
+        if (!data) return;
 
-        for (let targetName in data) {
-            const status = data[targetName];
-            if (status === 'rejected') {
-                addNotification("❌ BỊ TỪ CHỐI", `${targetName} đã từ chối lời mời kết bạn của bạn.`, true);
-                // Xóa trạng thái này đi để lần sau có thể gửi lại
-                db.ref(`friend_requests_status/${currentUser}/${targetName}`).remove();
-            } else if (status === 'accepted') {
-                addNotification("🤝 THÀNH CÔNG", `${targetName} đã đồng ý kết bạn!`, false);
-                db.ref(`friend_requests_status/${currentUser}/${targetName}`).remove();
-            }
-        }
-    });
-} 
+        for (let targetName in data) {
+            const status = data[targetName];
+            if (status === 'rejected') {
+                addNotification("❌ BỊ TỪ CHỐI", `${targetName} đã từ chối lời mời kết bạn của bạn.`, true);
+                // Xóa trạng thái này đi để lần sau có thể gửi lại
+                db.ref(`friend_requests_status/${currentUser}/${targetName}`).remove();
+            } else if (status === 'accepted') {
+                addNotification("🤝 THÀNH CÔNG", `${targetName} đã đồng ý kết bạn!`, false);
+                db.ref(`friend_requests_status/${currentUser}/${targetName}`).remove();
+            }
+        }
+    });
+}
 
 function initFriendRequestListener() {
-    if (!currentUser) return;
+    if (!currentUser) return;
 
-    // Henry dùng mốc thời gian này để bỏ qua các lời mời cũ đã tồn tại trước khi mở web
-    const sessionStartTime = Date.now();
+    // Henry dùng mốc thời gian này để bỏ qua các lời mời cũ đã tồn tại trước khi mở web
+    const sessionStartTime = Date.now();
 
-    // Lắng nghe nhánh friend_requests của chính mình
-    db.ref('friend_requests/' + currentUser).on('child_added', (snapshot) => {
-        const requestData = snapshot.val();
-        
-        // --- ĐIỀU KIỆN 1: Phải là đang chờ và phải là lời mời mới phát sinh trong phiên này ---
-        if (!requestData || requestData.status !== 'pending') return;
-        
-        // Nếu Henry muốn chỉ nhận thông báo cho những người gửi SAU khi Henry vào game:
-        // if (requestData.time && requestData.time < sessionStartTime) return;
+    // Lắng nghe nhánh friend_requests của chính mình
+    db.ref('friend_requests/' + currentUser).on('child_added', (snapshot) => {
+        const requestData = snapshot.val();
+        
+        // --- ĐIỀU KIỆN 1: Phải là đang chờ và phải là lời mời mới phát sinh trong phiên này ---
+        if (!requestData || requestData.status !== 'pending') return;
+        
+        // Nếu Henry muốn chỉ nhận thông báo cho những người gửi SAU khi Henry vào game:
+        // if (requestData.time && requestData.time < sessionStartTime) return;
 
-        const senderName = snapshot.key; // Tên người gửi
+        const senderName = snapshot.key; // Tên người gửi
 
-        // --- ĐIỀU KIỆN 2: KIỂM TRA TRÙNG LẶP TRONG DANH SÁCH THÔNG BÁO ---
-        const isNotified = userData.notifications && userData.notifications.some(n => 
-            n.extraData && 
-            n.extraData.sender === senderName && 
-            n.extraData.type === 'friend_request'
-        );
-        
-        if (!isNotified) {
-            // Lấy thông tin chi tiết của người gửi
-            db.ref('users/' + senderName).once('value', (userSnap) => {
-                const senderFullData = userSnap.val();
-                if (!senderFullData) return;
-                
-                // BẮN THÔNG BÁO VÀO CHUÔNG (Giao diện trong web)
-                addNotification(
-                    "💌 LỜI MỜI KẾT BẠN", 
-                    `${senderName} đã gửi cho bạn một lời mời kết bạn mới!`,
-                    false, // Phát tiếng Ting
-                    { 
-                        type: 'friend_request', 
-                        data: senderFullData, // Dữ liệu để hiện Profile ngay lập tức
-                        sender: senderName 
-                    }
-                );
-                
-                // --- FIX: Bắn thông báo ra máy thông qua Service Worker ---
-                if (Notification.permission === "granted") {
-                    const title = "SWEETIE GAME WORLD";
-                    const options = {
-                        body: `${senderName} muốn kết bạn với bạn!`,
-                        icon: (senderFullData.profile && senderFullData.profile.customAvatar) 
-                                ? senderFullData.profile.customAvatar 
-                                : "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
-                        badge: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
-                        tag: "friend-request-" + senderName, // Tránh hiện nhiều thông báo từ cùng 1 người
-                        renotify: true
-                    };
+        // --- ĐIỀU KIỆN 2: KIỂM TRA TRÙNG LẶP TRONG DANH SÁCH THÔNG BÁO ---
+        const isNotified = userData.notifications && userData.notifications.some(n => 
+            n.extraData && 
+            n.extraData.sender === senderName && 
+            n.extraData.type === 'friend_request'
+        );
+        
+        if (!isNotified) {
+            // Lấy thông tin chi tiết của người gửi
+            db.ref('users/' + senderName).once('value', (userSnap) => {
+                const senderFullData = userSnap.val();
+                if (!senderFullData) return;
+                
+                // BẮN THÔNG BÁO VÀO CHUÔNG (Giao diện trong web)
+                addNotification(
+                    "💌 LỜI MỜI KẾT BẠN", 
+                    `${senderName} đã gửi cho bạn một lời mời kết bạn mới!`,
+                    false, // Phát tiếng Ting
+                    { 
+                        type: 'friend_request', 
+                        data: senderFullData, // Dữ liệu để hiện Profile ngay lập tức
+                        sender: senderName 
+                    }
+                );
+                
+                // --- FIX: Bắn thông báo ra máy thông qua Service Worker ---
+                if (Notification.permission === "granted") {
+                    const title = "SWEETIE GAME WORLD";
+                    const options = {
+                        body: `${senderName} muốn kết bạn với bạn!`,
+                        icon: (senderFullData.profile && senderFullData.profile.customAvatar) 
+                                ? senderFullData.profile.customAvatar 
+                                : "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+                        badge: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+                        tag: "friend-request-" + senderName, // Tránh hiện nhiều thông báo từ cùng 1 người
+                        renotify: true
+                    };
 
-                    if ('serviceWorker' in navigator) {
-                        navigator.serviceWorker.ready.then(reg => {
-                            reg.showNotification(title, options);
-                        });
-                    } else {
-                        // Fallback cho trình duyệt cũ không hỗ trợ SW
-                        new Notification(title, options);
-                    }
-                }
-            });
-        }
-    });
-} 
-    
+                    if ('serviceWorker' in navigator) {
+                        navigator.serviceWorker.ready.then(reg => {
+                            reg.showNotification(title, options);
+                        });
+                    } else {
+                        // Fallback cho trình duyệt cũ không hỗ trợ SW
+                        new Notification(title, options);
+                    }
+                }
+            });
+        }
+    });
+}
+
 async function renderFriendsList() {
     const container = document.getElementById('friends-list-container');
     const requestContainer = document.getElementById('request-list-container'); 
@@ -12886,38 +12876,27 @@ function cancelReply() {
 
 // C. Xóa tin nhắn (Xử lý Firebase)
 function deleteMessage(msgId, isMe) {
-    const chatRoomId = [currentUser, currentChatFriend].sort().join('_');
+    const chatRoomId = [currentUser, currentChatFriend].sort().join('_');
 
-    if (isMe) {
-        // TIN CỦA CHÍNH MÌNH: Cho phép chọn 2 chế độ
-        const choice = confirm("Chọn cách xóa:\n- OK: Gỡ với MỌI NGƯỜI (Xóa vĩnh viễn)\n- Cancel: Gỡ ở phía TÔI (Chỉ ẩn đi)");
-        
-        if (choice) {
-            // Chế độ 1: Gỡ với mọi người (Xóa trên Firebase)
-            db.ref(`chats/${chatRoomId}/messages/${msgId}`).remove()
-                .then(() => {
-                    console.log("Đã gỡ tin nhắn với mọi người");
-
-                    // --- MỚI: BẮN THÔNG BÁO ĐẨY CHO ĐỐI PHƯƠNG ---
-                    db.ref('push_notifications/' + currentChatFriend).push({
-                        title: "🗑️ TIN NHẮN ĐÃ GỠ",
-                        body: `${currentUser} đã thu hồi một tin nhắn`,
-                        icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
-                        tag: "delete-msg-" + msgId, // Tag riêng để không bị đè tin nhắn khác
-                        from: currentUser
-                    });
-                });
-        } else {
-            // Chế độ 2: Gỡ ở phía tôi (Ẩn bằng LocalStorage)
-            hideMessageLocally(msgId);
-        }
-    } else {
-        // TIN ĐỐI PHƯƠNG: Chỉ có một lựa chọn là ẩn đi
-        if (confirm("Bạn muốn ẩn tin nhắn này khỏi màn hình của mình?")) {
-            hideMessageLocally(msgId);
-        }
-    }
-} 
+    if (isMe) {
+        // TIN CỦA CHÍNH MÌNH: Cho phép chọn 2 chế độ
+        const choice = confirm("Chọn cách xóa:\n- OK: Gỡ với MỌI NGƯỜI (Xóa vĩnh viễn)\n- Cancel: Gỡ ở phía TÔI (Chỉ ẩn đi)");
+        
+        if (choice) {
+            // Chế độ 1: Gỡ với mọi người (Xóa trên Firebase)
+            db.ref(`chats/${chatRoomId}/messages/${msgId}`).remove()
+                .then(() => console.log("Đã gỡ tin nhắn với mọi người"));
+        } else {
+            // Chế độ 2: Gỡ ở phía tôi (Ẩn bằng LocalStorage)
+            hideMessageLocally(msgId);
+        }
+    } else {
+        // TIN ĐỐI PHƯƠNG: Chỉ có một lựa chọn là ẩn đi
+        if (confirm("Bạn muốn ẩn tin nhắn này khỏi màn hình của mình?")) {
+            hideMessageLocally(msgId);
+        }
+    }
+}
 
 // Henry nên tách hàm này ra để dùng chung cho gọn nhé
 function hideMessageLocally(msgId) {
@@ -13060,33 +13039,19 @@ function openNicknameEditor() {
 }
 
 // --- 2. LƯU TẤT CẢ (REAL-TIME) ---
-// --- 2. LƯU TẤT CẢ (Tích hợp thông báo Online & Offline) ---
 function saveAllNicknames() {
-    const nickFriend = document.getElementById('input-nick-friend').value.trim();
-    const nickMe = document.getElementById('input-nick-me').value.trim();
-    const chatRoomId = [currentUser, currentChatFriend].sort().join('_');
+    const nickFriend = document.getElementById('input-nick-friend').value.trim();
+    const nickMe = document.getElementById('input-nick-me').value.trim();
+    const chatRoomId = [currentUser, currentChatFriend].sort().join('_');
 
-    const updates = {};
-    updates[currentChatFriend] = nickFriend === "" ? null : nickFriend;
-    updates[currentUser] = nickMe === "" ? null : nickMe;
+    const updates = {};
+    updates[currentChatFriend] = nickFriend === "" ? null : nickFriend;
+    updates[currentUser] = nickMe === "" ? null : nickMe;
 
-    db.ref(`chats/${chatRoomId}/nicknames`).update(updates).then(() => {
-        // --- BẮN THÔNG BÁO ĐẨY ---
-        const msg = nickFriend 
-            ? `${currentUser} đã đặt biệt danh cho bạn là "${nickFriend}"` 
-            : `${currentUser} đã gỡ biệt danh của bạn`;
-
-        db.ref('push_notifications/' + currentChatFriend).push({
-            title: "🏷️ BIỆT DANH MỚI",
-            body: msg,
-            icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
-            tag: "nickname-change",
-            from: currentUser
-        });
-
-        addNotification("🏷️ HỆ THỐNG", "Đã cập nhật biệt danh mới!");
-        toggleModal('modal-nickname');
-    });
+    db.ref(`chats/${chatRoomId}/nicknames`).update(updates).then(() => {
+        addNotification("🏷️ HỆ THỐNG", "Đã cập nhật biệt danh mới!");
+        toggleModal('modal-nickname');
+    });
 }
 
 // --- 3. CÁC HÀM XÓA RIÊNG/CHUNG ---
@@ -13163,48 +13128,41 @@ function toggleReactionPicker(msgId) {
 }
 
 // 3. Gửi cảm xúc lên Firebase
-// Thêm tham số isFromBar (mặc định là false)
-function sendReaction(msgId, icon, isFromBar = false) {
-    if (!icon || icon === "undefined") return;
-    const chatRoomId = [currentUser, currentChatFriend].sort().join('_');
-    const reactionPath = `chats/${chatRoomId}/messages/${msgId}/reactions/${currentUser}`;
+function sendReaction(msgId, icon) {
+    if (!icon || icon === "undefined") return;
+    const chatRoomId = [currentUser, currentChatFriend].sort().join('_');
+    const reactionPath = `chats/${chatRoomId}/messages/${msgId}/reactions/${currentUser}`;
 
-    db.ref(reactionPath).once('value', (snap) => {
-        const currentIcon = snap.val();
-        
-        // CHỈ XÓA KHI: Click từ thanh Bar (isFromBar = true) VÀ icon chọn trùng với icon cũ
-        if (isFromBar && currentIcon === icon) {
-            db.ref(reactionPath).remove();
-        } 
-        // CẬP NHẬT/THÊM MỚI KHI: Click từ thanh Bar (Bất kể icon mới hay trùng nhưng isFromBar phải là true)
-        // Hoặc đơn giản là: Nếu click từ Bar mà không phải lệnh xóa ở trên thì là lệnh Set
-        else if (isFromBar) {
-            db.ref(reactionPath).set(icon).then(() => {
-                db.ref(`chats/${chatRoomId}/messages/${msgId}`).once('value', (mSnap) => {
-                    const mData = mSnap.val();
-                    if (mData && mData.sender !== currentUser) {
-                        // 1. Gửi vào Chuông thông báo (Trong App)
-                        db.ref('notifications_queue/' + mData.sender).push({
-                            from: currentUser,
-                            title: "✨ CẢM XÚC MỚI",
-                            text: `${currentUser} đã thả ${icon} vào tin nhắn của bạn`,
-                            type: 'chat',
-                            time: Date.now()
-                        });
-
-                        // 2. --- MỚI: BẮN THÔNG BÁO ĐẨY RA ĐIỆN THOẠI ---
-                        db.ref('push_notifications/' + mData.sender).push({
-                            title: "✨ CẢM XÚC MỚI",
-                            body: `${currentUser} đã bày tỏ cảm xúc ${icon} vào tin nhắn của bạn`,
-                            icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
-                            tag: "reaction-" + msgId,
-                            from: currentUser
-                        });
-                    }
-                });
-            });
-        } 
+    db.ref(reactionPath).once('value', (snap) => {
+        const currentIcon = snap.val();
         
+        if (currentIcon === icon) {
+            // NẾU ẤN TRÙNG ICON ĐANG THẢ -> XÓA LUÔN
+            db.ref(reactionPath).remove();
+        } else {
+            // NẾU ICON MỚI -> CẬP NHẬT
+            db.ref(reactionPath).set(icon).then(() => {
+                // Gửi thông báo cho đối phương như Messenger
+                db.ref(`chats/${chatRoomId}/messages/${msgId}`).once('value', (mSnap) => {
+                    const mData = mSnap.val();
+                    if (mData && mData.sender !== currentUser) {
+                        db.ref('notifications_queue/' + mData.sender).push({
+                            from: currentUser,
+                            title: "✨ CẢM XÚC MỚI",
+                            text: `${currentUser} đã thả ${icon} vào tin nhắn của bạn`,
+                            type: 'chat',
+                            time: Date.now()
+                        });
+                    }
+                });
+            });
+        }
+        // Đóng thanh cảm xúc sau khi thao tác
+        const picker = document.getElementById(`picker-${msgId}`);
+        if (picker) picker.style.display = 'none';
+    });
+}
+
 document.addEventListener('mousedown', function(event) {
     // Nếu click không phải vào thanh bar (reaction-stay) và không phải vào nút mở (mặt cười)
     if (!event.target.closest('.reaction-stay')) {
