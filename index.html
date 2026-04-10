@@ -8184,6 +8184,36 @@ function handleLogin() {
     alert(isNewUser ? `🌸 Chào mừng người chơi mới: ${name}!` : `🌸 Chào mừng ${name} đã quay trở lại!`);
 }
 
+    function setupPushNotifications() {
+    // 1. Yêu cầu quyền thông báo từ trình duyệt
+    Notification.requestPermission().then((permission) => {
+        if (permission === 'granted') {
+            console.log('✅ Quyền thông báo đã được cấp!');
+
+            // 2. Lấy Token thiết bị
+            messaging.getToken({
+                vapidKey: 'BPFnrd9ax1LeRDNoYkAnCyOW1qxfNCXKBKGGrB383i-gJkV4ltLOqVBUG3EgXfmE_vLZdrNE_yBChJPR_sdlMEs' // Cặp khóa của Henry
+            }).then((currentToken) => {
+                if (currentToken) {
+                    console.log('🎯 Token của máy Henry:', currentToken);
+
+                    // 3. QUAN TRỌNG: Lưu Token này vào thông tin User trên Firebase
+                    // Để sau này Server biết "số nhà" của Henry mà gửi tin khi offline
+                    if (currentUser) {
+                        db.ref('users/' + currentUser + '/fcmToken').set(currentToken);
+                    }
+                } else {
+                    console.log('❌ Không lấy được Token. Hãy kiểm tra lại cấu hình Firebase.');
+                }
+            }).catch((err) => {
+                console.log('❌ Lỗi khi lấy Token:', err);
+            });
+        } else {
+            console.log('🚫 Người dùng từ chối quyền thông báo.');
+        }
+    });
+}
+    
 // Tự động kiểm tra tên khi người dùng đang nhập
 document.getElementById('reg-name').addEventListener('input', function(e) {
     const name = e.target.value.trim();
