@@ -4978,7 +4978,7 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
     pointer-events: auto !important;
 }
 
-    /* Giao diện Popup Nạp Tiền */
+    /* Giao diện Popup Nạp/Rút của Henry */
 .modal-overlay {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
     background: rgba(255, 192, 203, 0.5); backdrop-filter: blur(5px);
@@ -7875,7 +7875,8 @@ function closeDepositModal() {
 
 // Hàm chọn nhanh số tiền
 function setAmount(val) {
-    document.getElementById('deposit-amount-input').value = val;
+    const input = document.getElementById('deposit-amount-input');
+    if(input) input.value = val;
 }
 
 // Hàm xử lý nạp chính thức
@@ -9805,7 +9806,8 @@ function closeWithdrawModal() {
 
 // 3. Chọn nhanh số tiền rút
 function setWithdrawAmount(val) {
-    document.getElementById('withdraw-amount-input').value = val;
+    const input = document.getElementById('withdraw-amount-input');
+    if(input) input.value = val;
 }
 
 // 4. Xử lý rút tiền chính thức
