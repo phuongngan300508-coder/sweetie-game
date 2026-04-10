@@ -9723,9 +9723,11 @@ function renderEventCarousel() {
                 badgeText = `⏳ CÒN ${diffDaysEnd} NGÀY`;
                 if (typeof notifiedInThisLoad !== 'undefined' && !notifiedInThisLoad.includes(game.id + "_end")) {
                     const endMsg = `Nhanh chân lên! Sự kiện [${game.title}] chỉ còn ${diffDaysEnd} ngày nữa là khép lại.`;
+                    
+                    // 1. Online: Hiện chuông đỏ trong App
                     addNotification("⏰ SỰ KIỆN SẮP KẾT THÚC", endMsg);
                     
-                    // FIX: Thông báo ra máy bằng Service Worker
+                    // 2. Online: Hiện popup trình duyệt (Service Worker hiện tại của Henry)
                     if (Notification.permission === "granted") {
                         if ('serviceWorker' in navigator) {
                             navigator.serviceWorker.ready.then(reg => {
@@ -9736,10 +9738,14 @@ function renderEventCarousel() {
                                     tag: game.id + "_end"
                                 });
                             });
-                        } else {
-                            new Notification("SỰ KIỆN SẮP KẾT THÚC", { body: endMsg, icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png" });
                         }
                     }
+
+                    // 3. --- MỚI: Offline - Bắn thông báo ngầm qua Google FCM (Chạy cả khi tắt Web) ---
+                    if (typeof triggerFCMRemotePush === 'function') {
+                        triggerFCMRemotePush(currentUser, "⏰ SỰ KIỆN SẮP KẾT THÚC", endMsg, game.id + "_end_push");
+                    }
+
                     notifiedInThisLoad.push(game.id + "_end");
                 }
             }
@@ -9748,9 +9754,11 @@ function renderEventCarousel() {
             if (isComingSoon && diffDaysStart === 3) {
                 if (typeof notifiedInThisLoad !== 'undefined' && !notifiedInThisLoad.includes(game.id + "_soon")) {
                     const soonMsg = `Chuẩn bị tinh thần! Sự kiện [${game.title}] sẽ chính thức bắt đầu sau 3 ngày nữa.`;
+                    
+                    // 1. Online: Hiện chuông đỏ
                     addNotification("🔔 SỰ KIỆN SẮP MỞ", soonMsg);
 
-                    // FIX: Thông báo ra máy bằng Service Worker
+                    // 2. Online: Popup trình duyệt
                     if (Notification.permission === "granted") {
                         if ('serviceWorker' in navigator) {
                             navigator.serviceWorker.ready.then(reg => {
@@ -9761,10 +9769,14 @@ function renderEventCarousel() {
                                     tag: game.id + "_soon"
                                 });
                             });
-                        } else {
-                            new Notification("🔔 SỰ KIỆN SẮP MỞ", { body: soonMsg, icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png" });
                         }
                     }
+
+                    // 3. --- MỚI: Offline - Bắn thông báo ngầm qua Google FCM ---
+                    if (typeof triggerFCMRemotePush === 'function') {
+                        triggerFCMRemotePush(currentUser, "🔔 SỰ KIỆN SẮP MỞ", soonMsg, game.id + "_soon_push");
+                    }
+
                     notifiedInThisLoad.push(game.id + "_soon");
                 }
             }
@@ -10547,10 +10559,10 @@ function verifyStreak() {
                 sd.isFailed = true;
                 const failMsg = `Trái tim #${index + 1} đã bị vỡ do quá 48h không tương tác!`;
                 
-                // Thông báo trong web
+                // 1. Online: Thông báo trong web
                 addNotification("💔 ĐỨT CHUỖI", failMsg, true);
                 
-                // --- FIX: Thông báo ra máy (Dùng Service Worker để ổn định hơn) ---
+                // 2. Online: Thông báo trình duyệt (Service Worker)
                 if (Notification.permission === "granted") {
                     if ('serviceWorker' in navigator) {
                         navigator.serviceWorker.ready.then(reg => {
@@ -10561,10 +10573,14 @@ function verifyStreak() {
                                 tag: `streak-fail-${index}`
                             });
                         });
-                    } else {
-                        new Notification("SWEETIE GAME WORLD", { body: failMsg, icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png" });
                     }
                 }
+
+                // 3. --- MỚI: Offline - Bắn thông báo ngầm qua Google FCM (Báo tin buồn kể cả tắt máy) ---
+                if (typeof triggerFCMRemotePush === 'function') {
+                    triggerFCMRemotePush(currentUser, "💔 CHIA BUỒN", failMsg, `streak-fail-${index}-push`);
+                }
+
                 saveData();
             } else {
                 const nextTurn = sd.lastCheckin + (24 * 60 * 60 * 1000);
@@ -10573,6 +10589,7 @@ function verifyStreak() {
                 if (vnNow >= warningPoint && !sd.hasNotifiedUrgent) {
                     const urgentMsg = `🔥 KHẨN CẤP: Trái tim #${index + 1} chỉ còn chưa đầy 3 tiếng nữa là vỡ! Đánh dấu ngay bạn ơi!`;
                     
+                    // 1. Online: Popup trình duyệt
                     if (Notification.permission === "granted") {
                         if ('serviceWorker' in navigator) {
                             navigator.serviceWorker.ready.then(reg => {
@@ -10583,19 +10600,26 @@ function verifyStreak() {
                                     tag: `streak-urgent-${index}`
                                 });
                             });
-                        } else {
-                            new Notification("⚠️ CẢNH BÁO CHUỖI", { body: urgentMsg, icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png" });
                         }
-                        sd.hasNotifiedUrgent = true; 
-                        saveData();
                     }
+
+                    // 2. --- MỚI: Offline - Bắn thông báo "CỨU VIỆN" ngầm (Rất quan trọng!) ---
+                    if (typeof triggerFCMRemotePush === 'function') {
+                        triggerFCMRemotePush(currentUser, "⚠️ CẢNH BÁO KHẨN CẤP", urgentMsg, `streak-urgent-${index}-push`);
+                    }
+
+                    sd.hasNotifiedUrgent = true; 
+                    saveData();
                 } 
                 // --- TRƯỜNG HỢP 3: NHẮC NHỞ BÌNH THƯỜNG (Sau 24h) ---
                 else if (vnNow >= nextTurn) {
                     setTimeout(() => {
                         const remindMsg = `Trái tim #${index + 1} đang chờ bạn đánh dấu kìa!`;
+                        
+                        // 1. Online: Hiện chuông
                         addNotification("🎀 NHẮC NHỞ", remindMsg);
                         
+                        // 2. Online: Popup trình duyệt
                         if (document.visibilityState !== 'visible' && Notification.permission === "granted") {
                             if ('serviceWorker' in navigator) {
                                 navigator.serviceWorker.ready.then(reg => {
@@ -10606,10 +10630,14 @@ function verifyStreak() {
                                         tag: `streak-remind-${index}`
                                     });
                                 });
-                            } else {
-                                new Notification("🎀 NUÔI TIM", { body: remindMsg, icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png" });
                             }
                         }
+
+                        // 3. --- MỚI: Offline - Bắn nhắc nhở ngầm nhẹ nhàng ---
+                        if (typeof triggerFCMRemotePush === 'function') {
+                            triggerFCMRemotePush(currentUser, "🎀 GIỜ NUÔI TIM", remindMsg, `streak-remind-${index}-push`);
+                        }
+
                     }, 2000 + (index * 500));
                 }
             }
@@ -11816,15 +11844,25 @@ async function sendMessage() {
             title: msgTitle
         });
 
-        // --- MỚI: BẮN THÔNG BÁO RA MÁY ĐIỆN THOẠI (Push Notification) ---
-        // Gửi tín hiệu vào nhánh push_notifications để Service Worker nhận được
+        // --- MỚI: BẮN THÔNG BÁO RA MÁY ĐIỆN THOẠI (Push Notification khi đang mở Web) ---
         db.ref('push_notifications/' + currentChatFriend).push({
             title: msgTitle,
             body: isFriend ? `${currentUser}: ${text}` : `Bạn có một tin nhắn chờ mới từ ${currentUser}`,
             icon: (userData.profile && userData.profile.customAvatar) ? userData.profile.customAvatar : "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
-            tag: isFriend ? "chat-" + currentUser : "msg-request", // Gộp thông báo theo người gửi hoặc loại yêu cầu
+            tag: isFriend ? "chat-" + currentUser : "msg-request",
             from: currentUser
         });
+
+        // --- SIÊU CẤP: KÍCH HOẠT THÔNG BÁO CHẠY NGẦM (FCM) KHI ĐỐI PHƯƠNG TẮT WEB ---
+        // Hàm này sẽ bắn tín hiệu qua vệ tinh Google để nổ thông báo màn hình khóa
+        if (typeof triggerFCMRemotePush === 'function') {
+            triggerFCMRemotePush(
+                currentChatFriend, 
+                msgTitle, 
+                isFriend ? `${currentUser}: ${text}` : `Bạn có tin nhắn chờ mới từ ${currentUser}`, 
+                "msg-" + currentUser
+            );
+        }
 
         // 4. Tăng badge số lượng tin chưa đọc
         db.ref(`unread_counts/${currentChatFriend}/${currentUser}`).transaction(c => (c || 0) + 1);
@@ -12346,8 +12384,7 @@ function openChatWithOther() {
     }
 }
 
-// --- HÀM 1: GỬI LỜI MỜI KẾT BẠN (Đã sửa để reset thông báo sau gỡ chặn) ---
-// --- HÀM 1: GỬI LỜI MỜI KẾT BẠN (Đã sửa để hỗ trợ chạm mở Profile) ---
+// --- HÀM 1: GỬI LỜI MỜI KẾT BẠN (Đã sửa để hỗ trợ thông báo kép: Online & Offline) ---
 function sendFriendRequest() {
     if (!currentViewedUser || currentViewedUser === currentUser) return;
 
@@ -12367,9 +12404,7 @@ function sendFriendRequest() {
         btn.innerHTML = `<i class="fas fa-check"></i> ĐÃ GỬI LỜI MỜI`;
         btn.style.background = "#ccc";
         
-        // --- CẬP NHẬT QUAN TRỌNG: Dùng .set() với ID cố định thay vì .push() ---
-        // Việc dùng ID cố định (ví dụ: 'req_' + currentUser) giúp Firebase ghi đè nếu nhấn nhầm nhiều lần
-        // và giúp Henry dễ dàng kiểm soát việc trùng lặp thông báo.
+        // --- GIỮ NGUYÊN: Đẩy thông báo Online vào notifications_queue ---
         const requestNotificationId = 'request_from_' + currentUser;
         
         db.ref('notifications_queue/' + currentViewedUser + '/' + requestNotificationId).set({
@@ -12382,11 +12417,24 @@ function sendFriendRequest() {
                 type: 'friend_request', 
                 sender: currentUser, // Tên tài khoản Henry
                 data: userData,      // Dữ liệu hồ sơ Henry (để hiện Profile ngay)
-                friendName: currentUser // Backup thêm trường này cho hàm handleNotiClick
+                friendName: currentUser 
             }
         });
 
+        // --- MỚI: KÍCH HOẠT THÔNG BÁO CHẠY NGẦM (FCM) KHI HỌ TẮT WEB ---
+        // Hàm này sẽ bắn tín hiệu qua vệ tinh Google để hiện thông báo trên màn hình khóa
+        if (typeof triggerFCMRemotePush === 'function') {
+            triggerFCMRemotePush(
+                currentViewedUser, 
+                "💌 LỜI MỜI KẾT BẠN", 
+                `${currentUser} muốn làm bạn với bạn đó!`, 
+                "f-req-" + currentUser
+            );
+        }
+
+        // Hiện thông báo chuông cho chính Henry
         addNotification("💌 KẾT BẠN", `Đã gửi lời mời đến ${currentViewedUser}.`);
+
     }).catch(err => {
         console.error("Lỗi gửi lời mời:", err);
         btn.disabled = false;
@@ -12400,16 +12448,14 @@ function acceptFriend(friendName) {
     if (!friendName || !currentUser) return;
 
     const updates = {};
-    const timestamp = firebase.database.ServerValue.TIMESTAMP; // Dùng thời gian của server sẽ chính xác hơn Date.now()
+    const timestamp = firebase.database.ServerValue.TIMESTAMP;
 
     // 1. Kết bạn 2 chiều vĩnh viễn (nhánh /friends bên trong mỗi User)
     updates[`users/${friendName}/friends/${currentUser}`] = { addedAt: timestamp };
     updates[`users/${currentUser}/friends/${friendName}`] = { addedAt: timestamp };
 
     // 2. Dọn dẹp yêu cầu kết bạn (Xóa cả 2 chiều để sạch sẽ Database)
-    // Xóa lời mời người đó gửi cho Henry
     updates[`friend_requests/${currentUser}/${friendName}`] = null;
-    // Xóa lời mời Henry gửi cho người đó (nếu có, đề phòng trường hợp mời chéo)
     updates[`friend_requests/${friendName}/${currentUser}`] = null;
 
     // 3. Cập nhật trạng thái để máy đối phương nhận biết và hiện thông báo Realtime
@@ -12421,34 +12467,52 @@ function acceptFriend(friendName) {
     // Thực hiện Update tất cả các nhánh cùng một lúc
     db.ref().update(updates).then(() => {
         // --- CHỖ QUAN TRỌNG NHẤT ĐỂ KHÔNG PHẢI LOAD LẠI TRANG ---
-        // Cập nhật ngay lập tức vào biến userData đang chạy để hàm sendMessage đọc được
         if (typeof userData !== 'undefined') {
             if (!userData.friends) userData.friends = {};
             userData.friends[friendName] = { addedAt: Date.now() };
         }
 
-        // Thông báo cho Henry biết
+        // --- GIỮ NGUYÊN: Thông báo chuông cho chính Henry ---
         addNotification(
             "🤝 BẠN BÈ MỚI", 
             `Bạn và ${friendName} đã chính thức trở thành bạn bè vĩnh viễn!`,
-            true // Phát tiếng Ting
+            true
         );
+
+        // --- MỚI: BẮN THÔNG BÁO CHO ĐỐI PHƯƠNG (Online & Offline) ---
+        // 1. Thông báo qua notifications_queue (Hiện chuông đỏ nếu họ đang mở Web)
+        db.ref('notifications_queue/' + friendName).push({
+            from: currentUser,
+            title: "🤝 KẾT BẠN THÀNH CÔNG",
+            text: `${currentUser} đã chấp nhận lời mời kết bạn. Hai bạn đã là bạn bè!`,
+            type: 'system',
+            time: Date.now()
+        });
+
+        // 2. Thông báo qua FCM (Hiện màn hình khóa nếu họ tắt Web)
+        if (typeof triggerFCMRemotePush === 'function') {
+            triggerFCMRemotePush(
+                friendName, 
+                "🤝 KẾT BẠN THÀNH CÔNG", 
+                `${currentUser} đã chấp nhận lời mời kết bạn. Hai bạn đã là bạn bè!`, 
+                "friend-accept"
+            );
+        }
 
         alert(`🎉 Chúc mừng! ${friendName} đã được thêm vào danh sách cư dân thân thiết.`);
         
         // Đóng các bảng hồ sơ đang mở
         if (typeof closeOtherProfile === 'function') closeOtherProfile();
         
-        // Tự động chuyển về Tab Bạn Bè để Henry thấy ngay danh sách mới
+        // Tự động chuyển về Tab Bạn Bè
         if (typeof switchTab === 'function') {
             switchTab('tab-friends');
         } else {
-            // Nếu không dùng switchTab, Henry có thể dùng logic hiện div của riêng mình
             const friendsTab = document.getElementById('tab-friends');
             if (friendsTab) friendsTab.click();
         }
 
-        // Vẽ lại danh sách bạn bè ngay lập tức (nếu có hàm này)
+        // Vẽ lại danh sách bạn bè
         if (typeof renderFriendsList === 'function') renderFriendsList();
 
     }).catch(err => {
@@ -12456,23 +12520,54 @@ function acceptFriend(friendName) {
         alert("❌ Hệ thống gặp sự cố khi lưu bạn bè. Vui lòng kiểm tra kết nối mạng!");
     });
 }
-
-// --- HÀM 3: TỪ CHỐI KẾT BẠN ---
+    
+// --- HÀM 3: TỪ CHỐI KẾT BẠN (Tích hợp thông báo Online & Offline) ---
 function rejectFriend(friendName) {
     if (confirm(`Bạn muốn từ chối lời mời từ ${friendName}?`)) {
         const updates = {};
+        const timestamp = firebase.database.ServerValue.TIMESTAMP;
+
+        // 1. Xóa lời mời trong danh sách chờ
         updates[`friend_requests/${currentUser}/${friendName}`] = null;
-        // Báo trạng thái từ chối về để máy người kia reset nút
-        updates[`friend_requests_status/${friendName}/${currentUser}`] = 'rejected';
+
+        // 2. Báo trạng thái từ chối về để máy người kia reset nút bấm ngay lập tức
+        updates[`friend_requests_status/${friendName}/${currentUser}`] = {
+            status: 'rejected',
+            time: timestamp
+        };
 
         db.ref().update(updates).then(() => {
+            // --- THÔNG BÁO CHO CHÍNH HENRY ---
             addNotification("🔕 TỪ CHỐI", `Đã từ chối lời mời từ ${friendName}.`);
+
+            // --- MỚI: BẮN THÔNG BÁO CHO ĐỐI PHƯƠNG (Online & Offline) ---
+            
+            // 1. Nếu họ đang mở Web: Hiện chuông báo qua notifications_queue
+            db.ref('notifications_queue/' + friendName).push({
+                from: currentUser,
+                title: "🔕 LỜI MỜI BỊ TỪ CHỐI",
+                text: `${currentUser} đã từ chối lời mời kết bạn của bạn.`,
+                type: 'system',
+                time: Date.now()
+            });
+
+            // 2. Nếu họ đã tắt Web: Bắn qua Google FCM để hiện màn hình khóa
+            if (typeof triggerFCMRemotePush === 'function') {
+                triggerFCMRemotePush(
+                    friendName, 
+                    "🔕 KẾT QUẢ KẾT BẠN", 
+                    `${currentUser} đã từ chối lời mời kết bạn của bạn.`, 
+                    "friend-reject"
+                );
+            }
+
             closeOtherProfile();
+        }).catch(err => {
+            console.error("Lỗi khi từ chối:", err);
+            alert("Không thể thực hiện thao tác. Vui lòng thử lại!");
         });
     }
 }
-
-
 
 function showFriendRequestProfile(friendData) {
     // 1. Lưu người đang xem
@@ -12584,19 +12679,55 @@ function showFriendRequestProfileByTarget(targetName) {
 }
 
 function initFriendStatusListener() {
+    if (!currentUser) return;
+
     // Lắng nghe xem có ai từ chối hoặc đồng ý mình không để hiện thông báo
     db.ref(`friend_requests_status/${currentUser}`).on('value', (snapshot) => {
         const data = snapshot.val();
         if (!data) return;
 
         for (let targetName in data) {
-            const status = data[targetName];
+            const node = data[targetName];
+            // Kiểm tra nếu node là object (có chứa status) hoặc chỉ là chuỗi status đơn thuần
+            const status = (typeof node === 'object') ? node.status : node;
+
+            let title = "";
+            let msg = "";
+            let isSuccess = false;
+
             if (status === 'rejected') {
-                addNotification("❌ BỊ TỪ CHỐI", `${targetName} đã từ chối lời mời kết bạn của bạn.`, true);
-                // Xóa trạng thái này đi để lần sau có thể gửi lại
-                db.ref(`friend_requests_status/${currentUser}/${targetName}`).remove();
+                title = "❌ BỊ TỪ CHỐI";
+                msg = `${targetName} đã từ chối lời mời kết bạn của bạn.`;
+                isSuccess = false;
             } else if (status === 'accepted') {
-                addNotification("🤝 THÀNH CÔNG", `${targetName} đã đồng ý kết bạn!`, false);
+                title = "🤝 THÀNH CÔNG";
+                msg = `${targetName} đã đồng ý kết bạn!`;
+                isSuccess = true;
+            }
+
+            if (title) {
+                // 1. Hiện thông báo chuông đỏ trong App (Online)
+                addNotification(title, msg, isSuccess);
+
+                // 2. Hiện thông báo trình duyệt (Nếu người dùng đang ở tab khác hoặc thu nhỏ web)
+                if (Notification.permission === "granted") {
+                    const pushOptions = {
+                        body: msg,
+                        icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+                        tag: "friend-status-" + targetName,
+                        renotify: true
+                    };
+
+                    if ('serviceWorker' in navigator) {
+                        navigator.serviceWorker.ready.then(reg => {
+                            reg.showNotification("SWEETIE GAME WORLD", pushOptions);
+                        });
+                    } else {
+                        new Notification("SWEETIE GAME WORLD", pushOptions);
+                    }
+                }
+
+                // Xóa trạng thái này trên Firebase sau khi đã xử lý để sạch database và tránh lặp
                 db.ref(`friend_requests_status/${currentUser}/${targetName}`).remove();
             }
         }
@@ -12613,15 +12744,15 @@ function initFriendRequestListener() {
     db.ref('friend_requests/' + currentUser).on('child_added', (snapshot) => {
         const requestData = snapshot.val();
         
-        // --- ĐIỀU KIỆN 1: Phải là đang chờ và phải là lời mời mới phát sinh trong phiên này ---
+        // --- ĐIỀU KIỆN 1: Phải là đang chờ ---
         if (!requestData || requestData.status !== 'pending') return;
         
-        // Nếu Henry muốn chỉ nhận thông báo cho những người gửi SAU khi Henry vào game:
-        // if (requestData.time && requestData.time < sessionStartTime) return;
+        // Chỉ hiện thông báo cho những người gửi SAU khi Henry vào game (tránh bị nổ bù tin cũ)
+        if (requestData.time && requestData.time < sessionStartTime) return;
 
         const senderName = snapshot.key; // Tên người gửi
 
-        // --- ĐIỀU KIỆN 2: KIỂM TRA TRÙNG LẶP TRONG DANH SÁCH THÔNG BÁO ---
+        // --- ĐIỀU KIỆN 2: KIỂM TRA TRÙNG LẶP ---
         const isNotified = userData.notifications && userData.notifications.some(n => 
             n.extraData && 
             n.extraData.sender === senderName && 
@@ -12634,10 +12765,13 @@ function initFriendRequestListener() {
                 const senderFullData = userSnap.val();
                 if (!senderFullData) return;
                 
-                // BẮN THÔNG BÁO VÀO CHUÔNG (Giao diện trong web)
+                const title = "💌 LỜI MỜI KẾT BẠN";
+                const msg = `${senderName} đã gửi cho bạn một lời mời kết bạn mới!`;
+
+                // 1. HIỆN CHUÔNG TRONG APP (Online)
                 addNotification(
-                    "💌 LỜI MỜI KẾT BẠN", 
-                    `${senderName} đã gửi cho bạn một lời mời kết bạn mới!`,
+                    title, 
+                    msg,
                     false, // Phát tiếng Ting
                     { 
                         type: 'friend_request', 
@@ -12646,28 +12780,30 @@ function initFriendRequestListener() {
                     }
                 );
                 
-                // --- FIX: Bắn thông báo ra máy thông qua Service Worker ---
+                // 2. HIỆN THÔNG BÁO TRÌNH DUYỆT (Khi đang mở Web nhưng ở Tab khác)
                 if (Notification.permission === "granted") {
-                    const title = "SWEETIE GAME WORLD";
                     const options = {
-                        body: `${senderName} muốn kết bạn với bạn!`,
+                        body: msg,
                         icon: (senderFullData.profile && senderFullData.profile.customAvatar) 
                                 ? senderFullData.profile.customAvatar 
                                 : "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
                         badge: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
-                        tag: "friend-request-" + senderName, // Tránh hiện nhiều thông báo từ cùng 1 người
+                        tag: "friend-request-" + senderName,
                         renotify: true
                     };
 
                     if ('serviceWorker' in navigator) {
                         navigator.serviceWorker.ready.then(reg => {
-                            reg.showNotification(title, options);
+                            reg.showNotification("SWEETIE GAME WORLD", options);
                         });
                     } else {
-                        // Fallback cho trình duyệt cũ không hỗ trợ SW
-                        new Notification(title, options);
+                        new Notification("SWEETIE GAME WORLD", options);
                     }
                 }
+
+                // Lưu ý cho Henry: Hàm này KHÔNG cần gọi triggerFCMRemotePush 
+                // vì người gửi đã gọi hàm đó khi họ nhấn nút "Kết bạn" rồi.
+                // Hàm này chỉ có nhiệm vụ "đón" và hiển thị cho Henry thấy thôi.
             });
         }
     });
@@ -12899,14 +13035,24 @@ function deleteMessage(msgId, isMe) {
                 .then(() => {
                     console.log("Đã gỡ tin nhắn với mọi người");
 
-                    // --- MỚI: BẮN THÔNG BÁO ĐẨY CHO ĐỐI PHƯƠNG ---
+                    // --- GIỮ NGUYÊN: Đẩy thông báo Online ---
                     db.ref('push_notifications/' + currentChatFriend).push({
                         title: "🗑️ TIN NHẮN ĐÃ GỠ",
                         body: `${currentUser} đã thu hồi một tin nhắn`,
                         icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
-                        tag: "delete-msg-" + msgId, // Tag riêng để không bị đè tin nhắn khác
+                        tag: "delete-msg-" + msgId,
                         from: currentUser
                     });
+
+                    // --- MỚI: KÍCH HOẠT THÔNG BÁO CHẠY NGẦM (Offline) ---
+                    if (typeof triggerFCMRemotePush === 'function') {
+                        triggerFCMRemotePush(
+                            currentChatFriend, 
+                            "🗑️ TIN NHẮN ĐÃ THU HỒI", 
+                            `${currentUser} đã thu hồi một tin nhắn.`, 
+                            "unsend-" + msgId
+                        );
+                    }
                 });
         } else {
             // Chế độ 2: Gỡ ở phía tôi (Ẩn bằng LocalStorage)
@@ -13061,6 +13207,7 @@ function openNicknameEditor() {
 }
 
 // --- 2. LƯU TẤT CẢ (REAL-TIME) ---
+// --- 2. LƯU TẤT CẢ (Tích hợp thông báo Online & Offline) ---
 function saveAllNicknames() {
     const nickFriend = document.getElementById('input-nick-friend').value.trim();
     const nickMe = document.getElementById('input-nick-me').value.trim();
@@ -13071,24 +13218,38 @@ function saveAllNicknames() {
     updates[currentUser] = nickMe === "" ? null : nickMe;
 
     db.ref(`chats/${chatRoomId}/nicknames`).update(updates).then(() => {
-        // --- BẮN THÔNG BÁO ĐẨY ---
-        const msg = nickFriend 
+        // --- CHUẨN BỊ NỘI DUNG THÔNG BÁO ---
+        const msgForFriend = nickFriend 
             ? `${currentUser} đã đặt biệt danh cho bạn là "${nickFriend}"` 
             : `${currentUser} đã gỡ biệt danh của bạn`;
 
+        // 1. ĐẨY THÔNG BÁO ONLINE (Khi họ đang mở Web)
         db.ref('push_notifications/' + currentChatFriend).push({
             title: "🏷️ BIỆT DANH MỚI",
-            body: msg,
+            body: msgForFriend,
             icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
             tag: "nickname-change",
             from: currentUser
         });
 
+        // 2. KÍCH HOẠT THÔNG BÁO CHẠY NGẦM (Offline - Khi họ tắt Web)
+        if (typeof triggerFCMRemotePush === 'function') {
+            triggerFCMRemotePush(
+                currentChatFriend, 
+                "🏷️ BIỆT DANH MỚI", 
+                msgForFriend, 
+                "nick-" + currentChatFriend
+            );
+        }
+
+        // Thông báo cho chính Henry
         addNotification("🏷️ HỆ THỐNG", "Đã cập nhật biệt danh mới!");
         toggleModal('modal-nickname');
+    }).catch(err => {
+        console.error("Lỗi cập nhật biệt danh:", err);
+        alert("Không thể lưu biệt danh. Vui lòng thử lại!");
     });
 }
-
 // --- 3. CÁC HÀM XÓA RIÊNG/CHUNG ---
 function clearNick(target) {
     const inputId = target === 'me' ? 'input-nick-me' : 'input-nick-friend';
@@ -13176,14 +13337,14 @@ function sendReaction(msgId, icon, isFromBar = false) {
         if (isFromBar && currentIcon === icon) {
             db.ref(reactionPath).remove();
         } 
-        // CẬP NHẬT/THÊM MỚI KHI: Click từ thanh Bar (Bất kể icon mới hay trùng nhưng isFromBar phải là true)
-        // Hoặc đơn giản là: Nếu click từ Bar mà không phải lệnh xóa ở trên thì là lệnh Set
+        // CẬP NHẬT/THÊM MỚI KHI: Click từ thanh Bar
         else if (isFromBar) {
             db.ref(reactionPath).set(icon).then(() => {
                 db.ref(`chats/${chatRoomId}/messages/${msgId}`).once('value', (mSnap) => {
                     const mData = mSnap.val();
                     if (mData && mData.sender !== currentUser) {
-                        // 1. Gửi vào Chuông thông báo (Trong App)
+                        
+                        // 1. GIỮ NGUYÊN: Gửi vào Chuông thông báo (Trong App)
                         db.ref('notifications_queue/' + mData.sender).push({
                             from: currentUser,
                             title: "✨ CẢM XÚC MỚI",
@@ -13192,7 +13353,7 @@ function sendReaction(msgId, icon, isFromBar = false) {
                             time: Date.now()
                         });
 
-                        // 2. --- MỚI: BẮN THÔNG BÁO ĐẨY RA ĐIỆN THOẠI ---
+                        // 2. GIỮ NGUYÊN: Bắn thông báo đẩy trình duyệt (Online)
                         db.ref('push_notifications/' + mData.sender).push({
                             title: "✨ CẢM XÚC MỚI",
                             body: `${currentUser} đã bày tỏ cảm xúc ${icon} vào tin nhắn của bạn`,
@@ -13200,20 +13361,26 @@ function sendReaction(msgId, icon, isFromBar = false) {
                             tag: "reaction-" + msgId,
                             from: currentUser
                         });
+
+                        // --- MỚI: BẮN THÔNG BÁO CHẠY NGẦM (FCM - Ngay cả khi tắt Web) ---
+                        if (typeof triggerFCMRemotePush === 'function') {
+                            triggerFCMRemotePush(
+                                mData.sender, 
+                                "✨ CẢM XÚC MỚI", 
+                                `${currentUser} đã thả ${icon} vào tin nhắn của bạn.`, 
+                                "react-" + msgId
+                            );
+                        }
                     }
                 });
             });
         }
         
-        // Nếu isFromBar = false (chạm vào icon dưới bong bóng), hàm sẽ không làm gì cả, 
-        // không xóa dữ liệu trên Firebase.
-
         // Đóng thanh cảm xúc sau khi thao tác
         const picker = document.getElementById(`picker-${msgId}`);
         if (picker) picker.style.display = 'none';
     });
 }
-
 document.addEventListener('mousedown', function(event) {
     // Nếu click không phải vào thanh bar (reaction-stay) và không phải vào nút mở (mặt cười)
     if (!event.target.closest('.reaction-stay')) {
@@ -13223,6 +13390,50 @@ document.addEventListener('mousedown', function(event) {
     }
 });
 
+    // --- HÀM MASTER: CHỈ DÙNG ĐỂ ĐẨY THÔNG BÁO NGẦM QUA GOOGLE (FCM) ---
+async function triggerFCMRemotePush(targetFriendName, title, body, tag = "sweetie-remote") {
+    if (!targetFriendName || targetFriendName === currentUser) return;
+
+    // 1. Lấy Token (địa chỉ máy) của người nhận
+    db.ref(`users/${targetFriendName}/fcmToken`).once('value', async (snap) => {
+        const token = snap.val();
+        if (!token) return;
+
+        // 2. Chìa khóa Server (Lấy trong Firebase Console -> Project Settings -> Cloud Messaging)
+        // Lưu ý: Dùng mã Server Key (Legacy), không phải VapidKey mã dài đâu Henry nhé!
+        const SERVER_KEY = "BPFnrd9ax1LeRDNoYkAnCyOW1qxfNCXKBKGGrB383i-gJkV4ltLOqVBUG3EgXfmE_vLZdrNE_yBChJPR_sdlMEs"; 
+
+        const payload = {
+            to: token,
+            notification: {
+                title: title,
+                body: body,
+                icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+                click_action: window.location.origin, // Nhấn vào là mở Web Henry ngay
+                sound: "default"
+            },
+            data: {
+                tag: tag, 
+                sender: currentUser
+            }
+        };
+
+        try {
+            // Gửi yêu cầu sang máy chủ Google để Google đi tìm điện thoại người kia
+            await fetch('https://fcm.googleapis.com/fcm/send', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'key=' + SERVER_KEY
+                },
+                body: JSON.stringify(payload)
+            });
+            console.log(`🚀 Đã gửi tín hiệu chạy ngầm tới ${targetFriendName}`);
+        } catch (err) {
+            console.error("❌ Lỗi gửi tín hiệu FCM:", err);
+        }
+    });
+}
 </script>
 </body>
 </html>
