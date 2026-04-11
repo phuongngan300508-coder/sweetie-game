@@ -4976,6 +4976,22 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
 .noti-interactive {
     pointer-events: auto !important;
 }
+
+    /* Loại bỏ vùng xám khó chịu khi chạm trên iPhone và bắt sự kiện nhanh hơn */
+[onclick], 
+.friend-card-row, 
+#chat-target-avatar, 
+.msg-wrapper {
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent; /* Xóa khung xanh/xám khi chạm */
+    touch-action: manipulation; /* Tối ưu cho các thao tác chạm đơn giản */
+}
+
+/* Đảm bảo các Modal luôn nằm trên cùng, không bị các lớp khác chặn */
+.modal {
+    -webkit-overflow-scrolling: touch; /* Giúp cuộn modal mượt hơn trên iOS */
+    z-index: 20000 !important;
+}
 </style>
 </head>
 <body>
@@ -9933,6 +9949,9 @@ function renderNotis() {
     
 // Hàm xử lý khi nhấn vào thông báo
 function handleNotiClick(index) {
+    // --- DÒNG FIX DÀNH RIÊNG CHO IPHONE: Đảm bảo sự kiện chạm được ưu tiên ---
+    if (event) event.stopPropagation(); 
+
     // 1. Lấy thông báo từ mảng dữ liệu của Henry
     const noti = userData.notifications[index];
     if (!noti || !noti.extraData) return;
@@ -9943,22 +9962,21 @@ function handleNotiClick(index) {
 
     console.log("Hệ thống: Đang xử lý thông báo loại:", type);
 
-    // 2. Đánh dấu đã đọc ngay lập tức (Để chuông không báo đỏ nữa)
+    // 2. Đánh dấu đã đọc ngay lập tức
     if (noti.unread) {
         noti.unread = false;
-        saveData(); // Lưu lại trạng thái vào LocalStorage
-        updateNotiBadge(); // Cập nhật lại số lượng thông báo chưa đọc trên giao diện
+        saveData(); 
+        updateNotiBadge(); 
     }
     
-    // 3. Đóng modal thông báo (Đóng cái chuông lại để thấy màn hình game)
+    // 3. Đóng modal thông báo
     const notiModal = document.getElementById('modal-notifications');
     if (notiModal) notiModal.style.display = 'none';
 
-    // 4. Phân loại để xử lý theo yêu cầu của Henry (Delay nhẹ 150ms để hiệu ứng đóng modal mượt hơn)
+    // 4. Phân loại để xử lý theo yêu cầu của Henry (Giữ nguyên 100% logic bên trong)
     setTimeout(() => {
         
-        // --- TRƯỜNG HỢP 1: LỜI MỜI KẾT BẠN (ƯU TIÊN SỐ 1 - MỞ HỒ SƠ PHẢN HỒI) ---
-        // Nếu type chứa chữ 'friend_request', ép hệ thống mở Profile phản hồi
+        // --- TRƯỜNG HỢP 1: LỜI MỜI KẾT BẠN ---
         if (type === 'friend_request') {
             if (friendData && friendData.profile) {
                 showFriendRequestProfile(friendData);
@@ -9974,11 +9992,10 @@ function handleNotiClick(index) {
             } else {
                 alert("❌ Lời mời này đã hết hạn hoặc dữ liệu bị lỗi!");
             }
-            return; // Dừng lại ở đây, không xét các trường hợp dưới nữa
+            return; 
         } 
 
-        // --- TRƯỜNG HỢP 2: NHẤN VÀO THÔNG BÁO TIN NHẮN (MỞ KHUNG CHAT) ---
-        // Chỉ chạy nếu type là chat và KHÔNG PHẢI là friend_request
+        // --- TRƯỜNG HỢP 2: NHẤN VÀO THÔNG BÁO TIN NHẮN ---
         else if (type === 'open_chat' || type === 'chat' || type === 'message_request') {
             if (friendName) {
                 openChatWith(friendName);
@@ -9987,7 +10004,7 @@ function handleNotiClick(index) {
             }
         } 
         
-        // --- TRƯỜNG HỢP 3: XEM HỒ SƠ THÔNG THƯỜNG (QUÉT QR/TÌM ID) ---
+        // --- TRƯỜNG HỢP 3: XEM HỒ SƠ THÔNG THƯỜNG ---
         else if (type === 'view_profile') {
             const searchKey = noti.targetName || (friendData && friendData.profile ? friendData.profile.name : null);
 
@@ -12159,38 +12176,36 @@ function handleQRFile(event) {
 function searchFriendByID(uid) {
     if (!db || !uid) return;
 
-    // Tìm trên Firebase xem UID này của ai
     db.ref('users').orderByChild('profile/uid').equalTo(uid).once('value')
-    .then(async (snapshot) => { // Thêm async để xử lý kiểm tra chặn đồng bộ
+    .then(async (snapshot) => {
         if (snapshot.exists()) {
             const data = snapshot.val();
-            const friendKey = Object.keys(data)[0]; // Đây là tên tài khoản (Node chính)
+            const friendKey = Object.keys(data)[0];
             const friendData = data[friendKey];
 
-            // --- KIỂM TRA CHẶN: Nếu người kia chặn Henry, thì Henry không tìm thấy họ ---
             const blockedSnap = await db.ref(`blocks/${friendKey}/${currentUser}`).once('value');
             if (blockedSnap.exists()) {
                 alert("❌ Không tìm thấy cư dân nào có ID: " + uid);
                 return;
             }
-            // Lưu ý: Nếu Henry chặn người kia (blocks/${currentUser}/${friendKey}), 
-            // hàm này vẫn chạy tiếp bên dưới, giúp Henry vẫn tìm thấy họ để gỡ chặn.
 
-            // Đóng bảng chọn quét mã
             const scanModal = document.getElementById('modal-scan-choice');
             if (scanModal) scanModal.style.display = 'none';
 
-            // ĐẨY VÀO CHUÔNG (Đúng ý Henry nhé)
+            // ĐẨY VÀO CHUÔNG
             addNotification(
                 "🔍 TÌM THẤY CƯ DÂN", 
                 `Đã nhận diện được ID hoặc mã QR của [${friendData.profile.name}]. Nhấn vào đây để xem hồ sơ!`,
-                false, // Phát tiếng Ting
+                false,
                 { 
                     type: 'view_profile', 
-                    targetName: friendKey, // Tên để hàm handleNotiClick lấy dữ liệu
-                    data: friendData       // Dữ liệu dự phòng
+                    targetName: friendKey,
+                    data: friendData
                 } 
             );
+
+            // MẸO CHO IPHONE: Rung nhẹ máy để báo hiệu đã nhận lệnh (nếu Henry muốn)
+            if (navigator.vibrate) navigator.vibrate(50);
 
             alert("✨ Đã phân tích xong! Bạn mở Chuông thông báo để xem nhé.");
         } else {
@@ -12400,55 +12415,59 @@ function acceptFriend(friendName) {
     if (!friendName || !currentUser) return;
 
     const updates = {};
-    const timestamp = firebase.database.ServerValue.TIMESTAMP; // Dùng thời gian của server sẽ chính xác hơn Date.now()
+    const timestamp = firebase.database.ServerValue.TIMESTAMP;
 
-    // 1. Kết bạn 2 chiều vĩnh viễn (nhánh /friends bên trong mỗi User)
+    // 1. Kết bạn 2 chiều vĩnh viễn
     updates[`users/${friendName}/friends/${currentUser}`] = { addedAt: timestamp };
     updates[`users/${currentUser}/friends/${friendName}`] = { addedAt: timestamp };
 
-    // 2. Dọn dẹp yêu cầu kết bạn (Xóa cả 2 chiều để sạch sẽ Database)
-    // Xóa lời mời người đó gửi cho Henry
+    // 2. Dọn dẹp yêu cầu kết bạn
     updates[`friend_requests/${currentUser}/${friendName}`] = null;
-    // Xóa lời mời Henry gửi cho người đó (nếu có, đề phòng trường hợp mời chéo)
     updates[`friend_requests/${friendName}/${currentUser}`] = null;
 
-    // 3. Cập nhật trạng thái để máy đối phương nhận biết và hiện thông báo Realtime
+    // 3. Cập nhật trạng thái để máy đối phương hiện thông báo Realtime (trong app)
     updates[`friend_requests_status/${friendName}/${currentUser}`] = {
         status: 'accepted',
         time: timestamp
     };
 
+    // --- BỔ SUNG: ĐẨY THÔNG BÁO ĐẾN THIẾT BỊ (Push Notification) ---
+    // Tạo một ID ngẫu nhiên cho thông báo mới
+    const notiId = db.ref('notifications_queue/' + friendName).push().key;
+    updates[`notifications_queue/${friendName}/${notiId}`] = {
+        from: currentUser,
+        title: "🤝 KẾT BẠN THÀNH CÔNG",
+        text: `${currentUser} đã đồng ý lời mời kết bạn của bạn!`,
+        type: 'friend_status',
+        time: Date.now()
+    };
+    // --------------------------------------------------------------
+
     // Thực hiện Update tất cả các nhánh cùng một lúc
     db.ref().update(updates).then(() => {
-        // --- CHỖ QUAN TRỌNG NHẤT ĐỂ KHÔNG PHẢI LOAD LẠI TRANG ---
-        // Cập nhật ngay lập tức vào biến userData đang chạy để hàm sendMessage đọc được
+        // --- GIỮ NGUYÊN NỘI DUNG LOGIC GIAO DIỆN CỦA HENRY ---
         if (typeof userData !== 'undefined') {
             if (!userData.friends) userData.friends = {};
             userData.friends[friendName] = { addedAt: Date.now() };
         }
 
-        // Thông báo cho Henry biết
         addNotification(
             "🤝 BẠN BÈ MỚI", 
             `Bạn và ${friendName} đã chính thức trở thành bạn bè vĩnh viễn!`,
-            true // Phát tiếng Ting
+            true 
         );
 
         alert(`🎉 Chúc mừng! ${friendName} đã được thêm vào danh sách cư dân thân thiết.`);
         
-        // Đóng các bảng hồ sơ đang mở
         if (typeof closeOtherProfile === 'function') closeOtherProfile();
         
-        // Tự động chuyển về Tab Bạn Bè để Henry thấy ngay danh sách mới
         if (typeof switchTab === 'function') {
             switchTab('tab-friends');
         } else {
-            // Nếu không dùng switchTab, Henry có thể dùng logic hiện div của riêng mình
             const friendsTab = document.getElementById('tab-friends');
             if (friendsTab) friendsTab.click();
         }
 
-        // Vẽ lại danh sách bạn bè ngay lập tức (nếu có hàm này)
         if (typeof renderFriendsList === 'function') renderFriendsList();
 
     }).catch(err => {
@@ -12456,7 +12475,7 @@ function acceptFriend(friendName) {
         alert("❌ Hệ thống gặp sự cố khi lưu bạn bè. Vui lòng kiểm tra kết nối mạng!");
     });
 }
-
+    
 // --- HÀM 3: TỪ CHỐI KẾT BẠN ---
 function rejectFriend(friendName) {
     if (confirm(`Bạn muốn từ chối lời mời từ ${friendName}?`)) {
@@ -12465,15 +12484,25 @@ function rejectFriend(friendName) {
         // Báo trạng thái từ chối về để máy người kia reset nút
         updates[`friend_requests_status/${friendName}/${currentUser}`] = 'rejected';
 
+        // --- PHẦN THÊM VÀO ĐỂ ĐẨY THÔNG BÁO RA MÁY ĐỐI PHƯƠNG ---
+        const notiId = db.ref('notifications_queue/' + friendName).push().key;
+        updates[`notifications_queue/${friendName}/${notiId}`] = {
+            from: currentUser,
+            title: "❌ LỜI MỜI BỊ TỪ CHỐI",
+            text: `${currentUser} đã từ chối lời mời kết bạn của bạn.`,
+            type: 'friend_status',
+            time: Date.now()
+        };
+        // -------------------------------------------------------
+
         db.ref().update(updates).then(() => {
+            // Giữ nguyên 100% logic xử lý giao diện của Henry
             addNotification("🔕 TỪ CHỐI", `Đã từ chối lời mời từ ${friendName}.`);
             closeOtherProfile();
         });
     }
 }
-
-
-
+    
 function showFriendRequestProfile(friendData) {
     // 1. Lưu người đang xem
     currentViewedUser = friendData.profile.name;
