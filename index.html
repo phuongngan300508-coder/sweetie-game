@@ -7029,20 +7029,38 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
     </div>
 </div>
 
-    <div id="modal-chat-theme" class="modal" style="display:none; z-index: 10005;">
-    <div class="modal-content animate__animated animate__fadeInUp" style="max-width: 350px; border-radius: 25px;">
-        <h3 style="color: #ff1493; margin-bottom: 15px;">🎨 Tùy chỉnh đoạn chat</h3>
+    <div id="modal-chat-theme" class="modal" style="
+    display: none; 
+    position: fixed;            /* Cố định vị trí so với trình duyệt */
+    top: 0; 
+    left: 0; 
+    width: 100%; 
+    height: 100%; 
+    background: rgba(0,0,0,0.5); /* Làm mờ nền phía sau */
+    z-index: 20000;             /* Chỉ số cực cao để nằm trên khung chat */
+    align-items: center;        /* Căn giữa theo chiều dọc */
+    justify-content: center;    /* Căn giữa theo chiều ngang */
+">
+    <div class="modal-content animate__animated animate__fadeInUp" style="
+        background: white;
+        width: 90%;             /* Co giãn tốt trên điện thoại */
+        max-width: 350px; 
+        border-radius: 25px;
+        padding: 20px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    ">
+        <h3 style="color: #ff1493; margin-top: 0; margin-bottom: 15px; text-align: center;">🎨 Tùy chỉnh đoạn chat</h3>
         
         <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-            <button onclick="showThemeType('simple')" style="flex:1; padding: 8px; border-radius: 15px; border: 1px solid #ffc0cb; background: #fff5f8; font-weight: 800; font-size: 0.7em;">MÀU ĐƠN</button>
-            <button onclick="showThemeType('premium')" style="flex:1; padding: 8px; border-radius: 15px; border: 1px solid #ff1493; background: #ff1493; color: white; font-weight: 800; font-size: 0.7em;">CHỦ ĐỀ VIP</button>
+            <button onclick="showThemeType('simple')" style="flex:1; padding: 10px; border-radius: 15px; border: 1px solid #ffc0cb; background: #fff5f8; font-weight: 800; font-size: 0.7em; cursor: pointer;">MÀU ĐƠN</button>
+            <button onclick="showThemeType('premium')" style="flex:1; padding: 10px; border-radius: 15px; border: 1px solid #ff1493; background: #ff1493; color: white; font-weight: 800; font-size: 0.7em; cursor: pointer;">CHỦ ĐỀ VIP</button>
         </div>
 
         <div id="theme-selection-area" style="max-height: 250px; overflow-y: auto; padding: 5px;">
              </div>
 
-        <div class="modal-footer" style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 15px;">
-            <button class="btn-action-white" onclick="toggleModal('modal-chat-theme')">HỦY BỎ</button>
+        <div class="modal-footer" style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 15px; text-align: center;">
+            <button class="btn-action-white" onclick="toggleModal('modal-chat-theme')" style="width: 100%; padding: 10px; border-radius: 50px; border: 1px solid #ccc; cursor: pointer;">HỦY BỎ</button>
         </div>
     </div>
 </div>
