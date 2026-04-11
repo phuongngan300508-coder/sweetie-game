@@ -5059,6 +5059,23 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
     justify-content: center;
     z-index: 9999;
 }
+
+    .mini-avatar { position: relative; }
+.status-dot {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    z-index: 5;
+}
+
+#chat-target-status {
+    font-size: 0.75em;
+    font-weight: bold;
+    opacity: 0.8;
+}
 </style>
 </head>
 <body>
@@ -6878,9 +6895,11 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
         <div class="messenger-user-info" style="display: flex; align-items: center; gap: 10px;">
             <div id="chat-target-avatar" class="mini-avatar"></div>
             <div class="messenger-user-detail">
-                <b id="chat-target-name">Người bạn hồng</b>
-                <span id="chat-target-status"><i class="fas fa-circle"></i> Online</span>
-            </div>
+    <b id="chat-target-name">Người bạn hồng</b>
+    <span id="chat-target-status" style="font-size: 0.7em; font-weight: 800; color: #888;">
+        <i class="fas fa-circle" style="font-size: 0.8em; opacity: 0.5;"></i> Đang tải...
+    </span>
+</div>
         </div>
         <div class="messenger-actions" style="display: flex; gap: 15px; font-size: 1.2em; cursor: pointer;">
             <i class="fas fa-times" onclick="closeChat()"></i>
@@ -11882,7 +11901,6 @@ function openChatWith(friendName) {
         listenNicknames(friendName);
 
         // --- 5. ĐỒNG BỘ KẾT NỐI: XÓA THÔNG BÁO CHƯA ĐỌC (MỚI THÊM) ---
-        // Khi Henry mở chat, hệ thống báo cho Firebase rằng Henry đã đọc hết tin nhắn của người này
         if (currentUser && friendName) {
             db.ref('unread_counts/' + currentUser + '/' + friendName).remove()
                 .then(() => {
@@ -11892,9 +11910,90 @@ function openChatWith(friendName) {
                     console.error("Lỗi xóa unread_counts:", err);
                 });
         }
+
+        // --- 6. MỚI: LẮNG NGHE TRẠNG THÁI ONLINE/OFFLINE REAL-TIME ---
+        const statusEl = document.getElementById('chat-target-status');
+        
+        // Tắt lắng nghe trạng thái cũ (nếu có) để không bị nhảy dữ liệu người này sang người kia
+        if (window.lastStatusRef) window.lastStatusRef.off();
+
+        // Tạo tham chiếu mới và lưu vào window để quản lý
+        window.lastStatusRef = db.ref('/status/' + friendName);
+        window.lastStatusRef.on('value', (statusSnap) => {
+            const statusData = statusSnap.val();
+            if (statusData && statusData.state === 'online') {
+                statusEl.style.color = "#28a745"; // Xanh lá chuyên nghiệp
+                statusEl.innerHTML = `<i class="fas fa-circle" style="font-size: 0.8em;"></i> Đang hoạt động`;
+            } else {
+                statusEl.style.color = "#888"; // Màu xám cho offline
+                // Hàm formatLastSeen Henry đã định nghĩa ở các bước trước nhé
+                const timeStr = statusData ? formatLastSeen(statusData.last_changed) : "Ngoại tuyến";
+                statusEl.innerHTML = `<i class="fas fa-circle" style="font-size: 0.8em; opacity: 0.5;"></i> ${timeStr}`;
+            }
+        });
     });
 }
 
+    // Hàm này Henry để bên ngoài nhé
+function listenUserStatus(friendName) {
+    const statusEl = document.getElementById('chat-target-status');
+    if (!statusEl) return;
+
+    // QUAN TRỌNG: Tắt lắng nghe trạng thái của người chat trước đó
+    if (window.lastStatusRef) window.lastStatusRef.off();
+
+    // Tạo tham chiếu mới và lưu lại để sau này tắt đi
+    window.lastStatusRef = db.ref('/status/' + friendName);
+
+    window.lastStatusRef.on('value', (snapshot) => {
+        const data = snapshot.val();
+        if (data && data.state === 'online') {
+            statusEl.innerHTML = `<i class="fas fa-circle" style="color: #28a745; font-size: 0.7em;"></i> Đang hoạt động`;
+        } else {
+            // Nhớ đảm bảo Henry đã dán hàm formatLastSeen vào code nhé
+            const timeStr = data ? formatLastSeen(data.last_changed) : "Ngoại tuyến";
+            statusEl.innerHTML = `<i class="fas fa-circle" style="color: #ccc; font-size: 0.7em;"></i> ${timeStr}`;
+        }
+    });
+}
+    
+    function initUserPresence() {
+    if (!currentUser) return;
+
+    // Nhánh lưu trạng thái online/offline của tất cả cư dân
+    const statusRef = db.ref('/status/' + currentUser);
+
+    // Một kết nối đặc biệt của Firebase để kiểm tra Henry có đang mở web không
+    db.ref('.info/connected').on('value', (snapshot) => {
+        if (snapshot.val() === false) return;
+
+        // KHI HENRY ĐÓNG WEB: Firebase tự động chạy lệnh này trên server
+        statusRef.onDisconnect().set({
+            state: 'offline',
+            last_changed: firebase.database.ServerValue.TIMESTAMP
+        }).then(() => {
+            // KHI HENRY ĐANG MỞ WEB: Đặt là online
+            statusRef.set({
+                state: 'online',
+                last_changed: firebase.database.ServerValue.TIMESTAMP
+            });
+        });
+    });
+}
+
+    function formatLastSeen(timestamp) {
+    if (!timestamp) return "Ngoại tuyến";
+    
+    const now = Date.now();
+    const diff = Math.floor((now - timestamp) / 1000); // Đổi sang giây
+
+    if (diff < 60) return "Vừa truy cập";
+    if (diff < 3600) return `${Math.floor(diff / 60)} phút trước`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)} giờ trước`;
+    
+    const date = new Date(timestamp);
+    return `Hoạt động ${date.getDate()}/${date.getMonth() + 1}`;
+}
 // --- 2. SỬA HÀM TOGGLE CHAT (Thông minh hơn) ---
 function toggleChat() {
     const box = document.getElementById('messenger-box');
@@ -12902,7 +13001,6 @@ async function renderFriendsList() {
                     const uData = uSnap.val();
                     if (!uData || !uData.profile) return null;
 
-                    // Lấy biệt danh cho người lạ (nếu có)
                     const chatRoomId = [currentUser, sName].sort().join('_');
                     const nickSnap = await db.ref(`chats/${chatRoomId}/nicknames/${sName}`).once('value');
                     const displayName = nickSnap.val() || uData.profile.name;
@@ -12914,11 +13012,19 @@ async function renderFriendsList() {
                         ? `<img src="${uData.profile.customAvatar}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`
                         : `<i class="fas ${uData.profile.gender === 'Nam' ? 'fa-user-tie' : 'fa-user-graduate'}"></i>`;
 
+                    // --- MỚI: LẮNG NGHE TRẠNG THÁI NGƯỜI LẠ ---
+                    db.ref('/status/' + sName).on('value', (sSnap) => {
+                        const sData = sSnap.val();
+                        const dot = document.getElementById(`dot-status-${sName}`);
+                        if (dot) dot.style.background = (sData && sData.state === 'online') ? '#28a745' : '#ccc';
+                    });
+
                     return `
                         <div class="friend-card-row animate__animated animate__fadeIn" style="display: flex; align-items: center; justify-content: space-between; background: #fff5f8; padding: 15px; border-radius: 20px; margin-bottom: 10px; border-left: 5px solid #ff1493; border: 1px dashed #ffc0cb;">
                             <div style="display: flex; align-items: center; gap: 12px;">
-                                <div onclick="searchFriendByID('${uData.profile.uid}')" style="width: 50px; height: 50px; background: #ffe4e1; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #ff1493; overflow: hidden; cursor: pointer; border: 2px solid #fff; box-shadow: 0 2px 5px rgba(255,20,147,0.1);">
+                                <div onclick="searchFriendByID('${uData.profile.uid}')" style="position: relative; width: 50px; height: 50px; background: #ffe4e1; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #ff1493; overflow: hidden; cursor: pointer; border: 2px solid #fff; box-shadow: 0 2px 5px rgba(255,20,147,0.1);">
                                     ${avatar}
+                                    <div id="dot-status-${sName}" style="position: absolute; bottom: 2px; right: 2px; width: 10px; height: 10px; border-radius: 50%; border: 2px solid #fff; background: #ccc;"></div>
                                 </div>
                                 <div style="text-align: left;">
                                     <b style="color: #d63384;">${displayName}</b>
@@ -12961,7 +13067,6 @@ async function renderFriendsList() {
                     const uData = uSnap.val();
                     if (!uData || !uData.profile) return null;
 
-                    // --- LOGIC LẤY BIỆT DANH REALTIME ---
                     const chatRoomId = [currentUser, fName].sort().join('_');
                     const nickSnap = await db.ref(`chats/${chatRoomId}/nicknames/${fName}`).once('value');
                     const displayName = nickSnap.val() || uData.profile.name;
@@ -12971,13 +13076,21 @@ async function renderFriendsList() {
                         ? `<img src="${uData.profile.customAvatar}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`
                         : `<i class="fas ${uData.profile.gender === 'Nam' ? 'fa-user-tie' : 'fa-user-graduate'}"></i>`;
 
+                    // --- MỚI: LẮNG NGHE TRẠNG THÁI BẠN BÈ REAL-TIME ---
+                    db.ref('/status/' + fName).on('value', (sSnap) => {
+                        const sData = sSnap.val();
+                        const dot = document.getElementById(`dot-status-${fName}`);
+                        if (dot) dot.style.background = (sData && sData.state === 'online') ? '#28a745' : '#ccc';
+                    });
+
                     return {
-                        name: displayName, // Dùng biệt danh để sắp xếp A-Z
+                        name: displayName, 
                         html: `
                         <div class="friend-card-row animate__animated animate__fadeInUp" style="display: flex; align-items: center; justify-content: space-between; background: white; padding: 15px; border-radius: 20px; margin-bottom: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.03); border-left: 5px solid ${isVip5 ? '#ff1493' : '#ffc0cb'};">
                             <div style="display: flex; align-items: center; gap: 12px; cursor: pointer;" onclick="searchFriendByID('${uData.profile.uid}')">
-                                <div style="width: 50px; height: 50px; background: #fff0f5; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #ff1493; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(255,20,147,0.2); overflow: hidden;">
+                                <div style="position: relative; width: 50px; height: 50px; background: #fff0f5; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #ff1493; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(255,20,147,0.2); overflow: hidden;">
                                     ${avatar}
+                                    <div id="dot-status-${fName}" style="position: absolute; bottom: 2px; right: 2px; width: 10px; height: 10px; border-radius: 50%; border: 2px solid #fff; background: #ccc;"></div>
                                 </div>
                                 <div style="text-align: left;">
                                     <b style="color: #d63384; font-size: 1em;">${displayName}</b>
@@ -13011,8 +13124,8 @@ async function renderFriendsList() {
             } else {
                 container.innerHTML = `<p style="text-align:center; color:#888;">Dữ liệu bạn bè đang gặp sự cố...</p>`;
             }
-        }); // Kết thúc unread_counts
-    }); // Kết thúc friends
+        }); 
+    });
 }
 
 // 2. Hàm xóa bạn (Unfriend)
