@@ -8098,28 +8098,28 @@ function checkDailyCheckinReminder() {
     const currentHour = vnNow.getHours();
     const today = vnNow.getDay();
 
-    // 1. Kiểm tra xem hôm nay đã điểm danh chưa
     const alreadyCheckedIn = userData.checkinHistory && userData.checkinHistory.includes(today);
 
-    // 2. Nếu chưa điểm danh và sau 21h (còn 3 tiếng nữa hết ngày)
+    // Nếu chưa điểm danh và sau 21h
     if (!alreadyCheckedIn && currentHour >= 21) {
-        
-        // Tránh spam: Kiểm tra xem trong lượt load này đã báo "thúc giục" chưa
         if (!window.notifiedUrgentCheckin) {
-            const msg = "⏰ SẮP HẾT NGÀY! Còn chưa đầy 3 tiếng nữa là qua ngày mới. Vào điểm danh ngay để không bị đứt chuỗi 7 ngày nhé!";
+            const msg = "⏰ SẮP HẾT NGÀY! Vào điểm danh ngay để không bị đứt chuỗi 7 ngày nhé!";
             
-            // Hiện trong hệ thống chuông của Web
+            // 1. Vẫn hiện thông báo trong game (Chuông)
             addNotification("🔥 THÚC GIỤC ĐIỂM DANH", msg);
 
-            // Gửi thông báo trực tiếp đến máy (Ngay cả khi đang ẩn tab)
-            if ("Notification" in window && Notification.permission === "granted") {
-                new Notification("SWEETIE GAME WORLD", {
-                    body: msg,
-                    icon: "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/svgs/solid/calendar-check.svg"
+            // 2. Gửi thông báo đến thiết bị thông qua Service Worker
+            if ('serviceWorker' in navigator && Notification.permission === "granted") {
+                navigator.serviceWorker.ready.then(registration => {
+                    registration.showNotification("SWEETIE GAME WORLD", {
+                        body: msg,
+                        icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+                        tag: 'checkin-reminder' // Tránh hiện nhiều thông báo trùng lặp
+                    });
                 });
             }
             
-            window.notifiedUrgentCheckin = true; // Đánh dấu đã báo
+            window.notifiedUrgentCheckin = true;
         }
     }
 }
