@@ -11997,6 +11997,17 @@ function listenUserStatus(friendName) {
                 state: 'online',
                 last_changed: firebase.database.ServerValue.TIMESTAMP
             });
+
+            // --- ĐOẠN MỚI THÊM: KÍCH HOẠT "MẮT THẦN" THEO DÕI BẠN BÈ ---
+            // Ngay khi Henry vừa online, quét danh sách bạn bè để lắng nghe chấm xanh của họ
+            db.ref('users/' + currentUser + '/friends').once('value', (snap) => {
+                const friends = snap.val() || {};
+                Object.keys(friends).forEach(fName => {
+                    if (typeof setupStatusListener === 'function') {
+                        setupStatusListener(fName); 
+                    }
+                });
+            });
         });
     });
 
@@ -13040,7 +13051,6 @@ async function renderFriendsList() {
     
     if (!container || !currentUser) return;
 
-    // Henry dùng mảng này để quản lý listener là rất đúng, mình sẽ tận dụng nó tối đa
     if (!window.statusListeners) window.statusListeners = {};
 
     // 1. Lắng nghe danh sách bạn bè
@@ -13074,6 +13084,7 @@ async function renderFriendsList() {
                     // FIX: Lắng nghe trạng thái người lạ ngay lập tức
                     setupStatusListener(sName);
 
+                    // --- SỬA TẠI ĐÂY: Đổi id thành class cho chấm xanh người lạ ---
                     return `
                         <div class="friend-card-row animate__animated animate__fadeIn" style="display: flex; align-items: center; justify-content: space-between; background: #fff5f8; padding: 15px; border-radius: 20px; margin-bottom: 10px; border-left: 5px solid #ff1493; border: 1px dashed #ffc0cb;">
                             <div style="display: flex; align-items: center; gap: 12px;">
@@ -13081,7 +13092,7 @@ async function renderFriendsList() {
                                     <div style="width: 100%; height: 100%; background: #ffe4e1; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #ff1493; border: 2px solid #fff; box-shadow: 0 2px 5px rgba(255,20,147,0.1); overflow: hidden;">
                                         ${avatar}
                                     </div>
-                                    <div id="dot-status-${sName}" class="status-dot-realtime" style="position: absolute; bottom: -1px; right: -1px; width: 14px; height: 14px; border-radius: 50%; border: 3px solid #fff; background: #ccc; z-index: 10;"></div>
+                                    <div class="dot-status-${sName}" style="position: absolute; bottom: -1px; right: -1px; width: 14px; height: 14px; border-radius: 50%; border: 3px solid #fff; background: #ccc; z-index: 10;"></div>
                                 </div>
                                 <div style="text-align: left;">
                                     <b style="color: #d63384;">${displayName}</b>
@@ -13127,6 +13138,7 @@ async function renderFriendsList() {
                     // FIX: Thiết lập lắng nghe trạng thái cho bạn bè
                     setupStatusListener(fName);
 
+                    // --- SỬA TẠI ĐÂY: Đổi id thành class cho chấm xanh bạn bè ---
                     return {
                         name: displayName, 
                         html: `
@@ -13136,7 +13148,7 @@ async function renderFriendsList() {
                                     <div style="width: 100%; height: 100%; background: #fff0f5; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #ff1493; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(255,20,147,0.2); overflow: hidden;">
                                         ${avatar}
                                     </div>
-                                    <div id="dot-status-${fName}" class="status-dot-realtime" style="position: absolute; bottom: -2px; right: -2px; width: 14px; height: 14px; border-radius: 50%; border: 3px solid #fff; background: #ccc; z-index: 10;"></div>
+                                    <div class="dot-status-${fName}" style="position: absolute; bottom: -2px; right: -2px; width: 14px; height: 14px; border-radius: 50%; border: 3px solid #fff; background: #ccc; z-index: 10;"></div>
                                 </div>
                                 <div style="text-align: left;">
                                     <b style="color: #d63384; font-size: 1em;">${displayName}</b>
@@ -13164,12 +13176,12 @@ async function renderFriendsList() {
 
 // Henry hãy thêm hàm hỗ trợ này ra ngoài để code render nhìn gọn hơn và fix lỗi "ngoại tuyến"
 function setupStatusListener(fName) {
-    // 1. Dọn dẹp listener cũ nếu đã tồn tại để tránh rò rỉ bộ nhớ (Memory Leak)
+    // 1. Dọn dẹp listener cũ nếu đã tồn tại để tránh rò rỉ bộ nhớ (Giữ nguyên)
     if (window.statusListeners && window.statusListeners[fName]) {
         db.ref('/status/' + fName).off('value', window.statusListeners[fName]);
     }
 
-    // Khởi tạo đối tượng lưu trữ nếu chưa có
+    // Khởi tạo đối tượng lưu trữ nếu chưa có (Giữ nguyên)
     if (!window.statusListeners) window.statusListeners = {};
 
     // 2. Định nghĩa hàm xử lý cập nhật trạng thái
@@ -13177,23 +13189,20 @@ function setupStatusListener(fName) {
         const sData = sSnap.val();
         const isOnline = sData && sData.state === 'online';
         
-        // --- MẸO CỐT LÕI: Dùng querySelectorAll ---
-        // Henry lưu ý: Hàm này sẽ quét toàn bộ giao diện mỗi khi Database thay đổi
-        // để đảm bảo dù Henry vừa render lại danh sách, nó vẫn tìm thấy chấm mới.
-        const dots = document.querySelectorAll(`[id="dot-status-${fName}"]`);
+        // --- CHỈ SỬA ĐOẠN NÀY: Dùng Class để tìm cho chính xác ---
+        // Henry hãy đảm bảo trong HTML của chấm xanh có: class="dot-status-${fName}"
+        const dots = document.querySelectorAll(`.dot-status-${fName}`);
         
         dots.forEach(dot => {
             if (dot) {
                 dot.style.background = isOnline ? '#28a745' : '#ccc';
-                // Hiệu ứng bóng đổ xịn xò như Henry muốn
                 dot.style.boxShadow = isOnline ? '0 0 8px rgba(40,167,69,0.7)' : 'none';
                 dot.style.transition = "all 0.3s ease";
             }
         });
 
-        // Cập nhật luôn dòng chữ "Đang hoạt động" trong khung chat
+        // Cập nhật dòng chữ "Đang hoạt động" trong khung chat (Giữ nguyên)
         const statusText = document.getElementById('chat-target-status');
-        // Kiểm tra xem có đang mở đúng khung chat với người này không
         if (statusText && typeof currentChatFriend !== 'undefined' && currentChatFriend === fName) {
             if (isOnline) {
                 statusText.style.color = "#28a745";
@@ -13206,7 +13215,7 @@ function setupStatusListener(fName) {
         }
     };
 
-    // 3. Kích hoạt lắng nghe Real-time
+    // 3. Kích hoạt lắng nghe Real-time (Giữ nguyên)
     db.ref('/status/' + fName).on('value', window.statusListeners[fName]);
 }
     
