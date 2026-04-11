@@ -8366,6 +8366,12 @@ function handleLogin() {
     localStorage.setItem('lastLoggedInUser', name);
     sessionStorage.setItem('currentUser', name);
 
+    // --- MỚI: KÍCH HOẠT TRẠNG THÁI ONLINE NGAY LẬP TỨC ---
+    if (typeof initUserPresence === 'function') {
+        initUserPresence();
+        console.log("Hệ thống: Đã kích hoạt trạng thái Online cho " + name);
+    }
+
     // --- SỬA LẠI: Yêu cầu quyền thông báo tối ưu cho Web Push ---
     if ("Notification" in window) {
         Notification.requestPermission().then(permission => {
@@ -11939,25 +11945,33 @@ function listenUserStatus(friendName) {
     const statusEl = document.getElementById('chat-target-status');
     if (!statusEl) return;
 
-    // QUAN TRỌNG: Tắt lắng nghe trạng thái của người chat trước đó
-    if (window.lastStatusRef) window.lastStatusRef.off();
+    // QUAN TRỌNG: Tắt lắng nghe trạng thái của người chat trước đó để tránh rác dữ liệu
+    if (window.lastStatusRef) {
+        window.lastStatusRef.off();
+    }
 
-    // Tạo tham chiếu mới và lưu lại để sau này tắt đi
+    // Tạo tham chiếu mới đến nhánh trạng thái của người bạn
     window.lastStatusRef = db.ref('/status/' + friendName);
 
+    // Dùng .on('value') để lắng nghe biến động liên tục (Real-time)
     window.lastStatusRef.on('value', (snapshot) => {
         const data = snapshot.val();
+        
+        // Nếu tìm thấy dữ liệu và trạng thái là online
         if (data && data.state === 'online') {
+            statusEl.style.color = "#28a745"; // Đảm bảo đổi màu chữ cho đồng bộ
             statusEl.innerHTML = `<i class="fas fa-circle" style="color: #28a745; font-size: 0.7em;"></i> Đang hoạt động`;
         } else {
-            // Nhớ đảm bảo Henry đã dán hàm formatLastSeen vào code nhé
+            statusEl.style.color = "#888"; // Màu xám cho trạng thái offline
+            
+            // Sử dụng hàm formatLastSeen của Henry để tính thời gian
             const timeStr = data ? formatLastSeen(data.last_changed) : "Ngoại tuyến";
             statusEl.innerHTML = `<i class="fas fa-circle" style="color: #ccc; font-size: 0.7em;"></i> ${timeStr}`;
         }
     });
 }
     
-    function initUserPresence() {
+   function initUserPresence() {
     if (!currentUser) return;
 
     // Nhánh lưu trạng thái online/offline của tất cả cư dân
@@ -11965,9 +11979,13 @@ function listenUserStatus(friendName) {
 
     // Một kết nối đặc biệt của Firebase để kiểm tra Henry có đang mở web không
     db.ref('.info/connected').on('value', (snapshot) => {
-        if (snapshot.val() === false) return;
+        if (snapshot.val() === false) {
+            // Henry có thể thêm logic ở đây nếu muốn xử lý khi mất kết nối mạng cục bộ
+            return;
+        };
 
         // KHI HENRY ĐÓNG WEB: Firebase tự động chạy lệnh này trên server
+        // Henry lưu ý: onDisconnect phải được thiết lập TRƯỚC khi set online
         statusRef.onDisconnect().set({
             state: 'offline',
             last_changed: firebase.database.ServerValue.TIMESTAMP
@@ -11977,6 +11995,15 @@ function listenUserStatus(friendName) {
                 state: 'online',
                 last_changed: firebase.database.ServerValue.TIMESTAMP
             });
+        });
+    });
+
+    // --- MẸO BỔ SUNG ĐỂ REAL-TIME CHUẨN 100% ---
+    // Tự động chuyển Offline khi Henry tắt trình duyệt (Phòng hờ onDisconnect chạy chậm)
+    window.addEventListener('beforeunload', () => {
+        statusRef.set({
+            state: 'offline',
+            last_changed: firebase.database.ServerValue.TIMESTAMP
         });
     });
 }
@@ -12982,6 +13009,9 @@ async function renderFriendsList() {
     
     if (!container || !currentUser) return;
 
+    // Sử dụng mảng để quản lý các listener trạng thái, tránh rò rỉ bộ nhớ
+    if (!window.statusListeners) window.statusListeners = {};
+
     db.ref('users/' + currentUser + '/friends').on('value', async (snapshot) => {
         const friends = snapshot.val() || {};
         const friendNames = Object.keys(friends);
@@ -13012,12 +13042,14 @@ async function renderFriendsList() {
                         ? `<img src="${uData.profile.customAvatar}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`
                         : `<i class="fas ${uData.profile.gender === 'Nam' ? 'fa-user-tie' : 'fa-user-graduate'}"></i>`;
 
-                    // Lắng nghe trạng thái
-                    db.ref('/status/' + sName).on('value', (sSnap) => {
+                    // Lắng nghe trạng thái người lạ (Real-time)
+                    if (window.statusListeners[sName]) db.ref('/status/' + sName).off('value', window.statusListeners[sName]);
+                    window.statusListeners[sName] = (sSnap) => {
                         const sData = sSnap.val();
                         const dot = document.getElementById(`dot-status-${sName}`);
                         if (dot) dot.style.background = (sData && sData.state === 'online') ? '#28a745' : '#ccc';
-                    });
+                    };
+                    db.ref('/status/' + sName).on('value', window.statusListeners[sName]);
 
                     return `
                         <div class="friend-card-row animate__animated animate__fadeIn" style="display: flex; align-items: center; justify-content: space-between; background: #fff5f8; padding: 15px; border-radius: 20px; margin-bottom: 10px; border-left: 5px solid #ff1493; border: 1px dashed #ffc0cb;">
@@ -13074,12 +13106,14 @@ async function renderFriendsList() {
                         ? `<img src="${uData.profile.customAvatar}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`
                         : `<i class="fas ${uData.profile.gender === 'Nam' ? 'fa-user-tie' : 'fa-user-graduate'}"></i>`;
 
-                    // Lắng nghe trạng thái bạn bè
-                    db.ref('/status/' + fName).on('value', (sSnap) => {
+                    // Lắng nghe trạng thái bạn bè (Real-time)
+                    if (window.statusListeners[fName]) db.ref('/status/' + fName).off('value', window.statusListeners[fName]);
+                    window.statusListeners[fName] = (sSnap) => {
                         const sData = sSnap.val();
                         const dot = document.getElementById(`dot-status-${fName}`);
                         if (dot) dot.style.background = (sData && sData.state === 'online') ? '#28a745' : '#ccc';
-                    });
+                    };
+                    db.ref('/status/' + fName).on('value', window.statusListeners[fName]);
 
                     return {
                         name: displayName, 
@@ -13115,6 +13149,7 @@ async function renderFriendsList() {
         }); 
     });
 }
+    
 // 2. Hàm xóa bạn (Unfriend)
 function unfriendConfirm(fName) {
     if (confirm(`Bạn muốn xóa ${fName} khỏi danh sách bạn bè? Thao tác này không thể hoàn tác.`)) {
