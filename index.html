@@ -6946,6 +6946,65 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
 </div>
 </div>
 
+    <div id="upload-progress-popup" style="
+    display: none; 
+    position: fixed; 
+    top: 50%; 
+    left: 50%; 
+    transform: translate(-50%, -50%); 
+    background: white; 
+    padding: 25px; 
+    border-radius: 25px; 
+    box-shadow: 0 15px 50px rgba(255, 20, 147, 0.3); 
+    z-index: 999999; /* Số cực lớn để đè lên khung chat và mọi modal khác */
+    width: 300px; 
+    text-align: center; 
+    border: 3px solid #ffc0cb;
+    animation: animate__animated animate__fadeInScale 0.3s;
+">
+    <div style="font-size: 2em; margin-bottom: 10px;">🚀</div>
+    
+    <p id="upload-status-text" style="
+        font-size: 0.9em; 
+        font-weight: 800; 
+        color: #ff1493; 
+        margin-bottom: 15px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    ">ĐANG GỬI...</p>
+
+    <div style="width: 100%; background: #fff0f5; height: 12px; border-radius: 10px; overflow: hidden; border: 1px solid #ffecf2;">
+        <div id="upload-progress-bar" style="
+            width: 0%; 
+            height: 100%; 
+            background: linear-gradient(to right, #ffb6c1, #ff1493); 
+            transition: width 0.2s ease-out;
+            box-shadow: 0 0 10px rgba(255, 20, 147, 0.2);
+        "></div>
+    </div>
+
+    <p id="upload-percent" style="
+        font-size: 0.8em; 
+        color: #ff69b4; 
+        margin-top: 10px; 
+        font-weight: 800;
+    ">0%</p>
+    
+    <p style="font-size: 0.6em; color: #aaa; margin-top: 5px;">Vui lòng chờ trong giây lát...</p>
+</div>
+
+<div id="upload-overlay" style="
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 192, 203, 0.2);
+    backdrop-filter: blur(2px);
+    z-index: 999998;
+"></div>
+    
 <div id="modal-share-qr" class="modal" style="display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); align-items: center; justify-content: center;">
     <div class="modal-content" style="max-width: 320px; background: white; border-radius: 30px; border: 3px solid #ff69b4; overflow: hidden; text-align: center; animation: zoomIn 0.3s;">
         <div style="background: #ff69b4; color: white; padding: 15px; font-weight: 800;">THẺ ĐỊNH DANH SWEETIE</div>
@@ -13974,9 +14033,9 @@ function triggerFile(type) {
 
 async function handleMediaUpload(e) {
     const file = e.target.files[0];
-    if(!file || !currentChatFriend) return;
+    if (!file || !currentChatFriend) return;
 
-    // Kiểm tra dung lượng (Ảnh 10MB, Video 50MB)
+    // 1. Kiểm tra dung lượng (Ảnh 10MB, Video 50MB) - GIỮ NGUYÊN
     const isImg = file.type.startsWith('image/');
     const limit = isImg ? 10 : 50;
     if (file.size > limit * 1024 * 1024) {
@@ -13984,20 +14043,69 @@ async function handleMediaUpload(e) {
         return;
     }
 
+    // --- LOGIC MỚI: HIỆN POPUP VÀ OVERLAY TRÊN CÙNG ---
+    const popup = document.getElementById('upload-progress-popup');
+    const overlay = document.getElementById('upload-overlay');
+    const bar = document.getElementById('upload-progress-bar');
+    const percentText = document.getElementById('upload-percent');
+    const statusText = document.getElementById('upload-status-text');
+
+    if (popup && overlay) {
+        popup.style.display = 'block';
+        overlay.style.display = 'block';
+        bar.style.width = '0%';
+        percentText.innerText = '0%';
+        statusText.innerText = isImg ? "ĐANG GỬI ẢNH..." : "ĐANG GỬI VIDEO...";
+    }
+
+    // Thông báo vào chuông game - GIỮ NGUYÊN
     addNotification("⏳ ĐANG GỬI...", "Đang tải tệp tin lên...", true);
 
     const formData = new FormData();
     formData.append('file', file);
     formData.append('upload_preset', UPLOAD_PRESET);
 
-    try {
-        const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/upload`, { method: 'POST', body: formData });
-        const data = await res.json();
-        
-        if(data.secure_url) {
-            sendMediaMessage(data.secure_url, isImg ? 'image' : 'video');
+    // --- DÙNG XHR ĐỂ THEO DÕI TIẾN ĐỘ ---
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/upload`, true);
+
+    // Cập nhật thanh tiến độ theo thời gian thực
+    xhr.upload.onprogress = function(event) {
+        if (event.lengthComputable) {
+            const percent = Math.round((event.loaded / event.total) * 100);
+            if (bar) bar.style.width = percent + '%';
+            if (percentText) percentText.innerText = percent + '%';
         }
-    } catch (err) { alert("Lỗi kết nối Cloudinary!"); }
+    };
+
+    // Khi upload hoàn thành
+    xhr.onload = function() {
+        // Tắt Popup và Overlay
+        if (popup) popup.style.display = 'none';
+        if (overlay) overlay.style.display = 'none';
+
+        if (xhr.status === 200) {
+            const data = JSON.parse(xhr.responseText);
+            if (data.secure_url) {
+                // Gọi hàm gửi tin nhắn - GIỮ NGUYÊN
+                sendMediaMessage(data.secure_url, isImg ? 'image' : 'video');
+                
+                // Thông báo thành công vào chuông - GIỮ NGUYÊN
+                addNotification("✅ THÀNH CÔNG", `Đã gửi xong ${isImg ? 'ảnh' : 'video'}!`, false);
+            }
+        } else {
+            alert("Lỗi Cloudinary: " + xhr.statusText);
+        }
+    };
+
+    // Khi có lỗi kết nối
+    xhr.onerror = function() {
+        if (popup) popup.style.display = 'none';
+        if (overlay) overlay.style.display = 'none';
+        alert("Lỗi kết nối Cloudinary!");
+    };
+
+    xhr.send(formData);
 }
 
 function sendMediaMessage(url, type) {
