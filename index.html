@@ -12896,9 +12896,21 @@ function deleteMessage(msgId, isMe) {
         if (choice) {
             // Chế độ 1: Gỡ với mọi người (Xóa trên Firebase)
             db.ref(`chats/${chatRoomId}/messages/${msgId}`).remove()
-                .then(() => console.log("Đã gỡ tin nhắn với mọi người"));
+                .then(() => {
+                    console.log("Đã gỡ tin nhắn với mọi người");
+
+                    // ĐẨY THÔNG BÁO ĐẾN ĐỐI PHƯƠNG
+                    db.ref('notifications_queue/' + currentChatFriend).push({
+                        from: currentUser,
+                        title: "🗑️ TIN NHẮN ĐÃ GỠ",
+                        text: `${currentUser} đã thu hồi một tin nhắn`,
+                        type: 'delete_msg',
+                        msgId: msgId, // Gửi kèm ID tin nhắn để máy kia biết tin nào bị xóa
+                        time: Date.now()
+                    });
+                });
         } else {
-            // Chế độ 2: Gỡ ở phía tôi (Ẩn bằng LocalStorage)
+            // Chế độ 2: Gỡ ở phía tôi
             hideMessageLocally(msgId);
         }
     } else {
