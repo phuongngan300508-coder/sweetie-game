@@ -13056,13 +13056,28 @@ function saveAllNicknames() {
     const chatRoomId = [currentUser, currentChatFriend].sort().join('_');
 
     const updates = {};
-    updates[currentChatFriend] = nickFriend === "" ? null : nickFriend;
-    updates[currentUser] = nickMe === "" ? null : nickMe;
+    updates[`chats/${chatRoomId}/nicknames/${currentChatFriend}`] = nickFriend === "" ? null : nickFriend;
+    updates[`chats/${chatRoomId}/nicknames/${currentUser}`] = nickMe === "" ? null : nickMe;
 
-    db.ref(`chats/${chatRoomId}/nicknames`).update(updates).then(() => {
+    // 1. Cập nhật biệt danh lên Database trước
+    db.ref().update(updates).then(() => {
+        // 2. Sau khi cập nhật xong, gửi thông báo vào queue cho đối phương
+        // Ở đây mình gửi cho 'currentChatFriend' vì đó là người nhận
+        db.ref('notifications_queue/' + currentChatFriend).push({
+            from: currentUser,
+            title: "🏷️ BIỆT DANH MỚI",
+            text: `${currentUser} đã thay đổi biệt danh trong cuộc trò chuyện`,
+            type: 'nickname',
+            time: Date.now()
+        });
+
+        // Thông báo cục bộ cho người đang thao tác biết đã thành công
         addNotification("🏷️ HỆ THỐNG", "Đã cập nhật biệt danh mới!");
         toggleModal('modal-nickname');
+    }).catch((error) => {
+        console.error("Lỗi cập nhật biệt danh:", error);
     });
+}
 }
 
 // --- 3. CÁC HÀM XÓA RIÊNG/CHUNG ---
