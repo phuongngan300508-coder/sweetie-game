@@ -14026,17 +14026,44 @@ function sendMediaMessage(url, type) {
     });
 }
 
-    // CÁC HÀM MỞ FULL SCREEN
+    // --- HÀM MỞ FULL SCREEN (CẬP NHẬT CHUẨN) ---
 function openFS(url, type) {
     const modal = document.getElementById('media-fs');
     const content = document.getElementById('fs-content');
     const dl = document.getElementById('fs-download');
     
+    // 1. Hiển thị Modal với hiệu ứng Flex
     modal.style.display = 'flex';
-    dl.href = url;
-    content.innerHTML = type === 'image' 
-        ? `<img src="${url}" style="max-width:100%; max-height:100%">`
-        : `<video src="${url}" controls autoplay style="max-width:100%; max-height:100%"></video>`;
+    
+    // 2. Xử lý nút Tải về (Download)
+    // Cần ép Cloudinary trả về file dưới dạng attachment để trình duyệt tự tải xuống
+    const downloadUrl = url.replace('/upload/', '/upload/fl_attachment/');
+    dl.href = downloadUrl;
+    
+    // Đặt tên file khi tải về (Ví dụ: Sweetie_1712345678.jpg)
+    const extension = type === 'image' ? 'jpg' : 'mp4';
+    dl.setAttribute('download', `Sweetie_${Date.now()}.${extension}`);
+
+    // 3. Render nội dung Media
+    if (type === 'image') {
+        content.innerHTML = `
+            <img src="${url}" 
+                 class="animate__animated animate__zoomIn"
+                 style="max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 5px;">`;
+    } else {
+        // Video: controls để hiện thanh âm thanh, autoplay để phát ngay
+        content.innerHTML = `
+            <video src="${url}" 
+                   controls 
+                   autoplay 
+                   class="animate__animated animate__zoomIn"
+                   style="max-width: 100%; max-height: 100%; border-radius: 5px; outline: none;">
+                Trình duyệt của bạn không hỗ trợ xem video này.
+            </video>`;
+    }
+
+    // Mẹo nhỏ: Rung nhẹ máy khi mở media (chỉ cho Android)
+    if (navigator.vibrate) navigator.vibrate(40);
 }
 
 function closeFS() {
