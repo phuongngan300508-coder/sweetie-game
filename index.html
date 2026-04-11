@@ -7028,6 +7028,24 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
         </button>
     </div>
 </div>
+
+    <div id="modal-chat-theme" class="modal" style="display:none; z-index: 10005;">
+    <div class="modal-content animate__animated animate__fadeInUp" style="max-width: 350px; border-radius: 25px;">
+        <h3 style="color: #ff1493; margin-bottom: 15px;">🎨 Tùy chỉnh đoạn chat</h3>
+        
+        <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+            <button onclick="showThemeType('simple')" style="flex:1; padding: 8px; border-radius: 15px; border: 1px solid #ffc0cb; background: #fff5f8; font-weight: 800; font-size: 0.7em;">MÀU ĐƠN</button>
+            <button onclick="showThemeType('premium')" style="flex:1; padding: 8px; border-radius: 15px; border: 1px solid #ff1493; background: #ff1493; color: white; font-weight: 800; font-size: 0.7em;">CHỦ ĐỀ VIP</button>
+        </div>
+
+        <div id="theme-selection-area" style="max-height: 250px; overflow-y: auto; padding: 5px;">
+             </div>
+
+        <div class="modal-footer" style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 15px;">
+            <button class="btn-action-white" onclick="toggleModal('modal-chat-theme')">HỦY BỎ</button>
+        </div>
+    </div>
+</div>
 <script>
   let replyingTo = null; // Lưu tin nhắn đang được trả lời {id, text, sender}
   // Biến cờ để đảm bảo mỗi máy chỉ "nghe" Firebase đúng 1 lần duy nhất
@@ -12043,6 +12061,19 @@ function listenMessages(friendName) {
     
     // Tắt lắng nghe cũ để tránh trùng lặp tin nhắn khi đổi người chat
     db.ref('chats/' + chatRoomId + '/messages').off();
+    db.ref('chats/' + chatRoomId + '/config/theme').off(); // Tắt lắng nghe theme cũ
+
+    // --- MỚI: LẮNG NGHE GIAO DIỆN THỜI GIAN THỰC (Real-time Themes) ---
+    db.ref('chats/' + chatRoomId + '/config/theme').on('value', (snapshot) => {
+        const themeData = snapshot.val();
+        if (themeData) {
+            // Gọi hàm áp dụng giao diện (Henry định nghĩa hàm này bên dưới nhé)
+            if (typeof applyThemeToUI === 'function') applyThemeToUI(themeData);
+        } else {
+            // Trả về mặc định nếu chưa có cấu hình
+            if (typeof resetDefaultTheme === 'function') resetDefaultTheme();
+        }
+    });
 
     // --- BỔ SUNG: NÚT BA CHẤM ACTIONS ---
     const messengerActions = document.querySelector('.messenger-actions');
@@ -12054,6 +12085,9 @@ function listenMessages(friendName) {
             <div id="chat-more-menu-wrapper" style="position: relative; display: flex; align-items: center;">
                 <i class="fas fa-ellipsis-v" onclick="toggleChatMoreMenu()" style="cursor:pointer;"></i>
                 <div id="chat-more-menu" class="chat-more-menu" style="display:none; position:absolute; right:0; top:30px; background:white; box-shadow:0 5px 15px rgba(0,0,0,0.2); border-radius:10px; z-index:9999; min-width: 150px;">
+                    <div onclick="openThemeModal()" style="color:#ff1493; padding:12px; font-weight:bold; font-size:0.7em; cursor:pointer; white-space: nowrap; border-bottom: 1px solid #eee;">
+                        <i class="fas fa-palette"></i> Đổi giao diện
+                    </div>
                     <div onclick="blockUser('${friendName}')" style="color:red; padding:12px; font-weight:bold; font-size:0.7em; cursor:pointer; white-space: nowrap; border-radius:10px;">
                         <i class="fas fa-ban"></i> Chặn cư dân này
                     </div>
@@ -12156,9 +12190,25 @@ function listenMessages(friendName) {
                 if (el) initSwipe(el, isMe, msgId, msg.text, msg.sender);
             });
             
+            // Cuộn xuống cuối
             area.scrollTo({ top: area.scrollHeight, behavior: 'smooth' });
+
+            // CẬP NHẬT GIAO DIỆN TIN NHẮN THEO THEME HIỆN TẠI (Sau khi đã render tin nhắn)
+            db.ref('chats/' + chatRoomId + '/config/theme').once('value', (snap) => {
+                if (snap.exists() && typeof applyThemeToUI === 'function') {
+                    applyThemeToUI(snap.val());
+                }
+            });
         }
     });
+}
+
+    function resetDefaultTheme() {
+    const header = document.querySelector('.messenger-header');
+    const area = document.getElementById('chat-messages-area');
+    header.style.background = ""; // Trả về CSS mặc định
+    area.style.backgroundImage = "";
+    area.style.background = "";
 }
 
 function toggleChatMoreMenu() {
@@ -13352,6 +13402,157 @@ document.addEventListener('mousedown', function(event) {
     }
 });
 
+    const CHAT_THEMES_CONFIG = {
+    'love': {
+        name: 'Tình Yêu',
+        bg: 'url("https://i.postimg.cc/85zM6mP1/love-bg.jpg")', // Henry thay link ảnh nền nhé
+        bubbleMe: 'linear-gradient(135deg, #ff4b2b, #ff416c)',
+        bubbleFriend: '#fff0f5',
+        header: '#ff4b2b',
+        textMe: '#ffffff',
+        textFriend: '#d63384'
+    },
+    'music': {
+        name: 'Âm Nhạc',
+        bg: 'url("https://i.postimg.cc/mD8T1h6n/music-bg.jpg")',
+        bubbleMe: 'linear-gradient(135deg, #4facfe, #00f2fe)',
+        bubbleFriend: '#f0f8ff',
+        header: '#4facfe',
+        textMe: '#ffffff',
+        textFriend: '#007bff'
+    },
+    'sport': {
+        name: 'Thể Thao',
+        bg: 'url("https://i.postimg.cc/L8XzXF8z/sport-bg.jpg")',
+        bubbleMe: 'linear-gradient(135deg, #11998e, #38ef7d)',
+        bubbleFriend: '#f5fff5',
+        header: '#11998e',
+        textMe: '#ffffff',
+        textFriend: '#155724'
+    }
+};
+
+    let tempThemeData = null; // Lưu tạm để coi trước
+
+function openThemeModal() {
+    toggleChatMoreMenu();
+    toggleModal('modal-chat-theme');
+    showThemeType('simple'); // Mặc định mở màu đơn trước
+}
+
+function showThemeType(type) {
+    const area = document.getElementById('theme-selection-area');
+    area.innerHTML = "";
+
+    if (type === 'simple') {
+        area.innerHTML = `
+            <p style="font-size: 0.7em; color: #888;">Chọn màu sắc yêu thích cho khung chat:</p>
+            <input type="color" id="simple-color-picker" style="width: 100%; height: 50px; border-radius: 10px; border: 2px solid #ffc0cb; cursor: pointer;" 
+                   onchange="previewSimpleColor(this.value)">
+            <button class="btn-action-pink" style="margin-top: 15px; width: 100%;" onclick="applyChatTheme()">XÁC NHẬN MÀU NÀY</button>
+        `;
+    } else {
+        let html = '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">';
+        for (let key in CHAT_THEMES_CONFIG) {
+            const theme = CHAT_THEMES_CONFIG[key];
+            html += `
+                <div onclick="previewPremiumTheme('${key}')" style="background: ${theme.bubbleMe}; height: 80px; border-radius: 15px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 800; font-size: 0.7em; cursor: pointer; text-align: center; border: 3px solid #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+                    ${theme.name}
+                </div>
+            `;
+        }
+        html += '</div>';
+        area.innerHTML = html;
+    }
+}
+
+// Hàm coi trước màu đơn
+function previewSimpleColor(color) {
+    tempThemeData = {
+        type: 'simple',
+        mainColor: color
+    };
+    applyThemeToUI(tempThemeData); // Áp dụng ngay để xem thử
+}
+
+// Hàm coi trước chủ đề
+function previewPremiumTheme(key) {
+    tempThemeData = {
+        type: 'premium',
+        themeKey: key
+    };
+    applyThemeToUI(tempThemeData); // Áp dụng ngay để xem thử
+    
+    // Hiện nút xác nhận sau khi chọn chủ đề
+    const area = document.getElementById('theme-selection-area');
+    if(!document.getElementById('btn-confirm-premium')) {
+        area.insertAdjacentHTML('beforeend', `<button id="btn-confirm-premium" class="btn-action-pink" style="margin-top: 15px; width: 100%;" onclick="applyChatTheme()">SỬ DỤNG CHỦ ĐỀ NÀY</button>`);
+    }
+}
+
+// HÀM QUAN TRỌNG: CẬP NHẬT LÊN FIREBASE
+function applyChatTheme() {
+    if (!tempThemeData || !currentChatFriend) return;
+
+    const chatRoomId = [currentUser, currentChatFriend].sort().join('_');
+    db.ref(`chats/${chatRoomId}/config/theme`).set(tempThemeData).then(() => {
+        // Gửi thông báo cho đối phương
+        db.ref('notifications_queue/' + currentChatFriend).push({
+            from: currentUser,
+            title: "🎨 GIAO DIỆN MỚI",
+            text: `${currentUser} đã thay đổi chủ đề đoạn chat!`,
+            type: 'chat_theme',
+            time: Date.now()
+        });
+        
+        toggleModal('modal-chat-theme');
+        addNotification("🎨 HỆ THỐNG", "Đã cập nhật giao diện mới cho cả hai!");
+    });
+}
+
+// HÀM ÁP DỤNG CSS VÀO GIAO DIỆN
+function applyThemeToUI(themeData) {
+    const chatBox = document.getElementById('messenger-box');
+    const header = document.querySelector('.messenger-header');
+    const area = document.getElementById('chat-messages-area');
+    const inputBar = document.querySelector('.messenger-input-area');
+    
+    if (!chatBox || !themeData) return;
+
+    if (themeData.type === 'simple') {
+        const color = themeData.mainColor;
+        // Áp dụng màu đơn
+        header.style.background = color;
+        area.style.background = '#ffffff';
+        area.style.backgroundImage = 'none';
+        
+        // Đổi màu tất cả bong bóng chat của mình (Me)
+        const myBubbles = document.querySelectorAll('.msg-me');
+        myBubbles.forEach(b => b.style.background = color);
+        
+    } else if (themeData.type === 'premium') {
+        const theme = CHAT_THEMES_CONFIG[themeData.themeKey];
+        if (!theme) return;
+
+        header.style.background = theme.header;
+        area.style.backgroundImage = theme.bg;
+        area.style.backgroundSize = 'cover';
+        area.style.backgroundPosition = 'center';
+        
+        // Đổi màu bong bóng chat
+        const myBubbles = document.querySelectorAll('.msg-me');
+        myBubbles.forEach(b => {
+            b.style.background = theme.bubbleMe;
+            b.style.color = theme.textMe;
+        });
+        
+        const friendBubbles = document.querySelectorAll('.msg-friend');
+        friendBubbles.forEach(b => {
+            b.style.background = theme.bubbleFriend;
+            b.style.color = theme.textFriend;
+        });
+    }
+}
 </script>
 </body>
 </html>
