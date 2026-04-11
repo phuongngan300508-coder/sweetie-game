@@ -9920,22 +9920,21 @@ function renderNotis() {
             n.extraData.type === 'open_chat'
         );
         
-        const clickAttr = hasExtra ? `onclick='handleNotiClick(${index})'` : "";
+        // SỬA ĐỔI: Thêm ontouchstart="" để iPhone kích hoạt trạng thái "active" ngay lập tức
+        const clickAttr = hasExtra ? `onclick="handleNotiClick(${index})" ontouchstart=""` : "";
         const interactiveClass = hasExtra ? "noti-interactive" : "";
 
-        // Xác định nhãn hiển thị cho từng loại để Henry dễ kiểm soát
         let actionLabel = "CHẠM ĐỂ MỞ";
         if (n.extraData && n.extraData.type === 'friend_request') {
             actionLabel = "CHẠM ĐỂ PHẢN HỒI";
         }
 
-        // SỬA ĐỔI: Thêm role="button", tabindex="0" và style cursor để iPhone nhận diện click
         return `
             <div class="noti-item ${n.unread ? 'unread' : ''} ${interactiveClass}" 
                  ${clickAttr} 
                  role="button" 
                  tabindex="0"
-                 style="${hasExtra ? 'cursor: pointer; border-left: 4px solid #ff1493; background: #fffaff; -webkit-tap-highlight-color: transparent; touch-action: manipulation;' : ''}">
+                 style="${hasExtra ? 'cursor: pointer; border-left: 4px solid #ff1493; background: #fffaff; -webkit-tap-highlight-color: rgba(0,0,0,0); touch-action: manipulation;' : ''}">
                 <h4 style="margin:0; color:#d63384; font-size:0.9em;">${n.title}</h4>
                 <p style="margin:5px 0; font-size:0.8em; color:#555;">${n.message}</p>
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px;">
