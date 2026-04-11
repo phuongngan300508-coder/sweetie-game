@@ -11979,18 +11979,20 @@ function listenUserStatus(friendName) {
   function initUserPresence() {
     if (!currentUser) return;
 
+    // Nhánh lưu trạng thái online/offline của tất cả cư dân
     const statusRef = db.ref('/status/' + currentUser);
 
     // Một kết nối đặc biệt của Firebase để kiểm tra Henry có đang mở web không
     db.ref('.info/connected').on('value', (snapshot) => {
+        // snapshot.val() === false nghĩa là mất kết nối socket (mất mạng hoặc server bảo trì)
         if (snapshot.val() === false) return;
 
-        // --- MẸO QUAN TRỌNG: Thiết lập lại onDisconnect mỗi khi có kết nối mới ---
+        // KHI HENRY ĐÓNG WEB: Thiết lập lệnh chờ trên Server Firebase
         statusRef.onDisconnect().update({
             state: 'offline',
             last_changed: firebase.database.ServerValue.TIMESTAMP
         }).then(() => {
-            // Dùng .update thay vì .set để không làm mất cấu hình onDisconnect
+            // SAU KHI THIẾT LẬP ONDISCONNECT XONG: Đặt trạng thái Online ngay lập tức
             statusRef.update({
                 state: 'online',
                 last_changed: firebase.database.ServerValue.TIMESTAMP
@@ -11999,41 +12001,34 @@ function listenUserStatus(friendName) {
     });
 
     // --- BỘ DUY TRÌ ONLINE (HEARTBEAT) ---
-    // Rút ngắn xuống 30-40s sẽ an toàn hơn cho điện thoại, nhưng mình giữ 60s theo ý Henry
+    // Cứ mỗi 1 phút, Henry cho hệ thống "gõ cửa" Firebase một lần
     setInterval(() => {
         if (currentUser && navigator.onLine) {
-            // Dùng .update để chỉ cập nhật thời gian, giữ nguyên trạng thái online
-            db.ref('/status/' + currentUser).update({
-                last_changed: firebase.database.ServerValue.TIMESTAMP,
-                state: 'online' 
+            statusRef.update({
+                state: 'online',
+                last_changed: firebase.database.ServerValue.TIMESTAMP
             });
         }
     }, 60000); 
 
-    // Tự động Online lại ngay khi Henry quay lại Tab
+    // Tự động Online lại ngay khi Henry quay lại Tab (phòng hờ lúc nãy bị rớt mạng)
     document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible' && currentUser) {
-            // Khi quay lại, ta cũng nên thiết lập lại onDisconnect cho chắc ăn
-            statusRef.onDisconnect().update({
-                state: 'offline',
-                last_changed: firebase.database.ServerValue.TIMESTAMP
-            });
-            
             statusRef.update({
                 state: 'online',
                 last_changed: firebase.database.ServerValue.TIMESTAMP
             });
         }
     });
-}
 
-    // Henry giữ nguyên đoạn unload này để khi đóng tab thật sự thì báo offline ngay
+    // Henry để cái unload vào TRONG hàm này luôn để nó nhận diện được statusRef
     window.addEventListener('unload', () => {
         statusRef.set({
             state: 'offline',
             last_changed: firebase.database.ServerValue.TIMESTAMP
         });
     });
+}
 
     function formatLastSeen(timestamp) {
     if (!timestamp) return "Ngoại tuyến";
@@ -13174,27 +13169,33 @@ function setupStatusListener(fName) {
         db.ref('/status/' + fName).off('value', window.statusListeners[fName]);
     }
 
+    // Khởi tạo đối tượng lưu trữ nếu chưa có
+    if (!window.statusListeners) window.statusListeners = {};
+
     // 2. Định nghĩa hàm xử lý cập nhật trạng thái
     window.statusListeners[fName] = (sSnap) => {
         const sData = sSnap.val();
         const isOnline = sData && sData.state === 'online';
         
         // --- MẸO CỐT LÕI: Dùng querySelectorAll ---
-        // Henry làm vậy để dù chấm xanh nằm ở Danh sách bạn bè hay đang ở trong Khung chat
-        // thì hệ thống cũng sẽ tìm thấy và cập nhật màu CÙNG LÚC.
+        // Henry lưu ý: Hàm này sẽ quét toàn bộ giao diện mỗi khi Database thay đổi
+        // để đảm bảo dù Henry vừa render lại danh sách, nó vẫn tìm thấy chấm mới.
         const dots = document.querySelectorAll(`[id="dot-status-${fName}"]`);
         
         dots.forEach(dot => {
-            dot.style.background = isOnline ? '#28a745' : '#ccc';
-            // Hiệu ứng bóng đổ xịn xò như Henry muốn
-            dot.style.boxShadow = isOnline ? '0 0 8px rgba(40,167,69,0.7)' : 'none';
-            dot.style.transition = "all 0.3s ease"; // Thêm chút hiệu ứng mượt mà
+            if (dot) {
+                dot.style.background = isOnline ? '#28a745' : '#ccc';
+                // Hiệu ứng bóng đổ xịn xò như Henry muốn
+                dot.style.boxShadow = isOnline ? '0 0 8px rgba(40,167,69,0.7)' : 'none';
+                dot.style.transition = "all 0.3s ease";
+            }
         });
 
-        // Cập nhật luôn dòng chữ "Đang hoạt động" nếu Henry đang mở chat với người này
+        // Cập nhật luôn dòng chữ "Đang hoạt động" trong khung chat
         const statusText = document.getElementById('chat-target-status');
-        if (statusText && currentChatFriend === fName) {
-             if (isOnline) {
+        // Kiểm tra xem có đang mở đúng khung chat với người này không
+        if (statusText && typeof currentChatFriend !== 'undefined' && currentChatFriend === fName) {
+            if (isOnline) {
                 statusText.style.color = "#28a745";
                 statusText.innerHTML = `<i class="fas fa-circle" style="font-size: 0.8em;"></i> Đang hoạt động`;
             } else {
