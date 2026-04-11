@@ -11976,23 +11976,23 @@ function listenUserStatus(friendName) {
     });
 }
     
-  function initUserPresence() {
+ function initUserPresence() {
     if (!currentUser) return;
 
-    // Nhánh lưu trạng thái online/offline của tất cả cư dân
+    // Nhánh lưu trạng thái online/offline của tất cả cư dân (Giữ nguyên)
     const statusRef = db.ref('/status/' + currentUser);
 
-    // Một kết nối đặc biệt của Firebase để kiểm tra Henry có đang mở web không
+    // Một kết nối đặc biệt của Firebase để kiểm tra Henry có đang mở web không (Giữ nguyên)
     db.ref('.info/connected').on('value', (snapshot) => {
-        // snapshot.val() === false nghĩa là mất kết nối socket (mất mạng hoặc server bảo trì)
+        // snapshot.val() === false nghĩa là mất kết nối socket (Giữ nguyên)
         if (snapshot.val() === false) return;
 
-        // KHI HENRY ĐÓNG WEB: Thiết lập lệnh chờ trên Server Firebase
+        // KHI HENRY ĐÓNG WEB: Thiết lập lệnh chờ trên Server Firebase (Giữ nguyên)
         statusRef.onDisconnect().update({
             state: 'offline',
             last_changed: firebase.database.ServerValue.TIMESTAMP
         }).then(() => {
-            // SAU KHI THIẾT LẬP ONDISCONNECT XONG: Đặt trạng thái Online ngay lập tức
+            // SAU KHI THIẾT LẬP ONDISCONNECT XONG: Đặt trạng thái Online ngay lập tức (Giữ nguyên)
             statusRef.update({
                 state: 'online',
                 last_changed: firebase.database.ServerValue.TIMESTAMP
@@ -12011,7 +12011,7 @@ function listenUserStatus(friendName) {
         });
     });
 
-    // --- BỘ DUY TRÌ ONLINE (HEARTBEAT) ---
+    // --- BỘ DUY TRÌ ONLINE (HEARTBEAT) --- (Giữ nguyên)
     // Cứ mỗi 1 phút, Henry cho hệ thống "gõ cửa" Firebase một lần
     setInterval(() => {
         if (currentUser && navigator.onLine) {
@@ -12022,7 +12022,7 @@ function listenUserStatus(friendName) {
         }
     }, 60000); 
 
-    // Tự động Online lại ngay khi Henry quay lại Tab (phòng hờ lúc nãy bị rớt mạng)
+    // Tự động Online lại ngay khi Henry quay lại Tab (Giữ nguyên)
     document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible' && currentUser) {
             statusRef.update({
@@ -12032,7 +12032,7 @@ function listenUserStatus(friendName) {
         }
     });
 
-    // Henry để cái unload vào TRONG hàm này luôn để nó nhận diện được statusRef
+    // Henry để cái unload vào TRONG hàm này luôn (Giữ nguyên)
     window.addEventListener('unload', () => {
         statusRef.set({
             state: 'offline',
@@ -13214,6 +13214,9 @@ function setupStatusListener(fName) {
             }
         }
     };
+
+    // --- DÒNG QUAN TRỌNG NHẤT: ÉP KIỂM TRA TRẠNG THÁI NGAY LẬP TỨC (MỚI THÊM) ---
+    db.ref('/status/' + fName).once('value', window.statusListeners[fName]);
 
     // 3. Kích hoạt lắng nghe Real-time (Giữ nguyên)
     db.ref('/status/' + fName).on('value', window.statusListeners[fName]);
