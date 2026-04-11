@@ -13894,6 +13894,24 @@ function resetDefaultTheme() {
         b.style.color = "";
     });
 }
+
+    // --- HÀM XỬ LÝ ĐÓNG THÔNG BÁO KHI CLICK RA NGOÀI ---
+function closeNotiOnClickOutside(event) {
+    const notiBox = document.getElementById('notification-box'); // Đảm bảo ID này khớp với HTML của Henry
+    const bellIcon = document.getElementById('noti-bell-icon');   // Icon chuông thông báo
+
+    // Nếu cái bảng thông báo đang mở
+    if (notiBox && notiBox.style.display === 'block') {
+        // Kiểm tra xem cú click có nằm NGOÀI bảng thông báo và NGOÀI cái chuông không
+        if (!notiBox.contains(event.target) && (!bellIcon || !bellIcon.contains(event.target))) {
+            notiBox.style.display = 'none';
+            console.log("Hệ thống: Đã tự động đóng bảng thông báo.");
+        }
+    }
+}
+
+// Henry nhớ thêm dòng này để trình duyệt bắt đầu lắng nghe sự kiện click toàn trang
+document.addEventListener('click', closeNotiOnClickOutside);
 </script>
 </body>
 </html>
