@@ -8234,6 +8234,12 @@ function checkLoginStatus() {
                 if (typeof initFriendRequestListener === 'function') {
                     initFriendRequestListener();
                 }
+
+                // --- D. BỔ SUNG QUAN TRỌNG: BÁO DANH ONLINE LÊN FIREBASE ---
+                // Henry thêm dòng này để Firebase Console nhảy từ offline sang online nhé!
+                if (typeof initUserPresence === 'function') {
+                    initUserPresence();
+                }
                 
                 isSocialInitialized = true; // Đánh dấu đã kích hoạt xong
                 console.log("Hệ thống: Đã bật bộ lắng nghe Social (Duy nhất)");
@@ -8252,7 +8258,6 @@ function checkLoginStatus() {
     // QUAN TRỌNG: Luôn ẩn Splash Screen dù đăng nhập thành công hay thất bại
     hideSplashScreen(); 
 }
-
 function handleLogin() {
     const nameInput = document.getElementById('reg-name');
     const name = nameInput.value.trim();
