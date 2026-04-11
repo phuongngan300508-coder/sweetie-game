@@ -6917,10 +6917,33 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
         <i class="fas fa-times-circle" style="color: #ffb6c1; cursor: pointer; font-size: 1.1em; margin-left: 10px;" onclick="cancelReply()"></i>
     </div>
 
-    <div class="messenger-footer">
+   <div class="messenger-footer">
+    <div style="position: relative; display: flex; align-items: center; gap: 8px; width: 100%;">
+        <i class="fas fa-plus-circle" onclick="toggleMediaMenu()" style="cursor:pointer; color:#ff1493; font-size:1.4em;"></i>
+        
         <input type="text" id="chat-input" placeholder="Gửi lời ngọt ngào..." onkeypress="if(event.key === 'Enter') sendMessage()">
         <button onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
+
+        <div id="media-menu" style="display:none; position:absolute; bottom:55px; left:0; background:white; border-radius:15px; box-shadow:0 5px 20px rgba(0,0,0,0.1); padding:10px; z-index:100;">
+            <div onclick="triggerFile('image/*')" style="padding:10px; cursor:pointer; color:#ff1493; font-weight:800; font-size:0.8em;">
+                <i class="fas fa-image"></i> HÌNH ẢNH
+            </div>
+            <div onclick="triggerFile('video/*')" style="padding:10px; cursor:pointer; color:#ff1493; font-weight:800; font-size:0.8em;">
+                <i class="fas fa-video"></i> VIDEO
+            </div>
+        </div>
     </div>
+</div>
+
+<input type="file" id="media-hidden-input" style="display:none" onchange="handleMediaUpload(event)">
+
+<div id="media-fs" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:black; z-index:99999; flex-direction:column; align-items:center; justify-content:center;">
+    <i class="fas fa-times" onclick="closeFS()" style="position:absolute; top:20px; right:20px; color:white; font-size:2em; cursor:pointer;"></i>
+    <div id="fs-content" style="width:100%; height:80%; display:flex; justify-content:center; align-items:center;"></div>
+    <a id="fs-download" href="" download style="margin-top:20px; background:#ff1493; color:white; padding:10px 25px; border-radius:50px; text-decoration:none; font-weight:bold;">
+        <i class="fas fa-download"></i> LƯU VỀ MÁY
+    </a>
+</div>
 </div>
 
 <div id="modal-share-qr" class="modal" style="display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); align-items: center; justify-content: center;">
@@ -12324,6 +12347,20 @@ function listenMessages(friendName) {
                         ${msg.displayTime}
                     </div>` : "";
 
+                // --- PHẦN XỬ LÝ NỘI DUNG MEDIA (ẢNH/VIDEO) ---
+                let bodyContentHtml = `<div class="text-content">${msg.text}</div>`;
+                if (msg.mediaUrl) {
+                    if (msg.mediaType === 'image') {
+                        bodyContentHtml = `<img src="${msg.mediaUrl}" onclick="openFS('${msg.mediaUrl}', 'image')" style="max-width:100%; border-radius:10px; cursor:pointer; display: block; margin-bottom: 5px;">`;
+                    } else if (msg.mediaType === 'video') {
+                        bodyContentHtml = `
+                            <div style="position:relative; display: block; margin-bottom: 5px;">
+                                <video src="${msg.mediaUrl}" muted style="max-width:100%; border-radius:10px; display: block;"></video>
+                                <i class="fas fa-play-circle" onclick="openFS('${msg.mediaUrl}', 'video')" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); color:white; font-size:2.5em; cursor:pointer; opacity: 0.9;"></i>
+                            </div>`;
+                    }
+                }
+
                 // CHỈNH SỬA: Thêm style flex-direction: row-reverse cho tin nhắn của bản thân trực tiếp trong HTML
                 const msgHtml = `
     <div class="msg-wrapper ${isMe ? 'msg-me-wrap' : 'msg-friend-wrap'}" 
@@ -12349,7 +12386,7 @@ function listenMessages(friendName) {
 
         <div class="msg-bubble ${isMe ? 'msg-me' : 'msg-friend'}" style="display: flex; flex-direction: column; position: relative; ${isMe ? 'margin-left: 0;' : ''}">
             ${replyHtml}
-            <div class="text-content">${msg.text}</div>
+            ${bodyContentHtml}
             ${timeHtml}
             ${reactionDisplayHtml}
         </div>
@@ -12384,7 +12421,6 @@ function listenMessages(friendName) {
         }
     });
 }
-
 function toggleChatMoreMenu() {
     const menu = document.getElementById('chat-more-menu');
     if (menu) {
@@ -13920,6 +13956,93 @@ function closeNotiOnClickOutside(event) {
 
 // Henry nhớ thêm dòng này để trình duyệt bắt đầu lắng nghe sự kiện click toàn trang
 document.addEventListener('click', closeNotiOnClickOutside);
+
+    const CLOUD_NAME = 'dl4wnxsm3'; 
+const UPLOAD_PRESET = 'SWEETIE GAME WORLD';
+
+function toggleMediaMenu() {
+    const m = document.getElementById('media-menu');
+    m.style.display = m.style.display === 'none' ? 'block' : 'none';
+}
+
+function triggerFile(type) {
+    const input = document.getElementById('media-hidden-input');
+    input.accept = type;
+    input.click();
+    toggleMediaMenu();
+}
+
+async function handleMediaUpload(e) {
+    const file = e.target.files[0];
+    if(!file || !currentChatFriend) return;
+
+    // Kiểm tra dung lượng (Ảnh 10MB, Video 50MB)
+    const isImg = file.type.startsWith('image/');
+    const limit = isImg ? 10 : 50;
+    if (file.size > limit * 1024 * 1024) {
+        alert(`❌ File quá nặng! ${isImg ? 'Ảnh' : 'Video'} tối đa ${limit}MB thôi Henry ơi.`);
+        return;
+    }
+
+    addNotification("⏳ ĐANG GỬI...", "Đang tải tệp tin lên...", true);
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', UPLOAD_PRESET);
+
+    try {
+        const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/upload`, { method: 'POST', body: formData });
+        const data = await res.json();
+        
+        if(data.secure_url) {
+            sendMediaMessage(data.secure_url, isImg ? 'image' : 'video');
+        }
+    } catch (err) { alert("Lỗi kết nối Cloudinary!"); }
+}
+
+function sendMediaMessage(url, type) {
+    const chatRoomId = [currentUser, currentChatFriend].sort().join('_');
+    const now = new Date();
+    const displayTime = now.getHours().toString().padStart(2, '0') + ":" + now.getMinutes().toString().padStart(2, '0');
+
+    const msgData = {
+        sender: currentUser,
+        text: type === 'image' ? "📷 Đã gửi một ảnh" : "🎥 Đã gửi một video",
+        mediaUrl: url,
+        mediaType: type,
+        displayTime: displayTime,
+        timestamp: firebase.database.ServerValue.TIMESTAMP
+    };
+
+    db.ref('chats/' + chatRoomId + '/messages').push(msgData).then(() => {
+        // Thông báo cho đối phương
+        db.ref('notifications_queue/' + currentChatFriend).push({
+            from: currentUser,
+            title: type === 'image' ? "📷 HÌNH ẢNH MỚI" : "🎥 VIDEO MỚI",
+            text: `${currentUser} vừa gửi cho bạn một ${type === 'image' ? 'ảnh' : 'video'}.`,
+            type: 'chat',
+            time: Date.now()
+        });
+    });
+}
+
+    // CÁC HÀM MỞ FULL SCREEN
+function openFS(url, type) {
+    const modal = document.getElementById('media-fs');
+    const content = document.getElementById('fs-content');
+    const dl = document.getElementById('fs-download');
+    
+    modal.style.display = 'flex';
+    dl.href = url;
+    content.innerHTML = type === 'image' 
+        ? `<img src="${url}" style="max-width:100%; max-height:100%">`
+        : `<video src="${url}" controls autoplay style="max-width:100%; max-height:100%"></video>`;
+}
+
+function closeFS() {
+    document.getElementById('media-fs').style.display = 'none';
+    document.getElementById('fs-content').innerHTML = ""; // Tắt video khi đóng
+}
 </script>
 </body>
 </html>
