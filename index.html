@@ -13012,7 +13012,7 @@ async function renderFriendsList() {
                         ? `<img src="${uData.profile.customAvatar}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`
                         : `<i class="fas ${uData.profile.gender === 'Nam' ? 'fa-user-tie' : 'fa-user-graduate'}"></i>`;
 
-                    // --- MỚI: LẮNG NGHE TRẠNG THÁI NGƯỜI LẠ ---
+                    // Lắng nghe trạng thái
                     db.ref('/status/' + sName).on('value', (sSnap) => {
                         const sData = sSnap.val();
                         const dot = document.getElementById(`dot-status-${sName}`);
@@ -13022,9 +13022,11 @@ async function renderFriendsList() {
                     return `
                         <div class="friend-card-row animate__animated animate__fadeIn" style="display: flex; align-items: center; justify-content: space-between; background: #fff5f8; padding: 15px; border-radius: 20px; margin-bottom: 10px; border-left: 5px solid #ff1493; border: 1px dashed #ffc0cb;">
                             <div style="display: flex; align-items: center; gap: 12px;">
-                                <div onclick="searchFriendByID('${uData.profile.uid}')" style="position: relative; width: 50px; height: 50px; background: #ffe4e1; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #ff1493; overflow: hidden; cursor: pointer; border: 2px solid #fff; box-shadow: 0 2px 5px rgba(255,20,147,0.1);">
-                                    ${avatar}
-                                    <div id="dot-status-${sName}" style="position: absolute; bottom: 2px; right: 2px; width: 10px; height: 10px; border-radius: 50%; border: 2px solid #fff; background: #ccc;"></div>
+                                <div onclick="searchFriendByID('${uData.profile.uid}')" style="position: relative; width: 50px; height: 50px; cursor: pointer;">
+                                    <div style="width: 100%; height: 100%; background: #ffe4e1; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #ff1493; border: 2px solid #fff; box-shadow: 0 2px 5px rgba(255,20,147,0.1); overflow: hidden;">
+                                        ${avatar}
+                                    </div>
+                                    <div id="dot-status-${sName}" style="position: absolute; bottom: -1px; right: -1px; width: 14px; height: 14px; border-radius: 50%; border: 3px solid #fff; background: #ccc; z-index: 10;"></div>
                                 </div>
                                 <div style="text-align: left;">
                                     <b style="color: #d63384;">${displayName}</b>
@@ -13051,13 +13053,9 @@ async function renderFriendsList() {
                 if(requestSection) requestSection.style.display = 'none';
             }
 
-            // 2. XỬ LÝ DANH SÁCH BẠN BÈ (GIỮ NGUYÊN 100% LOGIC CỦA HENRY)
+            // 2. XỬ LÝ DANH SÁCH BẠN BÈ (GIỮ NGUYÊN 100% LOGIC)
             if (friendNames.length === 0) {
-                container.innerHTML = `
-                    <div id="empty-msg" class="animate__animated animate__fadeIn" style="text-align: center; padding: 40px; background: #fff; border-radius: 20px; border: 1px solid #eee;">
-                        <i class="fas fa-user-plus" style="font-size: 3em; color: #ffc0cb; margin-bottom: 15px;"></i>
-                        <p style="color: #888;">Bạn chưa có người bạn nào vĩnh viễn.<br>Hãy quét mã ID để kết bạn ngay!</p>
-                    </div>`;
+                container.innerHTML = `<div id="empty-msg" style="text-align: center; padding: 40px;">Chưa có bạn bè</div>`;
                 return;
             }
 
@@ -13076,7 +13074,7 @@ async function renderFriendsList() {
                         ? `<img src="${uData.profile.customAvatar}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`
                         : `<i class="fas ${uData.profile.gender === 'Nam' ? 'fa-user-tie' : 'fa-user-graduate'}"></i>`;
 
-                    // --- MỚI: LẮNG NGHE TRẠNG THÁI BẠN BÈ REAL-TIME ---
+                    // Lắng nghe trạng thái bạn bè
                     db.ref('/status/' + fName).on('value', (sSnap) => {
                         const sData = sSnap.val();
                         const dot = document.getElementById(`dot-status-${fName}`);
@@ -13088,9 +13086,11 @@ async function renderFriendsList() {
                         html: `
                         <div class="friend-card-row animate__animated animate__fadeInUp" style="display: flex; align-items: center; justify-content: space-between; background: white; padding: 15px; border-radius: 20px; margin-bottom: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.03); border-left: 5px solid ${isVip5 ? '#ff1493' : '#ffc0cb'};">
                             <div style="display: flex; align-items: center; gap: 12px; cursor: pointer;" onclick="searchFriendByID('${uData.profile.uid}')">
-                                <div style="position: relative; width: 50px; height: 50px; background: #fff0f5; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #ff1493; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(255,20,147,0.2); overflow: hidden;">
-                                    ${avatar}
-                                    <div id="dot-status-${fName}" style="position: absolute; bottom: 2px; right: 2px; width: 10px; height: 10px; border-radius: 50%; border: 2px solid #fff; background: #ccc;"></div>
+                                <div style="position: relative; width: 50px; height: 50px;">
+                                    <div style="width: 100%; height: 100%; background: #fff0f5; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #ff1493; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(255,20,147,0.2); overflow: hidden;">
+                                        ${avatar}
+                                    </div>
+                                    <div id="dot-status-${fName}" style="position: absolute; bottom: -2px; right: -2px; width: 14px; height: 14px; border-radius: 50%; border: 3px solid #fff; background: #ccc; z-index: 10;"></div>
                                 </div>
                                 <div style="text-align: left;">
                                     <b style="color: #d63384; font-size: 1em;">${displayName}</b>
@@ -13098,7 +13098,7 @@ async function renderFriendsList() {
                                 </div>
                             </div>
                             <div style="display: flex; gap: 10px;">
-                                <button onclick="openChatWith('${fName}')" style="background: #ff1493; color: white; border: none; width: 40px; height: 40px; border-radius: 12px; cursor: pointer; box-shadow: 0 4px 10px rgba(255,20,147,0.3);">
+                                <button onclick="openChatWith('${fName}')" style="background: #ff1493; color: white; border: none; width: 40px; height: 40px; border-radius: 12px; cursor: pointer;">
                                     <i class="fab fa-facebook-messenger"></i>
                                 </button>
                                 <button onclick="unfriendConfirm('${fName}')" style="background: #f8f9fa; color: #ccc; border: none; width: 40px; height: 40px; border-radius: 12px; cursor: pointer;">
@@ -13107,27 +13107,14 @@ async function renderFriendsList() {
                             </div>
                         </div>`
                     };
-                } catch (e) {
-                    console.error("Lỗi tải profile bạn bè:", fName);
-                    return null;
-                }
+                } catch (e) { return null; }
             }));
 
-            const finalHtml = friendItems
-                .filter(item => item !== null)
-                .sort((a, b) => a.name.localeCompare(b.name))
-                .map(item => item.html)
-                .join("");
-
-            if (finalHtml !== "") {
-                container.innerHTML = finalHtml;
-            } else {
-                container.innerHTML = `<p style="text-align:center; color:#888;">Dữ liệu bạn bè đang gặp sự cố...</p>`;
-            }
+            const finalHtml = friendItems.filter(i => i).sort((a, b) => a.name.localeCompare(b.name)).map(item => item.html).join("");
+            container.innerHTML = finalHtml || "Chưa có dữ liệu";
         }); 
     });
 }
-
 // 2. Hàm xóa bạn (Unfriend)
 function unfriendConfirm(fName) {
     if (confirm(`Bạn muốn xóa ${fName} khỏi danh sách bạn bè? Thao tác này không thể hoàn tác.`)) {
