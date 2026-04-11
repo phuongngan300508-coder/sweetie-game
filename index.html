@@ -11988,7 +11988,6 @@ function listenUserStatus(friendName) {
         if (snapshot.val() === false) return;
 
         // KHI HENRY ĐÓNG WEB: Thiết lập lệnh chờ trên Server Firebase
-        // Lệnh này chỉ chạy khi "Socket" bị đứt hoàn toàn (Tắt trình duyệt/Mất mạng)
         statusRef.onDisconnect().set({
             state: 'offline',
             last_changed: firebase.database.ServerValue.TIMESTAMP
@@ -12001,12 +12000,28 @@ function listenUserStatus(friendName) {
         });
     });
 
-    // --- SỬA ĐỔI ĐỂ GIỮ ONLINE KHI CHẠY NGẦM ---
-    // Henry KHÔNG NÊN dùng 'beforeunload' để set offline vì nó có thể kích hoạt sai.
-    // Firebase Socket sẽ tự động giữ kết nối dù Henry đang ở Tab khác.
-    // Nếu Henry muốn cực kỳ chắc chắn, hãy dùng thêm cơ chế này:
+    // --- BỘ DUY TRÌ ONLINE (HEARTBEAT) ---
+    // Cứ mỗi 1 phút, Henry cho hệ thống "gõ cửa" Firebase một lần để tránh bị trình duyệt đóng băng tab chạy ngầm
+    setInterval(() => {
+        if (currentUser) {
+            db.ref('/status/' + currentUser).update({
+                last_changed: firebase.database.ServerValue.TIMESTAMP
+            });
+        }
+    }, 60000); 
+
+    // Tự động Online lại ngay khi Henry quay lại Tab (phòng hờ lúc nãy bị rớt mạng)
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible' && currentUser) {
+            statusRef.set({
+                state: 'online',
+                last_changed: firebase.database.ServerValue.TIMESTAMP
+            });
+        }
+    });
+
+    // Henry giữ nguyên đoạn unload này để khi đóng tab thật sự thì báo offline ngay
     window.addEventListener('unload', () => {
-        // Chỉ ghi Offline khi cửa sổ trình duyệt thật sự bị đóng (terminate)
         statusRef.set({
             state: 'offline',
             last_changed: firebase.database.ServerValue.TIMESTAMP
