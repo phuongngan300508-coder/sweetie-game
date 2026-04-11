@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title> SWEETIE GAME WORLD</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
@@ -5083,6 +5083,12 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
     font-size: 0.75em;
     font-weight: bold;
     opacity: 0.8;
+}
+
+    @media screen and (max-width: 768px) {
+    input, select, textarea {
+        font-size: 16px !important;
+    }
 }
 </style>
 </head>
@@ -14186,6 +14192,23 @@ function closeFS() {
     document.getElementById('media-fs').style.display = 'none';
     document.getElementById('fs-content').innerHTML = ""; // Tắt video khi đóng
 }
+
+    // Chặn zoom khi chạm đa điểm
+document.addEventListener('touchstart', function (event) {
+  if (event.touches.length > 1) {
+    event.preventDefault();
+  }
+}, { passive: false });
+
+// Chặn zoom khi nhấn đúp (double tap)
+let lastTouchEnd = 0;
+document.addEventListener('touchend', function (event) {
+  let now = (new Date()).getTime();
+  if (now - lastTouchEnd <= 300) {
+    event.preventDefault();
+  }
+  lastTouchEnd = now;
+}, false);
 </script>
 </body>
 </html>
