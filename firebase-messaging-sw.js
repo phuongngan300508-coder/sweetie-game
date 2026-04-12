@@ -22,16 +22,20 @@ self.addEventListener('activate', (event) => {
 });
 
 // QUAN TRỌNG: Cấu hình hiển thị khi web đóng
+// QUAN TRỌNG: Cấu hình hiển thị khi web đóng
 messaging.onBackgroundMessage((payload) => {
     console.log('[sw.js] Nhận tin nhắn ngầm:', payload);
 
     // Xử lý dữ liệu linh hoạt (vì Firebase Console gửi payload khác với API tự viết)
     const notificationTitle = payload.notification?.title || payload.data?.title || "SWEETIE GAME WORLD";
+    
     const notificationOptions = {
         body: payload.notification?.body || payload.data?.body || "Bạn có tin nhắn mới nè!",
-        icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
-        badge: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
-        data: payload.data, // Chứa các thông tin thêm như link, id
+        icon: "https://i.postimg.cc/90bRT1Bt/dee8a7e0-5d40-4779-bca4-c88381257a1e.jpg", 
+        image: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+        badge: "https://i.postimg.cc/90bRT1Bt/dee8a7e0-5d40-4779-bca4-c88381257a1e.jpg",
+        data: payload.data,
+        color: "#ffb6c1"
     };
 
     // Lệnh này bắt buộc phải có return để đánh thức thiết bị
