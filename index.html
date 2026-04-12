@@ -12480,7 +12480,7 @@ function listenMessages(friendName) {
         
         const menuHtml = `
             <div id="chat-more-menu-wrapper" style="position: relative; display: flex; align-items: center;">
-                <i class="fas fa-search" onclick="openSearchModal()" 
+                <i class="fas fa-search" onclick="openSearchModal(event)" 
                    style="cursor:pointer; color:#ffffff; margin-right:12px; font-size: 0.9em;"></i>
                 <i class="fas fa-ellipsis-v" onclick="toggleChatMoreMenu()" style="cursor:pointer;"></i>
                 <div id="chat-more-menu" class="chat-more-menu" style="display:none; position:absolute; right:0; top:30px; background:white; box-shadow:0 5px 15px rgba(0,0,0,0.2); border-radius:10px; z-index:9999; min-width: 150px;">
@@ -14593,12 +14593,22 @@ document.addEventListener('touchend', function (event) {
     let currentSearchKeyword = "";
 
 // 1. Mở Modal
-function openSearchModal() {
+function openSearchModal(event) {
+    if (event) event.stopPropagation(); // Ngăn sự kiện trôi lên trên gây đóng modal ngay lập tức
+    
     toggleModal('modal-search-msg');
-    const input = document.getElementById('input-search-msg');
-    input.value = "";
-    input.focus();
-    document.getElementById('search-results-area').innerHTML = '<p style="text-align: center; color: #888; font-size: 0.8em;">Nhập từ khóa để tìm kiếm...</p>';
+    
+    // Tự động focus vào ô nhập để gõ được ngay
+    setTimeout(() => {
+        const input = document.getElementById('input-search-msg');
+        if (input) {
+            input.value = "";
+            input.focus();
+        }
+    }, 200);
+
+    document.getElementById('search-results-area').innerHTML = 
+        '<p style="text-align: center; color: #888; font-size: 0.8em;">Nhập từ khóa để tìm kiếm...</p>';
 }
 
 // 2. Thực hiện tìm kiếm Real-time
