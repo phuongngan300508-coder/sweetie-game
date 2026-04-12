@@ -7213,15 +7213,9 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
         <h3 style="color: #ff1493; margin-top: 0; margin-bottom: 15px; text-align: center;">🎨 Tùy chỉnh đoạn chat</h3>
         
         <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-    <button id="btn-theme-simple" onclick="showThemeType('simple')" 
-            style="flex:1; padding: 10px; border-radius: 15px; border: 1px solid #ffc0cb; background: #fff5f8; font-weight: 800; font-size: 0.7em; cursor: pointer;">
-        MÀU ĐƠN
-    </button>
-    <button id="btn-theme-premium" onclick="showThemeType('premium')" 
-            style="flex:1; padding: 10px; border-radius: 15px; border: 1px solid #ff1493; background: #ffffff; color: #ff1493; font-weight: 800; font-size: 0.7em; cursor: pointer;">
-        CHỦ ĐỀ VIP
-    </button>
-</div>
+            <button onclick="showThemeType('simple')" style="flex:1; padding: 10px; border-radius: 15px; border: 1px solid #ffc0cb; background: #fff5f8; font-weight: 800; font-size: 0.7em; cursor: pointer;">MÀU ĐƠN</button>
+            <button onclick="showThemeType('premium')" style="flex:1; padding: 10px; border-radius: 15px; border: 1px solid #ff1493; background: #ff1493; color: white; font-weight: 800; font-size: 0.7em; cursor: pointer;">CHỦ ĐỀ VIP</button>
+        </div>
 
         <div id="theme-selection-area" style="max-height: 250px; overflow-y: auto; padding: 5px;">
              </div>
@@ -14077,11 +14071,9 @@ function openThemeModal() {
     // 1. Đóng menu và mở Modal (Giữ nguyên)
     if (typeof toggleChatMoreMenu === 'function') toggleChatMoreMenu();
     toggleModal('modal-chat-theme');
-    
-    // ĐÃ CẬP NHẬT: Gọi hàm này để vừa hiện nội dung, vừa nhuộm hồng nút "MÀU ĐƠN" ngay lập tức
     showThemeType('simple'); 
     
-    // 2. Kiểm tra nếu chưa chọn ai chat thì không chạy tiếp (Giữ nguyên)
+    // 2. Kiểm tra nếu chưa chọn ai chat thì không chạy tiếp
     if (!currentChatFriend || !currentUser) return;
 
     // 3. Ghi nhớ lại giao diện hiện tại từ Firebase (Giữ nguyên logic)
@@ -14117,35 +14109,7 @@ function cancelThemeSelection() {
 }
 
 function showThemeType(type) {
-    // 1. Lấy 2 nút dựa trên ID (Henry nhớ đặt ID cho 2 nút ở HTML là 'btn-simple' và 'btn-premium')
-    const btnSimple = document.getElementById('btn-simple');
-    const btnPremium = document.getElementById('btn-premium');
     const area = document.getElementById('theme-selection-area');
-
-    // 2. LOGIC ĐỔI MÀU NÚT (Hồng đậm khi chọn, Hồng nhạt/Trắng khi không chọn)
-    if (type === 'simple') {
-        // Nút Đơn: Nền hồng đậm, chữ trắng
-        btnSimple.style.background = "#ff1493";
-        btnSimple.style.color = "#ffffff";
-        btnSimple.style.borderColor = "#ff1493";
-
-        // Nút VIP: Nền trắng/hồng nhạt, chữ hồng
-        btnPremium.style.background = "#fff5f8";
-        btnPremium.style.color = "#ff1493";
-        btnPremium.style.borderColor = "#ffc0cb";
-    } else {
-        // Nút VIP: Nền hồng đậm, chữ trắng
-        btnPremium.style.background = "#ff1493";
-        btnPremium.style.color = "#ffffff";
-        btnPremium.style.borderColor = "#ff1493";
-
-        // Nút Đơn: Nền trắng/hồng nhạt, chữ hồng
-        btnSimple.style.background = "#fff5f8";
-        btnSimple.style.color = "#ff1493";
-        btnSimple.style.borderColor = "#ffc0cb";
-    }
-
-    // 3. LOGIC HIỂN THỊ NỘI DUNG (GIỮ NGUYÊN 100% NỘI DUNG CỦA HENRY)
     area.innerHTML = "";
 
     const resetHtml = `
