@@ -12043,18 +12043,27 @@ function initChatSystem() {
 
 // --- 1. SỬA HÀM MỞ CHAT (Bỏ dòng gán display flex trực tiếp để tránh xung đột) ---
 function openChatWith(friendName) {
-    // --- MỚI: TỰ ĐỘNG THOÁT CHẾ ĐỘ TÌM KIẾM KHI ĐỔI NGƯỜI CHAT ---
+    // --- 1. HIỆN KHUNG CHAT NGAY LẬP TỨC (Tối ưu cảm giác mượt mà) ---
+    const chatBox = document.getElementById('messenger-box');
+    if (chatBox && chatBox.style.display !== 'flex') {
+        chatBox.style.display = 'flex';
+        chatBox.classList.remove('animate__fadeOutDown');
+        chatBox.classList.add('animate__fadeInUp');
+    }
+
+    // --- 2. TỰ ĐỘNG THOÁT CHẾ ĐỘ TÌM KIẾM KHI ĐỔI NGƯỜI CHAT ---
     if (typeof exitSearchMode === 'function') {
         exitSearchMode();
     }
 
     currentChatFriend = friendName; 
 
+    // --- 3. LẤY DỮ LIỆU NGƯỜI DÙNG ---
     db.ref('users/' + friendName).once('value', (snapshot) => {
         const data = snapshot.val();
         if (!data) return;
 
-        // --- 1. HIỂN THỊ BONG BÓNG CHAT (BUBBLE) ---
+        // --- 4. HIỂN THỊ BONG BÓNG CHAT (BUBBLE) ---
         const bubble = document.getElementById('chat-bubble');
         const bImg = document.getElementById('bubble-avatar-img');
         const bIcon = document.getElementById('bubble-default-icon');
@@ -12076,7 +12085,7 @@ function openChatWith(friendName) {
             }; 
         }
 
-        // --- 2. CẬP NHẬT THÔNG TIN NGƯỜI ĐANG CHAT ---
+        // --- 5. CẬP NHẬT THÔNG TIN NGƯỜI ĐANG CHAT ---
         document.getElementById('chat-target-name').innerText = data.profile.name;
         const avatarDiv = document.getElementById('chat-target-avatar');
         
@@ -12086,19 +12095,11 @@ function openChatWith(friendName) {
             avatarDiv.innerHTML = `<i class="fas ${data.profile.gender === 'Nam' ? 'fa-user-tie' : 'fa-user-graduate'}"></i>`;
         }
 
-        // --- 3. MỞ KHUNG CHAT VỚI HIỆU ỨNG ---
-        const chatBox = document.getElementById('messenger-box');
-        if (chatBox && chatBox.style.display !== 'flex') {
-            chatBox.style.display = 'flex';
-            chatBox.classList.remove('animate__fadeOutDown');
-            chatBox.classList.add('animate__fadeInUp');
-        }
-
-        // --- 4. BẮT ĐẦU LẮNG NGHE TIN NHẮN REALTIME ---
+        // --- 6. BẮT ĐẦU LẮNG NGHE TIN NHẮN REALTIME ---
         listenMessages(friendName);
         listenNicknames(friendName);
 
-        // --- 5. ĐỒNG BỘ KẾT NỐI: XÓA THÔNG BÁO CHƯA ĐỌC ---
+        // --- 7. ĐỒNG BỘ KẾT NỐI: XÓA THÔNG BÁO CHƯA ĐỌC ---
         if (currentUser && friendName) {
             db.ref('unread_counts/' + currentUser + '/' + friendName).remove()
                 .then(() => {
@@ -12109,7 +12110,7 @@ function openChatWith(friendName) {
                 });
         }
 
-        // --- 6. MỚI: LẮNG NGHE TRẠNG THÁI ONLINE/OFFLINE REAL-TIME ---
+        // --- 8. LẮNG NGHE TRẠNG THÁI ONLINE/OFFLINE REAL-TIME ---
         const statusEl = document.getElementById('chat-target-status');
         
         if (window.lastStatusRef) window.lastStatusRef.off();
@@ -12430,11 +12431,17 @@ function listenMessages(friendName) {
     db.ref('chats/' + chatRoomId + '/messages').off();
     db.ref('chats/' + chatRoomId + '/config/theme').off();
 
+    // Biến lưu trữ theme hiện tại để dùng cho tin nhắn mới mà không cần load lại database
+    let currentThemeData = null;
+
     // 2. LẮNG NGHE GIAO DIỆN THỜI GIAN THỰC (Themes)
     db.ref('chats/' + chatRoomId + '/config/theme').on('value', (snapshot) => {
-        const themeData = snapshot.val();
-        if (themeData && typeof applyThemeToUI === 'function') applyThemeToUI(themeData);
-        else if (typeof resetDefaultTheme === 'function') resetDefaultTheme();
+        currentThemeData = snapshot.val(); // Cập nhật biến tạm
+        if (currentThemeData && typeof applyThemeToUI === 'function') {
+            applyThemeToUI(currentThemeData);
+        } else if (typeof resetDefaultTheme === 'function') {
+            resetDefaultTheme();
+        }
     });
 
     // 3. BỔ SUNG NÚT ACTIONS & NÚT TÌM KIẾM
@@ -12465,7 +12472,6 @@ function listenMessages(friendName) {
     // --- CẬP NHẬT: HIỂN THỊ THANH BAR CHẾ ĐỘ TÌM KIẾM ---
     const searchBar = document.getElementById('search-mode-bar');
     if (searchBar) {
-        // Kiểm tra xem có đang tồn tại từ khóa tìm kiếm không để hiện thanh bar
         if (typeof currentSearchKeyword !== 'undefined' && currentSearchKeyword !== "") {
             searchBar.style.display = 'flex';
         } else {
@@ -12473,7 +12479,7 @@ function listenMessages(friendName) {
         }
     }
 
-    // 4. TẢI TIN NHẮN (Chỉ load tin nhắn mặc định nếu không ở chế độ tìm kiếm)
+    // 4. TẢI 20 TIN NHẮN ĐẦU TIÊN (Initial Load)
     if (typeof currentSearchKeyword === 'undefined' || !currentSearchKeyword) {
         loadMoreMessages(friendName, true);
     }
@@ -12489,27 +12495,26 @@ function listenMessages(friendName) {
 
         renderSingleMessage(msgId, msg, 'bottom');
         
-        // Chỉ tự động cuộn xuống nếu KHÔNG ở chế độ tìm kiếm tin nhắn cũ
         if (typeof currentSearchKeyword === 'undefined' || !currentSearchKeyword) {
             area.scrollTo({ top: area.scrollHeight, behavior: 'smooth' });
         }
         
-        db.ref('chats/' + chatRoomId + '/config/theme').once('value', s => {
-            if (s.exists() && typeof applyThemeToUI === 'function') applyThemeToUI(s.val());
-        });
+        // TỐI ƯU: Thay vì load database và nhuộm lại cả bảng, ta dùng biến currentThemeData đã có sẵn
+        if (currentThemeData && typeof applyThemeToUI === 'function') {
+            applyThemeToUI(currentThemeData); 
+        }
     });
 
     // 6. SỰ KIỆN CUỘN LÊN ĐỂ TẢI TIN CŨ
     area.onscroll = () => {
         if (area.scrollTop < 50 && !isLoadingMore && !isAllLoaded) {
-            // Chỉ cho phép load thêm khi không trong chế độ nhảy tin (để tránh loạn vị trí)
             if (typeof currentSearchKeyword === 'undefined' || !currentSearchKeyword) {
                 loadMoreMessages(friendName);
             }
         }
     };
 }
-
+    
     function loadMoreMessages(friendName, isInitial = false) {
     if (isLoadingMore || (isAllLoaded && !isInitial)) return;
     isLoadingMore = true;
@@ -14130,7 +14135,7 @@ function applyThemeToUI(themeData) {
     const chatBox = document.getElementById('messenger-box');
     const header = document.querySelector('.messenger-header');
     const area = document.getElementById('chat-messages-area');
-    const searchBar = document.getElementById('search-mode-bar'); // Lấy thanh bar tìm kiếm
+    const searchBar = document.getElementById('search-mode-bar'); 
     
     if (!chatBox || !themeData) return;
 
@@ -14150,76 +14155,75 @@ function applyThemeToUI(themeData) {
             searchBar.style.zIndex = "10";
             searchBar.style.borderBottom = "none";       
             
-            // Đổi màu tất cả icon và chữ bên trong (dấu X, icon đồng hồ, text)
             const allElements = searchBar.querySelectorAll('i, span, b');
             allElements.forEach(el => el.style.color = textColor);
 
-            // Đổi màu nút "VỀ HIỆN TẠI" cho nổi bật
             const actionBtn = searchBar.querySelector('button');
             if (actionBtn) {
-                actionBtn.style.background = "#ffffff"; // Nền trắng cho sang
-                actionBtn.style.color = bgColor;      // Chữ màu giao diện
+                actionBtn.style.background = "#ffffff";
+                actionBtn.style.color = bgColor;
             }
         }
     };
 
-    // Biến lưu màu chủ đạo để nhuộm màu icon actions
     let mainThemeColor = "#ff69b4"; 
 
     if (themeData.type === 'simple') {
         const color = themeData.mainColor;
-        mainThemeColor = color; // Gán màu đơn
+        mainThemeColor = color; 
         header.style.background = color;
         area.style.background = '#ffffff';
         area.style.backgroundImage = 'none';
         
-        // Áp dụng style nổi với màu đơn
         setFloatingStyle(color, "#ffffff");
 
-        const myBubbles = document.querySelectorAll('.msg-me');
+        // TỐI ƯU: Chỉ tìm các bong bóng chưa đúng màu để đổi, tránh quét lại toàn bộ
+        const myBubbles = area.querySelectorAll('.msg-me');
         myBubbles.forEach(b => {
-            b.style.background = color;
-            b.style.color = "#ffffff";
+            if (b.style.background !== color) {
+                b.style.background = color;
+                b.style.color = "#ffffff";
+            }
         });
         
     } else if (themeData.type === 'premium') {
         const theme = CHAT_THEMES_CONFIG[themeData.themeKey];
         if (!theme) return;
-        mainThemeColor = theme.header; // Gán màu từ theme premium
+        mainThemeColor = theme.header; 
 
         header.style.background = theme.header;
         area.style.backgroundImage = theme.bg;
         area.style.backgroundSize = 'cover';
         area.style.backgroundPosition = 'center';
         
-        // Áp dụng style nổi với màu của Header Theme
         setFloatingStyle(theme.header, "#ffffff");
 
-        const myBubbles = document.querySelectorAll('.msg-me');
+        const myBubbles = area.querySelectorAll('.msg-me');
         myBubbles.forEach(b => {
             b.style.background = theme.bubbleMe;
             b.style.color = theme.textMe;
         });
         
-        const friendBubbles = document.querySelectorAll('.msg-friend');
+        const friendBubbles = area.querySelectorAll('.msg-friend');
         friendBubbles.forEach(b => {
             b.style.background = theme.bubbleFriend;
             b.style.color = theme.textFriend;
         });
     }
 
-    // --- CẬP NHẬT MÀU ICON BIỂU CẢM & DẤU 3 CHẤM (MỚI THÊM) ---
-    // Tìm tất cả icon trong msg-actions (icon mặt cười và ellipsis)
-    const actionIcons = document.querySelectorAll('.msg-actions i');
+    // --- CẬP NHẬT MÀU ICON BIỂU CẢM & DẤU 3 CHẤM ---
+    // TỐI ƯU: Giới hạn phạm vi tìm kiếm trong 'area' thay vì toàn bộ 'document'
+    const actionIcons = area.querySelectorAll('.msg-actions i');
     actionIcons.forEach(icon => {
-        // Nếu là icon mặt cười (smile), nhuộm đúng màu theme
         if (icon.classList.contains('fa-smile')) {
-            icon.style.color = mainThemeColor;
+            // Chỉ cập nhật nếu màu khác với màu theme (giảm tải xử lý DOM)
+            if (icon.style.color !== mainThemeColor) icon.style.color = mainThemeColor;
         } 
-        // Nếu là dấu 3 chấm, có thể để màu theme nhẹ hơn hoặc bằng màu theme
         else if (icon.classList.contains('fa-ellipsis-v')) {
-            icon.style.color = mainThemeColor;
-            icon.style.opacity = "0.8"; // Cho mờ nhẹ tí cho nghệ thuật
+            if (icon.style.color !== mainThemeColor) {
+                icon.style.color = mainThemeColor;
+                icon.style.opacity = "0.8";
+            }
         }
     });
 }
