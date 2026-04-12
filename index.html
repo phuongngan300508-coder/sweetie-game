@@ -4388,10 +4388,15 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
     gap: 10px;
     align-items: center;
     border-top: 1px solid #fff0f5;
+    /* Đảm bảo footer không bị tràn chiều ngang trên mobile */
+    box-sizing: border-box; 
+    width: 100%;
 }
 
 #chat-input {
     flex: 1;
+    /* Quan trọng: min-width giúp input không đẩy các nút khác ra khỏi màn hình */
+    min-width: 0; 
     border: none;
     background: #fff5f7;
     padding: 12px 20px;
@@ -4411,6 +4416,16 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
     cursor: pointer;
     transition: 0.3s;
     box-shadow: 0 4px 10px rgba(255, 20, 147, 0.3);
+    /* Quan trọng: Giữ nguyên kích thước nút, không cho phép bị ép lại */
+    flex-shrink: 0; 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Thêm thuộc tính này cho icon Plus nếu Henry có dùng trong footer */
+.messenger-footer i.fas.fa-plus-circle {
+    flex-shrink: 0;
 }
 
 .messenger-footer button:hover {
@@ -6932,13 +6947,14 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
     </div>
 
    <div class="messenger-footer">
-    <div style="position: relative; display: flex; align-items: center; gap: 8px; width: 100%;">
-        <i class="fas fa-plus-circle" onclick="toggleMediaMenu()" style="cursor:pointer; color:#ff1493; font-size:1.4em;"></i>
+    <div class="input-container">
+        <i class="fas fa-plus-circle" onclick="toggleMediaMenu()" style="cursor:pointer; color:#ff1493; font-size:1.4em; flex-shrink: 0;"></i>
         
         <input type="text" id="chat-input" placeholder="Gửi lời ngọt ngào..." onkeypress="if(event.key === 'Enter') sendMessage()">
+        
         <button onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
 
-        <div id="media-menu" style="display:none; position:absolute; bottom:55px; left:0; background:white; border-radius:15px; box-shadow:0 5px 20px rgba(0,0,0,0.1); padding:10px; z-index:100;">
+        <div id="media-menu" style="display:none; position:absolute; bottom:65px; left:10px; background:white; border-radius:15px; box-shadow:0 5px 20px rgba(0,0,0,0.1); padding:10px; z-index:100;">
             <div onclick="triggerFile('image/*')" style="padding:10px; cursor:pointer; color:#ff1493; font-weight:800; font-size:0.8em;">
                 <i class="fas fa-image"></i> HÌNH ẢNH
             </div>
