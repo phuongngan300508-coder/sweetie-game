@@ -5131,6 +5131,14 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
         font-size: 16px !important;
     }
 }
+
+    /* Thêm vào file CSS của Henry */
+@media (max-width: 768px) {
+    .msg-actions {
+        opacity: 0.6 !important; /* Luôn hiện mờ mờ trên điện thoại để dễ bấm */
+        visibility: visible !important;
+    }
+}
 </style>
 </head>
 <body>
@@ -12470,20 +12478,22 @@ function listenMessages(friendName) {
                     }
                 }
 
+                // Henry để ý: Thêm position relative cho wrapper và sửa style picker để không bị lệch
                 const msgHtml = `
     <div class="msg-wrapper ${isMe ? 'msg-me-wrap' : 'msg-friend-wrap'}" 
          id="msg-${msgId}"
-         style="position: relative; display: flex; align-items: center; width: 100%; ${isMe ? 'flex-direction: row-reverse; justify-content: flex-start;' : 'justify-content: flex-start;'}" 
+         style="position: relative; display: flex; align-items: center; width: 100%; margin-bottom: 10px; ${isMe ? 'flex-direction: row-reverse; justify-content: flex-start;' : 'justify-content: flex-start;'}" 
          data-id="${msgId}"
          data-text="${msg.text}"
          data-sender="${msg.sender}"
-         onclick="handleFastClick('${msgId}'); toggleMobileActions('${msgId}')"
+         onclick="handleFastClick('${msgId}'); event.stopPropagation();"
          ontouchstart="handleTouchStart(event, '${msgId}')"
          ontouchend="handleTouchEnd()"
          onmouseenter="showActionBtn('${msgId}')" 
          onmouseleave="hideActionBtn('${msgId}')">
         
-        <div id="picker-${msgId}" class="reaction-picker reaction-stay" style="display:none;">
+        <div id="picker-${msgId}" class="reaction-picker reaction-stay" 
+             style="display:none; position: absolute; top: -45px; ${isMe ? 'right: 10px;' : 'left: 10px;'} background: white; padding: 5px; border-radius: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); z-index: 1000; gap: 5px;">
             <span class="${getEmojiClass('❤️')}" onclick="event.stopPropagation(); sendReaction('${msgId}', '❤️')">❤️</span>
             <span class="${getEmojiClass('😆')}" onclick="event.stopPropagation(); sendReaction('${msgId}', '😆')">😆</span>
             <span class="${getEmojiClass('😮')}" onclick="event.stopPropagation(); sendReaction('${msgId}', '😮')">😮</span>
@@ -12492,19 +12502,24 @@ function listenMessages(friendName) {
             <span class="${getEmojiClass('👍')}" onclick="event.stopPropagation(); sendReaction('${msgId}', '👍')">👍</span>
         </div>
 
-        <div class="msg-bubble ${isMe ? 'msg-me' : 'msg-friend'}" style="display: flex; flex-direction: column; position: relative; ${isMe ? 'margin-left: 0;' : ''}">
+        <div class="msg-bubble ${isMe ? 'msg-me' : 'msg-friend'}" style="display: flex; flex-direction: column; position: relative; max-width: 70%; ${isMe ? 'margin-left: 0;' : ''}">
             ${replyHtml}
             ${bodyContentHtml}
             ${timeHtml}
             ${reactionDisplayHtml}
         </div>
 
-        <div class="msg-actions" id="actions-${msgId}" style="display: flex; align-items: center; ${isMe ? 'flex-direction: row-reverse;' : ''}">
-            <i class="far fa-smile reaction-stay theme-icon-color" onclick="event.stopPropagation(); toggleReactionPicker('${msgId}')" style="cursor:pointer; ${isMe ? 'margin-left:5px;' : 'margin-right:5px;'}"></i>
+        <div class="msg-actions" id="actions-${msgId}" 
+             style="display: flex; align-items: center; z-index: 10; ${isMe ? 'flex-direction: row-reverse;' : ''}">
+            <i class="far fa-smile reaction-stay theme-icon-color" 
+               onclick="event.stopPropagation(); toggleReactionPicker('${msgId}')" 
+               style="cursor:pointer; padding: 8px; font-size: 1.1em; ${isMe ? 'margin-left:2px;' : 'margin-right:2px;'}"></i>
             
-            <i class="fas fa-ellipsis-v theme-icon-color" onclick="event.stopPropagation(); showActionMenu('${msgId}', ${isMe})"></i>
+            <i class="fas fa-ellipsis-v theme-icon-color" 
+               onclick="event.stopPropagation(); showActionMenu('${msgId}', ${isMe})" 
+               style="cursor:pointer; padding: 8px; font-size: 1.1em;"></i>
             
-            <div class="action-menu" id="menu-${msgId}">
+            <div class="action-menu" id="menu-${msgId}" style="z-index: 1001;">
                 <div onclick="setReply('${msgId}', '${msg.text}', '${msg.sender}')"><i class="fas fa-reply"></i> Trả lời</div>
                 <div onclick="deleteMessage('${msgId}', ${isMe})" style="color:red"><i class="fas fa-trash"></i> Xóa</div>
             </div>
@@ -12526,6 +12541,24 @@ function listenMessages(friendName) {
             });
         }
     });
+}
+
+    let lastTap = 0;
+function handleFastClick(msgId) {
+    const now = new Date().getTime();
+    const timesince = now - lastTap;
+
+    if (timesince < 300 && timesince > 0) {
+        // --- ĐÂY LÀ DOUBLE TAP ---
+        console.log("Double tap detected on:", msgId);
+        sendReaction(msgId, '❤️'); // Tự động thả tim
+        
+        // Hiệu ứng rung nhẹ cho điện thoại
+        if (navigator.vibrate) navigator.vibrate(40);
+        
+        // Hiện hiệu ứng tim bay (nếu Henry muốn nâng cao sau này)
+    }
+    lastTap = now;
 }
     
 function toggleChatMoreMenu() {
