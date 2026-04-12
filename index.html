@@ -14603,15 +14603,6 @@ document.addEventListener('touchend', function (event) {
 
     let currentSearchKeyword = "";
 
-// 1. Mở Modal
-function openSearchModal() {
-    toggleModal('modal-search-msg');
-    const input = document.getElementById('input-search-msg');
-    input.value = "";
-    input.focus();
-    document.getElementById('search-results-area').innerHTML = '<p style="text-align: center; color: #888; font-size: 0.8em;">Nhập từ khóa để tìm kiếm...</p>';
-}
-
 // 2. Thực hiện tìm kiếm Real-time
 async function execSearchMessages(keyword) {
     currentSearchKeyword = keyword.trim().toLowerCase();
@@ -14777,22 +14768,26 @@ function exitSearchMode() {
         showThemeType('premium'); // Gọi hàm cũ của Henry
     }
 }
+    
     function openSearchModal(event) {
-    if (event) event.stopPropagation(); // Ngăn sự kiện trôi lên trên gây đóng modal ngay lập tức
+    // Ngăn chặn sự kiện click lan ra ngoài gây đóng Modal
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
     
     toggleModal('modal-search-msg');
     
-    // Tự động focus vào ô nhập để gõ được ngay
-    setTimeout(() => {
-        const input = document.getElementById('input-search-msg');
-        if (input) {
-            input.value = "";
-            input.focus();
-        }
-    }, 200);
+    // Đảm bảo Modal hiện lên trên cùng
+    const modal = document.getElementById('modal-search-msg');
+    if (modal) modal.style.zIndex = "20000"; 
 
-    document.getElementById('search-results-area').innerHTML = 
-        '<p style="text-align: center; color: #888; font-size: 0.8em;">Nhập từ khóa để tìm kiếm...</p>';
+    const input = document.getElementById('input-search-msg');
+    if (input) {
+        input.value = "";
+        // Chờ 1 chút cho animation mở xong rồi mới focus
+        setTimeout(() => input.focus(), 300);
+    }
 }
 </script>
 </body>
