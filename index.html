@@ -14484,11 +14484,12 @@ async function jumpToMessage(msgId) {
     const searchBar = document.getElementById('search-mode-bar');
     const chatRoomId = [currentUser, currentChatFriend].sort().join('_');
 
-    // 2. Hiện thanh thông báo Chế độ tìm kiếm màu hồng
-    if (searchBar) searchBar.style.display = 'flex';
+    // 2. HIỆN THANH THÔNG BÁO CHẾ ĐỘ TÌM KIẾM (Có nút X và nút Về hiện tại)
+    if (searchBar) {
+        searchBar.style.setProperty('display', 'flex', 'important'); 
+    }
 
     // 3. TẮT LẮNG NGHE TIN NHẮN REAL-TIME TẠM THỜI
-    // Điều này cực kỳ quan trọng để Area không bị vẽ lại khi có tin mới trong lúc đang xem tin cũ
     db.ref(`chats/${chatRoomId}/messages`).off();
 
     // 4. Tải toàn bộ tin nhắn để render lại từ đầu đến cuối
@@ -14529,7 +14530,7 @@ async function jumpToMessage(msgId) {
                     target.style.transform = "scale(1)";
                 }, 2000);
             }
-        }, 400); // Tăng delay một chút để đảm bảo DOM đã vẽ xong hoàn toàn
+        }, 400); 
     });
 }
 
