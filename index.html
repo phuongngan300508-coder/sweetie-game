@@ -12464,7 +12464,7 @@ function listenMessages(friendName) {
 
     // 2. LẮNG NGHE GIAO DIỆN THỜI GIAN THỰC (Themes)
     db.ref('chats/' + chatRoomId + '/config/theme').on('value', (snapshot) => {
-        currentThemeData = snapshot.val(); 
+        currentThemeData = snapshot.val();
         if (currentThemeData && typeof applyThemeToUI === 'function') {
             applyThemeToUI(currentThemeData);
         } else if (typeof resetDefaultTheme === 'function') {
@@ -12472,7 +12472,7 @@ function listenMessages(friendName) {
         }
     });
 
-    // 3. BỔ SUNG NÚT ACTIONS & NÚT TÌM KIẾM
+    // 3. BỔ SUNG NÚT ACTIONS & NÚT TÌM KIẾM (Giữ nguyên của Henry)
     const messengerActions = document.querySelector('.messenger-actions');
     if (messengerActions) {
         const oldMenu = document.getElementById('chat-more-menu-wrapper');
@@ -12480,7 +12480,7 @@ function listenMessages(friendName) {
         
         const menuHtml = `
             <div id="chat-more-menu-wrapper" style="position: relative; display: flex; align-items: center;">
-                <i class="fas fa-search" onclick="openSearchModal(event)" 
+                <i class="fas fa-search" onclick="openSearchModal()" 
                    style="cursor:pointer; color:#ffffff; margin-right:12px; font-size: 0.9em;"></i>
                 <i class="fas fa-ellipsis-v" onclick="toggleChatMoreMenu()" style="cursor:pointer;"></i>
                 <div id="chat-more-menu" class="chat-more-menu" style="display:none; position:absolute; right:0; top:30px; background:white; box-shadow:0 5px 15px rgba(0,0,0,0.2); border-radius:10px; z-index:9999; min-width: 150px;">
@@ -12531,45 +12531,34 @@ function listenMessages(friendName) {
     });
 
     // --- MỚI: LẮNG NGHE CẬP NHẬT CẢM XÚC (child_changed) ---
+    // Giúp thả tim hiện lên ngay lập tức mà không cần F5
     msgRef.on('child_changed', (snapshot) => {
         const msgId = snapshot.key;
         const msg = snapshot.val();
-        const oldMsgEl = document.getElementById(`msg-${msgId}`);
         
+        // Tìm tin nhắn cũ trên màn hình để vẽ lại đúng chỗ đó
+        const oldMsgEl = document.getElementById(`msg-${msgId}`);
         if (oldMsgEl) {
-            // TỐI ƯU: Chỉ cập nhật vùng Reaction và Picker, KHÔNG thay thế toàn bộ để tránh mất sự kiện Popup Search
-            const reactions = msg.reactions || {};
-            const uniqueReactions = [...new Set(Object.values(reactions))];
-            let reactionDisplay = oldMsgEl.querySelector('.msg-reaction-display');
+            // Lưu lại vị trí cuộn hiện tại
+            const currentScroll = area.scrollTop;
             
-            // 1. Cập nhật biểu tượng cảm xúc hiển thị dưới bong bóng
-            if (uniqueReactions.length > 0) {
-                if (!reactionDisplay) {
-                    const bubble = oldMsgEl.querySelector('.msg-bubble');
-                    bubble.insertAdjacentHTML('beforeend', `<div class="msg-reaction-display" style="cursor:pointer;"></div>`);
-                    reactionDisplay = oldMsgEl.querySelector('.msg-reaction-display');
-                }
-                reactionDisplay.innerText = uniqueReactions.join('');
-                reactionDisplay.onclick = () => sendReaction(msgId, reactions[currentUser]);
-            } else if (reactionDisplay) {
-                reactionDisplay.remove();
-            }
+            // Tạo một div tạm để render nội dung mới
+            const tempDiv = document.createElement('div');
+            renderSingleMessage(msgId, msg, 'bottom', tempDiv);
+            
+            // Thay thế nội dung cũ bằng nội dung mới đã có cảm xúc
+            oldMsgEl.outerHTML = tempDiv.innerHTML;
+            
+            // Giữ nguyên vị trí cuộn
+            area.scrollTop = currentScroll;
 
-            // 2. Cập nhật trạng thái Active trong Picker (nếu đang mở)
-            const picker = document.getElementById(`picker-${msgId}`);
-            if (picker) {
-                const myReaction = reactions[currentUser];
-                picker.querySelectorAll('.emoji-btn').forEach(btn => {
-                    btn.classList.toggle('emoji-active', btn.innerText === myReaction);
-                });
-            }
-
-            // Áp lại theme cho icon mới xuất hiện
+            // Áp lại theme cho tin nhắn vừa cập nhật
             if (currentThemeData) applyThemeToUI(currentThemeData);
         }
     });
 
     // --- MỚI: LẮNG NGHE XÓA TIN NHẮN (child_removed) ---
+    // Giúp tin nhắn biến mất ngay lập tức khi đối phương thu hồi
     msgRef.on('child_removed', (snapshot) => {
         const msgId = snapshot.key;
         const msgEl = document.getElementById(`msg-${msgId}`);
@@ -14603,6 +14592,15 @@ document.addEventListener('touchend', function (event) {
 
     let currentSearchKeyword = "";
 
+// 1. Mở Modal
+function openSearchModal() {
+    toggleModal('modal-search-msg');
+    const input = document.getElementById('input-search-msg');
+    input.value = "";
+    input.focus();
+    document.getElementById('search-results-area').innerHTML = '<p style="text-align: center; color: #888; font-size: 0.8em;">Nhập từ khóa để tìm kiếm...</p>';
+}
+
 // 2. Thực hiện tìm kiếm Real-time
 async function execSearchMessages(keyword) {
     currentSearchKeyword = keyword.trim().toLowerCase();
@@ -14766,27 +14764,6 @@ function exitSearchMode() {
         btnPremium.className = 'theme-btn-active';
         btnSimple.className = 'theme-btn-inactive';
         showThemeType('premium'); // Gọi hàm cũ của Henry
-    }
-}
-    
-    function openSearchModal(event) {
-    // Ngăn chặn sự kiện click lan ra ngoài gây đóng Modal
-    if (event) {
-        event.preventDefault();
-        event.stopPropagation();
-    }
-    
-    toggleModal('modal-search-msg');
-    
-    // Đảm bảo Modal hiện lên trên cùng
-    const modal = document.getElementById('modal-search-msg');
-    if (modal) modal.style.zIndex = "20000"; 
-
-    const input = document.getElementById('input-search-msg');
-    if (input) {
-        input.value = "";
-        // Chờ 1 chút cho animation mở xong rồi mới focus
-        setTimeout(() => input.focus(), 300);
     }
 }
 </script>
