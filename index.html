@@ -14134,22 +14134,35 @@ function applyThemeToUI(themeData) {
     
     if (!chatBox || !themeData) return;
 
+    // Hàm bổ trợ để tạo style "nổi" cho thanh bar
+    const setFloatingStyle = (bgColor) => {
+        if (searchBar) {
+            searchBar.style.background = bgColor;
+            searchBar.style.color = "#ffffff";
+            
+            // --- THIẾT KẾ NỔI (FLOATING STYLE) ---
+            searchBar.style.margin = "8px 12px";         // Tạo khoảng cách với các cạnh
+            searchBar.style.borderRadius = "15px";        // Bo tròn góc cho mềm mại
+            searchBar.style.boxShadow = "0 6px 15px rgba(0,0,0,0.2)"; // Đổ bóng tạo độ sâu
+            searchBar.style.border = "1px solid rgba(255,255,255,0.2)"; // Viền nhẹ cho sang
+            searchBar.style.width = "calc(100% - 24px)"; // Cân bằng lại chiều rộng do có lề
+            searchBar.style.position = "relative";
+            searchBar.style.zIndex = "10";
+            searchBar.style.borderBottom = "none";       // Bỏ border cũ vì đã có bóng
+            
+            const closeBtn = searchBar.querySelector('.fa-times');
+            if (closeBtn) closeBtn.style.color = "#ffffff";
+        }
+    };
+
     if (themeData.type === 'simple') {
         const color = themeData.mainColor;
         header.style.background = color;
         area.style.background = '#ffffff';
         area.style.backgroundImage = 'none';
         
-        // CẬP NHẬT: Đổi màu thanh quay về hiện tại theo màu đơn
-        if (searchBar) {
-            searchBar.style.background = color;
-            searchBar.style.color = "#ffffff"; // Chữ trắng cho nổi bật
-            searchBar.style.borderBottom = "1px solid rgba(255,255,255,0.2)";
-            
-            // Đổi màu icon X và nút bên trong cho đồng bộ
-            const closeBtn = searchBar.querySelector('.fa-times');
-            if (closeBtn) closeBtn.style.color = "#ffffff";
-        }
+        // Áp dụng style nổi với màu đơn
+        setFloatingStyle(color);
 
         const myBubbles = document.querySelectorAll('.msg-me');
         myBubbles.forEach(b => b.style.background = color);
@@ -14163,15 +14176,8 @@ function applyThemeToUI(themeData) {
         area.style.backgroundSize = 'cover';
         area.style.backgroundPosition = 'center';
         
-        // CẬP NHẬT: Đổi màu thanh quay về hiện tại theo màu Header của Theme
-        if (searchBar) {
-            searchBar.style.background = theme.header;
-            searchBar.style.color = "#ffffff";
-            searchBar.style.borderBottom = "1px solid rgba(255,255,255,0.2)";
-            
-            const closeBtn = searchBar.querySelector('.fa-times');
-            if (closeBtn) closeBtn.style.color = "#ffffff";
-        }
+        // Áp dụng style nổi với màu của Theme
+        setFloatingStyle(theme.header);
 
         const myBubbles = document.querySelectorAll('.msg-me');
         myBubbles.forEach(b => {
