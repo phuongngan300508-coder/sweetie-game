@@ -14256,19 +14256,20 @@ function closeFS() {
     document.getElementById('fs-content').innerHTML = ""; // Tắt video khi đóng
 }
 
-    // Chặn zoom khi chạm đa điểm
+   // Chặn zoom khi chạm đa điểm (vẫn giữ nguyên)
 document.addEventListener('touchstart', function (event) {
   if (event.touches.length > 1) {
     event.preventDefault();
   }
 }, { passive: false });
 
-// Chặn zoom khi nhấn đúp (double tap)
-let lastTouchEnd = 0;
+// GIẢI PHÁP MỚI: Chặn zoom nhưng KHÔNG chặn dblclick
 document.addEventListener('touchend', function (event) {
   let now = (new Date()).getTime();
   if (now - lastTouchEnd <= 300) {
-    event.preventDefault();
+    // Chỉ ngăn chặn hành vi mặc định (zoom), không stopPropagation
+    // để ondblclick vẫn có thể kích hoạt
+    event.preventDefault(); 
   }
   lastTouchEnd = now;
 }, false);
