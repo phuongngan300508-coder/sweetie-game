@@ -21,7 +21,6 @@ self.addEventListener('activate', (event) => {
     event.waitUntil(clients.claim());
 });
 
-// QUAN TRỌNG: Cấu hình hiển thị khi web đóng
 messaging.onBackgroundMessage((payload) => {
     console.log('[sw.js] Nhận tin nhắn ngầm:', payload);
 
@@ -29,10 +28,10 @@ messaging.onBackgroundMessage((payload) => {
     
     const notificationOptions = {
         body: payload.notification?.body || payload.data?.body || "Bạn có tin nhắn mới nè!",
-        icon: "https://i.postimg.cc/90bRT1Bt/dee8a7e0-5d40-4779-bca4-c88381257a1e.jpg", 
+        icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png", 
         image: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
-        color: "#ffb6c1", 
-        badge: "https://i.postimg.cc/90bRT1Bt/dee8a7e0-5d40-4779-bca4-c88381257a1e.jpg",
+        requireInteraction: true, 
+        tag: 'sweetie-notification',
         data: payload.data,
         vibrate: [200, 100, 200]
     };
