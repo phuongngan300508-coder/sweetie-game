@@ -12403,9 +12403,10 @@ function listenMessages(friendName) {
 
     // --- LẮNG NGHE TIN NHẮN ---
     db.ref('chats/' + chatRoomId + '/messages').limitToLast(30).on('value', (snapshot) => {
-        area.innerHTML = "";
         const data = snapshot.val();
         const hiddenMsgs = JSON.parse(localStorage.getItem('hidden_messages') || "[]");
+
+        let newTotalHtml = ""; // Chuỗi tạm để chứa HTML mới
 
         if (data) {
             Object.keys(data).forEach(msgId => {
@@ -12427,17 +12428,15 @@ function listenMessages(friendName) {
                         </div>`;
                 }
 
-                // --- HIỂN THỊ CẢM XÚC (Cập nhật click vào icon để xóa) ---
                 const reactions = msg.reactions || {};
-                const myReaction = reactions[currentUser]; // Icon Henry đã thả
+                const myReaction = reactions[currentUser]; 
                 let reactionDisplayHtml = "";
                 const uniqueReactions = [...new Set(Object.values(reactions))];
                 
                 if (uniqueReactions.length > 0) {
-                    reactionDisplayHtml = `<div class="msg-reaction-display" onclick="sendReaction('${msgId}', '${myReaction}')" style="cursor:pointer;">${uniqueReactions.join('')}</div>`;
+                    reactionDisplayHtml = `<div class="msg-reaction-display" onclick="sendReaction('${msgId}', '${myReaction}', true)" style="cursor:pointer;">${uniqueReactions.join('')}</div>`;
                 }
 
-                // --- MỚI: HÀM KIỂM TRA ICON ĐANG THẢ ĐỂ LÀM NỔI BẬT ---
                 const getEmojiClass = (emoji) => {
                     return (myReaction === emoji) ? "emoji-btn emoji-active" : "emoji-btn";
                 };
@@ -12447,7 +12446,6 @@ function listenMessages(friendName) {
                         ${msg.displayTime}
                     </div>` : "";
 
-                // --- PHẦN XỬ LÝ NỘI DUNG MEDIA (ẢNH/VIDEO) ---
                 let bodyContentHtml = `<div class="text-content">${msg.text}</div>`;
                 if (msg.mediaUrl) {
                     if (msg.mediaType === 'image') {
@@ -12461,7 +12459,6 @@ function listenMessages(friendName) {
                     }
                 }
 
-                // CHỈNH SỬA: Thêm style flex-direction: row-reverse cho tin nhắn của bản thân trực tiếp trong HTML
                 const msgHtml = `
     <div class="msg-wrapper ${isMe ? 'msg-me-wrap' : 'msg-friend-wrap'}" 
          id="msg-${msgId}"
@@ -12476,12 +12473,12 @@ function listenMessages(friendName) {
          onmouseleave="hideActionBtn('${msgId}')">
         
         <div id="picker-${msgId}" class="reaction-picker reaction-stay" style="display:none;">
-            <span class="${getEmojiClass('❤️')}" onclick="sendReaction('${msgId}', '❤️')">❤️</span>
-            <span class="${getEmojiClass('😆')}" onclick="sendReaction('${msgId}', '😆')">😆</span>
-            <span class="${getEmojiClass('😮')}" onclick="sendReaction('${msgId}', '😮')">😮</span>
-            <span class="${getEmojiClass('😢')}" onclick="sendReaction('${msgId}', '😢')">😢</span>
-            <span class="${getEmojiClass('😡')}" onclick="sendReaction('${msgId}', '😡')">😡</span>
-            <span class="${getEmojiClass('👍')}" onclick="sendReaction('${msgId}', '👍')">👍</span>
+            <span class="${getEmojiClass('❤️')}" onclick="sendReaction('${msgId}', '❤️', true)">❤️</span>
+            <span class="${getEmojiClass('😆')}" onclick="sendReaction('${msgId}', '😆', true)">😆</span>
+            <span class="${getEmojiClass('😮')}" onclick="sendReaction('${msgId}', '😮', true)">😮</span>
+            <span class="${getEmojiClass('😢')}" onclick="sendReaction('${msgId}', '😢', true)">😢</span>
+            <span class="${getEmojiClass('😡')}" onclick="sendReaction('${msgId}', '😡', true)">😡</span>
+            <span class="${getEmojiClass('👍')}" onclick="sendReaction('${msgId}', '👍', true)">👍</span>
         </div>
 
         <div class="msg-bubble ${isMe ? 'msg-me' : 'msg-friend'}" style="display: flex; flex-direction: column; position: relative; ${isMe ? 'margin-left: 0;' : ''}">
@@ -12502,17 +12499,29 @@ function listenMessages(friendName) {
             </div>
         </div>
     </div>`;
-                
-                area.insertAdjacentHTML('beforeend', msgHtml);
-                
-                const el = document.getElementById(`msg-${msgId}`);
-                if (el) initSwipe(el, isMe, msgId, msg.text, msg.sender);
+                newTotalHtml += msgHtml;
             });
-            
-            // Cuộn xuống cuối
-            area.scrollTo({ top: area.scrollHeight, behavior: 'smooth' });
 
-            // CẬP NHẬT GIAO DIỆN TIN NHẮN THEO THEME HIỆN TẠI (Sau khi đã render tin nhắn)
+            // --- ĐOẠN QUAN TRỌNG ĐỂ HẾT GIẬT ---
+            // Nếu HTML mới khác hoàn toàn HTML cũ thì mới vẽ lại
+            if (area.innerHTML !== newTotalHtml) {
+                area.innerHTML = newTotalHtml;
+                
+                // Khởi tạo lại các swipe event cho các node mới
+                Object.keys(data).forEach(msgId => {
+                    const el = document.getElementById(`msg-${msgId}`);
+                    if (el) {
+                        const msg = data[msgId];
+                        const isMe = msg.sender === currentUser;
+                        initSwipe(el, isMe, msgId, msg.text, msg.sender);
+                    }
+                });
+
+                // Chỉ cuộn xuống khi thực sự có thay đổi nội dung (tin mới hoặc reaction mới)
+                area.scrollTo({ top: area.scrollHeight, behavior: 'smooth' });
+            }
+
+            // Đồng bộ theme
             db.ref('chats/' + chatRoomId + '/config/theme').once('value', (snap) => {
                 if (snap.exists() && typeof applyThemeToUI === 'function') {
                     applyThemeToUI(snap.val());
@@ -12521,6 +12530,26 @@ function listenMessages(friendName) {
         }
     });
 }
+
+    // Hàm hỗ trợ cập nhật riêng cái icon cho Henry
+function updateReactionUI(msgId, reactions) {
+    const reactionDiv = document.querySelector(`#msg-${msgId} .msg-reaction-display`);
+    if (!reactions) {
+        if (reactionDiv) reactionDiv.remove();
+        return;
+    }
+    const uniqueReactions = [...new Set(Object.values(reactions))];
+    const html = `<div class="msg-reaction-display" onclick="sendReaction('${msgId}', '${reactions[currentUser]}', true)">${uniqueReactions.join('')}</div>`;
+    
+    // Tìm bong bóng tin nhắn để gắn icon vào mà không cần vẽ lại cả tin nhắn
+    const bubble = document.querySelector(`#msg-${msgId} .msg-bubble`);
+    if (reactionDiv) {
+        reactionDiv.innerHTML = uniqueReactions.join('');
+    } else {
+        bubble.insertAdjacentHTML('beforeend', html);
+    }
+}
+    
 function toggleChatMoreMenu() {
     const menu = document.getElementById('chat-more-menu');
     if (menu) {
