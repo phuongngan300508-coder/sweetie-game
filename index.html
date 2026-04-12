@@ -12034,6 +12034,11 @@ function initChatSystem() {
 
 // --- 1. SỬA HÀM MỞ CHAT (Bỏ dòng gán display flex trực tiếp để tránh xung đột) ---
 function openChatWith(friendName) {
+    // --- MỚI: TỰ ĐỘNG THOÁT CHẾ ĐỘ TÌM KIẾM KHI ĐỔI NGƯỜI CHAT ---
+    if (typeof exitSearchMode === 'function') {
+        exitSearchMode();
+    }
+
     currentChatFriend = friendName; 
 
     db.ref('users/' + friendName).once('value', (snapshot) => {
@@ -12084,7 +12089,7 @@ function openChatWith(friendName) {
         listenMessages(friendName);
         listenNicknames(friendName);
 
-        // --- 5. ĐỒNG BỘ KẾT NỐI: XÓA THÔNG BÁO CHƯA ĐỌC (MỚI THÊM) ---
+        // --- 5. ĐỒNG BỘ KẾT NỐI: XÓA THÔNG BÁO CHƯA ĐỌC ---
         if (currentUser && friendName) {
             db.ref('unread_counts/' + currentUser + '/' + friendName).remove()
                 .then(() => {
@@ -12098,26 +12103,22 @@ function openChatWith(friendName) {
         // --- 6. MỚI: LẮNG NGHE TRẠNG THÁI ONLINE/OFFLINE REAL-TIME ---
         const statusEl = document.getElementById('chat-target-status');
         
-        // Tắt lắng nghe trạng thái cũ (nếu có) để không bị nhảy dữ liệu người này sang người kia
         if (window.lastStatusRef) window.lastStatusRef.off();
 
-        // Tạo tham chiếu mới và lưu vào window để quản lý
         window.lastStatusRef = db.ref('/status/' + friendName);
         window.lastStatusRef.on('value', (statusSnap) => {
             const statusData = statusSnap.val();
             if (statusData && statusData.state === 'online') {
-                statusEl.style.color = "#28a745"; // Xanh lá chuyên nghiệp
+                statusEl.style.color = "#28a745";
                 statusEl.innerHTML = `<i class="fas fa-circle" style="font-size: 0.8em;"></i> Đang hoạt động`;
             } else {
-                statusEl.style.color = "#888"; // Màu xám cho offline
-                // Hàm formatLastSeen Henry đã định nghĩa ở các bước trước nhé
+                statusEl.style.color = "#888";
                 const timeStr = statusData ? formatLastSeen(statusData.last_changed) : "Ngoại tuyến";
                 statusEl.innerHTML = `<i class="fas fa-circle" style="font-size: 0.8em; opacity: 0.5;"></i> ${timeStr}`;
             }
         });
     });
 }
-
     // Hàm này Henry để bên ngoài nhé
 function listenUserStatus(friendName) {
     const statusEl = document.getElementById('chat-target-status');
@@ -12437,7 +12438,7 @@ function listenMessages(friendName) {
         const menuHtml = `
             <div id="chat-more-menu-wrapper" style="position: relative; display: flex; align-items: center;">
                 <i class="fas fa-search" onclick="openSearchModal()" 
-                   style="cursor:pointer; color:#ff1493; margin-right:12px; font-size: 0.9em;"></i>
+                   style="cursor:pointer; color:#ffffff; margin-right:12px; font-size: 0.9em;"></i>
                 
                 <i class="fas fa-ellipsis-v" onclick="toggleChatMoreMenu()" style="cursor:pointer;"></i>
                 
@@ -14465,51 +14466,82 @@ async function execSearchMessages(keyword) {
 
 // 3. Nhảy đến tin nhắn cũ
 async function jumpToMessage(msgId) {
-    toggleModal('modal-search-msg');
+    // 1. Đóng popup tìm kiếm ngay lập tức để nhìn thấy tiến trình
+    toggleModal('modal-search-msg'); 
+    
     const area = document.getElementById('chat-messages-area');
     const searchBar = document.getElementById('search-mode-bar');
-
-    // Hiện thanh thông báo Chế độ tìm kiếm
-    searchBar.style.display = 'flex';
-
-    // Tải toàn bộ tin nhắn (Hoặc Henry có thể tối ưu bằng cách tải cụm tin nhắn quanh msgId)
-    // Để đơn giản và chính xác nhất, mình sẽ render lại khu vực chat với tin nhắn mục tiêu
     const chatRoomId = [currentUser, currentChatFriend].sort().join('_');
-    
+
+    // 2. Hiện thanh thông báo Chế độ tìm kiếm màu hồng
+    if (searchBar) searchBar.style.display = 'flex';
+
+    // 3. TẮT LẮNG NGHE TIN NHẮN REAL-TIME TẠM THỜI
+    // Điều này cực kỳ quan trọng để Area không bị vẽ lại khi có tin mới trong lúc đang xem tin cũ
+    db.ref(`chats/${chatRoomId}/messages`).off();
+
+    // 4. Tải toàn bộ tin nhắn để render lại từ đầu đến cuối
     db.ref(`chats/${chatRoomId}/messages`).once('value', (snapshot) => {
         const data = snapshot.val();
-        area.innerHTML = "";
+        if (!data) return;
+
+        area.innerHTML = ""; // Xóa sạch khung chat hiện tại
         
+        // Vẽ lại toàn bộ tin nhắn
         Object.keys(data).forEach(id => {
             renderSingleMessage(id, data[id], 'bottom');
-            // Highlight từ khóa ngay lập tức
-            if (currentSearchKeyword) {
+            
+            // Highlight từ khóa ngay lập tức nếu đang trong chế độ tìm kiếm
+            if (typeof currentSearchKeyword !== 'undefined' && currentSearchKeyword) {
                 const msgEl = document.querySelector(`#msg-${id} .text-content`);
-                if (msgEl) {
-                    msgEl.innerHTML = data[id].text.replace(new RegExp(currentSearchKeyword, 'gi'), (match) => `<b style="background:yellow; color:black; padding:0 2px; border-radius:3px;">${match}</b>`);
+                if (msgEl && data[id].text) {
+                    const regex = new RegExp(`(${currentSearchKeyword})`, 'gi');
+                    msgEl.innerHTML = data[id].text.replace(regex, `<b style="background:yellow; color:black; padding:0 2px; border-radius:3px;">$1</b>`);
                 }
             }
         });
 
-        // Cuộn đến tin nhắn đó
+        // 5. Cuộn đến tin nhắn mục tiêu với hiệu ứng mượt mà
         setTimeout(() => {
             const target = document.getElementById(`msg-${msgId}`);
             if (target) {
+                // Cuộn mượt và đưa tin nhắn vào giữa màn hình
                 target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                target.style.filter = "brightness(1.5)";
-                target.style.transition = "0.5s";
-                setTimeout(() => target.style.filter = "none", 2000);
+                
+                // Hiệu ứng nháy sáng để Henry dễ nhận biết tin nhắn đó
+                target.style.transition = "all 0.5s ease";
+                target.style.filter = "brightness(1.5) contrast(1.2)";
+                target.style.transform = "scale(1.02)";
+                
+                setTimeout(() => {
+                    target.style.filter = "none";
+                    target.style.transform = "scale(1)";
+                }, 2000);
             }
-        }, 300);
+        }, 400); // Tăng delay một chút để đảm bảo DOM đã vẽ xong hoàn toàn
     });
 }
 
 // 4. Thoát chế độ tìm kiếm
 function exitSearchMode() {
-    document.getElementById('search-mode-bar').style.display = 'none';
+    // 1. Ẩn thanh thông báo màu hồng
+    const searchBar = document.getElementById('search-mode-bar');
+    if (searchBar) searchBar.style.display = 'none';
+
+    // 2. Xóa từ khóa để các hàm render không tô vàng (highlight) nữa
     currentSearchKeyword = "";
-    // Gọi lại listenMessages để quay về trạng thái bình thường (load 20 tin cuối)
-    listenMessages(currentChatFriend);
+
+    // 3. Reset ô nhập liệu trong popup để lần sau tìm kiếm mới hoàn toàn
+    const searchInput = document.getElementById('input-search-msg');
+    if (searchInput) searchInput.value = "";
+
+    // 4. Quan trọng nhất: Gọi lại listenMessages để tải lại đúng 20 tin cuối cùng
+    // và kích hoạt lại chế độ tự động cuộn khi có tin nhắn mới.
+    if (currentChatFriend) {
+        listenMessages(currentChatFriend);
+    }
+
+    console.log("🌸 Đã tắt chế độ tìm kiếm, quay về tin nhắn mới nhất.");
 }
 </script>
 </body>
