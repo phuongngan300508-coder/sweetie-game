@@ -14163,8 +14163,12 @@ function applyThemeToUI(themeData) {
         }
     };
 
+    // Biến lưu màu chủ đạo để nhuộm màu icon actions
+    let mainThemeColor = "#ff69b4"; 
+
     if (themeData.type === 'simple') {
         const color = themeData.mainColor;
+        mainThemeColor = color; // Gán màu đơn
         header.style.background = color;
         area.style.background = '#ffffff';
         area.style.backgroundImage = 'none';
@@ -14181,6 +14185,7 @@ function applyThemeToUI(themeData) {
     } else if (themeData.type === 'premium') {
         const theme = CHAT_THEMES_CONFIG[themeData.themeKey];
         if (!theme) return;
+        mainThemeColor = theme.header; // Gán màu từ theme premium
 
         header.style.background = theme.header;
         area.style.backgroundImage = theme.bg;
@@ -14202,6 +14207,21 @@ function applyThemeToUI(themeData) {
             b.style.color = theme.textFriend;
         });
     }
+
+    // --- CẬP NHẬT MÀU ICON BIỂU CẢM & DẤU 3 CHẤM (MỚI THÊM) ---
+    // Tìm tất cả icon trong msg-actions (icon mặt cười và ellipsis)
+    const actionIcons = document.querySelectorAll('.msg-actions i');
+    actionIcons.forEach(icon => {
+        // Nếu là icon mặt cười (smile), nhuộm đúng màu theme
+        if (icon.classList.contains('fa-smile')) {
+            icon.style.color = mainThemeColor;
+        } 
+        // Nếu là dấu 3 chấm, có thể để màu theme nhẹ hơn hoặc bằng màu theme
+        else if (icon.classList.contains('fa-ellipsis-v')) {
+            icon.style.color = mainThemeColor;
+            icon.style.opacity = "0.8"; // Cho mờ nhẹ tí cho nghệ thuật
+        }
+    });
 }
 
 function resetToDefaultTheme() {
@@ -14267,6 +14287,17 @@ function resetDefaultTheme() {
             actionBtn.style.boxShadow = "0 2px 5px rgba(255, 20, 147, 0.2)";
         }
     }
+
+    // --- CẬP NHẬT: RESET MÀU ICON BIỂU CẢM & 3 CHẤM VỀ HỒNG MẶC ĐỊNH ---
+    const actionIcons = document.querySelectorAll('.msg-actions i');
+    actionIcons.forEach(icon => {
+        if (icon.classList.contains('fa-smile')) {
+            icon.style.color = "#ff69b4"; // Màu hồng mặt cười mặc định
+        } else if (icon.classList.contains('fa-ellipsis-v')) {
+            icon.style.color = "#ff69b4"; // Màu hồng dấu 3 chấm mặc định
+            icon.style.opacity = "1";     // Trả lại độ hiển thị rõ nét
+        }
+    });
 
     document.querySelectorAll('.msg-me').forEach(b => {
         b.style.background = "";
