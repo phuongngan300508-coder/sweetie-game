@@ -14160,7 +14160,26 @@ function showThemeType(type) {
             <button class="btn-action-pink" style="margin-top: 15px; width: 100%;" onclick="applyChatTheme()">XÁC NHẬN MÀU NÀY</button>
             ${resetHtml} 
         `;
-    } else {
+    } 
+    // --- PHẦN THÊM MỚI CHO HENRY ---
+    else if (type === 'custom') {
+        area.innerHTML = `
+            <p style="font-size: 0.7em; color: #888;">Tải ảnh từ thiết bị làm hình nền chat:</p>
+            <div style="border: 2px dashed #ffc0cb; padding: 20px; border-radius: 15px; text-align: center; cursor: pointer; background: #fff5f7;" 
+                 onclick="document.getElementById('custom-bg-input').click()">
+                <i class="fas fa-image" style="font-size: 2em; color: #ff69b4;"></i>
+                <p style="font-size: 0.8em; margin-top: 5px; color: #ff69b4; font-weight: bold;">CHỌN ẢNH TỪ MÁY</p>
+            </div>
+            <input type="file" id="custom-bg-input" accept="image/*" style="display: none;" onchange="handleCustomTheme(this)">
+            
+            <div id="custom-preview-status" style="margin-top: 10px; font-size: 0.65em; color: #11998e; text-align: center; min-height: 15px;"></div>
+            
+            <button id="btn-apply-custom" class="btn-action-pink" style="margin-top: 10px; width: 100%; display: none;" onclick="applyChatTheme()">SỬ DỤNG GIAO DIỆN NÀY</button>
+            ${resetHtml}
+        `;
+    }
+    // ------------------------------
+    else {
         let html = '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">';
         for (let key in CHAT_THEMES_CONFIG) {
             const theme = CHAT_THEMES_CONFIG[key];
@@ -14173,6 +14192,65 @@ function showThemeType(type) {
         html += '</div>';
         area.innerHTML = html + resetHtml;
     }
+}
+
+    async function handleCustomTheme(input) {
+    if (!input.files || !input.files[0]) return;
+
+    const file = input.files[0];
+    const reader = new FileReader();
+    const status = document.getElementById('custom-preview-status');
+    status.innerText = "⏳ Đang phân tích màu sắc...";
+
+    reader.onload = function(e) {
+        const img = new Image();
+        img.src = e.target.result;
+        img.onload = function() {
+            // Trích xuất màu chủ đạo
+            const extractedColor = getDominantColor(img);
+            
+            // Tạo themeData tạm thời
+            tempThemeData = {
+                type: 'premium', // Tận dụng logic premium để dùng background image
+                isCustom: true,
+                themeKey: 'custom_user',
+                customData: {
+                    bg: `url("${e.target.result}")`,
+                    header: extractedColor,
+                    bubbleMe: extractedColor,
+                    bubbleFriend: 'rgba(255, 255, 255, 0.9)',
+                    textMe: getContrastYIQ(extractedColor),
+                    textFriend: '#333333'
+                }
+            };
+
+            applyThemeToUI(tempThemeData);
+            status.innerText = "✅ Đã phân tích xong!";
+            document.getElementById('btn-apply-custom').style.display = "block";
+        };
+    };
+    reader.readAsDataURL(file);
+}
+
+// Thuật toán lấy màu chủ đạo đơn giản
+function getDominantColor(imgEl) {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = 1;
+    canvas.height = 1;
+    ctx.drawImage(imgEl, 0, 0, 1, 1);
+    const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
+    return `rgb(${r}, ${g}, ${b})`;
+}
+
+// Thuật toán kiểm tra màu chữ trắng hay đen thì rõ hơn trên nền màu cho trước
+function getContrastYIQ(rgbColor) {
+    const match = rgbColor.match(/\d+/g);
+    const r = parseInt(match[0]);
+    const g = parseInt(match[1]);
+    const b = parseInt(match[2]);
+    const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+    return (yiq >= 128) ? '#333333' : '#ffffff';
 }
 
 function previewSimpleColor(color) {
@@ -14197,9 +14275,26 @@ function previewPremiumTheme(key) {
     }
 }
 
-function applyChatTheme() {
+async function applyChatTheme() {
     // 1. Kiểm tra điều kiện (Giữ nguyên)
     if (!tempThemeData || !currentChatFriend) return;
+
+    // --- PHẦN XỬ LÝ CLOUDINARY CHO HENRY ---
+    if (tempThemeData.isCustom && typeof tempThemeFile !== 'undefined' && tempThemeFile) {
+        try {
+            // Gọi hàm upload (Henry nhớ thêm hàm uploadToCloudinary đã viết ở trên nhé)
+            const cloudinaryUrl = await uploadToCloudinary(tempThemeFile);
+            
+            // Thay thế ảnh nền từ Base64 sang link HTTPS của Cloudinary
+            // Thêm q_auto,f_auto để tối ưu dung lượng ảnh cho mượt
+            tempThemeData.customData.bg = `url("${cloudinaryUrl.replace('/upload/', '/upload/q_auto,f_auto/')}")`;
+        } catch (err) {
+            console.error("Lỗi Cloudinary:", err);
+            alert("❌ Không thể tải ảnh lên bộ nhớ Cloudinary!");
+            return; // Dừng lại không lưu Firebase nếu upload ảnh lỗi
+        }
+    }
+    // ---------------------------------------
 
     const chatRoomId = [currentUser, currentChatFriend].sort().join('_');
 
@@ -14215,11 +14310,11 @@ function applyChatTheme() {
         });
         
         // 4. Cập nhật lại giao diện gốc (Giữ nguyên logic của Henry)
-        // Việc này giúp nếu Henry mở lại modal ngay sau đó thì nó hiểu theme này là theme gốc mới
         originalThemeData = tempThemeData; 
         
         // 5. Reset biến tạm và đóng Modal (Giữ nguyên)
         tempThemeData = null; 
+        if (typeof tempThemeFile !== 'undefined') tempThemeFile = null; // Reset thêm file ảnh
         if (typeof toggleModal === 'function') toggleModal('modal-chat-theme');
 
         // 6. Thông báo hệ thống (Giữ nguyên)
@@ -14231,7 +14326,6 @@ function applyChatTheme() {
         alert("❌ Không thể áp dụng giao diện. Vui lòng thử lại!");
     });
 }
-
 function applyThemeToUI(themeData) {
     const chatBox = document.getElementById('messenger-box');
     const header = document.querySelector('.messenger-header');
@@ -14247,7 +14341,7 @@ function applyThemeToUI(themeData) {
             searchBar.style.color = textColor;
             
             // --- THIẾT KẾ NỔI (FLOATING STYLE) ---
-            searchBar.style.margin = "8px 12px";         
+            searchBar.style.margin = "8px 12px";          
             searchBar.style.borderRadius = "15px";        
             searchBar.style.boxShadow = "0 6px 15px rgba(0,0,0,0.2)"; 
             searchBar.style.border = "1px solid rgba(255,255,255,0.2)"; 
@@ -14288,7 +14382,10 @@ function applyThemeToUI(themeData) {
         });
         
     } else if (themeData.type === 'premium') {
-        const theme = CHAT_THEMES_CONFIG[themeData.themeKey];
+        // --- PHẦN SỬA ĐỔI ĐỂ HỖ TRỢ ẢNH TÙY CHỈNH ---
+        // Nếu có cờ isCustom, lấy từ customData (do Henry tự tạo), nếu không lấy từ config mặc định
+        const theme = themeData.isCustom ? themeData.customData : CHAT_THEMES_CONFIG[themeData.themeKey];
+        
         if (!theme) return;
         mainThemeColor = theme.header; 
 
@@ -14297,7 +14394,8 @@ function applyThemeToUI(themeData) {
         area.style.backgroundSize = 'cover';
         area.style.backgroundPosition = 'center';
         
-        setFloatingStyle(theme.header, "#ffffff");
+        // Cập nhật searchBar theo màu text của theme (trắng hoặc đen tùy sắc độ ảnh)
+        setFloatingStyle(theme.header, theme.textMe || "#ffffff");
 
         const myBubbles = area.querySelectorAll('.msg-me');
         myBubbles.forEach(b => {
@@ -14310,6 +14408,7 @@ function applyThemeToUI(themeData) {
             b.style.background = theme.bubbleFriend;
             b.style.color = theme.textFriend;
         });
+        // --- KẾT THÚC PHẦN SỬA ĐỔI ---
     }
 
     // --- CẬP NHẬT MÀU ICON BIỂU CẢM & DẤU 3 CHẤM ---
@@ -14794,6 +14893,27 @@ function exitSearchMode() {
         if (btnPremium) btnPremium.className = 'theme-btn-active';
         if (btnSimple) btnSimple.className = 'theme-btn-inactive';
         showThemeType('premium'); // Gọi hàm cũ của Henry
+    }
+}
+
+    async function uploadToCloudinary(file) {
+    const cloudName = 'dl4wnxsm3'; // Thay bằng cloud_name của bạn
+    const uploadPreset = 'SWEETIE GAME WORLD'; // Thay bằng upload_preset (unsigned) của bạn
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', uploadPreset);
+
+    try {
+        const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+            method: 'POST',
+            body: formData
+        });
+        const data = await response.json();
+        return data.secure_url; // Đây là link HTTPS để lưu vào Realtime Database
+    } catch (error) {
+        console.error('Lỗi upload Cloudinary:', error);
+        throw error;
     }
 }
 </script>
