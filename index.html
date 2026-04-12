@@ -6929,7 +6929,16 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
 
 <div id="messenger-box" class="messenger-box animate__animated">
     <div class="messenger-header">
-        <div id="search-mode-bar" 
+        <div class="messenger-user-info" style="display: flex; align-items: center; gap: 10px;">
+            <div id="chat-target-avatar" class="mini-avatar"></div>
+            <div class="messenger-user-detail">
+    <b id="chat-target-name">Người bạn hồng</b>
+    <span id="chat-target-status" style="font-size: 0.7em; font-weight: 800; color: #888;">
+        <i class="fas fa-circle" style="font-size: 0.8em; opacity: 0.5;"></i> Đang tải...
+    </span>
+</div>
+        </div>
+<div id="search-mode-bar" 
      style="display:none; background: #fff5f8; padding: 10px 15px; align-items: center; 
             justify-content: space-between; border-bottom: 1px solid #ffc0cb; width: 100%; box-sizing: border-box; z-index: 10;">
     
@@ -6952,15 +6961,6 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
            title="Thoát và xóa highlight"></i>
     </div>
 </div>
-        <div class="messenger-user-info" style="display: flex; align-items: center; gap: 10px;">
-            <div id="chat-target-avatar" class="mini-avatar"></div>
-            <div class="messenger-user-detail">
-    <b id="chat-target-name">Người bạn hồng</b>
-    <span id="chat-target-status" style="font-size: 0.7em; font-weight: 800; color: #888;">
-        <i class="fas fa-circle" style="font-size: 0.8em; opacity: 0.5;"></i> Đang tải...
-    </span>
-</div>
-        </div>
         <div class="messenger-actions" style="display: flex; gap: 15px; font-size: 1.2em; cursor: pointer;">
             <i class="fas fa-times" onclick="closeChat()"></i>
         </div>
