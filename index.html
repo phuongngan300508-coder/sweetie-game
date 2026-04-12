@@ -5113,6 +5113,20 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
         font-size: 16px !important;
     }
 }
+
+    /* Nút khi được chọn */
+.theme-btn-active {
+    background: #ff1493 !important;
+    color: white !important;
+    border: 1px solid #ff1493 !important;
+}
+
+/* Nút khi chưa được chọn */
+.theme-btn-inactive {
+    background: #fff5f8 !important;
+    color: #ff1493 !important;
+    border: 1px solid #ffc0cb !important;
+}
 </style>
 </head>
 <body>
@@ -7212,17 +7226,31 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
     ">
         <h3 style="color: #ff1493; margin-top: 0; margin-bottom: 15px; text-align: center;">🎨 Tùy chỉnh đoạn chat</h3>
         
-        <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-            <button onclick="showThemeType('simple')" style="flex:1; padding: 10px; border-radius: 15px; border: 1px solid #ffc0cb; background: #fff5f8; font-weight: 800; font-size: 0.7em; cursor: pointer;">MÀU ĐƠN</button>
-            <button onclick="showThemeType('premium')" style="flex:1; padding: 10px; border-radius: 15px; border: 1px solid #ff1493; background: #ff1493; color: white; font-weight: 800; font-size: 0.7em; cursor: pointer;">CHỦ ĐỀ VIP</button>
-        </div>
+       <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+    <button id="btn-simple" 
+            onclick="setActiveThemeBtn('simple')" 
+            class="theme-btn-active"
+            style="flex:1; padding: 10px; border-radius: 15px; font-weight: 800; font-size: 0.7em; cursor: pointer; transition: 0.3s;">
+        MÀU ĐƠN
+    </button>
+    
+    <button id="btn-premium" 
+            onclick="setActiveThemeBtn('premium')" 
+            class="theme-btn-inactive"
+            style="flex:1; padding: 10px; border-radius: 15px; font-weight: 800; font-size: 0.7em; cursor: pointer; transition: 0.3s;">
+        CHỦ ĐỀ VIP
+    </button>
+</div>
 
         <div id="theme-selection-area" style="max-height: 250px; overflow-y: auto; padding: 5px;">
              </div>
 
         <div class="modal-footer" style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 15px; text-align: center;">
-            <button class="btn-action-white" onclick="toggleModal('modal-chat-theme')" style="width: 100%; padding: 10px; border-radius: 50px; border: 1px solid #ccc; cursor: pointer;">HỦY BỎ</button>
-        </div>
+            <button class="btn-action-white" 
+        onclick="cancelThemeSelection()" 
+        style="width: 100%; padding: 10px; border-radius: 50px; border: 1px solid #ccc; cursor: pointer; font-weight: 800; color: #888;">
+    HỦY BỎ
+</button>
     </div>
 </div>
 
@@ -14066,28 +14094,44 @@ document.addEventListener('mousedown', function(event) {
 let originalThemeData = null; // MỚI: Lưu lại giao diện thực tế trước khi Preview
 
 function openThemeModal() {
-    toggleChatMoreMenu();
-    toggleModal('modal-chat-theme');
-    showThemeType('simple'); // Mặc định mở màu đơn trước
-    
-    // MỚI: Ghi nhớ lại giao diện hiện tại từ Firebase để nếu nhấn Hủy thì quay về được
+    if (!currentChatFriend) return;
+
     const chatRoomId = [currentUser, currentChatFriend].sort().join('_');
+
+    // 1. GHI NHỚ GIAO DIỆN GỐC TRƯỚC (QUAN TRỌNG NHẤT)
+    // Phải lấy xong dữ liệu từ Firebase rồi mới mở Modal để tránh lỗi Hủy bỏ
     db.ref(`chats/${chatRoomId}/config/theme`).once('value', (snap) => {
         originalThemeData = snap.val();
+        
+        // 2. SAU ĐÓ MỚI MỞ GIAO DIỆN CHỌN THEME
+        toggleChatMoreMenu();
+        toggleModal('modal-chat-theme');
+        showThemeType('simple'); // Mặc định mở màu đơn trước
+        
+        console.log("Hệ thống: Đã lưu giao diện gốc, sẵn sàng hoàn tác nếu nhấn Hủy.");
     });
 }
-
 // Sửa hàm Hủy bỏ trong UI của Henry để gọi hàm này
 function cancelThemeSelection() {
+    // 1. ĐÓNG MODAL NGAY LẬP TỨC
     toggleModal('modal-chat-theme');
+    
+    // 2. RESET DỮ LIỆU TẠM (Để không bị ghi đè nhầm nếu mở lại lần sau)
     tempThemeData = null;
     
-    // Nếu có dữ liệu cũ thì áp dụng lại, không thì reset mặc định
+    // 3. HOÀN TÁC GIAO DIỆN VỀ TRẠNG THÁI GỐC (Lập tức)
     if (originalThemeData) {
+        // Nếu trước khi xem thử có giao diện riêng (Simple hoặc Premium)
         applyThemeToUI(originalThemeData);
     } else {
+        // Nếu trước đó là giao diện mặc định (Hồng Sweetie)
         resetDefaultTheme();
     }
+
+    // Xóa dữ liệu gốc sau khi đã hoàn tác thành công để giải phóng bộ nhớ
+    originalThemeData = null; 
+    
+    console.log("🌸 Sweetie Hệ thống: Đã hủy bỏ xem trước và khôi phục giao diện gốc.");
 }
 
 function showThemeType(type) {
@@ -14704,6 +14748,23 @@ function exitSearchMode() {
     }, 300);
 
     console.log("🌸 Đã thoát chế độ xem tin cũ, xóa highlight và về tin nhắn mới nhất.");
+}
+
+    function setActiveThemeBtn(type) {
+    const btnSimple = document.getElementById('btn-simple');
+    const btnPremium = document.getElementById('btn-premium');
+
+    if (type === 'simple') {
+        // Tô hồng nút Simple, trả nút Premium về hồng nhạt
+        btnSimple.className = 'theme-btn-active';
+        btnPremium.className = 'theme-btn-inactive';
+        showThemeType('simple'); // Gọi hàm cũ của Henry
+    } else {
+        // Tô hồng nút Premium, trả nút Simple về hồng nhạt
+        btnPremium.className = 'theme-btn-active';
+        btnSimple.className = 'theme-btn-inactive';
+        showThemeType('premium'); // Gọi hàm cũ của Henry
+    }
 }
 </script>
 </body>
