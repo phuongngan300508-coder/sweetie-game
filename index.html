@@ -12425,16 +12425,16 @@ function listenMessages(friendName) {
     const area = document.getElementById('chat-messages-area');
     const msgRef = db.ref('chats/' + chatRoomId + '/messages');
     
-    // 1. DỌN DẸP & RESET TRẠNG THÁI
+    // 1. DỌN DẸP & RESET TRẠNG THÁI (Giữ nguyên)
     area.innerHTML = "";
     oldestMsgTimestamp = null;
     isAllLoaded = false;
-    msgRef.off(); // Tắt các lắng nghe cũ để không bị lặp dữ liệu
+    msgRef.off(); 
     db.ref('chats/' + chatRoomId + '/config/theme').off();
 
     let currentThemeData = null;
 
-    // 2. LẮNG NGHE GIAO DIỆN THỜI GIAN THỰC (Themes)
+    // 2. LẮNG NGHE GIAO DIỆN THỜI GIAN THỰC (Giữ nguyên)
     db.ref('chats/' + chatRoomId + '/config/theme').on('value', (snapshot) => {
         currentThemeData = snapshot.val();
         if (currentThemeData && typeof applyThemeToUI === 'function') {
@@ -12444,7 +12444,7 @@ function listenMessages(friendName) {
         }
     });
 
-    // 3. BỔ SUNG NÚT ACTIONS & NÚT TÌM KIẾM (Giữ nguyên của Henry)
+    // 3. BỔ SUNG NÚT ACTIONS & NÚT TÌM KIẾM (Giữ nguyên)
     const messengerActions = document.querySelector('.messenger-actions');
     if (messengerActions) {
         const oldMenu = document.getElementById('chat-more-menu-wrapper');
@@ -12467,7 +12467,7 @@ function listenMessages(friendName) {
         messengerActions.insertAdjacentHTML('afterbegin', menuHtml);
     }
 
-    // --- HIỂN THỊ THANH BAR CHẾ ĐỘ TÌM KIẾM ---
+    // --- HIỂN THỊ THANH BAR CHẾ ĐỘ TÌM KIẾM (Giữ nguyên) ---
     const searchBar = document.getElementById('search-mode-bar');
     if (searchBar) {
         if (typeof currentSearchKeyword !== 'undefined' && currentSearchKeyword !== "") {
@@ -12477,12 +12477,12 @@ function listenMessages(friendName) {
         }
     }
 
-    // 4. TẢI 20 TIN NHẮN ĐẦU TIÊN
+    // 4. TẢI 20 TIN NHẮN ĐẦU TIÊN (Giữ nguyên)
     if (typeof currentSearchKeyword === 'undefined' || !currentSearchKeyword) {
         loadMoreMessages(friendName, true);
     }
 
-    // 5. LẮNG NGHE TIN NHẮN MỚI (child_added)
+    // 5. LẮNG NGHE TIN NHẮN MỚI (child_added) (Giữ nguyên)
     msgRef.limitToLast(1).on('child_added', (snapshot) => {
         const msgId = snapshot.key;
         if (document.getElementById(`msg-${msgId}`)) return; 
@@ -12503,19 +12503,19 @@ function listenMessages(friendName) {
     });
 
     // --- MỚI: LẮNG NGHE CẬP NHẬT CẢM XÚC (child_changed) ---
-    // Giúp thả tim hiện lên ngay lập tức mà không cần F5
+    // ĐÃ SỬA: Truyền tempDiv vào để ngăn tin nhắn nhảy xuống cuối
     msgRef.on('child_changed', (snapshot) => {
         const msgId = snapshot.key;
         const msg = snapshot.val();
         
-        // Tìm tin nhắn cũ trên màn hình để vẽ lại đúng chỗ đó
         const oldMsgEl = document.getElementById(`msg-${msgId}`);
         if (oldMsgEl) {
-            // Lưu lại vị trí cuộn hiện tại
             const currentScroll = area.scrollTop;
             
             // Tạo một div tạm để render nội dung mới
             const tempDiv = document.createElement('div');
+            
+            // TRUYỀN tempDiv VÀO ĐỂ KHÔNG BỊ NHẢY XUỐNG BOTTOM (Do hàm renderSingleMessage Henry vừa sửa)
             renderSingleMessage(msgId, msg, 'bottom', tempDiv);
             
             // Thay thế nội dung cũ bằng nội dung mới đã có cảm xúc
@@ -12529,8 +12529,7 @@ function listenMessages(friendName) {
         }
     });
 
-    // --- MỚI: LẮNG NGHE XÓA TIN NHẮN (child_removed) ---
-    // Giúp tin nhắn biến mất ngay lập tức khi đối phương thu hồi
+    // --- MỚI: LẮNG NGHE XÓA TIN NHẮN (child_removed) (Giữ nguyên) ---
     msgRef.on('child_removed', (snapshot) => {
         const msgId = snapshot.key;
         const msgEl = document.getElementById(`msg-${msgId}`);
@@ -12540,7 +12539,7 @@ function listenMessages(friendName) {
         }
     });
 
-    // 6. SỰ KIỆN CUỘN LÊN ĐỂ TẢI TIN CŨ
+    // 6. SỰ KIỆN CUỘN LÊN ĐỂ TẢI TIN CŨ (Giữ nguyên)
     area.onscroll = () => {
         if (area.scrollTop < 50 && !isLoadingMore && !isAllLoaded) {
             if (typeof currentSearchKeyword === 'undefined' || !currentSearchKeyword) {
@@ -12601,11 +12600,12 @@ function listenMessages(friendName) {
     });
 }
 
-    function renderSingleMessage(msgId, msg, position = 'bottom') {
+    // Thêm tham số targetContainer vào cuối (mặc định là null)
+function renderSingleMessage(msgId, msg, position = 'bottom', targetContainer = null) {
     const area = document.getElementById('chat-messages-area');
     const isMe = msg.sender === currentUser;
 
-    // --- LOGIC REPLY ---
+    // --- 1. LOGIC REPLY (GIỮ NGUYÊN 100%) ---
     let replyHtml = "";
     if (msg.replyData && msg.replyData.sender) {
         let senderDisplayName = (typeof currentNicks !== 'undefined' && currentNicks[msg.replyData.sender]) 
@@ -12617,7 +12617,7 @@ function listenMessages(friendName) {
             </div>`;
     }
 
-    // --- LOGIC CẢM XÚC ---
+    // --- 2. LOGIC CẢM XÚC (GIỮ NGUYÊN 100%) ---
     const reactions = msg.reactions || {};
     const myReaction = reactions[currentUser];
     let reactionDisplayHtml = "";
@@ -12625,23 +12625,18 @@ function listenMessages(friendName) {
     if (uniqueReactions.length > 0) {
         reactionDisplayHtml = `<div class="msg-reaction-display" onclick="sendReaction('${msgId}', '${myReaction}')" style="cursor:pointer;">${uniqueReactions.join('')}</div>`;
     }
-
     const getEmojiClass = (emoji) => (myReaction === emoji) ? "emoji-btn emoji-active" : "emoji-btn";
 
-    // --- LOGIC THỜI GIAN ---
+    // --- 3. LOGIC THỜI GIAN (GIỮ NGUYÊN 100%) ---
     const timeHtml = msg.displayTime ? `<div class="msg-display-time" style="font-size: 0.6em; opacity: 0.7; margin-top: 4px; text-align: right; display: block;">${msg.displayTime}</div>` : "";
 
-    // --- LOGIC MEDIA & HIGHLIGHT TÌM KIẾM (CẬP NHẬT) ---
-    // Kiểm tra nếu đang có từ khóa tìm kiếm thì thực hiện tô đậm (Highlight)
+    // --- 4. LOGIC MEDIA & HIGHLIGHT (GIỮ NGUYÊN 100%) ---
     let finalMsgText = msg.text || "";
     if (typeof currentSearchKeyword !== 'undefined' && currentSearchKeyword && msg.text) {
-        // Sử dụng RegExp để tìm tất cả các từ khớp (không phân biệt hoa thường)
         const regex = new RegExp(`(${currentSearchKeyword})`, 'gi');
         finalMsgText = msg.text.replace(regex, '<b style="background: yellow; color: black; padding: 0 2px; border-radius: 3px;">$1</b>');
     }
-
     let bodyContentHtml = `<div class="text-content">${finalMsgText}</div>`;
-    
     if (msg.mediaUrl) {
         if (msg.mediaType === 'image') {
             bodyContentHtml = `<img src="${msg.mediaUrl}" onclick="openFS('${msg.mediaUrl}', 'image')" style="max-width:100%; border-radius:10px; cursor:pointer; display: block; margin-bottom: 5px;">`;
@@ -12650,7 +12645,7 @@ function listenMessages(friendName) {
         }
     }
 
-    // --- TEMPLATE HTML ---
+    // --- 5. TEMPLATE HTML (GIỮ NGUYÊN 100%) ---
     const msgHtml = `
     <div class="msg-wrapper ${isMe ? 'msg-me-wrap' : 'msg-friend-wrap'}" id="msg-${msgId}"
          style="position: relative; display: flex; align-items: center; width: 100%; ${isMe ? 'flex-direction: row-reverse; justify-content: flex-start;' : 'justify-content: flex-start;'}" 
@@ -12684,10 +12679,17 @@ function listenMessages(friendName) {
         </div>
     </div>`;
 
-    if (position === 'bottom') {
-        area.insertAdjacentHTML('beforeend', msgHtml);
+    // --- 6. PHẦN SỬA ĐỂ CHỐNG NHẢY TIN NHẮN ---
+    if (targetContainer) {
+        // Nếu có chỗ nhận cụ thể, chỉ đổ HTML vào đó thôi
+        targetContainer.innerHTML = msgHtml;
     } else {
-        area.insertAdjacentHTML('afterbegin', msgHtml);
+        // Nếu không (lúc bình thường), mới chèn vào khung chat chính
+        if (position === 'bottom') {
+            area.insertAdjacentHTML('beforeend', msgHtml);
+        } else {
+            area.insertAdjacentHTML('afterbegin', msgHtml);
+        }
     }
 
     const el = document.getElementById(`msg-${msgId}`);
