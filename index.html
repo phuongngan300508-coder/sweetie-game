@@ -6929,6 +6929,29 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
 
 <div id="messenger-box" class="messenger-box animate__animated">
     <div class="messenger-header">
+        <div id="search-mode-bar" 
+     style="display:none; background: #fff5f8; padding: 10px 15px; align-items: center; 
+            justify-content: space-between; border-bottom: 1px solid #ffc0cb; width: 100%; box-sizing: border-box; z-index: 10;">
+    
+    <div style="display: flex; align-items: center; gap: 8px;">
+        <i class="fas fa-history" style="color: #ff1493; font-size: 0.8em;"></i>
+        <span style="font-size: 0.75em; color: #d63384; font-weight: bold;">
+            Đang xem tin nhắn cũ
+        </span>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 12px;">
+        <button onclick="exitSearchMode()" 
+                style="background: #ff1493; color: white; border: none; padding: 4px 12px; 
+                       border-radius: 50px; font-size: 0.7em; cursor: pointer; font-weight: bold;">
+            VỀ HIỆN TẠI
+        </button>
+        
+        <i class="fas fa-times" onclick="exitSearchMode()" 
+           style="cursor:pointer; color: #ff1493; font-size: 1.2em; padding: 5px;" 
+           title="Thoát và xóa highlight"></i>
+    </div>
+</div>
         <div class="messenger-user-info" style="display: flex; align-items: center; gap: 10px;">
             <div id="chat-target-avatar" class="mini-avatar"></div>
             <div class="messenger-user-detail">
@@ -7233,30 +7256,6 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
                 <p style="text-align: center; color: #888; font-size: 0.8em; margin-top: 10px;">Nhập từ khóa để tìm kiếm...</p>
             </div>
         </div>
-    </div>
-</div>
-
-<div id="search-mode-bar" 
-     style="display:none; background: #fff5f8; padding: 10px 15px; align-items: center; 
-            justify-content: space-between; border-bottom: 1px solid #ffc0cb; width: 100%; box-sizing: border-box; z-index: 10;">
-    
-    <div style="display: flex; align-items: center; gap: 8px;">
-        <i class="fas fa-history" style="color: #ff1493; font-size: 0.8em;"></i>
-        <span style="font-size: 0.75em; color: #d63384; font-weight: bold;">
-            Đang xem tin nhắn cũ
-        </span>
-    </div>
-
-    <div style="display: flex; align-items: center; gap: 12px;">
-        <button onclick="exitSearchMode()" 
-                style="background: #ff1493; color: white; border: none; padding: 4px 12px; 
-                       border-radius: 50px; font-size: 0.7em; cursor: pointer; font-weight: bold;">
-            VỀ HIỆN TẠI
-        </button>
-        
-        <i class="fas fa-times" onclick="exitSearchMode()" 
-           style="cursor:pointer; color: #ff1493; font-size: 1.2em; padding: 5px;" 
-           title="Thoát và xóa highlight"></i>
     </div>
 </div>
 <script>
