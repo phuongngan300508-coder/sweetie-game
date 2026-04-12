@@ -7237,16 +7237,27 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
 </div>
 
 <div id="search-mode-bar" 
-     style="display:none; background: #fff0f5; padding: 10px 15px; align-items: center; 
-            justify-content: space-between; border-bottom: 1px solid #ffc0cb; width: 100%; box-sizing: border-box;">
-    <span style="font-size: 0.75em; color: #d63384; font-weight: bold;">
-        <i class="fas fa-search"></i> Đang xem tin nhắn cũ
-    </span>
-    <button onclick="exitSearchMode()" 
-            style="background: #ff1493; color: white; border: none; padding: 5px 12px; 
-                   border-radius: 50px; font-size: 0.7em; cursor: pointer; font-weight: bold; box-shadow: 0 2px 5px rgba(255,20,147,0.3);">
-        THOÁT
-    </button>
+     style="display:none; background: #fff5f8; padding: 10px 15px; align-items: center; 
+            justify-content: space-between; border-bottom: 1px solid #ffc0cb; width: 100%; box-sizing: border-box; z-index: 10;">
+    
+    <div style="display: flex; align-items: center; gap: 8px;">
+        <i class="fas fa-history" style="color: #ff1493; font-size: 0.8em;"></i>
+        <span style="font-size: 0.75em; color: #d63384; font-weight: bold;">
+            Đang xem tin nhắn cũ
+        </span>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 12px;">
+        <button onclick="exitSearchMode()" 
+                style="background: #ff1493; color: white; border: none; padding: 4px 12px; 
+                       border-radius: 50px; font-size: 0.7em; cursor: pointer; font-weight: bold;">
+            VỀ HIỆN TẠI
+        </button>
+        
+        <i class="fas fa-times" onclick="exitSearchMode()" 
+           style="cursor:pointer; color: #ff1493; font-size: 1.2em; padding: 5px;" 
+           title="Thoát và xóa highlight"></i>
+    </div>
 </div>
 <script>
   let replyingTo = null; // Lưu tin nhắn đang được trả lời {id, text, sender}
@@ -14524,24 +14535,30 @@ async function jumpToMessage(msgId) {
 
 // 4. Thoát chế độ tìm kiếm
 function exitSearchMode() {
-    // 1. Ẩn thanh thông báo màu hồng
+    // 1. Ẩn thanh thông báo ngay lập tức
     const searchBar = document.getElementById('search-mode-bar');
     if (searchBar) searchBar.style.display = 'none';
 
-    // 2. Xóa từ khóa để các hàm render không tô vàng (highlight) nữa
+    // 2. Xóa từ khóa tìm kiếm (để renderSingleMessage không tô vàng nữa)
     currentSearchKeyword = "";
 
-    // 3. Reset ô nhập liệu trong popup để lần sau tìm kiếm mới hoàn toàn
-    const searchInput = document.getElementById('input-search-msg');
-    if (searchInput) searchInput.value = "";
-
-    // 4. Quan trọng nhất: Gọi lại listenMessages để tải lại đúng 20 tin cuối cùng
-    // và kích hoạt lại chế độ tự động cuộn khi có tin nhắn mới.
-    if (currentChatFriend) {
+    // 3. Tải lại 20 tin nhắn mới nhất (Quay về trạng thái Real-time)
+    if (typeof currentChatFriend !== 'undefined' && currentChatFriend) {
         listenMessages(currentChatFriend);
     }
 
-    console.log("🌸 Đã tắt chế độ tìm kiếm, quay về tin nhắn mới nhất.");
+    // 4. Đợi tin nhắn render xong rồi tự động cuộn xuống cuối cùng
+    setTimeout(() => {
+        const area = document.getElementById('chat-messages-area');
+        if (area) {
+            area.scrollTo({ 
+                top: area.scrollHeight, 
+                behavior: 'smooth' 
+            });
+        }
+    }, 300);
+
+    console.log("🌸 Đã thoát chế độ xem tin cũ, xóa highlight và về tin nhắn mới nhất.");
 }
 </script>
 </body>
