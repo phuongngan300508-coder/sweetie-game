@@ -4810,15 +4810,27 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
     flex-direction: row-reverse; /* Đảo ngược: Nút hành động -> Bong bóng sát lề phải */
 }
 
+/* Thanh hành động (mặt cười và 3 chấm) */
 .msg-actions {
     opacity: 0;
     transition: 0.2s;
     margin: 0 10px;
-    color: #ffb6c1;
+    /* Đổi color thành biến để tự động cập nhật theo Theme */
+    color: var(--theme-header-color, #ffb6c1); 
     cursor: pointer;
-    display: flex; /* Đảm bảo cụm icon mặt cười và 3 chấm nằm ngang */
+    display: flex; 
     align-items: center;
     gap: 5px;
+    /* Thêm các thuộc tính để ẩn hoàn toàn khi chưa chạm */
+    pointer-events: none; 
+    transform: scale(0.9);
+}
+
+/* Khi tin nhắn được chạm vào (đã thêm class active-msg bằng JS) */
+.msg-wrapper.active-msg .msg-actions {
+    opacity: 1;
+    transform: scale(1);
+    pointer-events: auto;
 }
 
 /* Khi di chuột vào tin nhắn thì hiện các nút hành động */
@@ -12364,23 +12376,18 @@ function listenMessages(friendName) {
     const chatRoomId = [currentUser, friendName].sort().join('_');
     const area = document.getElementById('chat-messages-area');
     
-    // Tắt lắng nghe cũ để tránh trùng lặp tin nhắn khi đổi người chat
     db.ref('chats/' + chatRoomId + '/messages').off();
-    db.ref('chats/' + chatRoomId + '/config/theme').off(); // Tắt lắng nghe theme cũ
+    db.ref('chats/' + chatRoomId + '/config/theme').off();
 
-    // --- MỚI: LẮNG NGHE GIAO DIỆN THỜI GIAN THỰC (Real-time Themes) ---
     db.ref('chats/' + chatRoomId + '/config/theme').on('value', (snapshot) => {
         const themeData = snapshot.val();
         if (themeData) {
-            // Gọi hàm áp dụng giao diện (Henry định nghĩa hàm này bên dưới nhé)
             if (typeof applyThemeToUI === 'function') applyThemeToUI(themeData);
         } else {
-            // Trả về mặc định nếu chưa có cấu hình
             if (typeof resetDefaultTheme === 'function') resetDefaultTheme();
         }
     });
 
-    // --- BỔ SUNG: NÚT BA CHẤM ACTIONS ---
     const messengerActions = document.querySelector('.messenger-actions');
     if (messengerActions) {
         const oldMenu = document.getElementById('chat-more-menu-wrapper');
@@ -12401,7 +12408,6 @@ function listenMessages(friendName) {
         messengerActions.insertAdjacentHTML('afterbegin', menuHtml);
     }
 
-    // --- LẮNG NGHE TIN NHẮN ---
     db.ref('chats/' + chatRoomId + '/messages').limitToLast(30).on('value', (snapshot) => {
         area.innerHTML = "";
         const data = snapshot.val();
@@ -12427,9 +12433,8 @@ function listenMessages(friendName) {
                         </div>`;
                 }
 
-                // --- HIỂN THỊ CẢM XÚC (Cập nhật click vào icon để xóa) ---
                 const reactions = msg.reactions || {};
-                const myReaction = reactions[currentUser]; // Icon Henry đã thả
+                const myReaction = reactions[currentUser];
                 let reactionDisplayHtml = "";
                 const uniqueReactions = [...new Set(Object.values(reactions))];
                 
@@ -12437,7 +12442,6 @@ function listenMessages(friendName) {
                     reactionDisplayHtml = `<div class="msg-reaction-display" onclick="sendReaction('${msgId}', '${myReaction}')" style="cursor:pointer;">${uniqueReactions.join('')}</div>`;
                 }
 
-                // --- MỚI: HÀM KIỂM TRA ICON ĐANG THẢ ĐỂ LÀM NỔI BẬT ---
                 const getEmojiClass = (emoji) => {
                     return (myReaction === emoji) ? "emoji-btn emoji-active" : "emoji-btn";
                 };
@@ -12447,7 +12451,6 @@ function listenMessages(friendName) {
                         ${msg.displayTime}
                     </div>` : "";
 
-                // --- PHẦN XỬ LÝ NỘI DUNG MEDIA (ẢNH/VIDEO) ---
                 let bodyContentHtml = `<div class="text-content">${msg.text}</div>`;
                 if (msg.mediaUrl) {
                     if (msg.mediaType === 'image') {
@@ -12461,7 +12464,6 @@ function listenMessages(friendName) {
                     }
                 }
 
-                // CHỈNH SỬA: Thêm style flex-direction: row-reverse cho tin nhắn của bản thân trực tiếp trong HTML
                 const msgHtml = `
     <div class="msg-wrapper ${isMe ? 'msg-me-wrap' : 'msg-friend-wrap'}" 
          id="msg-${msgId}"
@@ -12469,7 +12471,7 @@ function listenMessages(friendName) {
          data-id="${msgId}"
          data-text="${msg.text}"
          data-sender="${msg.sender}"
-         ondblclick="sendReaction('${msgId}', '❤️')"
+         onclick="handleFastClick('${msgId}'); toggleMobileActions('${msgId}')"
          ontouchstart="handleTouchStart(event, '${msgId}')"
          ontouchend="handleTouchEnd()"
          onmouseenter="showActionBtn('${msgId}')" 
@@ -12492,9 +12494,9 @@ function listenMessages(friendName) {
         </div>
 
         <div class="msg-actions" id="actions-${msgId}" style="display: flex; align-items: center; ${isMe ? 'flex-direction: row-reverse;' : ''}">
-            <i class="far fa-smile reaction-stay" onclick="toggleReactionPicker('${msgId}')" style="cursor:pointer; ${isMe ? 'margin-left:5px;' : 'margin-right:5px;'} color:#ff69b4;"></i>
+            <i class="far fa-smile reaction-stay theme-icon-color" onclick="toggleReactionPicker('${msgId}')" style="cursor:pointer; ${isMe ? 'margin-left:5px;' : 'margin-right:5px;'}"></i>
             
-            <i class="fas fa-ellipsis-v" onclick="showActionMenu('${msgId}', ${isMe})"></i>
+            <i class="fas fa-ellipsis-v theme-icon-color" onclick="showActionMenu('${msgId}', ${isMe})"></i>
             
             <div class="action-menu" id="menu-${msgId}">
                 <div onclick="setReply('${msgId}', '${msg.text}', '${msg.sender}')"><i class="fas fa-reply"></i> Trả lời</div>
@@ -12509,10 +12511,8 @@ function listenMessages(friendName) {
                 if (el) initSwipe(el, isMe, msgId, msg.text, msg.sender);
             });
             
-            // Cuộn xuống cuối
             area.scrollTo({ top: area.scrollHeight, behavior: 'smooth' });
 
-            // CẬP NHẬT GIAO DIỆN TIN NHẮN THEO THEME HIỆN TẠI (Sau khi đã render tin nhắn)
             db.ref('chats/' + chatRoomId + '/config/theme').once('value', (snap) => {
                 if (snap.exists() && typeof applyThemeToUI === 'function') {
                     applyThemeToUI(snap.val());
@@ -12521,6 +12521,7 @@ function listenMessages(friendName) {
         }
     });
 }
+    
 function toggleChatMoreMenu() {
     const menu = document.getElementById('chat-more-menu');
     if (menu) {
@@ -14008,6 +14009,10 @@ function applyThemeToUI(themeData) {
         
         const myBubbles = document.querySelectorAll('.msg-me');
         myBubbles.forEach(b => b.style.background = color);
+
+        // --- MỚI: Cập nhật màu cho icon giao diện Đơn giản ---
+        document.documentElement.style.setProperty('--theme-header-color', color);
+        document.querySelectorAll('.theme-icon-color').forEach(i => i.style.color = color);
         
     } else if (themeData.type === 'premium') {
         const theme = CHAT_THEMES_CONFIG[themeData.themeKey];
@@ -14029,9 +14034,13 @@ function applyThemeToUI(themeData) {
             b.style.background = theme.bubbleFriend;
             b.style.color = theme.textFriend;
         });
+
+        // --- MỚI: Cập nhật màu cho icon giao diện Premium ---
+        document.documentElement.style.setProperty('--theme-header-color', theme.header);
+        document.querySelectorAll('.theme-icon-color').forEach(i => i.style.color = theme.header);
     }
 }
-
+    
 function resetToDefaultTheme() {
     if (!currentChatFriend) return;
     if (!confirm("Bạn muốn quay về giao diện Sweetie hồng mặc định?")) return;
