@@ -4927,7 +4927,7 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
 
 /* Hiệu ứng chạm (Mobile) */
 .reaction-picker span:active {
-    transform: scale(0.9); /* Thu nhỏ nhẹ khi nhấn vào tạo cảm giác phản hồi */
+    transform: scale(1.4); /* Hiệu ứng nhấn giữ */
 }
 
 @keyframes bounceIn {
@@ -4959,40 +4959,52 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
 
 .msg-me .msg-reaction-display { right: auto; left: 10px; }
 
-/* Thanh chứa các icon */
 .reaction-picker {
     display: flex;
-    gap: 12px;
+    gap: 10px; /* Tăng khoảng cách cho dễ bấm bằng ngón tay */
     background: white;
-    padding: 7px 15px;
-    border-radius: 30px;
-    box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+    padding: 8px 15px; /* Rộng rãi hơn chút */
+    border-radius: 50px; /* Bo tròn hoàn hảo */
+    
+    /* Đổ bóng ngọt ngào theo theme của Henry */
+    box-shadow: 0 8px 20px var(--theme-header-color, rgba(255, 20, 147, 0.25));
+    
     position: absolute;
-    bottom: 45px;
-    z-index: 1000;
-    /* Hiệu ứng hiện ra mượt mà */
-    animation: bounceIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    /* Đưa lên phía trên bong bóng tin nhắn */
+    top: -50px; 
+    z-index: 9999 !important; /* Đảm bảo luôn nằm trên cùng */
+    
+    border: 2px solid var(--theme-header-color, #ffc0cb);
+    white-space: nowrap;
+    
+    /* SỬA QUAN TRỌNG: Không dùng left 50% nữa để tránh bị lệch trên mobile */
+    /* Chúng ta sẽ để JS quyết định hướng dựa vào tin nhắn của ai */
+    pointer-events: auto; /* Đảm bảo bấm được vào icon */
 }
 
-/* Các icon cảm xúc */
+/* Hiệu ứng rung rinh khi hiện ra cho sinh động */
+@keyframes popIcon {
+    0% { transform: scale(0); opacity: 0; }
+    80% { transform: scale(1.2); }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+.reaction-picker {
+    animation: popIcon 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
 .reaction-picker span {
-    font-size: 1.6em;
+    font-size: 1.4rem; /* To rõ cho mobile */
+    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.2, 0, 0.1, 1);
     display: inline-block;
-    user-select: none;
-    -webkit-tap-highlight-color: transparent;
+    padding: 0 2px;
 }
 
-/* HIỆU ỨNG Henry CẦN: Khi di chuột vào (Desktop) */
+/* Khi chạm (điện thoại) hoặc di chuột (máy tính) vào icon sẽ phóng to */
+.reaction-picker span:active, 
 .reaction-picker span:hover {
     transform: scale(1.5) translateY(-5px);
-}
-
-/* HIỆU ỨNG Henry CẦN: Khi chạm vào hoặc nhấn giữ (Mobile/Desktop) */
-.reaction-picker span:active {
-    transform: scale(1.2);
-    filter: brightness(0.8);
 }
 
 /* Hiệu ứng xuất hiện cho thanh bar */
@@ -13752,17 +13764,19 @@ function toggleReactionPicker(msgId) {
     const picker = document.getElementById(`picker-${msgId}`);
     if (!picker) return;
 
-    // Ẩn tất cả các picker khác đang mở (nếu có)
+    // 1. Đóng tất cả các picker khác đang mở để tránh bị đè nhau
     document.querySelectorAll('.reaction-picker').forEach(p => {
         if (p.id !== `picker-${msgId}`) p.style.display = 'none';
     });
 
-    // Bật/Tắt picker hiện tại
-    if (picker.style.display === 'none' || picker.style.display === '') {
-        picker.style.display = 'flex'; // Dùng flex để các icon nằm hàng ngang
-        picker.classList.add('animate__animated', 'animate__bounceIn'); // Thêm hiệu ứng cho xinh
+    // 2. Kiểm tra trạng thái hiện tại
+    const isHidden = picker.style.display === 'none' || picker.style.display === '';
+    
+    if (isHidden) {
+        picker.style.display = 'flex'; // Hiện thanh icon
+        picker.classList.add('animate__animated', 'animate__bounceIn'); // Hiệu ứng cho "ngầu"
     } else {
-        picker.style.display = 'none';
+        picker.style.display = 'none'; // Đóng nếu đang mở
     }
 }
     
