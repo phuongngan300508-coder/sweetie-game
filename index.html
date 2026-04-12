@@ -14093,10 +14093,17 @@ document.addEventListener('mousedown', function(event) {
 let originalThemeData = null; // MỚI: Lưu lại giao diện thực tế trước khi Preview
 
 function openThemeModal() {
-    // 1. Đóng menu và mở Modal (Giữ nguyên)
+    // 1. Đóng menu và mở Modal
     if (typeof toggleChatMoreMenu === 'function') toggleChatMoreMenu();
     toggleModal('modal-chat-theme');
-    showThemeType('simple'); 
+
+    // MỚI: Thay vì mặc định 'simple', ta mở đúng tab Henry đã tắt ở lần trước
+    // Henry nhớ khai báo let lastSelectedThemeTab = 'simple' ở đầu file nhé!
+    if (typeof setActiveThemeBtn === 'function') {
+        setActiveThemeBtn(lastSelectedThemeTab || 'simple');
+    } else {
+        showThemeType('simple'); 
+    }
     
     // 2. Kiểm tra nếu chưa chọn ai chat thì không chạy tiếp
     if (!currentChatFriend || !currentUser) return;
@@ -14765,19 +14772,27 @@ function exitSearchMode() {
     console.log("🌸 Đã thoát chế độ xem tin cũ, xóa highlight và về tin nhắn mới nhất.");
 }
 
-    function setActiveThemeBtn(type) {
+    let lastSelectedThemeTab = 'simple'; // Mặc định lần đầu mở là Màu đơn
+    
+   function setActiveThemeBtn(type) {
     const btnSimple = document.getElementById('btn-simple');
     const btnPremium = document.getElementById('btn-premium');
 
+    // MỚI: Cập nhật biến ghi nhớ để khi mở lại Popup biết Henry đang ở đâu
+    // Henry nhớ khai báo "let lastSelectedThemeTab = 'simple';" ở đầu file nhé
+    if (typeof lastSelectedThemeTab !== 'undefined') {
+        lastSelectedThemeTab = type;
+    }
+
     if (type === 'simple') {
         // Tô hồng nút Simple, trả nút Premium về hồng nhạt
-        btnSimple.className = 'theme-btn-active';
-        btnPremium.className = 'theme-btn-inactive';
+        if (btnSimple) btnSimple.className = 'theme-btn-active';
+        if (btnPremium) btnPremium.className = 'theme-btn-inactive';
         showThemeType('simple'); // Gọi hàm cũ của Henry
     } else {
         // Tô hồng nút Premium, trả nút Simple về hồng nhạt
-        btnPremium.className = 'theme-btn-active';
-        btnSimple.className = 'theme-btn-inactive';
+        if (btnPremium) btnPremium.className = 'theme-btn-active';
+        if (btnSimple) btnSimple.className = 'theme-btn-inactive';
         showThemeType('premium'); // Gọi hàm cũ của Henry
     }
 }
