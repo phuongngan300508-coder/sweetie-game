@@ -12423,20 +12423,20 @@ let isAllLoaded = false;       // Đánh dấu khi đã tải hết sạch tin n
 function listenMessages(friendName) {
     const chatRoomId = [currentUser, friendName].sort().join('_');
     const area = document.getElementById('chat-messages-area');
+    const msgRef = db.ref('chats/' + chatRoomId + '/messages');
     
     // 1. DỌN DẸP & RESET TRẠNG THÁI
     area.innerHTML = "";
     oldestMsgTimestamp = null;
     isAllLoaded = false;
-    db.ref('chats/' + chatRoomId + '/messages').off();
+    msgRef.off(); // Tắt các lắng nghe cũ để không bị lặp dữ liệu
     db.ref('chats/' + chatRoomId + '/config/theme').off();
 
-    // Biến lưu trữ theme hiện tại để dùng cho tin nhắn mới mà không cần load lại database
     let currentThemeData = null;
 
     // 2. LẮNG NGHE GIAO DIỆN THỜI GIAN THỰC (Themes)
     db.ref('chats/' + chatRoomId + '/config/theme').on('value', (snapshot) => {
-        currentThemeData = snapshot.val(); // Cập nhật biến tạm
+        currentThemeData = snapshot.val();
         if (currentThemeData && typeof applyThemeToUI === 'function') {
             applyThemeToUI(currentThemeData);
         } else if (typeof resetDefaultTheme === 'function') {
@@ -12444,7 +12444,7 @@ function listenMessages(friendName) {
         }
     });
 
-    // 3. BỔ SUNG NÚT ACTIONS & NÚT TÌM KIẾM
+    // 3. BỔ SUNG NÚT ACTIONS & NÚT TÌM KIẾM (Giữ nguyên của Henry)
     const messengerActions = document.querySelector('.messenger-actions');
     if (messengerActions) {
         const oldMenu = document.getElementById('chat-more-menu-wrapper');
@@ -12454,9 +12454,7 @@ function listenMessages(friendName) {
             <div id="chat-more-menu-wrapper" style="position: relative; display: flex; align-items: center;">
                 <i class="fas fa-search" onclick="openSearchModal()" 
                    style="cursor:pointer; color:#ffffff; margin-right:12px; font-size: 0.9em;"></i>
-                
                 <i class="fas fa-ellipsis-v" onclick="toggleChatMoreMenu()" style="cursor:pointer;"></i>
-                
                 <div id="chat-more-menu" class="chat-more-menu" style="display:none; position:absolute; right:0; top:30px; background:white; box-shadow:0 5px 15px rgba(0,0,0,0.2); border-radius:10px; z-index:9999; min-width: 150px;">
                     <div onclick="openThemeModal()" style="color:#ff1493; padding:12px; font-weight:bold; font-size:0.7em; cursor:pointer; white-space: nowrap; border-bottom: 1px solid #eee;">
                         <i class="fas fa-palette"></i> Đổi giao diện
@@ -12469,7 +12467,7 @@ function listenMessages(friendName) {
         messengerActions.insertAdjacentHTML('afterbegin', menuHtml);
     }
 
-    // --- CẬP NHẬT: HIỂN THỊ THANH BAR CHẾ ĐỘ TÌM KIẾM ---
+    // --- HIỂN THỊ THANH BAR CHẾ ĐỘ TÌM KIẾM ---
     const searchBar = document.getElementById('search-mode-bar');
     if (searchBar) {
         if (typeof currentSearchKeyword !== 'undefined' && currentSearchKeyword !== "") {
@@ -12479,13 +12477,13 @@ function listenMessages(friendName) {
         }
     }
 
-    // 4. TẢI 20 TIN NHẮN ĐẦU TIÊN (Initial Load)
+    // 4. TẢI 20 TIN NHẮN ĐẦU TIÊN
     if (typeof currentSearchKeyword === 'undefined' || !currentSearchKeyword) {
         loadMoreMessages(friendName, true);
     }
 
-    // 5. LẮNG NGHE TIN NHẮN MỚI TRỰC TIẾP (Real-time)
-    db.ref('chats/' + chatRoomId + '/messages').limitToLast(1).on('child_added', (snapshot) => {
+    // 5. LẮNG NGHE TIN NHẮN MỚI (child_added)
+    msgRef.limitToLast(1).on('child_added', (snapshot) => {
         const msgId = snapshot.key;
         if (document.getElementById(`msg-${msgId}`)) return; 
 
@@ -12499,9 +12497,46 @@ function listenMessages(friendName) {
             area.scrollTo({ top: area.scrollHeight, behavior: 'smooth' });
         }
         
-        // TỐI ƯU: Thay vì load database và nhuộm lại cả bảng, ta dùng biến currentThemeData đã có sẵn
         if (currentThemeData && typeof applyThemeToUI === 'function') {
             applyThemeToUI(currentThemeData); 
+        }
+    });
+
+    // --- MỚI: LẮNG NGHE CẬP NHẬT CẢM XÚC (child_changed) ---
+    // Giúp thả tim hiện lên ngay lập tức mà không cần F5
+    msgRef.on('child_changed', (snapshot) => {
+        const msgId = snapshot.key;
+        const msg = snapshot.val();
+        
+        // Tìm tin nhắn cũ trên màn hình để vẽ lại đúng chỗ đó
+        const oldMsgEl = document.getElementById(`msg-${msgId}`);
+        if (oldMsgEl) {
+            // Lưu lại vị trí cuộn hiện tại
+            const currentScroll = area.scrollTop;
+            
+            // Tạo một div tạm để render nội dung mới
+            const tempDiv = document.createElement('div');
+            renderSingleMessage(msgId, msg, 'bottom', tempDiv);
+            
+            // Thay thế nội dung cũ bằng nội dung mới đã có cảm xúc
+            oldMsgEl.outerHTML = tempDiv.innerHTML;
+            
+            // Giữ nguyên vị trí cuộn
+            area.scrollTop = currentScroll;
+
+            // Áp lại theme cho tin nhắn vừa cập nhật
+            if (currentThemeData) applyThemeToUI(currentThemeData);
+        }
+    });
+
+    // --- MỚI: LẮNG NGHE XÓA TIN NHẮN (child_removed) ---
+    // Giúp tin nhắn biến mất ngay lập tức khi đối phương thu hồi
+    msgRef.on('child_removed', (snapshot) => {
+        const msgId = snapshot.key;
+        const msgEl = document.getElementById(`msg-${msgId}`);
+        if (msgEl) {
+            msgEl.classList.add('animate__animated', 'animate__fadeOut');
+            setTimeout(() => msgEl.remove(), 500);
         }
     });
 
