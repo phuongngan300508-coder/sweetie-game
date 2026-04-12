@@ -4380,22 +4380,28 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
     border-radius: 10px;
 }
 
-/* Thanh nhập liệu */
+/* Thanh nhập liệu gốc */
 .messenger-footer {
-    padding: 15px;
+    padding: 10px 15px; /* Giảm nhẹ padding để tiết kiệm không gian mobile */
     background: white;
-    display: flex; /* Kích hoạt hàng ngang */
-    gap: 10px;
-    align-items: center;
     border-top: 1px solid #fff0f5;
     width: 100%;
-    box-sizing: border-box; /* Đảm bảo padding không làm tràn màn hình */
-    flex-wrap: nowrap; /* TUYỆT ĐỐI KHÔNG cho phép xuống hàng */
+    box-sizing: border-box;
+}
+
+/* Container mới bao quanh: Phải có Flex ở đây */
+.input-container {
+    display: flex; 
+    align-items: center; 
+    gap: 10px; 
+    width: 100%;
+    flex-wrap: nowrap; /* KHÔNG cho phép xuống hàng */
+    position: relative; /* Để menu media hiện đúng vị trí */
 }
 
 #chat-input {
-    flex: 1; /* Ưu tiên giãn nở hết mức có thể */
-    min-width: 0; /* QUAN TRỌNG: Cho phép input co lại nhỏ hơn mặc định của trình duyệt */
+    flex: 1; /* Chiếm hết khoảng trống ở giữa */
+    min-width: 0; /* BẮT BUỘC: Để input có thể co lại nhỏ hơn mặc định của iPhone */
     border: none;
     background: #fff5f7;
     padding: 12px 20px;
@@ -4403,6 +4409,7 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
     outline: none;
     color: #d63384;
     font-weight: 500;
+    font-size: 16px; /* Mẹo: Để 16px giúp iPhone không tự động phóng to (zoom) khi nhấn vào */
 }
 
 .messenger-footer button {
@@ -4415,7 +4422,7 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
     cursor: pointer;
     transition: 0.3s;
     box-shadow: 0 4px 10px rgba(255, 20, 147, 0.3);
-    flex-shrink: 0; /* TUYỆT ĐỐI KHÔNG cho nút bị bóp méo hay ép nhỏ lại */
+    flex-shrink: 0; /* KHÔNG cho nút bị bóp méo */
     display: flex;
     align-items: center;
     justify-content: center;
@@ -4424,9 +4431,13 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
 .messenger-footer button:hover {
     transform: scale(1.1) rotate(-10deg);
 }
-/* Thêm thuộc tính này cho icon Plus nếu Henry có dùng trong footer */
+
+/* Chống co cho icon dấu cộng */
 .messenger-footer i.fas.fa-plus-circle {
     flex-shrink: 0;
+    color: #ff1493;
+    font-size: 1.4em;
+    cursor: pointer;
 }
 
 /* Chat Bubble (Icon nổi) */
@@ -6943,7 +6954,7 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
         <i class="fas fa-times-circle" style="color: #ffb6c1; cursor: pointer; font-size: 1.1em; margin-left: 10px;" onclick="cancelReply()"></i>
     </div>
 
-   <div class="messenger-footer">
+  <div class="messenger-footer">
     <div class="input-container">
         <i class="fas fa-plus-circle" onclick="toggleMediaMenu()" style="cursor:pointer; color:#ff1493; font-size:1.4em; flex-shrink: 0;"></i>
         
@@ -6951,17 +6962,17 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
         
         <button onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
 
-        <div id="media-menu" style="display:none; position:absolute; bottom:65px; left:10px; background:white; border-radius:15px; box-shadow:0 5px 20px rgba(0,0,0,0.1); padding:10px; z-index:100;">
-            <div onclick="triggerFile('image/*')" style="padding:10px; cursor:pointer; color:#ff1493; font-weight:800; font-size:0.8em;">
+        <div id="media-menu" style="display:none; position:absolute; bottom:60px; left:0; background:white; border-radius:15px; box-shadow:0 5px 20px rgba(0,0,0,0.1); padding:10px; z-index:100; min-width: 120px;">
+            <div onclick="triggerFile('image/*')" style="padding:10px; cursor:pointer; color:#ff1493; font-weight:800; font-size:0.8em; white-space: nowrap;">
                 <i class="fas fa-image"></i> HÌNH ẢNH
             </div>
-            <div onclick="triggerFile('video/*')" style="padding:10px; cursor:pointer; color:#ff1493; font-weight:800; font-size:0.8em;">
+            <div onclick="triggerFile('video/*')" style="padding:10px; cursor:pointer; color:#ff1493; font-weight:800; font-size:0.8em; white-space: nowrap;">
                 <i class="fas fa-video"></i> VIDEO
             </div>
         </div>
     </div>
 </div>
-
+    
 <input type="file" id="media-hidden-input" style="display:none" onchange="handleMediaUpload(event)">
 
 <div id="media-fs" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:black; z-index:99999; flex-direction:column; align-items:center; justify-content:center;">
