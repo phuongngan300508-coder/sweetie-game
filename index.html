@@ -4812,19 +4812,15 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
 
 /* Thanh hành động (mặt cười và 3 chấm) */
 .msg-actions {
-    opacity: 0;
-    transition: 0.2s;
-    margin: 0 10px;
-    /* Đổi color thành biến để tự động cập nhật theo Theme */
-    color: var(--theme-header-color, #ffb6c1); 
-    cursor: pointer;
-    display: flex; 
-    align-items: center;
-    gap: 5px;
-    /* Thêm các thuộc tính để ẩn hoàn toàn khi chưa chạm */
-    pointer-events: none; 
-    transform: scale(0.9);
-}
+    opacity: 0;
+    transition: 0.2s;
+    margin: 0 10px;
+    color: #ffb6c1;
+    cursor: pointer;
+    display: flex; /* Đảm bảo cụm icon mặt cười và 3 chấm nằm ngang */
+    align-items: center;
+    gap: 5px;
+} 
 
 /* Khi tin nhắn được chạm vào (đã thêm class active-msg bằng JS) */
 .msg-wrapper.active-msg .msg-actions {
@@ -4886,31 +4882,14 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
     background: white;
     padding: 5px 10px;
     border-radius: 30px;
-    /* Đổi màu đổ bóng nhẹ theo tông theme để trông ngọt ngào hơn */
-    box-shadow: 0 5px 15px var(--theme-header-color, rgba(0,0,0,0.15));
+    box-shadow: 0 5px 15px rgba(0,0,0,0.15);
     position: absolute;
     /* Neo bám chuẩn trên đầu bong bóng tin nhắn */
     bottom: calc(100% - 5px); 
     z-index: 1001;
-    /* Viền cũng đổi màu theo Theme cho đồng bộ */
-    border: 1px solid var(--theme-header-color, #eee);
+    border: 1px solid #eee;
     animation: bounceIn 0.2s ease-out;
     white-space: nowrap; /* Giữ icon trên 1 hàng thẳng */
-    
-    /* Đảm bảo picker luôn nằm chính giữa hoặc canh theo hướng tin nhắn */
-    left: 50%;
-    transform: translateX(-50%);
-}
-
-/* Thêm hiệu ứng phóng to nhẹ khi di chuột vào từng icon trong picker */
-.reaction-picker span {
-    transition: transform 0.2s;
-    cursor: pointer;
-    display: inline-block;
-}
-
-.reaction-picker span:hover {
-    transform: scale(1.3);
 }
 
 /* Đối với tin nhắn ĐỐI PHƯƠNG (Nằm bên trái) */
@@ -4923,6 +4902,17 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
 .msg-me-wrap .reaction-picker {
     right: 10px; 
     left: auto;
+}
+
+/* Hiệu ứng chạm icon (nhỏ lại một chút cho tinh tế) */
+.reaction-picker span {
+    font-size: 1.2em;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.reaction-picker span:hover {
+    transform: scale(1.4) translateY(-3px);
 }
 
 /* Hiệu ứng chạm (Mobile) */
@@ -12379,154 +12369,166 @@ function openShareModal() {
 }
 
 function listenMessages(friendName) {
-    const chatRoomId = [currentUser, friendName].sort().join('_');
-    const area = document.getElementById('chat-messages-area');
-    
-    db.ref('chats/' + chatRoomId + '/messages').off();
-    db.ref('chats/' + chatRoomId + '/config/theme').off();
+    const chatRoomId = [currentUser, friendName].sort().join('_');
+    const area = document.getElementById('chat-messages-area');
+    
+    // Tắt lắng nghe cũ để tránh trùng lặp tin nhắn khi đổi người chat
+    db.ref('chats/' + chatRoomId + '/messages').off();
+    db.ref('chats/' + chatRoomId + '/config/theme').off(); // Tắt lắng nghe theme cũ
 
-    db.ref('chats/' + chatRoomId + '/config/theme').on('value', (snapshot) => {
-        const themeData = snapshot.val();
-        if (themeData) {
-            if (typeof applyThemeToUI === 'function') applyThemeToUI(themeData);
-        } else {
-            if (typeof resetDefaultTheme === 'function') resetDefaultTheme();
-        }
-    });
+    // --- MỚI: LẮNG NGHE GIAO DIỆN THỜI GIAN THỰC (Real-time Themes) ---
+    db.ref('chats/' + chatRoomId + '/config/theme').on('value', (snapshot) => {
+        const themeData = snapshot.val();
+        if (themeData) {
+            // Gọi hàm áp dụng giao diện (Henry định nghĩa hàm này bên dưới nhé)
+            if (typeof applyThemeToUI === 'function') applyThemeToUI(themeData);
+        } else {
+            // Trả về mặc định nếu chưa có cấu hình
+            if (typeof resetDefaultTheme === 'function') resetDefaultTheme();
+        }
+    });
 
-    const messengerActions = document.querySelector('.messenger-actions');
-    if (messengerActions) {
-        const oldMenu = document.getElementById('chat-more-menu-wrapper');
-        if (oldMenu) oldMenu.remove();
+    // --- BỔ SUNG: NÚT BA CHẤM ACTIONS ---
+    const messengerActions = document.querySelector('.messenger-actions');
+    if (messengerActions) {
+        const oldMenu = document.getElementById('chat-more-menu-wrapper');
+        if (oldMenu) oldMenu.remove();
 
-        const menuHtml = `
-            <div id="chat-more-menu-wrapper" style="position: relative; display: flex; align-items: center;">
-                <i class="fas fa-ellipsis-v" onclick="toggleChatMoreMenu()" style="cursor:pointer;"></i>
-                <div id="chat-more-menu" class="chat-more-menu" style="display:none; position:absolute; right:0; top:30px; background:white; box-shadow:0 5px 15px rgba(0,0,0,0.2); border-radius:10px; z-index:9999; min-width: 150px;">
-                    <div onclick="openThemeModal()" style="color:#ff1493; padding:12px; font-weight:bold; font-size:0.7em; cursor:pointer; white-space: nowrap; border-bottom: 1px solid #eee;">
-                        <i class="fas fa-palette"></i> Đổi giao diện
-                    </div>
-                    <div onclick="blockUser('${friendName}')" style="color:red; padding:12px; font-weight:bold; font-size:0.7em; cursor:pointer; white-space: nowrap; border-radius:10px;">
-                        <i class="fas fa-ban"></i> Chặn cư dân này
-                    </div>
-                </div>
-            </div>`;
-        messengerActions.insertAdjacentHTML('afterbegin', menuHtml);
-    }
+        const menuHtml = `
+            <div id="chat-more-menu-wrapper" style="position: relative; display: flex; align-items: center;">
+                <i class="fas fa-ellipsis-v" onclick="toggleChatMoreMenu()" style="cursor:pointer;"></i>
+                <div id="chat-more-menu" class="chat-more-menu" style="display:none; position:absolute; right:0; top:30px; background:white; box-shadow:0 5px 15px rgba(0,0,0,0.2); border-radius:10px; z-index:9999; min-width: 150px;">
+                    <div onclick="openThemeModal()" style="color:#ff1493; padding:12px; font-weight:bold; font-size:0.7em; cursor:pointer; white-space: nowrap; border-bottom: 1px solid #eee;">
+                        <i class="fas fa-palette"></i> Đổi giao diện
+                    </div>
+                    <div onclick="blockUser('${friendName}')" style="color:red; padding:12px; font-weight:bold; font-size:0.7em; cursor:pointer; white-space: nowrap; border-radius:10px;">
+                        <i class="fas fa-ban"></i> Chặn cư dân này
+                    </div>
+                </div>
+            </div>`;
+        messengerActions.insertAdjacentHTML('afterbegin', menuHtml);
+    }
 
-    db.ref('chats/' + chatRoomId + '/messages').limitToLast(30).on('value', (snapshot) => {
-        area.innerHTML = "";
-        const data = snapshot.val();
-        const hiddenMsgs = JSON.parse(localStorage.getItem('hidden_messages') || "[]");
+    // --- LẮNG NGHE TIN NHẮN ---
+    db.ref('chats/' + chatRoomId + '/messages').limitToLast(30).on('value', (snapshot) => {
+        area.innerHTML = "";
+        const data = snapshot.val();
+        const hiddenMsgs = JSON.parse(localStorage.getItem('hidden_messages') || "[]");
 
-        if (data) {
-            Object.keys(data).forEach(msgId => {
-                if (hiddenMsgs.includes(msgId)) return;
+        if (data) {
+            Object.keys(data).forEach(msgId => {
+                if (hiddenMsgs.includes(msgId)) return;
 
-                const msg = data[msgId];
-                const isMe = msg.sender === currentUser;
-                
-                let replyHtml = "";
-                if (msg.replyData && msg.replyData.sender) {
-                    let senderDisplayName = (typeof currentNicks !== 'undefined' && currentNicks[msg.replyData.sender]) 
-                                            ? currentNicks[msg.replyData.sender] 
-                                            : msg.replyData.sender;
+                const msg = data[msgId];
+                const isMe = msg.sender === currentUser;
+                
+                let replyHtml = "";
+                if (msg.replyData && msg.replyData.sender) {
+                    let senderDisplayName = (typeof currentNicks !== 'undefined' && currentNicks[msg.replyData.sender]) 
+                                            ? currentNicks[msg.replyData.sender] 
+                                            : msg.replyData.sender;
 
-                    replyHtml = `
-                        <div class="reply-in-msg" onclick="scrollToMessage('${msg.replyData.id}')" style="cursor: pointer;">
-                            <small>↩️ ${senderDisplayName}</small>
-                            <div class="reply-text">${msg.replyData.text}</div>
-                        </div>`;
-                }
+                    replyHtml = `
+                        <div class="reply-in-msg" onclick="scrollToMessage('${msg.replyData.id}')" style="cursor: pointer;">
+                            <small>↩️ ${senderDisplayName}</small>
+                            <div class="reply-text">${msg.replyData.text}</div>
+                        </div>`;
+                }
 
-                const reactions = msg.reactions || {};
-                const myReaction = reactions[currentUser];
-                let reactionDisplayHtml = "";
-                const uniqueReactions = [...new Set(Object.values(reactions))];
-                
-                if (uniqueReactions.length > 0) {
-                    reactionDisplayHtml = `<div class="msg-reaction-display" onclick="sendReaction('${msgId}', '${myReaction}')" style="cursor:pointer;">${uniqueReactions.join('')}</div>`;
-                }
+                // --- HIỂN THỊ CẢM XÚC (Cập nhật click vào icon để xóa) ---
+                const reactions = msg.reactions || {};
+                const myReaction = reactions[currentUser]; // Icon Henry đã thả
+                let reactionDisplayHtml = "";
+                const uniqueReactions = [...new Set(Object.values(reactions))];
+                
+                if (uniqueReactions.length > 0) {
+                    reactionDisplayHtml = `<div class="msg-reaction-display" onclick="sendReaction('${msgId}', '${myReaction}')" style="cursor:pointer;">${uniqueReactions.join('')}</div>`;
+                }
 
-                const getEmojiClass = (emoji) => {
-                    return (myReaction === emoji) ? "emoji-btn emoji-active" : "emoji-btn";
-                };
+                // --- MỚI: HÀM KIỂM TRA ICON ĐANG THẢ ĐỂ LÀM NỔI BẬT ---
+                const getEmojiClass = (emoji) => {
+                    return (myReaction === emoji) ? "emoji-btn emoji-active" : "emoji-btn";
+                };
 
-                const timeHtml = msg.displayTime ? `
-                    <div class="msg-display-time" style="font-size: 0.6em; opacity: 0.7; margin-top: 4px; text-align: right; display: block;">
-                        ${msg.displayTime}
-                    </div>` : "";
+                const timeHtml = msg.displayTime ? `
+                    <div class="msg-display-time" style="font-size: 0.6em; opacity: 0.7; margin-top: 4px; text-align: right; display: block;">
+                        ${msg.displayTime}
+                    </div>` : "";
 
-                let bodyContentHtml = `<div class="text-content">${msg.text}</div>`;
-                if (msg.mediaUrl) {
-                    if (msg.mediaType === 'image') {
-                        bodyContentHtml = `<img src="${msg.mediaUrl}" onclick="openFS('${msg.mediaUrl}', 'image')" style="max-width:100%; border-radius:10px; cursor:pointer; display: block; margin-bottom: 5px;">`;
-                    } else if (msg.mediaType === 'video') {
-                        bodyContentHtml = `
-                            <div style="position:relative; display: block; margin-bottom: 5px;">
-                                <video src="${msg.mediaUrl}" muted style="max-width:100%; border-radius:10px; display: block;"></video>
-                                <i class="fas fa-play-circle" onclick="openFS('${msg.mediaUrl}', 'video')" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); color:white; font-size:2.5em; cursor:pointer; opacity: 0.9;"></i>
-                            </div>`;
-                    }
-                }
+                // --- PHẦN XỬ LÝ NỘI DUNG MEDIA (ẢNH/VIDEO) ---
+                let bodyContentHtml = `<div class="text-content">${msg.text}</div>`;
+                if (msg.mediaUrl) {
+                    if (msg.mediaType === 'image') {
+                        bodyContentHtml = `<img src="${msg.mediaUrl}" onclick="openFS('${msg.mediaUrl}', 'image')" style="max-width:100%; border-radius:10px; cursor:pointer; display: block; margin-bottom: 5px;">`;
+                    } else if (msg.mediaType === 'video') {
+                        bodyContentHtml = `
+                            <div style="position:relative; display: block; margin-bottom: 5px;">
+                                <video src="${msg.mediaUrl}" muted style="max-width:100%; border-radius:10px; display: block;"></video>
+                                <i class="fas fa-play-circle" onclick="openFS('${msg.mediaUrl}', 'video')" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); color:white; font-size:2.5em; cursor:pointer; opacity: 0.9;"></i>
+                            </div>`;
+                    }
+                }
 
-                const msgHtml = `
-    <div class="msg-wrapper ${isMe ? 'msg-me-wrap' : 'msg-friend-wrap'}" 
-         id="msg-${msgId}"
-         style="position: relative; display: flex; align-items: center; width: 100%; ${isMe ? 'flex-direction: row-reverse; justify-content: flex-start;' : 'justify-content: flex-start;'}" 
-         data-id="${msgId}"
-         data-text="${msg.text}"
-         data-sender="${msg.sender}"
-         onclick="handleFastClick('${msgId}'); toggleMobileActions('${msgId}')"
-         ontouchstart="handleTouchStart(event, '${msgId}')"
-         ontouchend="handleTouchEnd()"
-         onmouseenter="showActionBtn('${msgId}')" 
-         onmouseleave="hideActionBtn('${msgId}')">
-        
-        <div id="picker-${msgId}" class="reaction-picker reaction-stay" style="display:none;">
-            <span class="${getEmojiClass('❤️')}" onclick="event.stopPropagation(); sendReaction('${msgId}', '❤️')">❤️</span>
-            <span class="${getEmojiClass('😆')}" onclick="event.stopPropagation(); sendReaction('${msgId}', '😆')">😆</span>
-            <span class="${getEmojiClass('😮')}" onclick="event.stopPropagation(); sendReaction('${msgId}', '😮')">😮</span>
-            <span class="${getEmojiClass('😢')}" onclick="event.stopPropagation(); sendReaction('${msgId}', '😢')">😢</span>
-            <span class="${getEmojiClass('😡')}" onclick="event.stopPropagation(); sendReaction('${msgId}', '😡')">😡</span>
-            <span class="${getEmojiClass('👍')}" onclick="event.stopPropagation(); sendReaction('${msgId}', '👍')">👍</span>
-        </div>
+                // CHỈNH SỬA: Thêm style flex-direction: row-reverse cho tin nhắn của bản thân trực tiếp trong HTML
+                const msgHtml = `
+    <div class="msg-wrapper ${isMe ? 'msg-me-wrap' : 'msg-friend-wrap'}" 
+         id="msg-${msgId}"
+         style="position: relative; display: flex; align-items: center; width: 100%; ${isMe ? 'flex-direction: row-reverse; justify-content: flex-start;' : 'justify-content: flex-start;'}" 
+         data-id="${msgId}"
+         data-text="${msg.text}"
+         data-sender="${msg.sender}"
+         ondblclick="sendReaction('${msgId}', '❤️')"
+         ontouchstart="handleTouchStart(event, '${msgId}')"
+         ontouchend="handleTouchEnd()"
+         onmouseenter="showActionBtn('${msgId}')" 
+         onmouseleave="hideActionBtn('${msgId}')">
+        
+        <div id="picker-${msgId}" class="reaction-picker reaction-stay" style="display:none;">
+            <span class="${getEmojiClass('❤️')}" onclick="sendReaction('${msgId}', '❤️')">❤️</span>
+            <span class="${getEmojiClass('😆')}" onclick="sendReaction('${msgId}', '😆')">😆</span>
+            <span class="${getEmojiClass('😮')}" onclick="sendReaction('${msgId}', '😮')">😮</span>
+            <span class="${getEmojiClass('😢')}" onclick="sendReaction('${msgId}', '😢')">😢</span>
+            <span class="${getEmojiClass('😡')}" onclick="sendReaction('${msgId}', '😡')">😡</span>
+            <span class="${getEmojiClass('👍')}" onclick="sendReaction('${msgId}', '👍')">👍</span>
+        </div>
 
-        <div class="msg-bubble ${isMe ? 'msg-me' : 'msg-friend'}" style="display: flex; flex-direction: column; position: relative; ${isMe ? 'margin-left: 0;' : ''}">
-            ${replyHtml}
-            ${bodyContentHtml}
-            ${timeHtml}
-            ${reactionDisplayHtml}
-        </div>
+        <div class="msg-bubble ${isMe ? 'msg-me' : 'msg-friend'}" style="display: flex; flex-direction: column; position: relative; ${isMe ? 'margin-left: 0;' : ''}">
+            ${replyHtml}
+            ${bodyContentHtml}
+            ${timeHtml}
+            ${reactionDisplayHtml}
+        </div>
 
-        <div class="msg-actions" id="actions-${msgId}" style="display: flex; align-items: center; ${isMe ? 'flex-direction: row-reverse;' : ''}">
-            <i class="far fa-smile reaction-stay theme-icon-color" onclick="event.stopPropagation(); toggleReactionPicker('${msgId}')" style="cursor:pointer; ${isMe ? 'margin-left:5px;' : 'margin-right:5px;'}"></i>
-            
-            <i class="fas fa-ellipsis-v theme-icon-color" onclick="event.stopPropagation(); showActionMenu('${msgId}', ${isMe})"></i>
-            
-            <div class="action-menu" id="menu-${msgId}">
-                <div onclick="setReply('${msgId}', '${msg.text}', '${msg.sender}')"><i class="fas fa-reply"></i> Trả lời</div>
-                <div onclick="deleteMessage('${msgId}', ${isMe})" style="color:red"><i class="fas fa-trash"></i> Xóa</div>
-            </div>
-        </div>
-    </div>`;
-                
-                area.insertAdjacentHTML('beforeend', msgHtml);
-                
-                const el = document.getElementById(`msg-${msgId}`);
-                if (el) initSwipe(el, isMe, msgId, msg.text, msg.sender);
-            });
-            
-            area.scrollTo({ top: area.scrollHeight, behavior: 'smooth' });
+        <div class="msg-actions" id="actions-${msgId}" style="display: flex; align-items: center; ${isMe ? 'flex-direction: row-reverse;' : ''}">
+            <i class="far fa-smile reaction-stay" onclick="toggleReactionPicker('${msgId}')" style="cursor:pointer; ${isMe ? 'margin-left:5px;' : 'margin-right:5px;'} color:#ff69b4;"></i>
+            
+            <i class="fas fa-ellipsis-v" onclick="showActionMenu('${msgId}', ${isMe})"></i>
+            
+            <div class="action-menu" id="menu-${msgId}">
+                <div onclick="setReply('${msgId}', '${msg.text}', '${msg.sender}')"><i class="fas fa-reply"></i> Trả lời</div>
+                <div onclick="deleteMessage('${msgId}', ${isMe})" style="color:red"><i class="fas fa-trash"></i> Xóa</div>
+            </div>
+        </div>
+    </div>`;
+                
+                area.insertAdjacentHTML('beforeend', msgHtml);
+                
+                const el = document.getElementById(`msg-${msgId}`);
+                if (el) initSwipe(el, isMe, msgId, msg.text, msg.sender);
+            });
+            
+            // Cuộn xuống cuối
+            area.scrollTo({ top: area.scrollHeight, behavior: 'smooth' });
 
-            db.ref('chats/' + chatRoomId + '/config/theme').once('value', (snap) => {
-                if (snap.exists() && typeof applyThemeToUI === 'function') {
-                    applyThemeToUI(snap.val());
-                }
-            });
-        }
-    });
-}
+            // CẬP NHẬT GIAO DIỆN TIN NHẮN THEO THEME HIỆN TẠI (Sau khi đã render tin nhắn)
+            db.ref('chats/' + chatRoomId + '/config/theme').once('value', (snap) => {
+                if (snap.exists() && typeof applyThemeToUI === 'function') {
+                    applyThemeToUI(snap.val());
+                }
+            });
+        }
+    });
+} 
     
 function toggleChatMoreMenu() {
     const menu = document.getElementById('chat-more-menu');
@@ -13716,21 +13718,12 @@ function handleTouchEnd() {
 
 // 2. Hiện/Ẩn thanh chọn icon
 function toggleReactionPicker(msgId) {
-    // Ngăn sự kiện click lan ra ngoài làm ẩn icon hành động
-    if (event) event.stopPropagation();
-
-    const picker = document.getElementById(`picker-${msgId}`);
-    if (!picker) return; // Bảo vệ nếu không tìm thấy element
-
-    const isVisible = picker.style.display === 'flex';
+    const picker = document.getElementById(`picker-${msgId}`);
+    const isVisible = picker.style.display === 'flex';
+    document.querySelectorAll('.reaction-picker').forEach(p => p.style.display = 'none');
+    picker.style.display = isVisible ? 'none' : 'flex';
+} 
     
-    // Ẩn tất cả các picker khác đang mở
-    document.querySelectorAll('.reaction-picker').forEach(p => p.style.display = 'none');
-    
-    // Bật/Tắt trạng thái của picker hiện tại
-    picker.style.display = isVisible ? 'none' : 'flex';
-}
-
 // 3. Gửi cảm xúc lên Firebase
 function sendReaction(msgId, icon) {
     if (!icon || icon === "undefined") return;
@@ -14010,51 +14003,44 @@ function applyChatTheme() {
 }
 
 function applyThemeToUI(themeData) {
-    const chatBox = document.getElementById('messenger-box');
-    const header = document.querySelector('.messenger-header');
-    const area = document.getElementById('chat-messages-area');
-    
-    if (!chatBox || !themeData) return;
+    const chatBox = document.getElementById('messenger-box');
+    const header = document.querySelector('.messenger-header');
+    const area = document.getElementById('chat-messages-area');
+    
+    if (!chatBox || !themeData) return;
 
-    if (themeData.type === 'simple') {
-        const color = themeData.mainColor;
-        header.style.background = color;
-        area.style.background = '#ffffff';
-        area.style.backgroundImage = 'none';
-        
-        const myBubbles = document.querySelectorAll('.msg-me');
-        myBubbles.forEach(b => b.style.background = color);
+    if (themeData.type === 'simple') {
+        const color = themeData.mainColor;
+        header.style.background = color;
+        area.style.background = '#ffffff';
+        area.style.backgroundImage = 'none';
+        
+        const myBubbles = document.querySelectorAll('.msg-me');
+        myBubbles.forEach(b => b.style.background = color);
+        
+    } else if (themeData.type === 'premium') {
+        const theme = CHAT_THEMES_CONFIG[themeData.themeKey];
+        if (!theme) return;
 
-        // --- MỚI: Cập nhật màu cho icon giao diện Đơn giản ---
-        document.documentElement.style.setProperty('--theme-header-color', color);
-        document.querySelectorAll('.theme-icon-color').forEach(i => i.style.color = color);
-        
-    } else if (themeData.type === 'premium') {
-        const theme = CHAT_THEMES_CONFIG[themeData.themeKey];
-        if (!theme) return;
-
-        header.style.background = theme.header;
-        area.style.backgroundImage = theme.bg;
-        area.style.backgroundSize = 'cover';
-        area.style.backgroundPosition = 'center';
-        
-        const myBubbles = document.querySelectorAll('.msg-me');
-        myBubbles.forEach(b => {
-            b.style.background = theme.bubbleMe;
-            b.style.color = theme.textMe;
-        });
-        
-        const friendBubbles = document.querySelectorAll('.msg-friend');
-        friendBubbles.forEach(b => {
-            b.style.background = theme.bubbleFriend;
-            b.style.color = theme.textFriend;
-        });
-
-        // --- MỚI: Cập nhật màu cho icon giao diện Premium ---
-        document.documentElement.style.setProperty('--theme-header-color', theme.header);
-        document.querySelectorAll('.theme-icon-color').forEach(i => i.style.color = theme.header);
-    }
+        header.style.background = theme.header;
+        area.style.backgroundImage = theme.bg;
+        area.style.backgroundSize = 'cover';
+        area.style.backgroundPosition = 'center';
+        
+        const myBubbles = document.querySelectorAll('.msg-me');
+        myBubbles.forEach(b => {
+            b.style.background = theme.bubbleMe;
+            b.style.color = theme.textMe;
+        });
+        
+        const friendBubbles = document.querySelectorAll('.msg-friend');
+        friendBubbles.forEach(b => {
+            b.style.background = theme.bubbleFriend;
+            b.style.color = theme.textFriend;
+        });
+    }
 }
+ 
     
 function resetToDefaultTheme() {
     if (!currentChatFriend) return;
