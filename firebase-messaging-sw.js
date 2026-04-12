@@ -31,6 +31,7 @@ self.addEventListener('fetch', (event) => {
         // không lưu vào cache của SW gây lỗi ERR_CACHE_OPERATION_NOT_SUPPORTED
         return; 
     }
+    });
 
 messaging.onBackgroundMessage((payload) => {
     console.log('[sw.js] Nhận tin nhắn ngầm:', payload);
