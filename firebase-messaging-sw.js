@@ -1,6 +1,8 @@
+// 1. Import phải ở trên cùng
 importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-messaging-compat.js');
 
+// 2. Khởi tạo
 firebase.initializeApp({
     apiKey: "AIzaSyDV8KseaFVPPcpEU0-jrqqxnGG6xLyJGfE",
     projectId: "sweetie-game-world",
@@ -10,27 +12,21 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-// --- THÊM ĐOẠN NÀY ĐỂ GIỮ SW LUÔN ACTIVE ---
+// 3. Các Listener (Phải nằm ngoài, không được bọc trong hàm nào khác)
 self.addEventListener('install', (event) => {
-    // Ép Service Worker mới thay thế cái cũ ngay lập tức
     self.skipWaiting(); 
 });
 
 self.addEventListener('activate', (event) => {
-    // Chiếm quyền điều khiển tất cả các tab ngay khi kích hoạt
     event.waitUntil(clients.claim());
 });
 
-// --- THÊM ĐOẠN NÀY VÀO CUỐI ĐỂ FIX LỖI CACHE VIDEO ---
+// 4. Đoạn fix lỗi video mình vừa đưa Henry
 self.addEventListener('fetch', (event) => {
-    const url = event.request.url;
-
-    // Kiểm tra nếu yêu cầu gửi tới Cloudinary
-    if (url.includes('res.cloudinary.com')) {
-        // bypass Service Worker: Trình duyệt sẽ tải trực tiếp, 
-        // không lưu vào cache của SW gây lỗi ERR_CACHE_OPERATION_NOT_SUPPORTED
+    if (event.request.url.includes('res.cloudinary.com')) {
         return; 
     }
+});
     
 messaging.onBackgroundMessage((payload) => {
     console.log('[sw.js] Nhận tin nhắn ngầm:', payload);
