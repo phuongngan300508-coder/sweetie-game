@@ -21,18 +21,6 @@ self.addEventListener('activate', (event) => {
     event.waitUntil(clients.claim());
 });
 
-// --- THÊM ĐOẠN NÀY VÀO CUỐI ĐỂ FIX LỖI CACHE VIDEO ---
-self.addEventListener('fetch', (event) => {
-    const url = event.request.url;
-
-    // Kiểm tra nếu yêu cầu gửi tới Cloudinary
-    if (url.includes('res.cloudinary.com')) {
-        // bypass Service Worker: Trình duyệt sẽ tải trực tiếp, 
-        // không lưu vào cache của SW gây lỗi ERR_CACHE_OPERATION_NOT_SUPPORTED
-        return; 
-    }
-    });
-
 messaging.onBackgroundMessage((payload) => {
     console.log('[sw.js] Nhận tin nhắn ngầm:', payload);
 
