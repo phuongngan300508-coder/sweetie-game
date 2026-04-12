@@ -5113,6 +5113,20 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
         font-size: 16px !important;
     }
 }
+
+    /* Nút khi được chọn */
+.theme-btn-active {
+    background: #ff1493 !important;
+    color: white !important;
+    border: 1px solid #ff1493 !important;
+}
+
+/* Nút khi chưa được chọn */
+.theme-btn-inactive {
+    background: #fff5f8 !important;
+    color: #ff1493 !important;
+    border: 1px solid #ffc0cb !important;
+}
 </style>
 </head>
 <body>
@@ -7212,10 +7226,21 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
     ">
         <h3 style="color: #ff1493; margin-top: 0; margin-bottom: 15px; text-align: center;">🎨 Tùy chỉnh đoạn chat</h3>
         
-        <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-            <button onclick="showThemeType('simple')" style="flex:1; padding: 10px; border-radius: 15px; border: 1px solid #ffc0cb; background: #fff5f8; font-weight: 800; font-size: 0.7em; cursor: pointer;">MÀU ĐƠN</button>
-            <button onclick="showThemeType('premium')" style="flex:1; padding: 10px; border-radius: 15px; border: 1px solid #ff1493; background: #ff1493; color: white; font-weight: 800; font-size: 0.7em; cursor: pointer;">CHỦ ĐỀ VIP</button>
-        </div>
+       <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+    <button id="btn-simple" 
+            onclick="setActiveThemeBtn('simple')" 
+            class="theme-btn-active"
+            style="flex:1; padding: 10px; border-radius: 15px; font-weight: 800; font-size: 0.7em; cursor: pointer; transition: 0.3s;">
+        MÀU ĐƠN
+    </button>
+    
+    <button id="btn-premium" 
+            onclick="setActiveThemeBtn('premium')" 
+            class="theme-btn-inactive"
+            style="flex:1; padding: 10px; border-radius: 15px; font-weight: 800; font-size: 0.7em; cursor: pointer; transition: 0.3s;">
+        CHỦ ĐỀ VIP
+    </button>
+</div>
 
         <div id="theme-selection-area" style="max-height: 250px; overflow-y: auto; padding: 5px;">
              </div>
@@ -14738,6 +14763,23 @@ function exitSearchMode() {
     }, 300);
 
     console.log("🌸 Đã thoát chế độ xem tin cũ, xóa highlight và về tin nhắn mới nhất.");
+}
+
+    function setActiveThemeBtn(type) {
+    const btnSimple = document.getElementById('btn-simple');
+    const btnPremium = document.getElementById('btn-premium');
+
+    if (type === 'simple') {
+        // Tô hồng nút Simple, trả nút Premium về hồng nhạt
+        btnSimple.className = 'theme-btn-active';
+        btnPremium.className = 'theme-btn-inactive';
+        showThemeType('simple'); // Gọi hàm cũ của Henry
+    } else {
+        // Tô hồng nút Premium, trả nút Simple về hồng nhạt
+        btnPremium.className = 'theme-btn-active';
+        btnSimple.className = 'theme-btn-inactive';
+        showThemeType('premium'); // Gọi hàm cũ của Henry
+    }
 }
 </script>
 </body>
