@@ -7221,7 +7221,7 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
              </div>
 
         <div class="modal-footer" style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 15px; text-align: center;">
-            <button class="btn-action-white" onclick="toggleModal('modal-chat-theme')" style="width: 100%; padding: 10px; border-radius: 50px; border: 1px solid #ccc; cursor: pointer;">HỦY BỎ</button>
+            <button class="btn-action-white" onclick="cancelThemeSelection()" style="width: 100%; padding: 10px; border-radius: 50px; border: 1px solid #ccc; cursor: pointer;">HỦY BỎ</button>
         </div>
     </div>
 </div>
@@ -14068,28 +14068,44 @@ document.addEventListener('mousedown', function(event) {
 let originalThemeData = null; // MỚI: Lưu lại giao diện thực tế trước khi Preview
 
 function openThemeModal() {
-    toggleChatMoreMenu();
+    // 1. Đóng menu và mở Modal (Giữ nguyên)
+    if (typeof toggleChatMoreMenu === 'function') toggleChatMoreMenu();
     toggleModal('modal-chat-theme');
-    showThemeType('simple'); // Mặc định mở màu đơn trước
+    showThemeType('simple'); 
     
-    // MỚI: Ghi nhớ lại giao diện hiện tại từ Firebase để nếu nhấn Hủy thì quay về được
+    // 2. Kiểm tra nếu chưa chọn ai chat thì không chạy tiếp
+    if (!currentChatFriend || !currentUser) return;
+
+    // 3. Ghi nhớ lại giao diện hiện tại từ Firebase (Giữ nguyên logic)
     const chatRoomId = [currentUser, currentChatFriend].sort().join('_');
     db.ref(`chats/${chatRoomId}/config/theme`).once('value', (snap) => {
         originalThemeData = snap.val();
+        console.log("🌸 Đã ghi nhớ giao diện gốc để Henry có thể Hủy bỏ.");
     });
 }
 
-// Sửa hàm Hủy bỏ trong UI của Henry để gọi hàm này
+// Sửa hàm Hủy bỏ trong UI của Henry
 function cancelThemeSelection() {
+    // 1. Đóng Modal (Giữ nguyên)
     toggleModal('modal-chat-theme');
+    
+    // 2. Xóa dữ liệu tạm thời (Giữ nguyên)
     tempThemeData = null;
     
-    // Nếu có dữ liệu cũ thì áp dụng lại, không thì reset mặc định
+    // 3. Hoàn tác giao diện ngay lập tức (Giữ nguyên logic)
     if (originalThemeData) {
-        applyThemeToUI(originalThemeData);
+        // Nếu trước đó có theme thì áp dụng lại cái đó
+        if (typeof applyThemeToUI === 'function') {
+            applyThemeToUI(originalThemeData);
+        }
     } else {
-        resetDefaultTheme();
+        // Nếu trước đó là mặc định (snap.val() là null) thì reset về mặc định
+        if (typeof resetDefaultTheme === 'function') {
+            resetDefaultTheme();
+        }
     }
+    
+    console.log("✨ Đã hủy xem trước và khôi phục giao diện ban đầu.");
 }
 
 function showThemeType(type) {
@@ -14150,10 +14166,14 @@ function previewPremiumTheme(key) {
 }
 
 function applyChatTheme() {
+    // 1. Kiểm tra điều kiện (Giữ nguyên)
     if (!tempThemeData || !currentChatFriend) return;
 
     const chatRoomId = [currentUser, currentChatFriend].sort().join('_');
+
+    // 2. Lưu lên Firebase (Giữ nguyên)
     db.ref(`chats/${chatRoomId}/config/theme`).set(tempThemeData).then(() => {
+        // 3. Gửi thông báo cho đối phương (Giữ nguyên)
         db.ref('notifications_queue/' + currentChatFriend).push({
             from: currentUser,
             title: "🎨 GIAO DIỆN MỚI",
@@ -14162,9 +14182,21 @@ function applyChatTheme() {
             time: Date.now()
         });
         
-        originalThemeData = tempThemeData; // Cập nhật lại giao diện gốc thành cái vừa chọn
-        toggleModal('modal-chat-theme');
-        addNotification("🎨 HỆ THỐNG", "Đã cập nhật giao diện mới cho cả hai!");
+        // 4. Cập nhật lại giao diện gốc (Giữ nguyên logic của Henry)
+        // Việc này giúp nếu Henry mở lại modal ngay sau đó thì nó hiểu theme này là theme gốc mới
+        originalThemeData = tempThemeData; 
+        
+        // 5. Reset biến tạm và đóng Modal (Giữ nguyên)
+        tempThemeData = null; 
+        if (typeof toggleModal === 'function') toggleModal('modal-chat-theme');
+
+        // 6. Thông báo hệ thống (Giữ nguyên)
+        if (typeof addNotification === 'function') {
+            addNotification("🎨 HỆ THỐNG", "Đã cập nhật giao diện mới cho cả hai!");
+        }
+    }).catch((err) => {
+        console.error("Lỗi cập nhật giao diện:", err);
+        alert("❌ Không thể áp dụng giao diện. Vui lòng thử lại!");
     });
 }
 
