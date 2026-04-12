@@ -31,9 +31,9 @@ messaging.onBackgroundMessage((payload) => {
     
     const notificationOptions = {
         body: payload.notification?.body || payload.data?.body || "Bạn có tin nhắn mới nè!",
-        icon: "https://i.postimg.cc/90bRT1Bt/dee8a7e0-5d40-4779-bca4-c88381257a1e.jpg", 
+        icon: "https://i.postimg.cc/tT02mCHG/2389bc09-a043-4993-bdde-88877aefccbb.png", 
         image: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
-        badge: "https://i.postimg.cc/90bRT1Bt/dee8a7e0-5d40-4779-bca4-c88381257a1e.jpg",
+        badge: "https://i.postimg.cc/tT02mCHG/2389bc09-a043-4993-bdde-88877aefccbb.png",
         data: payload.data,
         color: "#ffb6c1"
     };
