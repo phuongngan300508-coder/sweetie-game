@@ -7203,6 +7203,31 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
         </div>
     </div>
 </div>
+
+    <div id="modal-search-msg" class="modal-sweetie" style="display:none; z-index: 10005;">
+    <div class="modal-content animate__animated animate__fadeInDown" style="max-width: 350px; border-radius: 20px;">
+        <div class="modal-header-pink" style="display: flex; justify-content: space-between; align-items: center; padding: 15px;">
+            <b style="color: #ff1493;"><i class="fas fa-search"></i> TÌM TIN NHẮN</b>
+            <i class="fas fa-times" onclick="toggleModal('modal-search-msg')" style="cursor:pointer; color: #888;"></i>
+        </div>
+        <div style="padding: 10px;">
+            <div style="position: relative; margin-bottom: 10px;">
+                <input type="text" id="input-search-msg" placeholder="Nhập từ khóa..." 
+                       style="width: 100%; padding: 10px 35px 10px 15px; border-radius: 50px; border: 2px solid #ffc0cb; outline: none;"
+                       oninput="execSearchMessages(this.value)">
+                <i class="fas fa-search" style="position: absolute; right: 15px; top: 13px; color: #ff69b4;"></i>
+            </div>
+            <div id="search-results-area" style="max-height: 300px; overflow-y: auto; padding: 5px;">
+                <p style="text-align: center; color: #888; font-size: 0.8em;">Nhập từ khóa để tìm kiếm...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="search-mode-bar" style="display:none; background: #fff0f5; padding: 8px 15px; align-items: center; justify-content: space-between; border-bottom: 1px solid #ffc0cb;">
+    <span style="font-size: 0.75em; color: #d63384; font-weight: bold;"><i class="fas fa-search"></i> Đang xem tin nhắn cũ</span>
+    <button onclick="exitSearchMode()" style="background: #ff1493; color: white; border: none; padding: 3px 10px; border-radius: 50px; font-size: 0.7em; cursor: pointer;">THOÁT</button>
+</div>
 <script>
   let replyingTo = null; // Lưu tin nhắn đang được trả lời {id, text, sender}
   // Biến cờ để đảm bảo mỗi máy chỉ "nghe" Firebase đúng 1 lần duy nhất
@@ -12382,14 +12407,20 @@ function listenMessages(friendName) {
         else if (typeof resetDefaultTheme === 'function') resetDefaultTheme();
     });
 
-    // 3. BỔ SUNG NÚT BA CHẤM ACTIONS
+    // 3. BỔ SUNG NÚT BA CHẤM ACTIONS & NÚT TÌM KIẾM (MỚI)
     const messengerActions = document.querySelector('.messenger-actions');
     if (messengerActions) {
         const oldMenu = document.getElementById('chat-more-menu-wrapper');
         if (oldMenu) oldMenu.remove();
+        
+        // Thêm icon tìm kiếm màu hồng bên trái nút ba chấm
         const menuHtml = `
             <div id="chat-more-menu-wrapper" style="position: relative; display: flex; align-items: center;">
+                <i class="fas fa-search" onclick="openSearchModal()" 
+                   style="cursor:pointer; color:#ff1493; margin-right:12px; font-size: 0.9em;"></i>
+                
                 <i class="fas fa-ellipsis-v" onclick="toggleChatMoreMenu()" style="cursor:pointer;"></i>
+                
                 <div id="chat-more-menu" class="chat-more-menu" style="display:none; position:absolute; right:0; top:30px; background:white; box-shadow:0 5px 15px rgba(0,0,0,0.2); border-radius:10px; z-index:9999; min-width: 150px;">
                     <div onclick="openThemeModal()" style="color:#ff1493; padding:12px; font-weight:bold; font-size:0.7em; cursor:pointer; white-space: nowrap; border-bottom: 1px solid #eee;">
                         <i class="fas fa-palette"></i> Đổi giao diện
@@ -12400,6 +12431,13 @@ function listenMessages(friendName) {
                 </div>
             </div>`;
         messengerActions.insertAdjacentHTML('afterbegin', menuHtml);
+    }
+
+    // --- MỚI: KIỂM TRA VÀ HIỂN THỊ THANH CHẾ ĐỘ TÌM KIẾM ---
+    const searchBar = document.getElementById('search-mode-bar');
+    if (searchBar) {
+        // Nếu không có từ khóa tìm kiếm thì ẩn thanh này đi
+        searchBar.style.display = (typeof currentSearchKeyword !== 'undefined' && currentSearchKeyword) ? 'flex' : 'none';
     }
 
     // 4. TẢI 20 TIN NHẮN ĐẦU TIÊN (Initial Load)
@@ -12415,7 +12453,11 @@ function listenMessages(friendName) {
         if (hiddenMsgs.includes(msgId)) return;
 
         renderSingleMessage(msgId, msg, 'bottom');
-        area.scrollTo({ top: area.scrollHeight, behavior: 'smooth' });
+        
+        // Chỉ tự động cuộn xuống nếu KHÔNG ở chế độ tìm kiếm tin nhắn cũ
+        if (typeof currentSearchKeyword === 'undefined' || !currentSearchKeyword) {
+            area.scrollTo({ top: area.scrollHeight, behavior: 'smooth' });
+        }
         
         // Cập nhật Theme cho tin nhắn mới nhất
         db.ref('chats/' + chatRoomId + '/config/theme').once('value', s => {
@@ -12512,8 +12554,17 @@ function listenMessages(friendName) {
     // --- LOGIC THỜI GIAN ---
     const timeHtml = msg.displayTime ? `<div class="msg-display-time" style="font-size: 0.6em; opacity: 0.7; margin-top: 4px; text-align: right; display: block;">${msg.displayTime}</div>` : "";
 
-    // --- LOGIC MEDIA ---
-    let bodyContentHtml = `<div class="text-content">${msg.text}</div>`;
+    // --- LOGIC MEDIA & HIGHLIGHT TÌM KIẾM (CẬP NHẬT) ---
+    // Kiểm tra nếu đang có từ khóa tìm kiếm thì thực hiện tô đậm (Highlight)
+    let finalMsgText = msg.text || "";
+    if (typeof currentSearchKeyword !== 'undefined' && currentSearchKeyword && msg.text) {
+        // Sử dụng RegExp để tìm tất cả các từ khớp (không phân biệt hoa thường)
+        const regex = new RegExp(`(${currentSearchKeyword})`, 'gi');
+        finalMsgText = msg.text.replace(regex, '<b style="background: yellow; color: black; padding: 0 2px; border-radius: 3px;">$1</b>');
+    }
+
+    let bodyContentHtml = `<div class="text-content">${finalMsgText}</div>`;
+    
     if (msg.mediaUrl) {
         if (msg.mediaType === 'image') {
             bodyContentHtml = `<img src="${msg.mediaUrl}" onclick="openFS('${msg.mediaUrl}', 'image')" style="max-width:100%; border-radius:10px; cursor:pointer; display: block; margin-bottom: 5px;">`;
@@ -14318,6 +14369,128 @@ document.addEventListener('touchend', function (event) {
   }
   lastTouchEnd = now;
 }, false);
+
+    let currentSearchKeyword = "";
+
+// 1. Mở Modal
+function openSearchModal() {
+    toggleModal('modal-search-msg');
+    const input = document.getElementById('input-search-msg');
+    input.value = "";
+    input.focus();
+    document.getElementById('search-results-area').innerHTML = '<p style="text-align: center; color: #888; font-size: 0.8em;">Nhập từ khóa để tìm kiếm...</p>';
+}
+
+// 2. Thực hiện tìm kiếm Real-time
+async function execSearchMessages(keyword) {
+    currentSearchKeyword = keyword.trim().toLowerCase();
+    const resultsArea = document.getElementById('search-results-area');
+    
+    if (currentSearchKeyword.length < 2) {
+        resultsArea.innerHTML = '<p style="text-align: center; color: #888; font-size: 0.8em;">Nhập ít nhất 2 ký tự...</p>';
+        return;
+    }
+
+    const chatRoomId = [currentUser, currentChatFriend].sort().join('_');
+    
+    // Tìm kiếm trong Firebase
+    db.ref(`chats/${chatRoomId}/messages`).once('value', async (snapshot) => {
+        const data = snapshot.val();
+        if (!data) return;
+
+        let resultsHtml = "";
+        const matches = [];
+
+        // Lọc tin nhắn có chứa từ khóa
+        Object.keys(data).forEach(msgId => {
+            const msg = data[msgId];
+            if (msg.text && msg.text.toLowerCase().includes(currentSearchKeyword)) {
+                matches.push({ id: msgId, ...msg });
+            }
+        });
+
+        if (matches.length === 0) {
+            resultsArea.innerHTML = '<p style="text-align: center; color: #888; font-size: 0.8em;">Không tìm thấy tin nhắn nào.</p>';
+            return;
+        }
+
+        // Sắp xếp tin mới nhất lên đầu
+        matches.sort((a, b) => b.timestamp - a.timestamp);
+
+        for (let m of matches) {
+            const isMe = m.sender === currentUser;
+            const senderData = (await db.ref('users/' + m.sender + '/profile').once('value')).val();
+            const avatar = senderData.customAvatar 
+                ? `<img src="${senderData.customAvatar}" style="width:30px; height:30px; border-radius:50%; object-fit:cover;">`
+                : `<i class="fas fa-user-circle" style="font-size:30px; color:#ccc;"></i>`;
+
+            resultsHtml += `
+                <div onclick="jumpToMessage('${m.id}')" style="display:flex; align-items:center; gap:10px; padding:10px; border-bottom:1px solid #fff0f5; cursor:pointer; transition: 0.2s;" onmouseover="this.style.background='#fff0f5'" onmouseout="this.style.background='transparent'">
+                    <div style="flex-shrink:0;">${avatar}</div>
+                    <div style="flex:1; min-width:0;">
+                        <div style="display:flex; justify-content:space-between;">
+                            <b style="font-size:0.75em; color:#d63384;">${senderData.name}</b>
+                            <small style="font-size:0.6em; color:#888;">${m.displayTime || ''}</small>
+                        </div>
+                        <div style="font-size:0.8em; color:#333; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                            ${m.text.replace(new RegExp(currentSearchKeyword, 'gi'), (match) => `<span style="background:yellow; font-weight:bold;">${match}</span>`)}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        resultsArea.innerHTML = resultsHtml;
+    });
+}
+
+// 3. Nhảy đến tin nhắn cũ
+async function jumpToMessage(msgId) {
+    toggleModal('modal-search-msg');
+    const area = document.getElementById('chat-messages-area');
+    const searchBar = document.getElementById('search-mode-bar');
+
+    // Hiện thanh thông báo Chế độ tìm kiếm
+    searchBar.style.display = 'flex';
+
+    // Tải toàn bộ tin nhắn (Hoặc Henry có thể tối ưu bằng cách tải cụm tin nhắn quanh msgId)
+    // Để đơn giản và chính xác nhất, mình sẽ render lại khu vực chat với tin nhắn mục tiêu
+    const chatRoomId = [currentUser, currentChatFriend].sort().join('_');
+    
+    db.ref(`chats/${chatRoomId}/messages`).once('value', (snapshot) => {
+        const data = snapshot.val();
+        area.innerHTML = "";
+        
+        Object.keys(data).forEach(id => {
+            renderSingleMessage(id, data[id], 'bottom');
+            // Highlight từ khóa ngay lập tức
+            if (currentSearchKeyword) {
+                const msgEl = document.querySelector(`#msg-${id} .text-content`);
+                if (msgEl) {
+                    msgEl.innerHTML = data[id].text.replace(new RegExp(currentSearchKeyword, 'gi'), (match) => `<b style="background:yellow; color:black; padding:0 2px; border-radius:3px;">${match}</b>`);
+                }
+            }
+        });
+
+        // Cuộn đến tin nhắn đó
+        setTimeout(() => {
+            const target = document.getElementById(`msg-${msgId}`);
+            if (target) {
+                target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                target.style.filter = "brightness(1.5)";
+                target.style.transition = "0.5s";
+                setTimeout(() => target.style.filter = "none", 2000);
+            }
+        }, 300);
+    });
+}
+
+// 4. Thoát chế độ tìm kiếm
+function exitSearchMode() {
+    document.getElementById('search-mode-bar').style.display = 'none';
+    currentSearchKeyword = "";
+    // Gọi lại listenMessages để quay về trạng thái bình thường (load 20 tin cuối)
+    listenMessages(currentChatFriend);
+}
 </script>
 </body>
 </html>
