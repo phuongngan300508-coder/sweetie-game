@@ -4384,19 +4384,18 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
 .messenger-footer {
     padding: 15px;
     background: white;
-    display: flex;
+    display: flex; /* Kích hoạt hàng ngang */
     gap: 10px;
     align-items: center;
     border-top: 1px solid #fff0f5;
-    /* Đảm bảo footer không bị tràn chiều ngang trên mobile */
-    box-sizing: border-box; 
     width: 100%;
+    box-sizing: border-box; /* Đảm bảo padding không làm tràn màn hình */
+    flex-wrap: nowrap; /* TUYỆT ĐỐI KHÔNG cho phép xuống hàng */
 }
 
 #chat-input {
-    flex: 1;
-    /* Quan trọng: min-width giúp input không đẩy các nút khác ra khỏi màn hình */
-    min-width: 0; 
+    flex: 1; /* Ưu tiên giãn nở hết mức có thể */
+    min-width: 0; /* QUAN TRỌNG: Cho phép input co lại nhỏ hơn mặc định của trình duyệt */
     border: none;
     background: #fff5f7;
     padding: 12px 20px;
@@ -4416,20 +4415,18 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
     cursor: pointer;
     transition: 0.3s;
     box-shadow: 0 4px 10px rgba(255, 20, 147, 0.3);
-    /* Quan trọng: Giữ nguyên kích thước nút, không cho phép bị ép lại */
-    flex-shrink: 0; 
+    flex-shrink: 0; /* TUYỆT ĐỐI KHÔNG cho nút bị bóp méo hay ép nhỏ lại */
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
+.messenger-footer button:hover {
+    transform: scale(1.1) rotate(-10deg);
+}
 /* Thêm thuộc tính này cho icon Plus nếu Henry có dùng trong footer */
 .messenger-footer i.fas.fa-plus-circle {
     flex-shrink: 0;
-}
-
-.messenger-footer button:hover {
-    transform: scale(1.1) rotate(-10deg);
 }
 
 /* Chat Bubble (Icon nổi) */
