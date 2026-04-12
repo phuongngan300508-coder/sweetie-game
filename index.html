@@ -14130,6 +14130,7 @@ function applyThemeToUI(themeData) {
     const chatBox = document.getElementById('messenger-box');
     const header = document.querySelector('.messenger-header');
     const area = document.getElementById('chat-messages-area');
+    const searchBar = document.getElementById('search-mode-bar'); // Lấy thanh bar tìm kiếm
     
     if (!chatBox || !themeData) return;
 
@@ -14139,6 +14140,17 @@ function applyThemeToUI(themeData) {
         area.style.background = '#ffffff';
         area.style.backgroundImage = 'none';
         
+        // CẬP NHẬT: Đổi màu thanh quay về hiện tại theo màu đơn
+        if (searchBar) {
+            searchBar.style.background = color;
+            searchBar.style.color = "#ffffff"; // Chữ trắng cho nổi bật
+            searchBar.style.borderBottom = "1px solid rgba(255,255,255,0.2)";
+            
+            // Đổi màu icon X và nút bên trong cho đồng bộ
+            const closeBtn = searchBar.querySelector('.fa-times');
+            if (closeBtn) closeBtn.style.color = "#ffffff";
+        }
+
         const myBubbles = document.querySelectorAll('.msg-me');
         myBubbles.forEach(b => b.style.background = color);
         
@@ -14151,6 +14163,16 @@ function applyThemeToUI(themeData) {
         area.style.backgroundSize = 'cover';
         area.style.backgroundPosition = 'center';
         
+        // CẬP NHẬT: Đổi màu thanh quay về hiện tại theo màu Header của Theme
+        if (searchBar) {
+            searchBar.style.background = theme.header;
+            searchBar.style.color = "#ffffff";
+            searchBar.style.borderBottom = "1px solid rgba(255,255,255,0.2)";
+            
+            const closeBtn = searchBar.querySelector('.fa-times');
+            if (closeBtn) closeBtn.style.color = "#ffffff";
+        }
+
         const myBubbles = document.querySelectorAll('.msg-me');
         myBubbles.forEach(b => {
             b.style.background = theme.bubbleMe;
@@ -14191,11 +14213,24 @@ function resetToDefaultTheme() {
 function resetDefaultTheme() {
     const header = document.querySelector('.messenger-header');
     const area = document.getElementById('chat-messages-area');
+    const searchBar = document.getElementById('search-mode-bar'); // Lấy thanh bar tìm kiếm
     
     if (header) header.style.background = ""; 
+    
     if (area) {
         area.style.backgroundImage = "none";
         area.style.background = "#ffffff";
+    }
+
+    // CẬP NHẬT: Reset thanh bar về màu sắc hồng mặc định của Sweetie
+    if (searchBar) {
+        searchBar.style.background = "#fff5f8"; // Nền hồng nhạt
+        searchBar.style.color = "#d63384";      // Chữ hồng đậm
+        searchBar.style.borderBottom = "1px solid #ffc0cb";
+
+        // Reset lại màu cho icon X bên trong thanh bar
+        const closeBtn = searchBar.querySelector('.fa-times');
+        if (closeBtn) closeBtn.style.color = "#ff1493";
     }
 
     document.querySelectorAll('.msg-me').forEach(b => {
@@ -14207,7 +14242,6 @@ function resetDefaultTheme() {
         b.style.color = "";
     });
 }
-
     // --- HÀM XỬ LÝ ĐÓNG THÔNG BÁO KHI CLICK RA NGOÀI ---
 function closeNotiOnClickOutside(event) {
     const notiBox = document.getElementById('notification-box'); // Đảm bảo ID này khớp với HTML của Henry
