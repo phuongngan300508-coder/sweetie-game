@@ -12439,13 +12439,12 @@ function listenMessages(friendName) {
         else if (typeof resetDefaultTheme === 'function') resetDefaultTheme();
     });
 
-    // 3. BỔ SUNG NÚT BA CHẤM ACTIONS & NÚT TÌM KIẾM (MỚI)
+    // 3. BỔ SUNG NÚT ACTIONS & NÚT TÌM KIẾM
     const messengerActions = document.querySelector('.messenger-actions');
     if (messengerActions) {
         const oldMenu = document.getElementById('chat-more-menu-wrapper');
         if (oldMenu) oldMenu.remove();
         
-        // Thêm icon tìm kiếm màu hồng bên trái nút ba chấm
         const menuHtml = `
             <div id="chat-more-menu-wrapper" style="position: relative; display: flex; align-items: center;">
                 <i class="fas fa-search" onclick="openSearchModal()" 
@@ -12465,20 +12464,26 @@ function listenMessages(friendName) {
         messengerActions.insertAdjacentHTML('afterbegin', menuHtml);
     }
 
-    // --- MỚI: KIỂM TRA VÀ HIỂN THỊ THANH CHẾ ĐỘ TÌM KIẾM ---
+    // --- CẬP NHẬT: HIỂN THỊ THANH BAR CHẾ ĐỘ TÌM KIẾM ---
     const searchBar = document.getElementById('search-mode-bar');
     if (searchBar) {
-        // Nếu không có từ khóa tìm kiếm thì ẩn thanh này đi
-        searchBar.style.display = (typeof currentSearchKeyword !== 'undefined' && currentSearchKeyword) ? 'flex' : 'none';
+        // Kiểm tra xem có đang tồn tại từ khóa tìm kiếm không để hiện thanh bar
+        if (typeof currentSearchKeyword !== 'undefined' && currentSearchKeyword !== "") {
+            searchBar.style.display = 'flex';
+        } else {
+            searchBar.style.display = 'none';
+        }
     }
 
-    // 4. TẢI 20 TIN NHẮN ĐẦU TIÊN (Initial Load)
-    loadMoreMessages(friendName, true);
+    // 4. TẢI TIN NHẮN (Chỉ load tin nhắn mặc định nếu không ở chế độ tìm kiếm)
+    if (typeof currentSearchKeyword === 'undefined' || !currentSearchKeyword) {
+        loadMoreMessages(friendName, true);
+    }
 
     // 5. LẮNG NGHE TIN NHẮN MỚI TRỰC TIẾP (Real-time)
     db.ref('chats/' + chatRoomId + '/messages').limitToLast(1).on('child_added', (snapshot) => {
         const msgId = snapshot.key;
-        if (document.getElementById(`msg-${msgId}`)) return; // Tránh trùng lặp
+        if (document.getElementById(`msg-${msgId}`)) return; 
 
         const msg = snapshot.val();
         const hiddenMsgs = JSON.parse(localStorage.getItem('hidden_messages') || "[]");
@@ -12491,7 +12496,6 @@ function listenMessages(friendName) {
             area.scrollTo({ top: area.scrollHeight, behavior: 'smooth' });
         }
         
-        // Cập nhật Theme cho tin nhắn mới nhất
         db.ref('chats/' + chatRoomId + '/config/theme').once('value', s => {
             if (s.exists() && typeof applyThemeToUI === 'function') applyThemeToUI(s.val());
         });
@@ -12500,7 +12504,10 @@ function listenMessages(friendName) {
     // 6. SỰ KIỆN CUỘN LÊN ĐỂ TẢI TIN CŨ
     area.onscroll = () => {
         if (area.scrollTop < 50 && !isLoadingMore && !isAllLoaded) {
-            loadMoreMessages(friendName);
+            // Chỉ cho phép load thêm khi không trong chế độ nhảy tin (để tránh loạn vị trí)
+            if (typeof currentSearchKeyword === 'undefined' || !currentSearchKeyword) {
+                loadMoreMessages(friendName);
+            }
         }
     };
 }
