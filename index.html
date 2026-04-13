@@ -14134,6 +14134,7 @@ function cancelThemeSelection() {
     
     // 2. Xóa dữ liệu tạm thời (Giữ nguyên)
     tempThemeData = null;
+    exitMobilePreview();
     
     // 3. Hoàn tác giao diện ngay lập tức (Giữ nguyên logic)
     if (originalThemeData) {
@@ -14155,6 +14156,16 @@ function showThemeType(type) {
     const area = document.getElementById('theme-selection-area');
     area.innerHTML = "";
 
+    // Kiểm tra nếu là màn hình điện thoại (thường là dưới 768px)
+    const isMobile = window.innerWidth <= 768;
+    
+    // Tạo HTML cho nút xem trước (chỉ dùng cho mobile)
+    const previewBtnHtml = isMobile ? `
+        <button onclick="enterMobilePreview()" style="margin-top: 10px; width: 100%; padding: 10px; border-radius: 15px; border: 1px solid #ff69b4; background: #ffffff; color: #ff69b4; font-weight: 800; font-size: 0.7em; cursor: pointer;">
+            <i class="fas fa-eye"></i> XEM TRƯỚC GIAO DIỆN
+        </button>
+    ` : "";
+
     const resetHtml = `
         <div style="margin-top: 15px; border-top: 1px dashed #ffc0cb; padding-top: 10px;">
             <button onclick="resetToDefaultTheme()" style="width: 100%; padding: 10px; border-radius: 15px; border: 1px solid #ccc; background: #f9f9f9; color: #888; font-weight: 800; font-size: 0.7em; cursor: pointer;">
@@ -14168,11 +14179,11 @@ function showThemeType(type) {
             <p style="font-size: 0.7em; color: #888;">Chọn màu sắc yêu thích cho khung chat:</p>
             <input type="color" id="simple-color-picker" style="width: 100%; height: 50px; border-radius: 10px; border: 2px solid #ffc0cb; cursor: pointer;" 
                    onchange="previewSimpleColor(this.value)">
+            ${previewBtnHtml}
             <button class="btn-action-pink" style="margin-top: 15px; width: 100%;" onclick="applyChatTheme()">XÁC NHẬN MÀU NÀY</button>
             ${resetHtml} 
         `;
     } 
-    // --- PHẦN THÊM MỚI CHO HENRY ---
     else if (type === 'custom') {
         area.innerHTML = `
             <p style="font-size: 0.7em; color: #888;">Tải ảnh từ thiết bị làm hình nền chat:</p>
@@ -14185,11 +14196,11 @@ function showThemeType(type) {
             
             <div id="custom-preview-status" style="margin-top: 10px; font-size: 0.65em; color: #11998e; text-align: center; min-height: 15px;"></div>
             
+            ${previewBtnHtml}
             <button id="btn-apply-custom" class="btn-action-pink" style="margin-top: 10px; width: 100%; display: none;" onclick="applyChatTheme()">SỬ DỤNG GIAO DIỆN NÀY</button>
             ${resetHtml}
         `;
     }
-    // ------------------------------
     else {
         let html = '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">';
         for (let key in CHAT_THEMES_CONFIG) {
@@ -14201,7 +14212,61 @@ function showThemeType(type) {
             `;
         }
         html += '</div>';
-        area.innerHTML = html + resetHtml;
+        // Thêm nút xem trước vào dưới danh sách theme premium
+        area.innerHTML = html + previewBtnHtml + resetHtml;
+    }
+}
+
+    function enterMobilePreview() {
+    // 1. Kiểm tra nếu Henry chưa chọn cái nào mà đã bấm xem trước
+    if (!tempThemeData) {
+        alert("Henry ơi, chọn một màu hoặc chủ đề trước khi xem thử nhé!");
+        return;
+    }
+
+    // 2. Đóng Modal chọn giao diện để lộ ra khung chat bên dưới
+    toggleModal('modal-chat-theme');
+
+    // 3. Tạo và hiển thị thanh điều hướng Preview (nếu chưa có)
+    let previewBar = document.getElementById('mobile-preview-bar');
+    if (!previewBar) {
+        previewBar = document.createElement('div');
+        previewBar.id = 'mobile-preview-bar';
+        
+        // Style cho thanh bar này nằm ngay dưới Header khung chat
+        previewBar.style = `
+            position: sticky; top: 0; left: 0; right: 0; z-index: 99;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 8px 12px; display: flex; gap: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            backdrop-filter: blur(8px);
+            border-bottom: 1px solid #ffc0cb;
+            align-items: center;
+        `;
+        
+        // Chèn vào đầu khu vực tin nhắn
+        const messagesArea = document.getElementById('chat-messages-area');
+        messagesArea.parentNode.insertBefore(previewBar, messagesArea);
+    }
+
+    // Nội dung nút bấm trên thanh bar
+    previewBar.innerHTML = `
+        <div style="flex: 1; font-size: 0.7em; color: #ff69b4; font-weight: bold;">
+            <i class="fas fa-magic"></i> ĐANG XEM THỬ...
+        </div>
+        <button onclick="exitMobilePreview(); applyChatTheme();" style="padding: 6px 12px; border-radius: 10px; border: none; background: #ff69b4; color: white; font-weight: bold; font-size: 0.7em;">
+            XÁC NHẬN
+        </button>
+        <button onclick="exitMobilePreview(); toggleModal('modal-chat-theme');" style="padding: 6px 12px; border-radius: 10px; border: 1px solid #ff69b4; background: white; color: #ff69b4; font-weight: bold; font-size: 0.7em;">
+            HỦY
+        </button>
+    `;
+}
+
+function exitMobilePreview() {
+    const previewBar = document.getElementById('mobile-preview-bar');
+    if (previewBar) {
+        previewBar.remove(); // Xóa thanh bar khi đã chọn xong hoặc quay lại
     }
 }
 
