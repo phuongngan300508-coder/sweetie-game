@@ -5149,6 +5149,29 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
     .theme-scroll-bar::-webkit-scrollbar-thumb:hover {
         background: #ff69b4; /* Hồng đậm hơn khi di chuột vào để kéo */
     }
+
+    /* Khung chứa nội dung media trong tin nhắn */
+.media-container {
+    position: relative;
+    overflow: hidden; /* Quan trọng: Không cho ảnh tràn ra ngoài khung chat */
+    border-radius: 10px;
+    width: fit-content;
+    max-width: 100%;
+    cursor: zoom-in;
+    touch-action: none; /* Ngăn trình duyệt cuộn trang khi đang thao tác trên ảnh */
+}
+
+.media-container img, .media-container video {
+    transition: transform 0.3s ease; /* Hiệu ứng mượt mà */
+    display: block;
+    max-width: 250px; /* Henry có thể chỉnh lại kích thước hiển thị gốc */
+    height: auto;
+}
+
+/* Khi đã phóng to */
+.media-container.zoomed {
+    cursor: zoom-out;
+}
 </style>
 </head>
 <body>
@@ -12702,14 +12725,32 @@ function renderSingleMessage(msgId, msg, position = 'bottom', targetContainer = 
         const regex = new RegExp(`(${currentSearchKeyword})`, 'gi');
         finalMsgText = msg.text.replace(regex, '<b style="background: yellow; color: black; padding: 0 2px; border-radius: 3px;">$1</b>');
     }
-    let bodyContentHtml = `<div class="text-content">${finalMsgText}</div>`;
-    if (msg.mediaUrl) {
-        if (msg.mediaType === 'image') {
-            bodyContentHtml = `<img src="${msg.mediaUrl}" onclick="openFS('${msg.mediaUrl}', 'image')" style="max-width:100%; border-radius:10px; cursor:pointer; display: block; margin-bottom: 5px;">`;
-        } else if (msg.mediaType === 'video') {
-            bodyContentHtml = `<div style="position:relative; display: block; margin-bottom: 5px;"><video src="${msg.mediaUrl}" muted style="max-width:100%; border-radius:10px; display: block;"></video><i class="fas fa-play-circle" onclick="openFS('${msg.mediaUrl}', 'video')" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); color:white; font-size:2.5em; cursor:pointer; opacity: 0.9;"></i></div>`;
-        }
+   let bodyContentHtml = `<div class="text-content">${finalMsgText}</div>`;
+
+if (msg.mediaUrl) {
+    if (msg.mediaType === 'image') {
+        bodyContentHtml = `
+            <div class="media-container" 
+                 onclick="handleSingleClick(event, '${msg.mediaUrl}', 'image')" 
+                 ondblclick="handleZoom(this)">
+                <img src="${msg.mediaUrl}" 
+                     style="max-width:100%; border-radius:10px; cursor:pointer; display: block; transition: transform 0.3s ease;">
+            </div>`;
+    } else if (msg.mediaType === 'video') {
+        bodyContentHtml = `
+            <div class="media-container" 
+                 style="position:relative; display: block;" 
+                 onclick="handleSingleClick(event, '${msg.mediaUrl}', 'video')"
+                 ondblclick="handleZoom(this)">
+                <video src="${msg.mediaUrl}" muted 
+                       style="max-width:100%; border-radius:10px; display: block; transition: transform 0.3s ease;">
+                </video>
+                <i class="fas fa-play-circle" 
+                   style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); color:white; font-size:2.5em; cursor:pointer; opacity: 0.9; pointer-events: none;">
+                </i>
+            </div>`;
     }
+}
 
     // --- 5. TEMPLATE HTML (GIỮ NGUYÊN 100%) ---
     const msgHtml = `
@@ -15033,6 +15074,35 @@ function exitSearchMode() {
         throw error;
     }
 }
+
+    function handleZoom(container) {
+    const media = container.querySelector('img, video');
+    
+    if (container.classList.contains('zoomed')) {
+        // Thu nhỏ lại bình thường
+        container.classList.remove('zoomed');
+        media.style.transform = 'scale(1) translate(0, 0)';
+    } else {
+        // Phóng to 2 lần (hoặc 2.5 tuỳ Henry)
+        container.classList.add('zoomed');
+        media.style.transform = 'scale(2)';
+    }
+}
+
+// Bổ sung hỗ trợ cảm ứng cho điện thoại (Double Tap)
+document.addEventListener('touchstart', function (e) {
+    const container = e.target.closest('.media-container');
+    if (!container) return;
+
+    now = new Date().getTime();
+    const timesince = now - (container.lastTouch || 0);
+    
+    if (timesince < 300 && timesince > 0) {
+        handleZoom(container);
+        e.preventDefault(); // Ngăn phóng to toàn bộ trang web
+    }
+    container.lastTouch = now;
+}, { passive: false });
 </script>
 </body>
 </html>
