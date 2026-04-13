@@ -7394,6 +7394,7 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
     </div>
 </div>
 <script>
+    let userData = {}; // Khởi tạo là một object rỗng để tránh lỗi "is not defined"
   let replyingTo = null; // Lưu tin nhắn đang được trả lời {id, text, sender}
   // Biến cờ để đảm bảo mỗi máy chỉ "nghe" Firebase đúng 1 lần duy nhất
 let isSocialInitialized = false;
@@ -7435,7 +7436,8 @@ const ZONE_CONFIG = {
 }
 
 function updateCountdown() {
-    if (!userData.hasAccess || !userData.expiryDate) return;
+    // --- BƯỚC FIX LỖI: Kiểm tra userData có tồn tại không trước khi đọc thuộc tính ---
+    if (!userData || !userData.hasAccess || !userData.expiryDate) return;
 
     const vnNow = getVietnamTime().getTime();
     const expiryMs = userData.expiryDate;
@@ -7458,14 +7460,22 @@ function updateCountdown() {
     const seconds = Math.floor((diff % (1000 * 60)) / 1000);
 
     // Hiển thị lên giao diện
-    document.getElementById('c-days').innerText = days;
-    document.getElementById('c-time').innerText = 
-        `${String(hours).padStart(2,'0')}:${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}`;
+    const cDays = document.getElementById('c-days');
+    const cTime = document.getElementById('c-time');
+    
+    if (cDays) cDays.innerText = days;
+    if (cTime) {
+        cTime.innerText = 
+            `${String(hours).padStart(2,'0')}:${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}`;
+    }
 
     // Hiệu ứng đổi màu cảnh báo nếu còn dưới 3 ngày
-    if (days < 3) {
-        expiryNotice.querySelector('span').style.color = '#ff0000';
-        expiryNotice.querySelector('span').style.animation = 'pulse 1s infinite';
+    if (days < 3 && expiryNotice) {
+        const span = expiryNotice.querySelector('span');
+        if (span) {
+            span.style.color = '#ff0000';
+            span.style.animation = 'pulse 1s infinite';
+        }
     }
 }
 
@@ -11391,11 +11401,15 @@ toggleModal = function(id) {
 }
 
 function updateGachaCountdown() {
+    // --- BƯỚC FIX LỖI: Kiểm tra userData có tồn tại không trước khi đọc gachaData ---
+    if (!userData || !userData.gachaData) return;
+
     const gd = userData.gachaData;
     const countdownEl = document.getElementById('gacha-countdown');
     const timerEl = document.getElementById('countdown-timer');
 
-    if (!gd || !countdownEl) return;
+    // Kiểm tra thêm element để tránh lỗi null nếu giao diện chưa load xong
+    if (!countdownEl || !timerEl) return;
 
     // Chỉ hiển thị đếm ngược khi đã hết 5 lượt
     if (gd.dailyCount >= 5) {
@@ -11418,13 +11432,14 @@ function updateGachaCountdown() {
             timerEl.innerText = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
         } else {
             // Nếu đã qua 0h, tự động update giao diện để reset lượt
-            updateGachaUI();
+            if (typeof updateGachaUI === 'function') {
+                updateGachaUI();
+            }
         }
     } else {
         countdownEl.style.display = 'none';
     }
 }
-
 // Chạy đếm ngược mỗi giây
 setInterval(updateGachaCountdown, 1000);
 
