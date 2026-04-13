@@ -7520,6 +7520,13 @@ function getWeekNumber(d) {
 }
 
    function checkMinigameStatus() {
+       // --- BƯỚC FIX LỖI: KIỂM TRA DỮ LIỆU ĐẦU VÀO ---
+    // Nếu chưa có userData hoặc gamePlays, thoát hàm ngay để tránh sập web
+    if (!userData || !userData.gamePlays) {
+        console.warn("Hệ thống: Đang chờ tải dữ liệu người dùng...");
+        return; 
+    }
+       
     const vn = getVietnamTime();
     const day = vn.getDay(); 
     const currentWeek = getWeekNumber(vn);
@@ -8035,24 +8042,22 @@ if (xhElem) {
         updateCardStatus(document.getElementById(id), false, 'MỞ CỬA', 'status-open');
     });
 
-    // --- 3. LOGIC ƯU ĐÃI THỎ PHIÊU LƯU & ZONE ACCESS ---
-const isNhanGiongDone = userData.gamePlays['cuaHangNhanGiong'] && userData.gamePlays['cuaHangNhanGiong'].count > 0;
-const thoCard = document.getElementById('thoPhieuLuuVoTan');
+   // --- 3. LOGIC ƯU ĐÃI THỎ PHIÊU LƯU & ZONE ACCESS ---
+    // SỬA LỖI TẠI ĐÂY: Dùng ?. để truy cập an toàn
+    const isNhanGiongDone = userData.gamePlays['cuaHangNhanGiong']?.count > 0;
+    const thoCard = document.getElementById('thoPhieuLuuVoTan');
 
-if (thoCard) {
-    const fee = isNhanGiongDone ? 25000 : 30000;
-    thoCard.setAttribute('data-fee', fee);
-    const costText = thoCard.querySelector('.cost');
-    
-    if (costText) {
-        costText.innerText = `PHÍ: ${fee.toLocaleString()} ĐỒNG ${isNhanGiongDone ? '(ƯU ĐÃI)' : ''}`;
-        costText.style.color = isNhanGiongDone ? "#28a745" : "#d63384";
+    if (thoCard) {
+        const fee = isNhanGiongDone ? 25000 : 30000;
+        thoCard.setAttribute('data-fee', fee);
+        const costText = thoCard.querySelector('.cost');
+        
+        if (costText) {
+            costText.innerText = `PHÍ: ${fee.toLocaleString()} ĐỒNG ${isNhanGiongDone ? '(ƯU ĐÃI)' : ''}`;
+            costText.style.color = isNhanGiongDone ? "#28a745" : "#d63384";
+        }
+        updateCardStatus(thoCard, false, 'MỞ CỬA', 'status-open');
     }
-
-    // --- DÒNG QUAN TRỌNG: Cập nhật trạng thái để hết hiện "Đang kiểm tra" ---
-    // Vì game này mở vĩnh viễn, ta để disabled là false và hiện "MỞ CỬA"
-    updateCardStatus(thoCard, false, 'MỞ CỬA', 'status-open');
-}
     
     checkPiggyInterest();
     // (Lưu ý: Bạn cần gọi hàm xử lý Zone Access tại đây nếu nó nằm riêng lẻ)
@@ -8512,14 +8517,22 @@ function checkLoginStatus() {
             const snapshot = await db.ref('users/' + user.uid).once('value');
             
             if (snapshot.exists()) {
+                // --- PHẦN QUAN TRỌNG: Cập nhật dữ liệu vào biến toàn cục trước khi chạy logic ---
                 userData = snapshot.val();
-                currentUser = userData.profile.name; // Henry lưu ý: Lấy tên từ profile đã đăng ký
+                
+                // Đảm bảo các object con tồn tại để không gây lỗi "reading properties of undefined"
+                if (!userData.gamePlays) userData.gamePlays = {};
+                if (!userData.profile) userData.profile = {};
+                
+                currentUser = userData.profile.name || "Người chơi"; 
                 sessionStorage.setItem('currentUser', currentUser);
-                authScreen.style.display = 'none'; 
+                
+                // Ẩn màn hình đăng nhập
+                if (authScreen) authScreen.style.display = 'none'; 
                 
                 // --- GIỮ NGUYÊN 100% LOGIC BAN ĐẦU CỦA BẠN ---
                 updateUI();
-                checkMinigameStatus(); 
+                checkMinigameStatus(); // Lúc này userData đã có dữ liệu nên sẽ không còn lỗi cuaHangNhanGiong
                 renderFriendsList();
                 updateGameLimitsUI();  
                 updateClock();
@@ -8534,12 +8547,16 @@ function checkLoginStatus() {
                     console.log("Hệ thống: Đã bật bộ lắng nghe Social (Duy nhất)");
                 }
             } else {
-                authScreen.style.display = 'flex';
+                // Có tài khoản Auth nhưng không có dữ liệu trong Database
+                if (authScreen) authScreen.style.display = 'flex';
             }
         } else {
-            authScreen.style.display = 'flex';
+            // Chưa đăng nhập
+            if (authScreen) authScreen.style.display = 'flex';
         }
-        hideSplashScreen(); 
+        
+        // Luôn ẩn splash screen sau khi check xong
+        if (typeof hideSplashScreen === 'function') hideSplashScreen(); 
     });
 }
     
