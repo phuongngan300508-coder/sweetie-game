@@ -5418,18 +5418,24 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
         <div class="modal-body sweetie-reg-body">
             
             <div class="info-group" style="margin-bottom: 15px; text-align: left;">
-                <label style="color: #ff69b4; font-weight: bold; font-size: 0.8em; margin-left: 10px;">
-                    <i class="fas fa-id-card"></i> Thông tin cơ bản
-                </label>
-                <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 5px;">
-                    <input type="text" id="reg-name" placeholder="Tên hiển thị..." required class="sweetie-input">
-                    <select id="reg-gender" class="sweetie-input">
-                        <option value="" disabled selected>Chọn giới tính...</option>
-                        <option value="Nam">Nam</option>
-                        <option value="Nữ">Nữ</option>
-                    </select>
-                </div>
-            </div>
+    <label style="color: #ff69b4; font-weight: bold; font-size: 0.8em; margin-left: 10px;">
+        <i class="fas fa-id-card"></i> Thông tin cơ bản
+    </label>
+    <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 5px;">
+        <input type="text" id="reg-name" placeholder="Tên hiển thị..." required class="sweetie-input">
+        
+        <div style="position: relative;">
+            <label for="reg-date" style="position: absolute; left: 12px; top: -8px; background: white; padding: 0 5px; font-size: 0.7em; color: #ff69b4; font-weight: bold;">Ngày gia nhập</label>
+            <input type="date" id="reg-date" class="sweetie-input" style="padding-top: 15px;">
+        </div>
+
+        <select id="reg-gender" class="sweetie-input">
+            <option value="" disabled selected>Chọn giới tính...</option>
+            <option value="Nam">Nam</option>
+            <option value="Nữ">Nữ</option>
+        </select>
+    </div>
+</div>
 
             <div class="info-group" style="margin-bottom: 15px; text-align: left;">
                 <label style="color: #ff69b4; font-weight: bold; font-size: 0.8em; margin-left: 10px;">
@@ -5473,6 +5479,7 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
         </div>
     </div>
 </div>
+    
 <div id="tab-container">
     <section id="tab-home" class="tab-panel active">
         <header>
@@ -9226,10 +9233,16 @@ profileArea.innerHTML = `
             </span>
         </div>
 
-        <div class="info-group" style="margin-top: 15px;">
-            <span class="info-label">Ngày gia nhập</span>
-            <span class="info-value">${userData.profile.date || '---'}</span>
-        </div>
+       <div class="info-group" style="margin-top: 15px;">
+    <span class="info-label">Ngày gia nhập</span>
+    <span class="info-value" style="display: flex; align-items: center; justify-content: space-between;">
+        <span id="display-reg-date">${userData.profile.date || '---'}</span>
+        <button onclick="editJoinDate()" style="background: none; border: none; color: #ff69b4; cursor: pointer; font-size: 0.8em; padding: 0 5px;">
+            <i class="fas fa-edit"></i> Sửa
+        </button>
+    </span>
+</div>
+
         <div class="info-group">
             <span class="info-label">Mục đích tham gia</span>
             <span class="info-value">${userData.profile.purpose || 'Giải trí'}</span>
@@ -9262,6 +9275,42 @@ document.addEventListener('DOMContentLoaded', () => {
     checkLoginStatus(); // Kiểm tra xem có được vào thẳng lobby không
     checkMinigameStatus();
 });
+
+    // --- HÀM CẬP NHẬT NGÀY GIA NHẬP ---
+function editJoinDate() {
+    // 1. Cho người dùng chọn ngày mới qua prompt (hoặc bạn có thể dùng input date)
+    const oldDate = userData.profile.date || "";
+    const newDate = prompt("Nhập ngày gia nhập mới (Định dạng: YYYY-MM-DD):", oldDate);
+
+    // 2. Kiểm tra nếu người dùng không hủy và có nhập dữ liệu
+    if (newDate !== null && newDate.trim() !== "") {
+        // Kiểm tra định dạng ngày cơ bản
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(newDate)) {
+            alert("Vui lòng nhập đúng định dạng YYYY-MM-DD (Ví dụ: 2026-04-13)");
+            return;
+        }
+
+        // 3. Cập nhật vào userData
+        userData.profile.date = newDate;
+
+        // 4. Lưu lên Firebase & LocalStorage (Dùng hàm saveData có sẵn của bạn)
+        if (typeof saveData === 'function') {
+            saveData();
+        } else {
+            // Nếu không có hàm saveData dùng chung, lưu trực tiếp
+            localStorage.setItem(`userData_${currentUser}`, JSON.stringify(userData));
+            if (typeof db !== 'undefined') {
+                db.ref('users/' + currentUser + '/profile/date').set(newDate);
+            }
+        }
+
+        // 5. Cập nhật hiển thị ngay lập tức trên UI
+        const dateDisplay = document.getElementById('display-reg-date');
+        if (dateDisplay) dateDisplay.innerText = newDate;
+        
+        alert("✨ Đã cập nhật ngày gia nhập thành công!");
+    }
+}
 
 // 1. Cập nhật giao diện Hũ
 function updatePiggyUI() {
@@ -15352,45 +15401,81 @@ function toggleAuthPopup(mode) {
 }
 
 // --- 2. ĐĂNG KÝ TÀI KHOẢN MỚI ---
-async function registerWithEmail() {
+// --- LOGIC ĐĂNG KÝ MỚI (LẦN ĐẦU) ---
+async function handleNewRegistration() {
+    // Lấy các giá trị từ input của Popup Đăng ký
+    const name = document.getElementById('reg-name').value.trim();
     const email = document.getElementById('reg-email').value.trim();
     const pass = document.getElementById('reg-password').value;
     const confirmPass = document.getElementById('reg-confirm-password').value;
-    const name = document.getElementById('reg-name').value.trim();
     const gender = document.getElementById('reg-gender').value;
+    const purpose = document.getElementById('reg-purpose').value;
+    const confirmed = document.getElementById('reg-confirm').checked;
+    
+    // Henry thêm: Lấy ngày gia nhập từ input, nếu trống thì lấy ngày hôm nay
+    const inputDate = document.getElementById('reg-date').value;
+    const joinDate = inputDate ? inputDate : new Date().toISOString().split('T')[0];
 
-    if (!email || !pass || !name || !gender) return alert("Vui lòng điền đủ thông tin!");
-    if (pass !== confirmPass) return alert("Mật khẩu xác nhận không khớp!");
-    if (!document.getElementById('reg-confirm').checked) return alert("Vui lòng đồng ý với luật!");
+    // 1. Kiểm tra nhập liệu
+    if (!name || !email || !pass || !gender) {
+        return alert("Vui lòng nhập đầy đủ thông tin bắt buộc (Tên, Email, Mật khẩu, Giới tính)!");
+    }
+    if (pass !== confirmPass) {
+        return alert("Mật khẩu xác nhận không khớp!");
+    }
+    if (!confirmed) {
+        return alert("Bạn chưa đồng ý với luật khu vực!");
+    }
 
     try {
-        // Kiểm tra email đã tồn tại trong DB chưa (Để tránh trùng)
-        const snapshot = await db.ref('users').orderByChild('email').equalTo(email).once('value');
-        if (snapshot.exists()) return alert("Email này đã được đăng ký cho một tài khoản khác!");
+        // 2. Kiểm tra trùng Email trên Firebase (Dùng Database đã cài đặt)
+        const emailCheck = await db.ref('users').orderByChild('profile/email').equalTo(email).once('value');
+        if (emailCheck.exists()) {
+            return alert("Email này đã được sử dụng cho tài khoản khác!");
+        }
 
-        // Tạo User Data
+        // 3. Khởi tạo userData (Giữ nguyên cấu trúc logic 100% của bạn)
+        const randomNumber = Math.floor(10000 + Math.random() * 90000);
         userData = {
-            profile: { name, gender, email, uid: "SGW" + Math.floor(10000 + Math.random() * 90000), date: new Date().toISOString().split('T')[0] },
-            password: pass, // Lưu để verify đơn giản hoặc dùng Auth
+            profile: { 
+                name: name, 
+                gender: gender, 
+                email: email, 
+                purpose: purpose, 
+                uid: "SGW" + randomNumber,
+                date: joinDate, // Henry đã thay đổi từ ngày mặc định sang joinDate
+                password: pass // Lưu pass để verify khi đăng nhập
+            },
             balance: 0,
+            totalSpent: 0,
             history: [],
             gamePlays: {},
-            zoneAccess: {},
-            lastOnline: firebase.database.ServerValue.TIMESTAMP
+            hasAccess: false,
+            expiryDate: null,
+            checkinHistory: [],
+            lastResetWeek: getWeekNumber(getVietnamTime()),
+            zoneAccess: {}
         };
 
-        // Lưu lên Firebase với key là Tên (để giữ tính tương thích cũ)
+        // 4. Lưu lên Firebase với key là Tên (để đồng bộ hệ thống cũ)
         await db.ref('users/' + name).set(userData);
         
+        // 5. Thiết lập phiên đăng nhập
         currentUser = name;
         localStorage.setItem('lastLoggedInUser', name);
-        alert("🎉 Đăng ký thành công!");
+        
+        alert("🎉 Chúc mừng " + name + "! Bạn đã đăng ký thành công tài khoản liên kết email.");
+        
+        // Đóng popup và tải lại trang để vào sảnh
+        toggleRegisterPopup(false);
         location.reload();
-    } catch (e) {
-        alert("Lỗi đăng ký: " + e.message);
+
+    } catch (error) {
+        console.error("Lỗi đăng ký:", error);
+        alert("Có lỗi xảy ra trong quá trình đăng ký. Vui lòng thử lại!");
     }
 }
-
+    
 // --- 3. ĐĂNG NHẬP BẰNG EMAIL ---
 async function loginWithEmail() {
     const email = document.getElementById('login-email').value.trim();
