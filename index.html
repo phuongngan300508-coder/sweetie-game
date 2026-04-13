@@ -5369,9 +5369,9 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
                 <input type="password" id="login-pass" placeholder="Mật khẩu..." required>
 
                 <div style="text-align: left; margin: 10px 0 5px 5px;">
-                    <label for="reg-unlocked-days" style="font-size: 0.85em; font-weight: 700; color: var(--pink-dark);">
-                        <i class="fas fa-key"></i> Số ngày đã mở khóa bảng điểm danh (nếu có):
-                    </label>
+                   <label for="login-unlocked-days" style="font-size: 0.85em; font-weight: 700; color: var(--pink-dark);">
+    <i class="fas fa-key"></i> Số ngày đã mở khóa bảng điểm danh (nếu có):
+</label>
                 </div>
                 <input type="number" id="login-unlocked-days" placeholder="Nhập 0 nếu chưa mở..." min="0" value="0">
 
@@ -10790,12 +10790,13 @@ let notifiedUuDaiInThisLoad = false;
 let notifiedLimitInThisLoad = false;
 
 function checkSystemAlerts() {
+    // Henry bảo vệ: Nếu userData chưa có thì thoát ngay để tránh lỗi các dòng dưới
     if (!userData) return;
 
     // --- 1. THÔNG BÁO RIÊNG BIỆT CHO MỖI GAME DANG DỞ ---
     if (userData.activeSessions && userData.activeSessions.length > 0) {
         userData.activeSessions.forEach(session => {
-            if (!notifiedInThisLoad.includes(session.id)) {
+            if (typeof notifiedInThisLoad !== 'undefined' && !notifiedInThisLoad.includes(session.id)) {
                 
                 addNotification(
                     "⚠️ HÀNH TRÌNH DANG DỞ", 
@@ -10809,7 +10810,11 @@ function checkSystemAlerts() {
     }
 
     // --- 2. THÔNG BÁO ƯU ĐÃI (Xảy ra khi load lại trang) ---
-    const playedNhanGiong = userData.gamePlays['cuaHangNhanGiong'] && userData.gamePlays['cuaHangNhanGiong'].count > 0;
+    // Henry sửa: Thêm check userData.gamePlays tồn tại trước khi truy cập ['cuaHangNhanGiong']
+    const playedNhanGiong = userData.gamePlays && 
+                            userData.gamePlays['cuaHangNhanGiong'] && 
+                            userData.gamePlays['cuaHangNhanGiong'].count > 0;
+
     if (playedNhanGiong && !notifiedUuDaiInThisLoad) {
         addNotification(
             "🎁 ƯU ĐÃI LIÊN KẾT", 
@@ -10823,7 +10828,8 @@ function checkSystemAlerts() {
     if (userData.gamePlays && !notifiedLimitInThisLoad) {
         let nearLimitGames = [];
         Object.keys(GAME_LIMITS).forEach(gameId => {
-            const playedCount = userData.gamePlays[gameId] ? userData.gamePlays[gameId].count : 0;
+            // Henry bảo vệ: Kiểm tra gameId có tồn tại trong gamePlays không
+            const playedCount = (userData.gamePlays[gameId]) ? userData.gamePlays[gameId].count : 0;
             const maxLimit = GAME_LIMITS[gameId];
             const remaining = maxLimit - playedCount;
             if (maxLimit > 1 && remaining === 1) {
@@ -10843,7 +10849,10 @@ function checkSystemAlerts() {
         }
     }
     
-    updateNotiBadge();
+    // Kiểm tra hàm updateNotiBadge tồn tại trước khi gọi để tránh lỗi vặt
+    if (typeof updateNotiBadge === 'function') {
+        updateNotiBadge();
+    }
 }
 
 function playTingSound() {
@@ -15454,7 +15463,22 @@ async function processLinkEmail() {
     alert("✨ Liên kết thành công! Từ giờ bạn có thể dùng Email này để đăng nhập.");
     location.reload();
 }
-        // Henry: Tự động đóng Popup khi nhấn ra vùng Overlay
+       
+// Hàm đóng/mở Popup Đăng ký
+function toggleRegisterPopup(show) {
+    const popup = document.getElementById('modal-register-new');
+    if (popup) {
+        if (show) {
+            popup.style.display = 'flex';
+        } else {
+            popup.style.display = 'none';
+        }
+    } else {
+        console.error("Không tìm thấy ID modal-register-new trong HTML!");
+    }
+}
+
+// Hàm bổ trợ: Đóng khi nhấn ra ngoài vùng overlay (tùy chọn)
 function closeRegisterOnOverlay(event) {
     if (event.target === document.getElementById('modal-register-new')) {
         toggleRegisterPopup(false);
