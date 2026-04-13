@@ -14828,7 +14828,7 @@ async function execSearchMessages(keyword) {
     if (themeData) {
         if (themeData.type === 'simple') {
             mainColor = themeData.mainColor;
-            lightBg = mainColor + "1A"; // Tạo màu nền siêu nhạt từ màu chính (alpha 10%)
+            lightBg = mainColor + "1A"; 
         } else if (themeData.type === 'premium') {
             const config = themeData.isCustom ? themeData.customData : CHAT_THEMES_CONFIG[themeData.themeKey];
             if (config) {
@@ -14864,12 +14864,11 @@ async function execSearchMessages(keyword) {
             const isMe = m.sender === currentUser;
             const senderData = (await db.ref('users/' + m.sender + '/profile').once('value')).val();
             
-            // Cập nhật Avatar: Thêm viền màu Theme cho nổi bật
             const avatar = senderData.customAvatar 
                 ? `<img src="${senderData.customAvatar}" style="width:35px; height:35px; border-radius:50%; object-fit:cover; border: 2px solid ${mainColor};">`
                 : `<i class="fas fa-user-circle" style="font-size:35px; color:${mainColor}; opacity: 0.6;"></i>`;
 
-            // Render HTML: Cập nhật màu chữ và hiệu ứng hover theo Theme
+            // Cập nhật hàm jumpToMessage để truyền themeData qua nếu cần
             resultsHtml += `
                 <div onclick="jumpToMessage('${m.id}')" 
                      style="display:flex; align-items:center; gap:12px; padding:12px; border-bottom:1px solid ${lightBg}; cursor:pointer; transition: 0.3s; border-radius: 12px; margin-bottom: 5px;" 
@@ -14889,6 +14888,10 @@ async function execSearchMessages(keyword) {
             `;
         }
         resultsArea.innerHTML = resultsHtml;
+
+        // LƯU Ý CHO HENRY: Để tin nhắn TRONG KHUNG CHAT đổi màu khi jump,
+        // Henry hãy đảm bảo hàm jumpToMessage gọi lại applyThemeToUI(themeData) 
+        // sau khi render xong các tin nhắn nhé!
     });
 }
 // 3. Nhảy đến tin nhắn cũ
@@ -14907,6 +14910,10 @@ async function jumpToMessage(msgId) {
 
     // 3. TẮT LẮNG NGHE TIN NHẮN REAL-TIME TẠM THỜI
     db.ref(`chats/${chatRoomId}/messages`).off();
+
+    // --- BƯỚC MỚI: LẤY DỮ LIỆU THEME ĐỂ ĐỒNG BỘ MÀU SẮC ---
+    const themeSnap = await db.ref(`chats/${chatRoomId}/config/theme`).once('value');
+    const themeData = themeSnap.val();
 
     // 4. Tải toàn bộ tin nhắn để render lại từ đầu đến cuối
     db.ref(`chats/${chatRoomId}/messages`).once('value', (snapshot) => {
@@ -14928,6 +14935,13 @@ async function jumpToMessage(msgId) {
                 }
             }
         });
+
+        // --- CẬP NHẬT: ÁP DỤNG LẠI MÀU GIAO DIỆN SAU KHI RENDER XONG ---
+        if (themeData && typeof applyThemeToUI === 'function') {
+            applyThemeToUI(themeData);
+        } else if (typeof resetDefaultTheme === 'function') {
+            resetDefaultTheme();
+        }
 
         // 5. Cuộn đến tin nhắn mục tiêu với hiệu ứng mượt mà
         setTimeout(() => {
