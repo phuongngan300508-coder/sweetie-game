@@ -14880,11 +14880,27 @@ async function execSearchMessages(keyword) {
             const isMe = m.sender === currentUser;
             const senderData = (await db.ref('users/' + m.sender + '/profile').once('value')).val();
             
+            // --- XỬ LÝ THỜI GIAN THỰC (HIỆN NGÀY THÁNG NẾU KHÔNG PHẢI HÔM NAY) ---
+            let fullTimeDisplay = m.displayTime || ""; 
+            if (m.timestamp) {
+                const msgDate = new Date(m.timestamp);
+                const today = new Date();
+                const isToday = msgDate.getDate() === today.getDate() &&
+                                msgDate.getMonth() === today.getMonth() &&
+                                msgDate.getFullYear() === today.getFullYear();
+
+                if (!isToday) {
+                    const dateStr = msgDate.getDate().toString().padStart(2, '0') + "/" + 
+                                    (msgDate.getMonth() + 1).toString().padStart(2, '0') + "/" + 
+                                    msgDate.getFullYear();
+                    fullTimeDisplay = `${dateStr} ${fullTimeDisplay}`; 
+                }
+            }
+
             const avatar = senderData.customAvatar 
                 ? `<img src="${senderData.customAvatar}" style="width:35px; height:35px; border-radius:50%; object-fit:cover; border: 2px solid ${mainColor};">`
                 : `<i class="fas fa-user-circle" style="font-size:35px; color:${mainColor}; opacity: 0.6;"></i>`;
 
-            // Cập nhật hàm jumpToMessage để truyền themeData qua nếu cần
             resultsHtml += `
                 <div onclick="jumpToMessage('${m.id}')" 
                      style="display:flex; align-items:center; gap:12px; padding:12px; border-bottom:1px solid ${lightBg}; cursor:pointer; transition: 0.3s; border-radius: 12px; margin-bottom: 5px;" 
@@ -14894,7 +14910,7 @@ async function execSearchMessages(keyword) {
                     <div style="flex:1; min-width:0;">
                         <div style="display:flex; justify-content:space-between; align-items: center;">
                             <b style="font-size:0.8em; color:${mainColor};">${senderData.name}</b>
-                            <small style="font-size:0.65em; color:#999;">${m.displayTime || ''}</small>
+                            <small style="font-size:0.65em; color:#999; white-space: nowrap; margin-left: 10px;">${fullTimeDisplay}</small>
                         </div>
                         <div style="font-size:0.85em; color:#444; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-top: 2px;">
                             ${m.text.replace(new RegExp(currentSearchKeyword, 'gi'), (match) => `<span style="background:yellow; color:black; font-weight:bold; border-radius:3px; padding: 0 2px;">${match}</span>`)}
@@ -14904,10 +14920,6 @@ async function execSearchMessages(keyword) {
             `;
         }
         resultsArea.innerHTML = resultsHtml;
-
-        // LƯU Ý CHO HENRY: Để tin nhắn TRONG KHUNG CHAT đổi màu khi jump,
-        // Henry hãy đảm bảo hàm jumpToMessage gọi lại applyThemeToUI(themeData) 
-        // sau khi render xong các tin nhắn nhé!
     });
 }
 // 3. Nhảy đến tin nhắn cũ
