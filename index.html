@@ -5131,6 +5131,24 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
     div::-webkit-scrollbar {
         display: none;
     }
+
+    /* Tùy chỉnh thanh cuộn cho Chrome, Safari, Edge (Máy tính) */
+    .theme-scroll-bar::-webkit-scrollbar {
+        height: 6px; /* Độ dày thanh cuộn nằm ngang */
+    }
+
+    .theme-scroll-bar::-webkit-scrollbar-track {
+        background: transparent; /* Nền thanh cuộn */
+    }
+
+    .theme-scroll-bar::-webkit-scrollbar-thumb {
+        background: #ffc0cb; /* Màu của thanh kéo (hồng nhạt theo style Henry) */
+        border-radius: 10px;
+    }
+
+    .theme-scroll-bar::-webkit-scrollbar-thumb:hover {
+        background: #ff69b4; /* Hồng đậm hơn khi di chuột vào để kéo */
+    }
 </style>
 </head>
 <body>
@@ -7232,6 +7250,17 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
         
        <div style="display: flex; gap: 10px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 5px; white-space: nowrap; scrollbar-width: none; -ms-overflow-style: none;">
     
+    <div class="theme-scroll-bar" style="
+    display: flex; 
+    gap: 10px; 
+    margin-bottom: 20px; 
+    overflow-x: auto; 
+    padding: 5px 2px 10px 2px; 
+    white-space: nowrap; 
+    -webkit-overflow-scrolling: touch; 
+    scrollbar-width: thin; 
+    scrollbar-color: #ffc0cb transparent;">
+
     <button id="btn-simple" 
             onclick="setActiveThemeBtn('simple')" 
             class="theme-btn-active"
@@ -7252,6 +7281,7 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
             style="flex: 0 0 auto; min-width: 100px; padding: 10px 20px; border-radius: 15px; font-weight: 800; font-size: 0.7em; cursor: pointer; transition: 0.3s; border: none;">
         ẢNH CỦA TÔI
     </button>
+</div>
 </div>
         <div id="theme-selection-area" style="max-height: 250px; overflow-y: auto; padding: 5px;">
              </div>
