@@ -14817,8 +14817,28 @@ async function execSearchMessages(keyword) {
     }
 
     const chatRoomId = [currentUser, currentChatFriend].sort().join('_');
+
+    // --- BƯỚC MỚI: LẤY MÀU THEME ĐỂ ĐỒNG BỘ ---
+    const themeSnap = await db.ref(`chats/${chatRoomId}/config/theme`).once('value');
+    const themeData = themeSnap.val();
     
-    // Tìm kiếm trong Firebase
+    let mainColor = "#d63384"; // Hồng mặc định
+    let lightBg = "#fff0f5";   // Nền hồng nhạt mặc định
+
+    if (themeData) {
+        if (themeData.type === 'simple') {
+            mainColor = themeData.mainColor;
+            lightBg = mainColor + "1A"; // Tạo màu nền siêu nhạt từ màu chính (alpha 10%)
+        } else if (themeData.type === 'premium') {
+            const config = themeData.isCustom ? themeData.customData : CHAT_THEMES_CONFIG[themeData.themeKey];
+            if (config) {
+                mainColor = config.header;
+                lightBg = mainColor + "1A";
+            }
+        }
+    }
+    
+    // Tìm kiếm trong Firebase (Giữ nguyên logic của Henry)
     db.ref(`chats/${chatRoomId}/messages`).once('value', async (snapshot) => {
         const data = snapshot.val();
         if (!data) return;
@@ -14826,7 +14846,6 @@ async function execSearchMessages(keyword) {
         let resultsHtml = "";
         const matches = [];
 
-        // Lọc tin nhắn có chứa từ khóa
         Object.keys(data).forEach(msgId => {
             const msg = data[msgId];
             if (msg.text && msg.text.toLowerCase().includes(currentSearchKeyword)) {
@@ -14839,26 +14858,31 @@ async function execSearchMessages(keyword) {
             return;
         }
 
-        // Sắp xếp tin mới nhất lên đầu
         matches.sort((a, b) => b.timestamp - a.timestamp);
 
         for (let m of matches) {
             const isMe = m.sender === currentUser;
             const senderData = (await db.ref('users/' + m.sender + '/profile').once('value')).val();
+            
+            // Cập nhật Avatar: Thêm viền màu Theme cho nổi bật
             const avatar = senderData.customAvatar 
-                ? `<img src="${senderData.customAvatar}" style="width:30px; height:30px; border-radius:50%; object-fit:cover;">`
-                : `<i class="fas fa-user-circle" style="font-size:30px; color:#ccc;"></i>`;
+                ? `<img src="${senderData.customAvatar}" style="width:35px; height:35px; border-radius:50%; object-fit:cover; border: 2px solid ${mainColor};">`
+                : `<i class="fas fa-user-circle" style="font-size:35px; color:${mainColor}; opacity: 0.6;"></i>`;
 
+            // Render HTML: Cập nhật màu chữ và hiệu ứng hover theo Theme
             resultsHtml += `
-                <div onclick="jumpToMessage('${m.id}')" style="display:flex; align-items:center; gap:10px; padding:10px; border-bottom:1px solid #fff0f5; cursor:pointer; transition: 0.2s;" onmouseover="this.style.background='#fff0f5'" onmouseout="this.style.background='transparent'">
+                <div onclick="jumpToMessage('${m.id}')" 
+                     style="display:flex; align-items:center; gap:12px; padding:12px; border-bottom:1px solid ${lightBg}; cursor:pointer; transition: 0.3s; border-radius: 12px; margin-bottom: 5px;" 
+                     onmouseover="this.style.background='${lightBg}'" 
+                     onmouseout="this.style.background='transparent'">
                     <div style="flex-shrink:0;">${avatar}</div>
                     <div style="flex:1; min-width:0;">
-                        <div style="display:flex; justify-content:space-between;">
-                            <b style="font-size:0.75em; color:#d63384;">${senderData.name}</b>
-                            <small style="font-size:0.6em; color:#888;">${m.displayTime || ''}</small>
+                        <div style="display:flex; justify-content:space-between; align-items: center;">
+                            <b style="font-size:0.8em; color:${mainColor};">${senderData.name}</b>
+                            <small style="font-size:0.65em; color:#999;">${m.displayTime || ''}</small>
                         </div>
-                        <div style="font-size:0.8em; color:#333; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
-                            ${m.text.replace(new RegExp(currentSearchKeyword, 'gi'), (match) => `<span style="background:yellow; font-weight:bold;">${match}</span>`)}
+                        <div style="font-size:0.85em; color:#444; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-top: 2px;">
+                            ${m.text.replace(new RegExp(currentSearchKeyword, 'gi'), (match) => `<span style="background:yellow; color:black; font-weight:bold; border-radius:3px; padding: 0 2px;">${match}</span>`)}
                         </div>
                     </div>
                 </div>
@@ -14867,7 +14891,6 @@ async function execSearchMessages(keyword) {
         resultsArea.innerHTML = resultsHtml;
     });
 }
-
 // 3. Nhảy đến tin nhắn cũ
 async function jumpToMessage(msgId) {
     // 1. Đóng popup tìm kiếm ngay lập tức để nhìn thấy tiến trình
