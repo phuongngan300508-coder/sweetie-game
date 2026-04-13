@@ -5245,6 +5245,47 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
     transform: translateY(1px);
     box-shadow: 0 2px 5px rgba(255, 20, 147, 0.2);
 }
+
+    .reg-popup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    display: none; /* Mặc định ẩn, JS sẽ đổi thành flex */
+    justify-content: center;
+    align-items: center;
+    z-index: 9999; /* Đảm bảo nổi lên trên cùng */
+}
+
+    /* Làm cho vùng nhập liệu có thể cuộn nếu quá dài */
+.reg-scroll-area {
+    max-height: 60vh; /* Giới hạn chiều cao bằng 60% màn hình */
+    overflow-y: auto;
+    padding-right: 10px;
+    margin-bottom: 10px;
+}
+
+/* Tùy chỉnh thanh cuộn màu hồng cho dễ thương */
+.reg-scroll-area::-webkit-scrollbar {
+    width: 5px;
+}
+.reg-scroll-area::-webkit-scrollbar-thumb {
+    background: #ffc0cb;
+    border-radius: 10px;
+}
+
+/* Định dạng các ô nhập liệu bên trong popup */
+.reg-scroll-area input, 
+.reg-scroll-area textarea {
+    width: 100%;
+    padding: 12px;
+    margin: 10px 0;
+    border: 2px solid #ffe4e1;
+    border-radius: 15px;
+    outline: none;
+}
 </style>
 </head>
 <body>
@@ -5347,7 +5388,7 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
             </div>
         </div>
 
-        <button class="btn-login" onclick="handleEmailRegister()" style="margin-top: 15px;">XÁC NHẬN ĐĂNG KÝ</button>
+        <button class="btn-login" onclick="handleEmailLogin()" style="margin-top: 15px;">XÁC NHẬN ĐĂNG KÝ</button>
     </div>
 </div>
 
@@ -8633,7 +8674,12 @@ function checkLoginStatus() {
     });
 }
     
-async function handleLogin() {
+async function handleEmailLogin() {
+    const isAgreed = document.getElementById('reg-confirm').checked;
+if (!isAgreed) {
+    alert("🌸 Bạn ơi, bạn cần đồng ý với luật khu vực trước khi tham gia nhé!");
+    return;
+}
     // Lấy thông tin từ các ô nhập liệu (Dùng chung cho cả Login/Register)
     const nameInput = document.getElementById('reg-name');
     const name = nameInput.value.trim();
@@ -15280,8 +15326,17 @@ async function openLinkEmailPopup() {
     }
 }
 
-// Đảm bảo gọi checkEmailLinkStatus() mỗi khi mở Modal Settings lên
-// Ví dụ: toggleModal('modal-settings') thì thêm checkEmailLinkStatus() vào cuối.
+    function toggleRegPopup(show) {
+    const popup = document.getElementById('reg-popup');
+    if (popup) {
+        popup.style.display = show ? 'flex' : 'none';
+        
+        // Thêm hiệu ứng khóa cuộn trang khi mở popup (tùy chọn)
+        document.body.style.overflow = show ? 'hidden' : 'auto';
+    } else {
+        console.error("Lỗi: Không tìm thấy ID 'reg-popup' trong HTML!");
+    }
+}
 </script>
 </body>
 </html>
