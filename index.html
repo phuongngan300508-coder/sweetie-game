@@ -5149,6 +5149,17 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
     .theme-scroll-bar::-webkit-scrollbar-thumb:hover {
         background: #ff69b4; /* Hồng đậm hơn khi di chuột vào để kéo */
     }
+
+    /* Thêm đoạn này vào file CSS của bạn */
+#modal-search-msg {
+    z-index: 20000 !important; /* Cao hơn tất cả các modal khác */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5); /* Làm mờ nền để làm nổi bật popup */
+}
 </style>
 </head>
 <body>
@@ -14834,6 +14845,14 @@ document.addEventListener('touchend', function (event) {
 
 // 1. Mở Modal
 function openSearchModal() {
+    const searchModal = document.getElementById('modal-search-msg');
+    if (searchModal) {
+        // Ép popup tìm kiếm luôn nổi lên trên cùng (z-index cực cao)
+        searchModal.style.setProperty('z-index', '20000', 'important');
+        searchModal.style.setProperty('display', 'flex', 'important');
+    }
+
+    // --- GIỮ NGUYÊN 100% NỘI DUNG GỐC CỦA BẠN ---
     toggleModal('modal-search-msg');
     const input = document.getElementById('input-search-msg');
     input.value = "";
