@@ -7962,8 +7962,12 @@ if (xhElem) {
         updateCardStatus(document.getElementById(id), false, 'MỞ CỬA', 'status-open');
     });
 
-    // --- 3. LOGIC ƯU ĐÃI THỎ PHIÊU LƯU & ZONE ACCESS ---
-const isNhanGiongDone = userData.gamePlays['cuaHangNhanGiong'] && userData.gamePlays['cuaHangNhanGiong'].count > 0;
+   / --- 3. LOGIC ƯU ĐÃI THỎ PHIÊU LƯU & ZONE ACCESS ---
+// Kiểm tra xem userData và gamePlays có tồn tại không trước khi truy cập
+const isNhanGiongDone = (userData && userData.gamePlays && userData.gamePlays['cuaHangNhanGiong']) 
+                        ? userData.gamePlays['cuaHangNhanGiong'].count > 0 
+                        : false;
+
 const thoCard = document.getElementById('thoPhieuLuuVoTan');
 
 if (thoCard) {
