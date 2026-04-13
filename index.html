@@ -5174,61 +5174,74 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
         <div class="auth-visual">
             <i class="fas fa-gamepad"></i>
             <h1 style="font-family: 'Poppins'; font-weight: 900; margin: 0;">WELCOME</h1>
-            <p style="font-weight: 500; opacity: 0.9;">Khám phá thế giới Minigame hồng rực rỡ và nhận những phần quà hấp dẫn mỗi ngày!</p>
+            <p style="font-weight: 500; opacity: 0.9;">Khám phá thế giới Minigame hồng rực rỡ và lưu trữ tài khoản vĩnh viễn bằng Email!</p>
         </div>
 
         <div class="auth-form-container">
-            <div class="auth-form">
+            <div class="auth-form" id="login-section">
                 <h2>🌸 ĐĂNG NHẬP SẢNH</h2>
-    <input type="text" id="reg-name" placeholder="Tên của bạn..." required>
-    <select id="reg-gender" required style="width: 100%; padding: 12px; margin: 10px 0; border: 2px solid #ffe4e1; border-radius: 15px;">
-        <option value="" disabled selected>Chọn giới tính của bạn...</option>
-        <option value="Nam">Nam</option>
-        <option value="Nữ">Nữ</option>
-    </select>
+                <input type="text" id="login-name" placeholder="Tên của bạn..." required>
+                <input type="email" id="login-email" placeholder="Email đã liên kết..." required>
+                <input type="password" id="login-pass" placeholder="Mật khẩu..." required>
 
-    <div style="text-align: left; margin: 10px 0 5px 5px;">
-        <label for="reg-date" style="font-size: 0.85em; font-weight: 700; color: var(--pink-dark);">
-            <i class="fas fa-calendar-plus"></i> Ngày gia nhập:
-        </label>
-    </div>
-    <input type="date" id="reg-date" title="Ngày gia nhập" style="margin-top: 0;">
-
-    <textarea id="reg-purpose" placeholder="Mục đích tham gia..." rows="2"></textarea>
-    
-    <div style="text-align: left; margin: 10px 0 5px 5px;">
-    <label for="reg-unlocked-days" style="font-size: 0.85em; font-weight: 700; color: var(--pink-dark);">
-        <i class="fas fa-key"></i> Số ngày đã mở khóa bảng điểm danh (nếu có):
-    </label>
-</div>
-
-<input type="number" id="reg-unlocked-days" placeholder="Nhập 0 nếu chưa mở..." min="0" value="0" style="margin-top: 0;">
-        
-        <div style="text-align: left; margin: 20px 0 10px 5px; padding: 15px; background: #fff5f8; border-radius: 20px; border: 1px solid #ffc0cb;">
-    <p style="font-size: 0.9em; font-weight: 800; color: #ff1493; margin-top: 0;">
-        <i class="fas fa-history"></i> KHÔI PHỤC PHÍ KHU ĐÃ TRẢ:
-    </p>
-    
-    <div id="restore-zones-list">
-        </div>
-</div>        
-                <p style="font-weight: bold; font-size: 0.8em; margin-bottom: 5px; color: var(--pink-dark);">BẢNG LUẬT KHU VỰC:</p>
-                <div class="rules-box">
-                    <b>LUẬT CỦA KHU MINIGAME:</b><br>
-                    1. KHÔNG ĐƯỢC ĐỂ LỘ TẤT CẢ VỀ KHU MINIGAME CHO NGƯỜI NGOÀI.<br>
-                    2. KHÔNG GIAN LẬN, THẤY LỖI PHẢI BÁO NGAY.<br>
-                    3. KHÔNG BAO CHE GIAN LẬN (PHẠT CHUNG).<br>
-                    4. ĐỔI THƯỞNG PHẢI CÓ ẢNH XÁC THỰC. KHÔNG ẢNH = KHÔNG CÓ GÌ.<br><br>
-                    <b>HÌNH PHẠT:</b> Vi phạm lần 1 phạt 50k, lần 2 phạt 100k, lần 3 phạt 150k và trục xuất.
+                <div style="text-align: left; margin: 10px 0 5px 5px;">
+                    <label for="reg-unlocked-days" style="font-size: 0.85em; font-weight: 700; color: var(--pink-dark);">
+                        <i class="fas fa-key"></i> Số ngày đã mở khóa bảng điểm danh (nếu có):
+                    </label>
                 </div>
-                
-                <div class="checkbox-container">
-    <label for="reg-confirm">Tôi đã đọc và đồng ý với luật</label>
-    <input type="checkbox" id="reg-confirm">
-</div>
-                
-                <button class="btn-login" onclick="handleLogin()">VÀO KHU MINIGAME</button>
+                <input type="number" id="login-unlocked-days" placeholder="Nhập 0 nếu chưa mở..." min="0" value="0">
+
+                <div style="text-align: left; margin: 20px 0 10px 5px; padding: 15px; background: #fff5f8; border-radius: 20px; border: 1px solid #ffc0cb;">
+                    <p style="font-size: 0.9em; font-weight: 800; color: #ff1493; margin-top: 0;">
+                        <i class="fas fa-history"></i> KHÔI PHỤC PHÍ KHU ĐÃ TRẢ:
+                    </p>
+                    <div id="restore-zones-list-login"></div> </div>
+
+                <div style="text-align: right; margin-bottom: 10px;">
+                    <span onclick="handleForgotPassword()" style="color: #ff69b4; font-size: 0.8em; cursor: pointer; font-weight: bold; text-decoration: underline;">Quên mật khẩu?</span>
+                </div>
+
+                <button class="btn-login" onclick="loginWithEmail()">VÀO KHU MINIGAME</button>
+
+                <button onclick="toggleRegisterPopup(true)" style="margin-top: 15px; background: none; border: 2px solid #ffc0cb; color: #ff1493; padding: 10px; border-radius: 50px; width: 100%; cursor: pointer; font-weight: bold;">
+                    CHƯA CÓ TÀI KHOẢN? ĐĂNG KÝ NGAY
+                </button>
             </div>
+        </div>
+    </div>
+</div>
+
+<div id="modal-register-new" class="modal-overlay" style="display: none; z-index: 10001;">
+    <div class="modal-content animate__animated animate__zoomIn" style="max-width: 450px; border: 3px solid #ffb6c1; padding: 0; overflow: hidden;">
+        <div style="background: #ff69b4; color: white; padding: 20px; text-align: center; position: relative;">
+            <h2 style="margin: 0; font-size: 1.2em;"><i class="fas fa-user-plus"></i> ĐĂNG KÝ TÀI KHOẢN</h2>
+            <span class="close-modal" onclick="toggleRegisterPopup(false)" style="position: absolute; top: 15px; right: 20px; color: white; cursor: pointer;">✕</span>
+        </div>
+        <div class="modal-body" style="padding: 20px; text-align: left;">
+            <input type="text" id="reg-name" placeholder="Tên hiển thị..." required style="width: 100%; padding: 12px; margin-bottom: 10px; border: 2px solid #ffe4e1; border-radius: 15px;">
+            <input type="email" id="reg-email" placeholder="Email (dùng để đăng nhập)..." required style="width: 100%; padding: 12px; margin-bottom: 10px; border: 2px solid #ffe4e1; border-radius: 15px;">
+            <input type="password" id="reg-password" placeholder="Mật khẩu..." required style="width: 100%; padding: 12px; margin-bottom: 10px; border: 2px solid #ffe4e1; border-radius: 15px;">
+            <input type="password" id="reg-confirm-password" placeholder="Xác nhận lại mật khẩu..." required style="width: 100%; padding: 12px; margin-bottom: 10px; border: 2px solid #ffe4e1; border-radius: 15px;">
+            
+            <select id="reg-gender" style="width: 100%; padding: 12px; margin-bottom: 10px; border: 2px solid #ffe4e1; border-radius: 15px;">
+                <option value="" disabled selected>Chọn giới tính...</option>
+                <option value="Nam">Nam</option>
+                <option value="Nữ">Nữ</option>
+            </select>
+
+            <textarea id="reg-purpose" placeholder="Mục đích tham gia..." rows="2" style="width: 100%; padding: 12px; margin-bottom: 10px; border: 2px solid #ffe4e1; border-radius: 15px;"></textarea>
+
+            <div class="rules-box" style="font-size: 0.75em; max-height: 100px; overflow-y: auto; margin-bottom: 10px;">
+                <b>LUẬT CỦA KHU MINIGAME:</b><br>
+                1. KHÔNG ĐỂ LỘ THÔNG TIN.<br>2. KHÔNG GIAN LẬN.<br>3. KHÔNG BAO CHE.<br>4. PHẢI CÓ ẢNH XÁC THỰC.
+            </div>
+
+            <div class="checkbox-container" style="margin-bottom: 15px;">
+                <label for="reg-confirm" style="font-size: 0.8em;">Tôi đồng ý với luật</label>
+                <input type="checkbox" id="reg-confirm">
+            </div>
+
+            <button class="btn-login" onclick="handleNewRegistration()" style="width: 100%;">HOÀN TẤT ĐĂNG KÝ</button>
         </div>
     </div>
 </div>
@@ -6425,6 +6438,14 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
         </div>
     </a>
 </div>
+            <div style="background: #fff5f8; border: 2px solid #ffb6c1; border-radius: 20px; padding: 15px; margin-bottom: 20px;">
+    <b style="color: #d63384;"><i class="fas fa-link"></i> LIÊN KẾT EMAIL TRUY CẬP</b>
+    <p style="font-size: 0.75em; color: #b191b1; margin: 5px 0 10px 0;">Giúp bạn đăng nhập tài khoản này trên mọi thiết bị.</p>
+    
+    <div id="link-email-status">
+        <button onclick="openLinkEmailPopup()" class="btn-wallet" style="background: #ff69b4; color: white; width: 100%;">LIÊN KẾT NGAY</button>
+    </div>
+</div>
             <p style="font-weight: 800; color: var(--pink-dark); font-size: 0.9em; margin-bottom: 15px;">TÀI KHOẢN & HỆ THỐNG</p>
             
             <div style="background: #fff5f5; border: 2px solid #ffe4e1; border-radius: 20px; padding: 15px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
@@ -6442,6 +6463,17 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
     </div>
 </div>
 
+    <div id="modal-link-email" class="modal-overlay" style="display: none;">
+    <div class="modal-content modal-small">
+        <h3 style="color: #ff1493;">LIÊN KẾT TÀI KHOẢN</h3>
+        <input type="email" id="link-email" placeholder="Nhập email muốn liên kết...">
+        <input type="password" id="link-password" placeholder="Đặt mật khẩu mới...">
+        <input type="password" id="link-confirm" placeholder="Xác nhận mật khẩu...">
+        <button class="btn-login" onclick="processLinkEmail()">XÁC NHẬN LIÊN KẾT</button>
+        <button onclick="document.getElementById('modal-link-email').style.display='none'" style="background:none; border:none; color:#888; margin-top:10px;">HỦY</button>
+    </div>
+</div>
+    
 <div id="modal-transfer-info" class="modal-overlay" style="z-index: 10002;">
     <div class="modal-content modal-small animate__animated animate__zoomIn" style="border: 3px solid #ffb6c1;">
         <div class="modal-header" style="background: #ff1493; color: white; border-bottom: none;">
@@ -15032,6 +15064,128 @@ function exitSearchMode() {
         console.error('Lỗi upload Cloudinary:', error);
         throw error;
     }
+}
+
+    // --- 1. CHUYỂN ĐỔI GIỮA ĐĂNG NHẬP & ĐĂNG KÝ ---
+function toggleAuthPopup(mode) {
+    if (mode === 'register') {
+        document.getElementById('modal-register').style.display = 'flex';
+    } else {
+        document.getElementById('modal-register').style.display = 'none';
+    }
+}
+
+// --- 2. ĐĂNG KÝ TÀI KHOẢN MỚI ---
+async function registerWithEmail() {
+    const email = document.getElementById('reg-email').value.trim();
+    const pass = document.getElementById('reg-password').value;
+    const confirmPass = document.getElementById('reg-confirm-password').value;
+    const name = document.getElementById('reg-name').value.trim();
+    const gender = document.getElementById('reg-gender').value;
+
+    if (!email || !pass || !name || !gender) return alert("Vui lòng điền đủ thông tin!");
+    if (pass !== confirmPass) return alert("Mật khẩu xác nhận không khớp!");
+    if (!document.getElementById('reg-confirm').checked) return alert("Vui lòng đồng ý với luật!");
+
+    try {
+        // Kiểm tra email đã tồn tại trong DB chưa (Để tránh trùng)
+        const snapshot = await db.ref('users').orderByChild('email').equalTo(email).once('value');
+        if (snapshot.exists()) return alert("Email này đã được đăng ký cho một tài khoản khác!");
+
+        // Tạo User Data
+        userData = {
+            profile: { name, gender, email, uid: "SGW" + Math.floor(10000 + Math.random() * 90000), date: new Date().toISOString().split('T')[0] },
+            password: pass, // Lưu để verify đơn giản hoặc dùng Auth
+            balance: 0,
+            history: [],
+            gamePlays: {},
+            zoneAccess: {},
+            lastOnline: firebase.database.ServerValue.TIMESTAMP
+        };
+
+        // Lưu lên Firebase với key là Tên (để giữ tính tương thích cũ)
+        await db.ref('users/' + name).set(userData);
+        
+        currentUser = name;
+        localStorage.setItem('lastLoggedInUser', name);
+        alert("🎉 Đăng ký thành công!");
+        location.reload();
+    } catch (e) {
+        alert("Lỗi đăng ký: " + e.message);
+    }
+}
+
+// --- 3. ĐĂNG NHẬP BẰNG EMAIL ---
+async function loginWithEmail() {
+    const email = document.getElementById('login-email').value.trim();
+    const pass = document.getElementById('login-password').value;
+
+    if (!email || !pass) return alert("Vui lòng nhập Email và Mật khẩu!");
+
+    try {
+        // Tìm user theo Email
+        const snapshot = await db.ref('users').orderByChild('email').equalTo(email).once('value');
+        if (!snapshot.exists()) return alert("Email này chưa được đăng ký!");
+
+        let foundUser = null;
+        snapshot.forEach(child => {
+            if (child.val().password === pass) {
+                foundUser = child.val();
+            }
+        });
+
+        if (foundUser) {
+            userData = foundUser;
+            currentUser = foundUser.profile.name;
+            localStorage.setItem('lastLoggedInUser', currentUser);
+            alert("🌸 Chào mừng quay trở lại, " + currentUser + "!");
+            location.reload();
+        } else {
+            alert("Mật khẩu không chính xác!");
+        }
+    } catch (e) {
+        alert("Lỗi đăng nhập: " + e.message);
+    }
+}
+
+// --- 4. TÍNH NĂNG QUÊN MẬT KHẨU (Như Google) ---
+function handleForgotPassword() {
+    const email = prompt("Nhập email bạn đã đăng ký để khôi phục mật khẩu:");
+    if (email) {
+        db.ref('users').orderByChild('email').equalTo(email).once('value', snapshot => {
+            if (snapshot.exists()) {
+                alert("Yêu cầu đã được gửi! Vui lòng liên hệ Admin qua Zalo/FB để nhận mã đặt lại mật khẩu mới cho email này.");
+            } else {
+                alert("Email này không tồn tại trong hệ thống!");
+            }
+        });
+    }
+}
+
+
+    function openLinkEmailPopup() {
+    if (userData.email) return alert("Tài khoản này đã được liên kết với: " + userData.email);
+    document.getElementById('modal-link-email').style.display = 'flex';
+}
+
+async function processLinkEmail() {
+    const email = document.getElementById('link-email').value;
+    const pass = document.getElementById('link-password').value;
+    const confirm = document.getElementById('link-confirm').value;
+
+    if (pass !== confirm) return alert("Mật khẩu không khớp!");
+    
+    // Kiểm tra xem email này có ai dùng chưa
+    const check = await db.ref('users').orderByChild('email').equalTo(email).once('value');
+    if (check.exists()) return alert("Email này đã được sử dụng bởi người khác!");
+
+    // Cập nhật dữ liệu
+    userData.email = email;
+    userData.password = pass;
+    saveData();
+    
+    alert("✨ Liên kết thành công! Từ giờ bạn có thể dùng Email này để đăng nhập.");
+    location.reload();
 }
 </script>
 </body>
