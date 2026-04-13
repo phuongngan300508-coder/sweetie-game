@@ -32,9 +32,8 @@
 
 <link rel="icon" type="image/png" href="https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png">
 
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-messaging.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
@@ -5150,142 +5149,6 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
     .theme-scroll-bar::-webkit-scrollbar-thumb:hover {
         background: #ff69b4; /* Hồng đậm hơn khi di chuột vào để kéo */
     }
-
-    .popup-overlay {
-    display: none;
-    position: fixed;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 1000;
-    justify-content: center; align-items: center;
-}
-
-.popup-content.pink-theme {
-    background: #fff0f5; /* LavenderBlush */
-    padding: 30px;
-    border-radius: 30px;
-    width: 90%;
-    max-width: 450px;
-    max-height: 85vh;
-    overflow-y: auto;
-    border: 5px solid #ffc0cb;
-    box-shadow: 0 10px 25px rgba(255, 20, 147, 0.3);
-    position: relative;
-    animation: popupFade 0.3s ease;
-}
-
-@keyframes popupFade {
-    from { transform: scale(0.8); opacity: 0; }
-    to { transform: scale(1); opacity: 1; }
-}
-
-.btn-register-trigger {
-    background: none;
-    border: none;
-    color: #ff69b4;
-    font-weight: bold;
-    text-decoration: underline;
-    cursor: pointer;
-}
-
-.scroll-area { margin-top: 15px; }
-.scroll-area input, .scroll-area select, .scroll-area textarea {
-    width: 100%; padding: 12px; margin: 8px 0;
-    border-radius: 15px; border: 2px solid #ffc0cb;
-}
-
-    /* Thiết kế nút Đăng ký mới */
-.btn-open-reg {
-    background: #fff0f5; /* LavenderBlush */
-    border: 2px solid #ffc0cb;
-    color: #ff1493;
-    padding: 10px 20px;
-    border-radius: 50px;
-    font-weight: 800;
-    font-size: 0.85em;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: block;
-    width: 80%;
-    margin: 15px auto 0;
-    text-align: center;
-    box-shadow: 0 4px 10px rgba(255, 182, 193, 0.3);
-    position: relative;
-    overflow: hidden;
-}
-
-/* Hiệu ứng khi di chuột vào */
-.btn-open-reg:hover {
-    background: #ff69b4;
-    color: white;
-    border-color: #ff69b4;
-    transform: translateY(-2px);
-    box-shadow: 0 6px 15px rgba(255, 20, 147, 0.4);
-}
-
-/* Hiệu ứng tia sáng lướt qua khi rê chuột vào */
-.btn-open-reg::after {
-    content: '';
-    position: absolute;
-    top: -50%;
-    left: -60%;
-    width: 20%;
-    height: 200%;
-    background: rgba(255, 255, 255, 0.4);
-    transform: rotate(30deg);
-    transition: all 0.5s;
-}
-
-.btn-open-reg:hover::after {
-    left: 120%;
-}
-
-/* Hiệu ứng khi nhấn xuống */
-.btn-open-reg:active {
-    transform: translateY(1px);
-    box-shadow: 0 2px 5px rgba(255, 20, 147, 0.2);
-}
-
-    .reg-popup-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.6);
-    display: none; /* Mặc định ẩn, JS sẽ đổi thành flex */
-    justify-content: center;
-    align-items: center;
-    z-index: 9999; /* Đảm bảo nổi lên trên cùng */
-}
-
-    /* Làm cho vùng nhập liệu có thể cuộn nếu quá dài */
-.reg-scroll-area {
-    max-height: 60vh; /* Giới hạn chiều cao bằng 60% màn hình */
-    overflow-y: auto;
-    padding-right: 10px;
-    margin-bottom: 10px;
-}
-
-/* Tùy chỉnh thanh cuộn màu hồng cho dễ thương */
-.reg-scroll-area::-webkit-scrollbar {
-    width: 5px;
-}
-.reg-scroll-area::-webkit-scrollbar-thumb {
-    background: #ffc0cb;
-    border-radius: 10px;
-}
-
-/* Định dạng các ô nhập liệu bên trong popup */
-.reg-scroll-area input, 
-.reg-scroll-area textarea {
-    width: 100%;
-    padding: 12px;
-    margin: 10px 0;
-    border: 2px solid #ffe4e1;
-    border-radius: 15px;
-    outline: none;
-}
 </style>
 </head>
 <body>
@@ -5311,84 +5174,62 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
         <div class="auth-visual">
             <i class="fas fa-gamepad"></i>
             <h1 style="font-family: 'Poppins'; font-weight: 900; margin: 0;">WELCOME</h1>
-            <p style="font-weight: 500; opacity: 0.9;">Hệ thống tài khoản liên kết Email vĩnh viễn!</p>
+            <p style="font-weight: 500; opacity: 0.9;">Khám phá thế giới Minigame hồng rực rỡ và nhận những phần quà hấp dẫn mỗi ngày!</p>
         </div>
 
         <div class="auth-form-container">
-            <div class="auth-form" id="login-section">
+            <div class="auth-form">
                 <h2>🌸 ĐĂNG NHẬP SẢNH</h2>
-                <input type="text" id="login-name" placeholder="Tên của bạn..." required>
-                <input type="email" id="login-email" placeholder="Email của bạn..." required>
-                <input type="password" id="login-password" placeholder="Mật khẩu..." required>
+    <input type="text" id="reg-name" placeholder="Tên của bạn..." required>
+    <select id="reg-gender" required style="width: 100%; padding: 12px; margin: 10px 0; border: 2px solid #ffe4e1; border-radius: 15px;">
+        <option value="" disabled selected>Chọn giới tính của bạn...</option>
+        <option value="Nam">Nam</option>
+        <option value="Nữ">Nữ</option>
+    </select>
 
-                <div style="text-align: left; margin: 10px 0 5px 5px;">
-                    <label for="reg-unlocked-days" style="font-size: 0.85em; font-weight: 700; color: var(--pink-dark);">
-                        <i class="fas fa-key"></i> Số ngày đã mở khóa bảng điểm danh (nếu có):
-                    </label>
-                </div>
-                <input type="number" id="reg-unlocked-days" placeholder="Nhập 0 nếu chưa mở..." min="0" value="0">
-
-                <div style="text-align: left; margin: 20px 0 10px 5px; padding: 15px; background: #fff5f8; border-radius: 20px; border: 1px solid #ffc0cb;">
-                    <p style="font-size: 0.9em; font-weight: 800; color: #ff1493; margin-top: 0;">
-                        <i class="fas fa-history"></i> KHÔI PHỤC PHÍ KHU ĐÃ TRẢ:
-                    </p>
-                    <div id="restore-zones-list"></div>
-                </div>
-
-                <button class="btn-login" onclick="handleEmailLogin()">VÀO KHU MINIGAME</button>
-                <p onclick="forgotPassword()" style="font-size: 0.8em; color: #ff1493; cursor: pointer; text-align: center; margin-top: 10px; font-weight: bold;">Quên mật khẩu?</p>
-                
-                <hr style="border: 0.5px solid #ffe4e1; margin: 20px 0;">
-                <button class="btn-open-reg" onclick="toggleRegPopup(true)">
-    <i class="fas fa-heart"></i> Chưa có tài khoản? Đăng ký ngay
-</button>
-            </div>
-        </div>
+    <div style="text-align: left; margin: 10px 0 5px 5px;">
+        <label for="reg-date" style="font-size: 0.85em; font-weight: 700; color: var(--pink-dark);">
+            <i class="fas fa-calendar-plus"></i> Ngày gia nhập:
+        </label>
     </div>
+    <input type="date" id="reg-date" title="Ngày gia nhập" style="margin-top: 0;">
+
+    <textarea id="reg-purpose" placeholder="Mục đích tham gia..." rows="2"></textarea>
+    
+    <div style="text-align: left; margin: 10px 0 5px 5px;">
+    <label for="reg-unlocked-days" style="font-size: 0.85em; font-weight: 700; color: var(--pink-dark);">
+        <i class="fas fa-key"></i> Số ngày đã mở khóa bảng điểm danh (nếu có):
+    </label>
 </div>
 
-<div id="reg-popup" class="reg-popup-overlay" style="display: none;">
-    <div class="reg-popup-content">
-        <span class="close-popup" onclick="toggleRegPopup(false)">&times;</span>
-        <h2 style="color: #ff1493; margin-top: 0;">🌸 ĐĂNG KÝ TÀI KHOẢN</h2>
+<input type="number" id="reg-unlocked-days" placeholder="Nhập 0 nếu chưa mở..." min="0" value="0" style="margin-top: 0;">
         
-        <div class="reg-scroll-area">
-            <input type="text" id="reg-name" placeholder="Tên của bạn..." required>
-            <input type="email" id="reg-email" placeholder="Email đăng ký..." required>
-            <input type="password" id="reg-pass" placeholder="Mật khẩu..." required>
-            <input type="password" id="reg-pass-confirm" placeholder="Xác nhận mật khẩu..." required>
-
-            <select id="reg-gender" required style="width: 100%; padding: 12px; margin: 10px 0; border: 2px solid #ffe4e1; border-radius: 15px;">
-                <option value="" disabled selected>Chọn giới tính của bạn...</option>
-                <option value="Nam">Nam</option>
-                <option value="Nữ">Nữ</option>
-            </select>
-
-            <div style="text-align: left; margin: 10px 0 5px 5px;">
-                <label for="reg-date" style="font-size: 0.85em; font-weight: 700; color: var(--pink-dark);">
-                    <i class="fas fa-calendar-plus"></i> Ngày gia nhập:
-                </label>
-            </div>
-            <input type="date" id="reg-date">
-            <textarea id="reg-purpose" placeholder="Mục đích tham gia..." rows="2"></textarea>
-
-            <p style="font-weight: bold; font-size: 0.8em; margin: 15px 0 5px; color: var(--pink-dark);">BẢNG LUẬT KHU VỰC:</p>
-            <div class="rules-box">
-                <b>LUẬT CỦA KHU MINIGAME:</b><br>
-                1. KHÔNG ĐƯỢC ĐỂ LỘ TẤT CẢ VỀ KHU MINIGAME CHO NGƯỜI NGOÀI.<br>
-                2. KHÔNG GIAN LẬN, THẤY LỖI PHẢI BÁO NGAY.<br>
-                3. KHÔNG BAO CHE GIAN LẬN (PHẠT CHUNG).<br>
-                4. ĐỔI THƯỞNG PHẢI CÓ ẢNH XÁC THỰC.<br><br>
-                <b>HÌNH PHẠT:</b> Vi phạm 3 lần sẽ bị trục xuất.
-            </div>
-
-            <div class="checkbox-container">
-                <label for="reg-confirm">Tôi đã đọc và đồng ý với luật</label>
-                <input type="checkbox" id="reg-confirm">
+        <div style="text-align: left; margin: 20px 0 10px 5px; padding: 15px; background: #fff5f8; border-radius: 20px; border: 1px solid #ffc0cb;">
+    <p style="font-size: 0.9em; font-weight: 800; color: #ff1493; margin-top: 0;">
+        <i class="fas fa-history"></i> KHÔI PHỤC PHÍ KHU ĐÃ TRẢ:
+    </p>
+    
+    <div id="restore-zones-list">
+        </div>
+</div>        
+                <p style="font-weight: bold; font-size: 0.8em; margin-bottom: 5px; color: var(--pink-dark);">BẢNG LUẬT KHU VỰC:</p>
+                <div class="rules-box">
+                    <b>LUẬT CỦA KHU MINIGAME:</b><br>
+                    1. KHÔNG ĐƯỢC ĐỂ LỘ TẤT CẢ VỀ KHU MINIGAME CHO NGƯỜI NGOÀI.<br>
+                    2. KHÔNG GIAN LẬN, THẤY LỖI PHẢI BÁO NGAY.<br>
+                    3. KHÔNG BAO CHE GIAN LẬN (PHẠT CHUNG).<br>
+                    4. ĐỔI THƯỞNG PHẢI CÓ ẢNH XÁC THỰC. KHÔNG ẢNH = KHÔNG CÓ GÌ.<br><br>
+                    <b>HÌNH PHẠT:</b> Vi phạm lần 1 phạt 50k, lần 2 phạt 100k, lần 3 phạt 150k và trục xuất.
+                </div>
+                
+                <div class="checkbox-container">
+    <label for="reg-confirm">Tôi đã đọc và đồng ý với luật</label>
+    <input type="checkbox" id="reg-confirm">
+</div>
+                
+                <button class="btn-login" onclick="handleLogin()">VÀO KHU MINIGAME</button>
             </div>
         </div>
-
-        <button class="btn-login" onclick="handleEmailLogin()" style="margin-top: 15px;">XÁC NHẬN ĐĂNG KÝ</button>
     </div>
 </div>
 
@@ -6584,16 +6425,6 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
         </div>
     </a>
 </div>
-            <p style="font-weight: 800; color: var(--pink-dark); font-size: 0.9em; margin-bottom: 15px;">BẢO MẬT TÀI KHOẢN</p>
-<div id="email-link-section" style="background: #fff5fb; border: 2px solid #ffc0cb; border-radius: 20px; padding: 15px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-    <div id="email-link-info">
-        <b style="color: #d63384;">Liên kết Email</b>
-        <p id="email-link-status" style="font-size: 0.75em; color: #b191b1; margin: 3px 0 0 0;">Bảo mật tài khoản vĩnh viễn</p>
-    </div>
-    <button id="btn-link-email" onclick="openLinkEmailPopup()" class="btn-wallet" style="background: #ff69b4; color: white; padding: 8px 15px;">
-        <i class="fas fa-link"></i> Liên kết
-    </button>
-</div>
             <p style="font-weight: 800; color: var(--pink-dark); font-size: 0.9em; margin-bottom: 15px;">TÀI KHOẢN & HỆ THỐNG</p>
             
             <div style="background: #fff5f5; border: 2px solid #ffe4e1; border-radius: 20px; padding: 15px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
@@ -7489,7 +7320,6 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
     </div>
 </div>
 <script>
-    let userData = {}; // Khởi tạo là một object rỗng để tránh lỗi "is not defined"
   let replyingTo = null; // Lưu tin nhắn đang được trả lời {id, text, sender}
   // Biến cờ để đảm bảo mỗi máy chỉ "nghe" Firebase đúng 1 lần duy nhất
 let isSocialInitialized = false;
@@ -7531,8 +7361,7 @@ const ZONE_CONFIG = {
 }
 
 function updateCountdown() {
-    // --- BƯỚC FIX LỖI: Kiểm tra userData có tồn tại không trước khi đọc thuộc tính ---
-    if (!userData || !userData.hasAccess || !userData.expiryDate) return;
+    if (!userData.hasAccess || !userData.expiryDate) return;
 
     const vnNow = getVietnamTime().getTime();
     const expiryMs = userData.expiryDate;
@@ -7555,22 +7384,14 @@ function updateCountdown() {
     const seconds = Math.floor((diff % (1000 * 60)) / 1000);
 
     // Hiển thị lên giao diện
-    const cDays = document.getElementById('c-days');
-    const cTime = document.getElementById('c-time');
-    
-    if (cDays) cDays.innerText = days;
-    if (cTime) {
-        cTime.innerText = 
-            `${String(hours).padStart(2,'0')}:${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}`;
-    }
+    document.getElementById('c-days').innerText = days;
+    document.getElementById('c-time').innerText = 
+        `${String(hours).padStart(2,'0')}:${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}`;
 
     // Hiệu ứng đổi màu cảnh báo nếu còn dưới 3 ngày
-    if (days < 3 && expiryNotice) {
-        const span = expiryNotice.querySelector('span');
-        if (span) {
-            span.style.color = '#ff0000';
-            span.style.animation = 'pulse 1s infinite';
-        }
+    if (days < 3) {
+        expiryNotice.querySelector('span').style.color = '#ff0000';
+        expiryNotice.querySelector('span').style.animation = 'pulse 1s infinite';
     }
 }
 
@@ -7626,13 +7447,6 @@ function getWeekNumber(d) {
 }
 
    function checkMinigameStatus() {
-       // --- BƯỚC FIX LỖI: KIỂM TRA DỮ LIỆU ĐẦU VÀO ---
-    // Nếu chưa có userData hoặc gamePlays, thoát hàm ngay để tránh sập web
-    if (!userData || !userData.gamePlays) {
-        console.warn("Hệ thống: Đang chờ tải dữ liệu người dùng...");
-        return; 
-    }
-       
     const vn = getVietnamTime();
     const day = vn.getDay(); 
     const currentWeek = getWeekNumber(vn);
@@ -8148,22 +7962,24 @@ if (xhElem) {
         updateCardStatus(document.getElementById(id), false, 'MỞ CỬA', 'status-open');
     });
 
-   // --- 3. LOGIC ƯU ĐÃI THỎ PHIÊU LƯU & ZONE ACCESS ---
-    // SỬA LỖI TẠI ĐÂY: Dùng ?. để truy cập an toàn
-    const isNhanGiongDone = userData.gamePlays['cuaHangNhanGiong']?.count > 0;
-    const thoCard = document.getElementById('thoPhieuLuuVoTan');
+    // --- 3. LOGIC ƯU ĐÃI THỎ PHIÊU LƯU & ZONE ACCESS ---
+const isNhanGiongDone = userData.gamePlays['cuaHangNhanGiong'] && userData.gamePlays['cuaHangNhanGiong'].count > 0;
+const thoCard = document.getElementById('thoPhieuLuuVoTan');
 
-    if (thoCard) {
-        const fee = isNhanGiongDone ? 25000 : 30000;
-        thoCard.setAttribute('data-fee', fee);
-        const costText = thoCard.querySelector('.cost');
-        
-        if (costText) {
-            costText.innerText = `PHÍ: ${fee.toLocaleString()} ĐỒNG ${isNhanGiongDone ? '(ƯU ĐÃI)' : ''}`;
-            costText.style.color = isNhanGiongDone ? "#28a745" : "#d63384";
-        }
-        updateCardStatus(thoCard, false, 'MỞ CỬA', 'status-open');
+if (thoCard) {
+    const fee = isNhanGiongDone ? 25000 : 30000;
+    thoCard.setAttribute('data-fee', fee);
+    const costText = thoCard.querySelector('.cost');
+    
+    if (costText) {
+        costText.innerText = `PHÍ: ${fee.toLocaleString()} ĐỒNG ${isNhanGiongDone ? '(ƯU ĐÃI)' : ''}`;
+        costText.style.color = isNhanGiongDone ? "#28a745" : "#d63384";
     }
+
+    // --- DÒNG QUAN TRỌNG: Cập nhật trạng thái để hết hiện "Đang kiểm tra" ---
+    // Vì game này mở vĩnh viễn, ta để disabled là false và hiện "MỞ CỬA"
+    updateCardStatus(thoCard, false, 'MỞ CỬA', 'status-open');
+}
     
     checkPiggyInterest();
     // (Lưu ý: Bạn cần gọi hàm xử lý Zone Access tại đây nếu nó nằm riêng lẻ)
@@ -8603,332 +8419,293 @@ function checkDailyCheckinReminder() {
 setInterval(checkDailyCheckinReminder, 60000);
 
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Chạy các hàm hệ thống (Giữ nguyên nội dung của bạn)
+    checkLoginStatus(); 
+    checkMinigameStatus(); // Kiểm tra giờ mở cửa
+    updateGameLimitsUI();  // Kiểm tra lượt chơi (Chốt hạ việc khóa card)
     updateClock();
     updateFloatingButton(); 
-
-    // 2. Kích hoạt trạm kiểm soát đăng nhập (Trạm trung tâm)
-    checkLoginStatus(); 
+if (currentUser) {
+        verifyStreak(); // Thêm dòng này để kiểm tra đứt chuỗi khi vào web
+    }
 });
+
+// 1. Thay đổi cách lấy currentUser từ localStorage thay vì sessionStorage
+let currentUser = localStorage.getItem('lastLoggedInUser') || null; 
+let userData = {};
 
 function checkLoginStatus() {
     const authScreen = document.getElementById('auth-screen');
     
-    // THAY ĐỔI: Lắng nghe trạng thái đăng nhập từ Firebase
-    firebase.auth().onAuthStateChanged(async (user) => {
-        if (user) {
-            // Lấy dữ liệu từ Cloud dựa trên UID vĩnh viễn của Email
-            const snapshot = await db.ref('users/' + user.uid).once('value');
+    // Nếu có user đã lưu (đã đăng nhập trước đó)
+    if (currentUser) {
+        const savedData = localStorage.getItem('minigame_user_' + currentUser);
+        if (savedData) {
+            userData = JSON.parse(savedData);
+            sessionStorage.setItem('currentUser', currentUser);
+            authScreen.style.display = 'none'; // Ẩn màn hình đăng nhập, vào thẳng sảnh
             
-            if (snapshot.exists()) {
-                // --- PHẦN QUAN TRỌNG: Cập nhật dữ liệu vào biến toàn cục trước khi chạy logic ---
-                userData = snapshot.val();
-                
-                // Đảm bảo các object con tồn tại để các hàm đếm ngược/kiểm tra không bị crash
-                if (!userData.gamePlays) userData.gamePlays = {};
-                if (!userData.profile) userData.profile = {};
-                
-                // Cập nhật tên người dùng từ Email Profile
-                currentUser = userData.profile.name || "Người chơi"; 
-                
-                // LƯU Ý QUAN TRỌNG: Ghi nhớ user để đồng bộ với các hàm cũ dùng localStorage
-                localStorage.setItem('lastLoggedInUser', currentUser);
-                sessionStorage.setItem('currentUser', currentUser);
-                
-                // Ẩn màn hình đăng nhập
-                if (authScreen) authScreen.style.display = 'none'; 
-                
-                // --- GIỮ NGUYÊN 100% LOGIC BAN ĐẦU CỦA BẠN ---
-                updateUI();
-                checkMinigameStatus(); 
-                renderFriendsList();
-                updateGameLimitsUI();  
-                updateClock();
+            // 1. Cập nhật các dữ liệu giao diện cơ bản
+            updateUI();
+            checkMinigameStatus(); 
+            renderFriendsList();
+            updateGameLimitsUI();  
+            updateClock();
 
-                // --- BỔ SUNG: Kiểm tra đứt chuỗi (Streak) ngay khi dữ liệu sẵn sàng ---
-                if (typeof verifyStreak === 'function') {
-                    verifyStreak(); 
+            // --- 2. ĐOẠN QUAN TRỌNG: KÍCH HOẠT LẮNG NGHE SOCIAL REALTIME ---
+            // Henry thêm đoạn này để máy bắt đầu "nghe" các tín hiệu từ Firebase
+            
+            // DÙNG BIẾN CỜ: Đảm bảo chỉ khởi tạo lắng nghe DUY NHẤT 1 LẦN
+            if (!isSocialInitialized) {
+                // A. KÍCH HOẠT HỆ THỐNG TIN NHẮN (MỚI BỔ SUNG)
+                if (typeof initChatSystem === 'function') {
+                    initChatSystem();
                 }
 
-                if (!isSocialInitialized) {
-                    if (typeof initChatSystem === 'function') initChatSystem();
-                    if (typeof initFriendStatusListener === 'function') initFriendStatusListener();
-                    if (typeof initFriendRequestListener === 'function') initFriendRequestListener();
-                    if (typeof initUserPresence === 'function') initUserPresence();
-                    
-                    isSocialInitialized = true;
-                    console.log("Hệ thống: Đã bật bộ lắng nghe Social (Duy nhất)");
+                // B. Nghe xem có ai đồng ý/từ chối lời mời của mình không
+                if (typeof initFriendStatusListener === 'function') {
+                    initFriendStatusListener();
                 }
-            } else {
-                // Trường hợp có Auth nhưng chưa có Data
-                if (authScreen) authScreen.style.display = 'flex';
+
+                // C. Nghe xem có ai VỪA GỬI lời mời mới cho mình không
+                if (typeof initFriendRequestListener === 'function') {
+                    initFriendRequestListener();
+                }
+
+                // --- D. BỔ SUNG QUAN TRỌNG: BÁO DANH ONLINE LÊN FIREBASE ---
+                // Henry thêm dòng này để Firebase Console nhảy từ offline sang online nhé!
+                if (typeof initUserPresence === 'function') {
+                    initUserPresence();
+                }
+                
+                isSocialInitialized = true; // Đánh dấu đã kích hoạt xong
+                console.log("Hệ thống: Đã bật bộ lắng nghe Social (Duy nhất)");
             }
+            // --------------------------------------------------------------
+
         } else {
-            // Trường hợp chưa đăng nhập hoặc đã đăng xuất
-            currentUser = null;
-            if (authScreen) authScreen.style.display = 'flex';
+            // Có tên user nhưng không có dữ liệu (lỗi data) -> bắt đăng nhập lại
+            authScreen.style.display = 'flex';
         }
-        
-        // Luôn ẩn splash screen sau khi check xong
-        if (typeof hideSplashScreen === 'function') hideSplashScreen(); 
-    });
+    } else {
+        // Chưa đăng nhập -> hiện màn hình đăng nhập
+        authScreen.style.display = 'flex';
+    }
+
+    // QUAN TRỌNG: Luôn ẩn Splash Screen dù đăng nhập thành công hay thất bại
+    hideSplashScreen(); 
 }
-    
-async function handleEmailLogin() {
-    const isAgreed = document.getElementById('reg-confirm').checked;
-if (!isAgreed) {
-    alert("🌸 Bạn ơi, bạn cần đồng ý với luật khu vực trước khi tham gia nhé!");
-    return;
-}
-    // Lấy thông tin từ các ô nhập liệu (Dùng chung cho cả Login/Register)
+function handleLogin() {
     const nameInput = document.getElementById('reg-name');
     const name = nameInput.value.trim();
-    const email = document.getElementById('reg-email').value.trim();
-    const pass = document.getElementById('reg-pass').value;
-    const passConfirm = document.getElementById('reg-pass-confirm').value;
 
     // Bước 1: Kiểm tra tên (bắt buộc cho cả cũ và mới)
     if (!name) { 
         alert("Vui lòng nhập tên!"); 
         return; 
     }
-    if (!email || !pass) {
-        alert("Vui lòng nhập Email và Mật khẩu!");
-        return;
-    }
 
-    try {
-        let isNewUser = false;
-        let userAuth;
+    // --- KIỂM TRA XEM CÓ DỮ LIỆU CŨ TRÊN LOCALSTORAGE KHÔNG ---
+    const savedData = localStorage.getItem('minigame_user_' + name);
+    let isNewUser = !savedData;
 
-        // --- CƠ CHẾ KIỂM TRA TÀI KHOẢN (THAY CHO LOCALSTORAGE) ---
-        try {
-            // Thử đăng nhập trước
-            const userCredential = await firebase.auth().signInWithEmailAndPassword(email, pass);
-            userAuth = userCredential.user;
-        } catch (authError) {
-            // Nếu sai mật khẩu nhưng email đã tồn tại
-            if (authError.code === 'auth/wrong-password') {
-                alert("Sai mật khẩu cho email này!");
-                return;
-            }
-            // Nếu chưa có tài khoản -> Chuyển sang nhánh Đăng ký (Người chơi mới)
-            isNewUser = true;
-        }
-
-        if (!isNewUser) {
-            // --- ĐÂY LÀ NHÁNH NGƯỜI CHƠI CŨ (ĐÃ LOGIN THÀNH CÔNG) ---
-            const snapshot = await db.ref('users/' + userAuth.uid).once('value');
-            if (snapshot.exists()) {
-                userData = snapshot.val();
-            } else {
-                // Trường hợp có Auth nhưng mất data (hiếm) -> Coi như mới
-                isNewUser = true;
-            }
-
-            // --- GIỮ NGUYÊN: THÊM ĐOẠN NÀY VÀO ĐÂY ĐỂ TỰ CẤP ID CHO NICK CŨ ---
-            if (!userData.profile.uid) {
-                const randomNumber = Math.floor(10000 + Math.random() * 90000);
-                userData.profile.uid = "SGW" + randomNumber;
-                saveData(); 
-                console.log("Hệ thống: Đã cấp ID mới cho tài khoản cũ: " + userData.profile.uid);
-            }
-
-            // GIỮ NGUYÊN: Thông báo cho người chơi cũ quay lại (có số dư)
-            const totalAssets = (userData.balance || 0) + (userData.piggyBank ? userData.piggyBank.balance : 0);
-            addNotification("🌸 CHÀO MỪNG QUAY LẠI", `Chào ${name}! Tổng tài sản hiện có của bạn là ${totalAssets.toLocaleString('vi-VN')} VNĐ (Ví + Hũ).`);
-
-        } else {
-            // --- TRƯỜNG HỢP 2: NGƯỜI CHƠI MỚI (ĐĂNG KÝ) ---
-            if (pass !== passConfirm) { alert("Xác nhận mật khẩu không khớp!"); return; }
-
-            const genderInput = document.getElementById('reg-gender'); 
-            const gender = genderInput.value;
-            const confirmed = document.getElementById('reg-confirm').checked;
-            const unlockedDaysInput = document.getElementById('reg-unlocked-days');
-            const unlockedDays = parseInt(unlockedDaysInput.value) || 0;
-
-            // Kiểm tra thông tin bắt buộc đối với tài khoản mới
-            if (!gender) { alert("Vui lòng chọn giới tính!"); return; } 
-            if (!confirmed) { alert("Bạn cần xác nhận đã đọc luật!"); return; }
-
-            // Tạo tài khoản Auth mới
-            const newUserCredential = await firebase.auth().createUserWithEmailAndPassword(email, pass);
-            userAuth = newUserCredential.user;
-
-            // GIỮ NGUYÊN: TÍNH TOÁN HẠN ĐIỂM DANH
-            const vnNow = getVietnamTime().getTime();
-            let hasAccess = false;
-            let expiryDate = null;
-            if (unlockedDays > 0) {
-                const daysUsedMs = unlockedDays * 24 * 60 * 60 * 1000;
-                expiryDate = (vnNow - daysUsedMs) + (365 * 24 * 60 * 60 * 1000);
-                if (expiryDate > vnNow) hasAccess = true;
-            }
-
-            // GIỮ NGUYÊN: ĐOẠN SỬA ĐỂ CẤP ID NGAY KHI ĐĂNG KÝ
+    if (savedData) {
+        // --- ĐÂY LÀ NHÁNH NGƯỜI CHƠI CŨ ---
+        userData = JSON.parse(savedData);
+        
+        // --- THÊM ĐOẠN NÀY VÀO ĐÂY ĐỂ TỰ CẤP ID CHO NICK CŨ ---
+        if (!userData.profile.uid) {
             const randomNumber = Math.floor(10000 + Math.random() * 90000);
-            const uniqueID = "SGW" + randomNumber;
+            userData.profile.uid = "SGW" + randomNumber;
+            saveData(); // Lưu lại ngay để lần sau không bị đổi số khác
+            console.log("Hệ thống: Đã cấp ID mới cho tài khoản cũ: " + userData.profile.uid);
+        }
+        
+        // Thông báo cho người chơi cũ quay lại (có số dư)
+        const totalAssets = (userData.balance || 0) + (userData.piggyBank ? userData.piggyBank.balance : 0);
+        addNotification("🌸 CHÀO MỪNG QUAY LẠI", `Chào ${name}! Tổng tài sản hiện có của bạn là ${totalAssets.toLocaleString('vi-VN')} VNĐ (Ví + Hũ).`);
+        
+    } else {
+        // --- TRƯỜNG HỢP 2: NGƯỜI CHƠI MỚI (KIỂM TRA CÁC Ô NHẬP LIỆU) ---
+        const genderInput = document.getElementById('reg-gender'); 
+        const gender = genderInput.value;
+        const confirmed = document.getElementById('reg-confirm').checked;
+        const unlockedDaysInput = document.getElementById('reg-unlocked-days');
+        const unlockedDays = parseInt(unlockedDaysInput.value) || 0;
 
-            // GIỮ NGUYÊN: KHỞI TẠO USER DATA MỚI
-            userData = {
-                profile: { 
-                    name, 
-                    gender, 
-                    uid: uniqueID, 
-                    email: email, // Lưu thêm email vào profile
-                    date: document.getElementById('reg-date').value, 
-                    purpose: document.getElementById('reg-purpose').value 
-                },
-                balance: 0,
-                history: [],
-                gamePlays: {},
-                piggyBank: { balance: 0, history: [], lastInterestDate: null },
-                hasAccess: hasAccess,
-                expiryDate: expiryDate,
-                checkinHistory: [],
-                lastResetWeek: getWeekNumber(getVietnamTime()),
-                zoneAccess: {} 
-            };
+        // Kiểm tra thông tin bắt buộc đối với tài khoản mới
+        if (!gender) { alert("Vui lòng chọn giới tính!"); return; } 
+        if (!confirmed) { alert("Bạn cần xác nhận đã đọc luật!"); return; }
 
-            // GIỮ NGUYÊN: XỬ LÝ KHÔI PHỤC KHU VỰC
-            for (const zoneId in ZONE_CONFIG) {
-                const chk = document.getElementById(`restore-chk-${zoneId}`);
-                const dateInput = document.getElementById(`restore-date-${zoneId}`);
-                if (chk && chk.checked && dateInput.value) {
-                    const paidDate = new Date(dateInput.value).getTime();
-                    const oneYearMs = 365 * 24 * 60 * 60 * 1000;
-                    const expiry = paidDate + oneYearMs;
-                    if (expiry > vnNow) {
-                        userData.zoneAccess[zoneId] = { expiry: expiry, paidDate: paidDate };
-                        userData.history.push({
-                            type: `Khôi phục phí khu: ${ZONE_CONFIG[zoneId].name}`,
-                            amount: `Đã xác minh`,
-                            date: getVietnamTime().toLocaleString('vi-VN')
-                        });
-                    }
+        // TÍNH TOÁN HẠN ĐIỂM DANH (Giữ nguyên logic của bạn)
+        const vnNow = getVietnamTime().getTime();
+        let hasAccess = false;
+        let expiryDate = null;
+        if (unlockedDays > 0) {
+            const daysUsedMs = unlockedDays * 24 * 60 * 60 * 1000;
+            expiryDate = (vnNow - daysUsedMs) + (365 * 24 * 60 * 60 * 1000);
+            if (expiryDate > vnNow) hasAccess = true;
+        }
+
+        function removeVietnameseTones(str) {
+            return str.normalize('NFD').replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").replace(/Đ/g, "D").replace(/\s+/g, '').toLowerCase();
+        }
+
+        // --- ĐOẠN SỬA ĐỂ CẤP ID NGAY KHI ĐĂNG KÝ ---
+        const randomNumber = Math.floor(10000 + Math.random() * 90000); // Tạo 5 số ngẫu nhiên
+        const uniqueID = "SGW" + randomNumber; // Kết hợp thành SGW12345
+
+        // KHỞI TẠO USER DATA MỚI
+        userData = {
+            profile: { 
+                name, 
+                gender, 
+                uid: uniqueID, // GÁN ID VÀO ĐÂY ĐỂ HỆ THỐNG LƯU LẠI
+                date: document.getElementById('reg-date').value, 
+                purpose: document.getElementById('reg-purpose').value 
+            },
+            balance: 0,
+            history: [],
+            gamePlays: {},
+            piggyBank: { balance: 0, history: [], lastInterestDate: null },
+            hasAccess: hasAccess,
+            expiryDate: expiryDate,
+            checkinHistory: [],
+            lastResetWeek: getWeekNumber(getVietnamTime()),
+            zoneAccess: {} 
+        };
+
+        // --- XỬ LÝ KHÔI PHỤC KHU VỰC (Giữ nguyên logic của bạn) ---
+        for (const zoneId in ZONE_CONFIG) {
+            const chk = document.getElementById(`restore-chk-${zoneId}`);
+            const dateInput = document.getElementById(`restore-date-${zoneId}`);
+            
+            if (chk && chk.checked && dateInput.value) {
+                const paidDate = new Date(dateInput.value).getTime();
+                const oneYearMs = 365 * 24 * 60 * 60 * 1000;
+                const expiry = paidDate + oneYearMs;
+
+                if (expiry > vnNow) {
+                    userData.zoneAccess[zoneId] = {
+                        expiry: expiry,
+                        paidDate: paidDate
+                    };
+                    userData.history.push({
+                        type: `Khôi phục phí khu: ${ZONE_CONFIG[zoneId].name}`,
+                        amount: `Đã xác minh`,
+                        date: getVietnamTime().toLocaleString('vi-VN')
+                    });
                 }
             }
-
-            // GIỮ NGUYÊN: Thông báo cho tài khoản mới
-            addNotification("🌸 CHÀO MỪNG THÀNH VIÊN MỚI", `Chào mừng ${name} gia nhập khu Minigame! Chúc bạn có những giây phút giải trí thật vui vẻ.`);
         }
 
-        // --- BƯỚC CUỐI: THIẾT LẬP SESSION VÀ GIAO DIỆN (Dùng chung cho cả 2) ---
-        currentUser = name;
-        localStorage.setItem('lastLoggedInUser', name);
-        sessionStorage.setItem('currentUser', name);
-
-        // GIỮ NGUYÊN: KÍCH HOẠT TRẠNG THÁI ONLINE
-        if (typeof initUserPresence === 'function') {
-            initUserPresence();
-            db.ref('/status/' + currentUser + '/last_changed').set(firebase.database.ServerValue.TIMESTAMP);
-            console.log("Hệ thống: Đã kích hoạt trạng thái Online cho " + name);
-        }
-
-        // GIỮ NGUYÊN: Yêu cầu quyền thông báo (Web Push)
-        if ("Notification" in window) {
-            Notification.requestPermission().then(permission => {
-                if (permission === "granted") {
-                    const notifTitle = "🌸 SWEETIE GAME WORLD";
-                    const notifOptions = {
-                        body: `Chào mừng ${name}! Bạn sẽ nhận được thông báo sự kiện và nhắc nhở nuôi Tim tại đây.`,
-                        icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
-                        badge: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png"
-                    };
-                    if ('serviceWorker' in navigator) {
-                        navigator.serviceWorker.ready.then(reg => { reg.showNotification(notifTitle, notifOptions); });
-                    } else {
-                        new Notification(notifTitle, notifOptions);
-                    }
-                }
-            });
-        }
-
-        saveData();
-        document.getElementById('auth-screen').style.display = 'none';
-        checkMinigameStatus(); 
-        updateUI();
-        updateGameLimitsUI(); 
-        updateClock();
-        requestNotificationPermission(); 
-        checkDailyCheckinReminder();    
-        checkSystemAlerts(); 
-
-        // GIỮ NGUYÊN: ĐOẠN SỬA ĐỂ FIX LỖI 3 THÔNG BÁO
-        if (!isSocialInitialized) {
-            initChatSystem(); 
-            if (typeof initFriendRequestListener === 'function') initFriendRequestListener();
-            if (typeof initFriendStatusListener === 'function') initFriendStatusListener();
-            isSocialInitialized = true;
-            console.log("Hệ thống: Đã bật bộ lắng nghe Social (Duy nhất)");
-        }
-        
-        if (typeof renderFriendsList === 'function') renderFriendsList();
-        
-        alert(isNewUser ? `🌸 Chào mừng người chơi mới: ${name}!` : `🌸 Chào mừng ${name} đã quay trở lại!`);
-
-    } catch (error) {
-        alert("Lỗi hệ thống: " + error.message);
+        // Thông báo cho tài khoản mới hoàn toàn
+        addNotification("🌸 CHÀO MỪNG THÀNH VIÊN MỚI", `Chào mừng ${name} gia nhập khu Minigame! Chúc bạn có những giây phút giải trí thật vui vẻ.`);
     }
+
+    // --- BƯỚC CUỐI: THIẾT LẬP SESSION VÀ GIAO DIỆN (Dùng chung cho cả 2) ---
+    currentUser = name;
+    localStorage.setItem('lastLoggedInUser', name);
+    sessionStorage.setItem('currentUser', name);
+
+    // --- MỚI: KÍCH HOẠT TRẠNG THÁI ONLINE NGAY LẬP TỨC ---
+    if (typeof initUserPresence === 'function') {
+        initUserPresence();
+        // Henry thêm dòng này: Cập nhật timestamp cuối để "đánh thức" các bộ lắng nghe của bạn bè
+        db.ref('/status/' + currentUser + '/last_changed').set(firebase.database.ServerValue.TIMESTAMP);
+        console.log("Hệ thống: Đã kích hoạt trạng thái Online cho " + name);
+    }
+
+    // --- SỬA LẠI: Yêu cầu quyền thông báo tối ưu cho Web Push ---
+    if ("Notification" in window) {
+        Notification.requestPermission().then(permission => {
+            if (permission === "granted") {
+                const notifTitle = "🌸 SWEETIE GAME WORLD";
+                const notifOptions = {
+                    body: `Chào mừng ${name}! Bạn sẽ nhận được thông báo sự kiện và nhắc nhở nuôi Tim tại đây.`,
+                    icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+                    badge: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png"
+                };
+
+                // Nếu có Service Worker, hãy dùng nó để hiện thông báo (giúp báo được khi tắt web)
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.ready.then(reg => {
+                        reg.showNotification(notifTitle, notifOptions);
+                    });
+                } else {
+                    new Notification(notifTitle, notifOptions);
+                }
+            }
+        });
+    }
+
+    saveData();
+    document.getElementById('auth-screen').style.display = 'none';
+    checkMinigameStatus(); 
+    updateUI();
+    updateGameLimitsUI(); 
+    updateClock();
+    requestNotificationPermission(); 
+    checkDailyCheckinReminder();    
+    checkSystemAlerts(); 
+
+    // --- ĐOẠN SỬA ĐỂ FIX LỖI 3 THÔNG BÁO ---
+    if (!isSocialInitialized) {
+        initChatSystem(); 
+        if (typeof initFriendRequestListener === 'function') {
+            initFriendRequestListener();
+        }
+        if (typeof initFriendStatusListener === 'function') {
+            initFriendStatusListener();
+        }
+        isSocialInitialized = true; // Cắm cờ để không lặp lại
+        console.log("Hệ thống: Đã kích hoạt bộ lắng nghe Social (Duy nhất)");
+    }
+    
+    // Ép render lại danh sách bạn bè ngay khi Henry vừa đăng nhập thành công
+    if (typeof renderFriendsList === 'function') renderFriendsList();
+    
+    // Alert chào mừng tùy biến theo trạng thái
+    alert(isNewUser ? `🌸 Chào mừng người chơi mới: ${name}!` : `🌸 Chào mừng ${name} đã quay trở lại!`);
 }
     
-// Tự động kiểm tra Email khi người dùng đang nhập ở khu vực Đăng ký
-document.getElementById('reg-email').addEventListener('input', async function(e) {
-    const email = e.target.value.trim();
-    // Lấy các ô nhập liệu khác trong popup đăng ký để ẩn/hiện
-    const otherFields = document.querySelectorAll('#reg-popup input:not(#reg-email), #reg-popup select, #reg-popup textarea, #reg-popup .rules-box, #reg-popup .checkbox-container');
-    const registerTitle = document.querySelector('#reg-popup h2');
+// Tự động kiểm tra tên khi người dùng đang nhập
+document.getElementById('reg-name').addEventListener('input', function(e) {
+    const name = e.target.value.trim();
+    const otherFields = document.querySelectorAll('#auth-screen .info-group:not(:first-child), #auth-screen .reg-options');
+    const registerTitle = document.querySelector('#auth-screen h2');
     
-    // Kiểm tra định dạng email cơ bản trước khi check server để tránh lag
-    if (email.includes('@') && email.includes('.')) {
-        try {
-            // Check xem email này đã tồn tại trên hệ thống Firebase Auth chưa
-            const methods = await firebase.auth().fetchSignInMethodsForEmail(email);
-            
-            if (methods.length > 0) {
-                // NẾU EMAIL ĐÃ TỒN TẠI: Ẩn các ô khác để báo người dùng quay lại Đăng nhập
-                otherFields.forEach(field => field.style.display = 'none');
-                if (registerTitle) registerTitle.innerText = "🌸 EMAIL ĐÃ ĐƯỢC ĐĂNG KÝ";
-                
-                // Gợi ý nhỏ cho người dùng
-                console.log("Hệ thống: Email này đã có chủ, hãy quay lại màn hình chính để Đăng nhập.");
-            } else {
-                // NẾU EMAIL MỚI: Hiện lại tất cả để tiếp tục đăng ký
-                otherFields.forEach(field => field.style.display = 'block');
-                if (registerTitle) registerTitle.innerText = "🌸 ĐĂNG KÝ THÀNH VIÊN";
-            }
-        } catch (error) {
-            // Lỗi khi check (ví dụ email không hợp lệ) -> Cứ để hiện bình thường
-            otherFields.forEach(field => field.style.display = 'block');
-        }
+    if (name && localStorage.getItem('minigame_user_' + name)) {
+        // NẾU TÊN ĐÃ TỒN TẠI: Ẩn các ô khác
+        otherFields.forEach(field => field.style.display = 'none');
+        if (registerTitle) registerTitle.innerText = "CHÀO MỪNG QUAY LẠI";
+        // Tự động tích vào ô xác nhận để người dùng đỡ phải bấm
+        document.getElementById('reg-confirm').checked = true;
     } else {
-        // Nếu chưa nhập đủ email -> Luôn hiện đầy đủ
+        // NẾU TÊN MỚI: Hiện lại tất cả
         otherFields.forEach(field => field.style.display = 'block');
-        if (registerTitle) registerTitle.innerText = "🌸 ĐĂNG KÝ THÀNH VIÊN";
+        if (registerTitle) registerTitle.innerText = "ĐĂNG KÝ THÀNH VIÊN";
     }
 });
 
 function saveData() {
-    const user = firebase.auth().currentUser;
-    if (user && userData) {
-        // --- GIỮ NGUYÊN LOGIC GIỚI HẠN LỊCH SỬ ---
+    if (currentUser && userData) {
+        // 1. Giới hạn lịch sử cũ để tránh nặng bộ nhớ
         if (userData.history && userData.history.length > 100) {
             userData.history = userData.history.slice(-100);
         }
         
-        // GIỮ NGUYÊN: Lưu LocalStorage làm bản sao dự phòng
+        // 2. Lưu vào máy (LocalStorage) - Giữ nguyên logic cũ
         localStorage.setItem('minigame_user_' + currentUser, JSON.stringify(userData));
         
-        // CẬP NHẬT FIREBASE: Dùng UID để bảo mật vĩnh viễn
-        db.ref('users/' + user.uid).update({
+// CẬP NHẬT FIREBASE - Thêm dòng equippedAchievement bên dưới
+        db.ref('users/' + currentUser).update({
             profile: userData.profile,
             totalSpent: userData.totalSpent || 0,
             qrColor: userData.qrColor || "#ff1493",
-            equippedAchievement: userData.equippedAchievement || null,
+            equippedAchievement: userData.equippedAchievement || null, // <--- THÊM DÒNG NÀY
             lastOnline: firebase.database.ServerValue.TIMESTAMP
         }).then(() => {
-            console.log("Hệ thống: Đã đồng bộ dữ liệu vĩnh viễn lên Cloud!");
+            console.log("Hệ thống: Đã đồng bộ Danh hiệu lên mây!");
         });
     }
 }
@@ -8936,11 +8713,10 @@ function saveData() {
 function updateUI() {
     if (!currentUser || !userData) return;
     
-    // --- TOÀN BỘ NỘI DUNG BÊN TRONG GIỮ NGUYÊN 100% ---
+    // --- CẬP NHẬT TÊN VÀ AVATAR TRÊN SIDEBAR ---
     const sidebarName = document.getElementById('sidebar-username');
     const sidebarAvatar = document.getElementById('sidebar-avatar');
     if (sidebarName) sidebarName.innerText = userData.profile.name;
-    
     if (sidebarAvatar) {
         const icon = userData.profile.gender === 'Nam' ? 'fa-user-tie' : 'fa-user-graduate';
         sidebarAvatar.innerHTML = `<i class="fas ${icon}"></i>`;
@@ -8953,18 +8729,20 @@ function updateUI() {
     const expiryNotice = document.getElementById('expiryNotice');
     
     if (unlockOverlay) {
-        if (userData.hasAccess && userData.expiryDate && vnNow < userData.expiryDate) {
-            unlockOverlay.style.display = 'none'; 
-            if (expiryNotice) expiryNotice.style.display = 'block';
-            
-            const diffDays = Math.ceil((userData.expiryDate - vnNow) / (1000 * 60 * 60 * 24));
-            if (diffDays <= 3 && !userData.hasNotifiedExpiry) {
-                addNotification("🕒 CẢNH BÁO HẾT HẠN", `Quyền điểm danh của bạn chỉ còn ${diffDays} ngày. Hãy gia hạn sớm nhé!`);
-                userData.hasNotifiedExpiry = true;
-                saveData();
-            }
-            updateCountdown();
-        } else {
+        // Tìm trong hàm updateUI(), đoạn check hạn dùng:
+if (userData.hasAccess && userData.expiryDate && vnNow < userData.expiryDate) {
+    unlockOverlay.style.display = 'none'; 
+    if (expiryNotice) expiryNotice.style.display = 'block';
+    
+    // --- THÊM LOGIC THÔNG BÁO SẮP HẾT HẠN ---
+    const diffDays = Math.ceil((userData.expiryDate - vnNow) / (1000 * 60 * 60 * 24));
+    if (diffDays <= 3 && !userData.hasNotifiedExpiry) {
+        addNotification("🕒 CẢNH BÁO HẾT HẠN", `Quyền điểm danh của bạn chỉ còn ${diffDays} ngày. Hãy gia hạn sớm nhé!`);
+        userData.hasNotifiedExpiry = true; // Để không hiện liên tục gây phiền
+        saveData();
+    }
+    updateCountdown();
+} else {
             userData.hasAccess = false;
             userData.expiryDate = null;
             unlockOverlay.style.display = 'flex'; 
@@ -8972,6 +8750,7 @@ function updateUI() {
         }
     }
 
+    // --- Giữ nguyên phần cập nhật các ô ngày điểm danh và nút bấm bên dưới ---
     const boxes = document.querySelectorAll('.day-box, .day-box-special');
     const today = getVietnamTime().getDay();
     
@@ -8991,38 +8770,28 @@ function updateUI() {
         }
     }
 }
+
     // 4. Cập nhật hàm Đăng xuất để xóa dấu vết "Ghi nhớ"
 function handleLogout() {
-    if(confirm("Bạn có muốn đăng xuất? Dữ liệu của bạn vẫn sẽ được lưu lại vĩnh viễn trên Email này.")) {
-        firebase.auth().signOut().then(() => {
-            localStorage.removeItem('lastLoggedInUser'); 
-            sessionStorage.removeItem('notified_games_list');
-            location.reload(); 
-        });
+    if(confirm("Bạn có muốn đăng xuất? Dữ liệu của bạn vẫn sẽ được lưu lại cho lần đăng nhập sau.")) {
+        localStorage.removeItem('lastLoggedInUser'); 
+        sessionStorage.removeItem('notified_games_list'); // Xóa danh sách game đã báo
+        location.reload(); 
     }
 }
 
-  function toggleModal(id) {
+   function toggleModal(id) {
     const modal = document.getElementById(id);
-    if (!modal) return; // Bảo vệ nếu ID không tồn tại
-
     if (modal.style.display === 'flex') {
         modal.style.display = 'none';
     } else {
         modal.style.display = 'flex';
     }
 
-    // --- LOGIC CÀI ĐẶT (MỚI) ---
-    if (id === 'modal-settings' && modal.style.display === 'flex') {
-        if (typeof checkEmailLinkStatus === 'function') {
-            checkEmailLinkStatus();
-        }
-    }
-
-    // --- LOGIC HỒ SƠ (PROFILE) - GIỮ NGUYÊN 100% ---
     if (id === 'modal-profile' && modal.style.display === 'flex') {
         const profileArea = document.getElementById('profile-display-area');
         
+        // --- GIỮ NGUYÊN NỘI DUNG GỐC ---
         const avatarIcon = userData.profile.gender === 'Nam' ? 'fa-user-tie' : 'fa-user-graduate';
         const avatarColor = userData.profile.gender === 'Nam' ? '#4682B4' : '#FF69B4';
 
@@ -9032,11 +8801,12 @@ function handleLogout() {
         const cfg = VIP_CONFIG[vipLvl];
         const nextCfg = VIP_CONFIG[vipLvl + 1];
 
+        // LOGIC CHUYỂN ĐỘNG ĐA SẮC:
         const isVip5 = vipLvl === 5;
         const vipClass = isVip5 ? "vip-5-premium" : "";
         const avatarBorderClass = isVip5 ? "avatar-vip5-border" : ""; 
 
-        // Avatar động
+        // --- PHẦN SỬA ĐỔI ĐỂ AVATAR ĐỘNG (FIX LỖI KHÔNG ĐỘNG) ---
         let displayAvatar = "";
         if (userData.profile.customAvatar) {
             displayAvatar = `<img src="${userData.profile.customAvatar}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block;">`;
@@ -9055,122 +8825,128 @@ function handleLogout() {
             progressText = `Chi tiêu thêm <b>${(nextCfg.min - totalSpent).toLocaleString()}đ</b> để lên ${nextCfg.label}`;
         }
 
-        // Danh hiệu đang đeo
-        let badgeHtml = "";
-        const myEquippedId = userData.equippedAchievement ? String(userData.equippedAchievement) : null;
 
-        if (myEquippedId && ACHIEVEMENTS_CONFIG[myEquippedId]) {
-            const ach = ACHIEVEMENTS_CONFIG[myEquippedId];
-            badgeHtml = `
-                <div style="margin-top: 8px; display: flex; justify-content: center;">
-                    <span class="main-achievement-badge" 
-                          style="background: linear-gradient(135deg, #ff1493, #ff69b4); 
-                                 color: white; padding: 4px 15px; border-radius: 50px; 
-                                 font-size: 0.85em; font-weight: 800; border: 2px solid #fff;
-                                 box-shadow: 0 4px 8px rgba(255, 20, 147, 0.3);
-                                 animation: bounceIn 0.5s;">
-                        ${ach.icon} ${ach.name}
-                    </span>
-                </div>`;
-        } else {
-            badgeHtml = `
-                <div style="margin-top: 8px; cursor: pointer;" onclick="openAchievementModal()">
-                    <span style="font-size: 0.7em; color: #ff69b4; text-decoration: underline;">
-                        <i class="fas fa-plus-circle"></i> Chọn danh hiệu hiển thị
-                    </span>
-                </div>`;
-        }
+       // --- LOGIC HIỂN THỊ 1 DANH HIỆU DUY NHẤT ĐANG ĐEO (BẢN FIX) ---
+let badgeHtml = "";
+// Ép kiểu ID về String để chắc chắn khớp với ACHIEVEMENTS_CONFIG
+const myEquippedId = userData.equippedAchievement ? String(userData.equippedAchievement) : null;
+
+if (myEquippedId && ACHIEVEMENTS_CONFIG[myEquippedId]) {
+    const ach = ACHIEVEMENTS_CONFIG[myEquippedId];
+    badgeHtml = `
+        <div style="margin-top: 8px; display: flex; justify-content: center;">
+            <span class="main-achievement-badge" 
+                  style="background: linear-gradient(135deg, #ff1493, #ff69b4); 
+                         color: white; padding: 4px 15px; border-radius: 50px; 
+                         font-size: 0.85em; font-weight: 800; border: 2px solid #fff;
+                         box-shadow: 0 4px 8px rgba(255, 20, 147, 0.3);
+                         animation: bounceIn 0.5s;">
+                ${ach.icon} ${ach.name}
+            </span>
+        </div>`;
+} else {
+    badgeHtml = `
+        <div style="margin-top: 8px; cursor: pointer;" onclick="openAchievementModal()">
+            <span style="font-size: 0.7em; color: #ff69b4; text-decoration: underline;">
+                <i class="fas fa-plus-circle"></i> Chọn danh hiệu hiển thị
+            </span>
+        </div>`;
+}
 
         let streakHtml = renderStreakSystem();
 
-        // Cập nhật giao diện Profile
-        profileArea.innerHTML = `
-            <div style="position: relative; width: fit-content; margin: 0 auto;">
-                <button onclick="openScanChoiceModal()" style="position: absolute; top: 0; left: -15px; background: white; color: #ff1493; border: 2px solid #ff1493; border-radius: 50%; width: 32px; height: 32px; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.1); z-index: 999; display: flex; align-items: center; justify-content: center;">
-                    <i class="fas fa-qrcode" style="pointer-events: none;"></i>
+        // --- CẬP NHẬT INNERHTML (GIỮ NGUYÊN 100% NỘI DUNG, THÊM NÚT QUÉT GỌN GÀNG) ---
+profileArea.innerHTML = `
+    <div style="position: relative; width: fit-content; margin: 0 auto;">
+        
+<button onclick="openScanChoiceModal()" style="position: absolute; top: 0; left: -15px; background: white; color: #ff1493; border: 2px solid #ff1493; border-radius: 50%; width: 32px; height: 32px; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.1); z-index: 999; display: flex; align-items: center; justify-content: center;">
+    <i class="fas fa-qrcode" style="pointer-events: none;"></i>
+</button>
+
+        <div class="profile-avatar ${avatarBorderClass}" style="border-color: ${isVip5 ? 'transparent' : cfg.color}; position: relative; display: flex; align-items: center; justify-content: center; background: white;">
+            ${displayAvatar}
+            <div class="vip-tag-small ${vipClass}" style="background: ${isVip5 ? 'none' : cfg.color}; position: absolute; bottom: -5px; right: -5px;">
+                VIP ${vipLvl}
+            </div>
+        </div>
+
+        <button onclick="openShareModal()" style="position: absolute; top: 0; right: -15px; background: #ff1493; color: white; border: 2px solid white; border-radius: 50%; width: 32px; height: 32px; cursor: pointer; box-shadow: 0 4px 10px rgba(255,20,147,0.3); z-index: 10; display: flex; align-items: center; justify-content: center;">
+            <i class="fas fa-share-alt" style="font-size: 0.8em;"></i>
+        </button>
+    </div>
+
+    <div class="profile-info">
+        <div class="info-group">
+            <div style="font-size: 0.7em; color: #d63384; font-weight: 800; margin-bottom: 2px;">
+                ID: ${userData.profile.uid || 'Chưa cấp'} 
+            </div>
+            <span class="info-label">Tên thành viên</span>
+            <span class="info-value">
+                ${userData.profile.name}
+                <span class="vip-badge-premium ${vipClass}" style="background: ${isVip5 ? 'none' : cfg.color};">
+                    <i class="fas ${isVip5 ? 'fa-crown' : 'fa-star'}"></i> ${cfg.label}
+                </span>
+            </span>
+            ${badgeHtml}
+        </div>
+
+        <div class="info-group" style="margin-top: 10px; display: flex; flex-direction: column; align-items: center; gap: 8px;">
+            <div style="display: flex; gap: 8px; justify-content: center;">
+<button class="btn-wallet btn-deposit" onclick="document.getElementById('avatar-upload-profile').click()" style="font-size: 0.7em; padding: 4px 10px;">
+    <i class="fas fa-camera"></i> Đổi ảnh đại diện
+</button>
+<input type="file" id="avatar-upload-profile" accept="image/*" style="display: none;" onchange="handleAvatarUpload(event)">
+                <button class="btn-wallet" onclick="openAchievementModal()" style="font-size: 0.7em; padding: 4px 10px; background: #ff1493; color: white; border: none; border-radius: 50px; cursor: pointer;">
+                    <i class="fas fa-trophy"></i> Chọn danh hiệu
                 </button>
-                <div class="profile-avatar ${avatarBorderClass}" style="border-color: ${isVip5 ? 'transparent' : cfg.color}; position: relative; display: flex; align-items: center; justify-content: center; background: white;">
-                    ${displayAvatar}
-                    <div class="vip-tag-small ${vipClass}" style="background: ${isVip5 ? 'none' : cfg.color}; position: absolute; bottom: -5px; right: -5px;">
-                        VIP ${vipLvl}
-                    </div>
-                </div>
-                <button onclick="openShareModal()" style="position: absolute; top: 0; right: -15px; background: #ff1493; color: white; border: 2px solid white; border-radius: 50%; width: 32px; height: 32px; cursor: pointer; box-shadow: 0 4px 10px rgba(255,20,147,0.3); z-index: 10; display: flex; align-items: center; justify-content: center;">
-                    <i class="fas fa-share-alt" style="font-size: 0.8em;"></i>
-                </button>
             </div>
+            <input type="file" id="avatar-upload" accept="image/*" style="display: none;" onchange="handleAvatarUpload(event)">
+        </div>
 
-            <div class="profile-info">
-                <div class="info-group">
-                    <div style="font-size: 0.7em; color: #d63384; font-weight: 800; margin-bottom: 2px;">
-                        ID: ${userData.profile.uid || 'Chưa cấp'} 
-                    </div>
-                    <span class="info-label">Tên thành viên</span>
-                    <span class="info-value">
-                        ${userData.profile.name}
-                        <span class="vip-badge-premium ${vipClass}" style="background: ${isVip5 ? 'none' : cfg.color};">
-                            <i class="fas ${isVip5 ? 'fa-crown' : 'fa-star'}"></i> ${cfg.label}
-                        </span>
-                    </span>
-                    ${badgeHtml}
-                </div>
-
-                <div class="info-group" style="margin-top: 10px; display: flex; flex-direction: column; align-items: center; gap: 8px;">
-                    <div style="display: flex; gap: 8px; justify-content: center;">
-                        <button class="btn-wallet btn-deposit" onclick="document.getElementById('avatar-upload-profile').click()" style="font-size: 0.7em; padding: 4px 10px;">
-                            <i class="fas fa-camera"></i> Đổi ảnh đại diện
-                        </button>
-                        <input type="file" id="avatar-upload-profile" accept="image/*" style="display: none;" onchange="handleAvatarUpload(event)">
-                        <button class="btn-wallet" onclick="openAchievementModal()" style="font-size: 0.7em; padding: 4px 10px; background: #ff1493; color: white; border: none; border-radius: 50px; cursor: pointer;">
-                            <i class="fas fa-trophy"></i> Chọn danh hiệu
-                        </button>
-                    </div>
-                </div>
-
-                <div class="vip-progress-container">
-                    <div class="vip-progress-info">
-                        <span>Tiến độ lên VIP ${vipLvl < 5 ? vipLvl + 1 : 5}</span>
-                        <span onclick="toggleModal('modal-vip-rule')" style="cursor:pointer; color:#ff1493; text-decoration:underline; font-size:0.9em;">
-                            <i class="fas fa-question-circle"></i> Cơ chế VIP
-                        </span>
-                        <span>${progressPercent.toFixed(1)}%</span>
-                    </div>
-                    <div class="vip-progress-bar">
-                        <div class="vip-progress-fill ${vipClass}" style="width: ${progressPercent}%; background: ${isVip5 ? 'none' : cfg.color};"></div>
-                    </div>
-                    <p class="vip-progress-note">${progressText}</p>
-                </div>
-
-                <div class="info-group">
-                    <span class="info-label">Tình trạng tài khoản</span>
-                    <span class="info-value" style="color: #28a745;">
-                        <i class="fas fa-shield-check"></i> Đã xác thực hệ thống
-                    </span>
-                </div>
-
-                <div class="info-group">
-                    <span class="info-label">Tổng chi tiêu</span>
-                    <span class="info-value" style="color: #ff1493; font-weight: 900;">
-                        ${totalSpent.toLocaleString()} VNĐ
-                    </span>
-                </div>
-
-                <div class="info-group" style="margin-top: 15px;">
-                    <span class="info-label">Ngày gia nhập</span>
-                    <span class="info-value">${userData.profile.date || '---'}</span>
-                </div>
-                <div class="info-group">
-                    <span class="info-label">Mục đích tham gia</span>
-                    <span class="info-value">${userData.profile.purpose || 'Giải trí'}</span>
-                </div>
+        <div class="vip-progress-container">
+            <div class="vip-progress-info">
+                <span>Tiến độ lên VIP ${vipLvl < 5 ? vipLvl + 1 : 5}</span>
+                <span onclick="toggleModal('modal-vip-rule')" style="cursor:pointer; color:#ff1493; text-decoration:underline; font-size:0.9em;">
+                    <i class="fas fa-question-circle"></i> Cơ chế VIP
+                </span>
+                <span>${progressPercent.toFixed(1)}%</span>
             </div>
-            <div style="grid-column: 1 / -1; margin-top: 20px;">
-                ${streakHtml}
+            <div class="vip-progress-bar">
+                <div class="vip-progress-fill ${vipClass}" style="width: ${progressPercent}%; background: ${isVip5 ? 'none' : cfg.color};"></div>
             </div>
-        `;
+            <p class="vip-progress-note">${progressText}</p>
+        </div>
+
+        <div class="info-group">
+            <span class="info-label">Tình trạng tài khoản</span>
+            <span class="info-value" style="color: #28a745;">
+                <i class="fas fa-shield-check"></i> Đã xác thực hệ thống
+            </span>
+        </div>
+
+        <div class="info-group">
+            <span class="info-label">Tổng chi tiêu</span>
+            <span class="info-value" style="color: #ff1493; font-weight: 900;">
+                ${totalSpent.toLocaleString()} VNĐ
+            </span>
+        </div>
+
+        <div class="info-group" style="margin-top: 15px;">
+            <span class="info-label">Ngày gia nhập</span>
+            <span class="info-value">${userData.profile.date || '---'}</span>
+        </div>
+        <div class="info-group">
+            <span class="info-label">Mục đích tham gia</span>
+            <span class="info-value">${userData.profile.purpose || 'Giải trí'}</span>
+        </div>
+    </div>
+    <div style="grid-column: 1 / -1; margin-top: 20px;">
+        ${streakHtml}
+    </div>
+`;
     }
 
-    // --- LOGIC HŨ TIẾT KIỆM, VÒNG QUAY, DANH HIỆU ---
+    // Giữ nguyên logic Hũ tiết kiệm, Vòng quay
     if (id === 'modal-piggy' && modal.style.display === 'flex') {
         checkPiggyInterest();
         updatePiggyUI();
@@ -9179,8 +8955,10 @@ function handleLogout() {
         drawWheel();
         updateWheelUI();
     }
-} // <--- KẾT THÚC HÀM TOGGLEMODAL CHUẨN
-    
+    if (id === 'modal-achievements' && modal.style.display === 'flex') {
+        // Tự động chạy thông qua openAchievementModal()
+    }
+}
     // Khởi chạy
 setInterval(updateClock, 1000);
 setInterval(updateCountdown, 1000);
@@ -11504,15 +11282,11 @@ toggleModal = function(id) {
 }
 
 function updateGachaCountdown() {
-    // --- BƯỚC FIX LỖI: Kiểm tra userData có tồn tại không trước khi đọc gachaData ---
-    if (!userData || !userData.gachaData) return;
-
     const gd = userData.gachaData;
     const countdownEl = document.getElementById('gacha-countdown');
     const timerEl = document.getElementById('countdown-timer');
 
-    // Kiểm tra thêm element để tránh lỗi null nếu giao diện chưa load xong
-    if (!countdownEl || !timerEl) return;
+    if (!gd || !countdownEl) return;
 
     // Chỉ hiển thị đếm ngược khi đã hết 5 lượt
     if (gd.dailyCount >= 5) {
@@ -11535,14 +11309,13 @@ function updateGachaCountdown() {
             timerEl.innerText = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
         } else {
             // Nếu đã qua 0h, tự động update giao diện để reset lượt
-            if (typeof updateGachaUI === 'function') {
-                updateGachaUI();
-            }
+            updateGachaUI();
         }
     } else {
         countdownEl.style.display = 'none';
     }
 }
+
 // Chạy đếm ngược mỗi giây
 setInterval(updateGachaCountdown, 1000);
 
@@ -15254,87 +15027,6 @@ function exitSearchMode() {
     } catch (error) {
         console.error('Lỗi upload Cloudinary:', error);
         throw error;
-    }
-}
-
-    // 1. Hàm kiểm tra trạng thái liên kết khi mở Cài đặt
-function checkEmailLinkStatus() {
-    const user = firebase.auth().currentUser;
-    const btn = document.getElementById('btn-link-email');
-    const statusText = document.getElementById('email-link-status');
-    const section = document.getElementById('email-link-section');
-
-    if (user && user.email) {
-        // Trạng thái: Đã bảo mật (Màu hồng nhẹ/xám)
-        statusText.innerHTML = `<i class="fas fa-shield-alt"></i> Bảo mật: <b>${user.email}</b>`;
-        statusText.style.color = "#ff1493"; 
-        
-        btn.innerHTML = '<i class="fas fa-check-circle"></i> ĐÃ LIÊN KẾT';
-        btn.style.background = "#ffb6c1"; // Hồng nhạt
-        btn.style.cursor = "default";
-        btn.disabled = true; // Không cho bấm nữa
-        
-        section.style.opacity = "0.8";
-        section.style.background = "#fff"; // Đổi nền trắng cho sạch
-    } else {
-        // Trạng thái: Chưa liên kết (Màu cảnh báo)
-        statusText.innerText = "Tài khoản chưa được bảo mật vĩnh viễn!";
-        statusText.style.color = "#b191b1";
-        
-        btn.innerHTML = '<i class="fas fa-link"></i> LIÊN KẾT NGAY';
-        btn.style.background = "#ff69b4";
-        btn.disabled = false;
-    }
-}
-
-// 2. Hàm xử lý quá trình liên kết
-async function openLinkEmailPopup() {
-    const email = prompt("Nhập Email bạn muốn liên kết để lưu tài khoản vĩnh viễn:");
-    if (!email) return;
-
-    const password = prompt("Thiết lập mật khẩu cho tài khoản (ít nhất 6 ký tự):");
-    if (!password || password.length < 6) {
-        alert("Mật khẩu không hợp lệ!");
-        return;
-    }
-
-    try {
-        // Tạo tài khoản Auth mới cho user hiện tại
-        const userCredential = await firebase.auth().createUserWithEmailAndPassword(email, password);
-        const user = userCredential.user;
-
-        // Cập nhật email vào profile trong dữ liệu của Henry
-        userData.profile.email = email;
-        userData.profile.isLinked = true;
-        
-        // Đồng bộ dữ liệu hiện tại lên UID mới của Firebase
-        await db.ref('users/' + user.uid).set(userData);
-        
-        // Xóa dấu vết cũ trên LocalStorage (vì giờ đã dùng Email)
-        localStorage.removeItem('minigame_user_' + currentUser);
-        
-        alert("Chúc mừng! Tài khoản của bạn đã được liên kết vĩnh viễn với Email: " + email);
-        checkEmailLinkStatus(); // Cập nhật lại giao diện nút
-        saveData(); // Lưu lại lần cuối
-        
-    } catch (error) {
-        if (error.code === 'auth/email-already-in-use') {
-            alert("Email này đã được sử dụng bởi một tài khoản khác!");
-        } else {
-            alert("Lỗi liên kết: " + error.message);
-        }
-    }
-}
-
-    function toggleRegPopup(show) {
-    const popup = document.getElementById('reg-popup');
-    if (popup) {
-        popup.style.display = show ? 'flex' : 'none';
-        
-        // Thêm hiệu ứng khóa cuộn trang khi mở popup (tùy chọn)
-        document.body.style.overflow = show ? 'hidden' : 'auto';
-    } else {
-        console.error("Lỗi: Không tìm thấy ID 'reg-popup' trong HTML!");
     }
 }
 </script>
