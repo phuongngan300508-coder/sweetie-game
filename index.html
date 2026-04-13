@@ -12657,8 +12657,26 @@ function renderSingleMessage(msgId, msg, position = 'bottom', targetContainer = 
     }
     const getEmojiClass = (emoji) => (myReaction === emoji) ? "emoji-btn emoji-active" : "emoji-btn";
 
-    // --- 3. LOGIC THỜI GIAN (GIỮ NGUYÊN 100%) ---
-    const timeHtml = msg.displayTime ? `<div class="msg-display-time" style="font-size: 0.6em; opacity: 0.7; margin-top: 4px; text-align: right; display: block;">${msg.displayTime}</div>` : "";
+    // --- 3. LOGIC THỜI GIAN (ĐÃ CẬP NHẬT THEO YÊU CẦU) ---
+    let timeDisplay = msg.displayTime || ""; 
+    if (msg.timestamp) {
+        const msgDate = new Date(msg.timestamp);
+        const today = new Date();
+        
+        // Kiểm tra xem có phải tin nhắn hôm nay không
+        const isToday = msgDate.getDate() === today.getDate() &&
+                        msgDate.getMonth() === today.getMonth() &&
+                        msgDate.getFullYear() === today.getFullYear();
+
+        if (!isToday) {
+            // Nếu không phải hôm nay, thêm ngày tháng năm vào trước hoặc sau giờ
+            const dateFull = msgDate.getDate().toString().padStart(2, '0') + "/" + 
+                             (msgDate.getMonth() + 1).toString().padStart(2, '0') + "/" + 
+                             msgDate.getFullYear();
+            timeDisplay = `${dateFull} ${timeDisplay}`; 
+        }
+    }
+    const timeHtml = timeDisplay ? `<div class="msg-display-time" style="font-size: 0.6em; opacity: 0.7; margin-top: 4px; text-align: right; display: block;">${timeDisplay}</div>` : "";
 
     // --- 4. LOGIC MEDIA & HIGHLIGHT (GIỮ NGUYÊN 100%) ---
     let finalMsgText = msg.text || "";
@@ -12709,12 +12727,10 @@ function renderSingleMessage(msgId, msg, position = 'bottom', targetContainer = 
         </div>
     </div>`;
 
-    // --- 6. PHẦN SỬA ĐỂ CHỐNG NHẢY TIN NHẮN ---
+    // --- 6. PHẦN SỬA ĐỂ CHỐNG NHẢY TIN NHẮN (GIỮ NGUYÊN 100%) ---
     if (targetContainer) {
-        // Nếu có chỗ nhận cụ thể, chỉ đổ HTML vào đó thôi
         targetContainer.innerHTML = msgHtml;
     } else {
-        // Nếu không (lúc bình thường), mới chèn vào khung chat chính
         if (position === 'bottom') {
             area.insertAdjacentHTML('beforeend', msgHtml);
         } else {
