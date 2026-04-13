@@ -14846,18 +14846,26 @@ document.addEventListener('touchend', function (event) {
 // 1. Mở Modal
 function openSearchModal() {
     const searchModal = document.getElementById('modal-search-msg');
+    
+    // 1. Kiểm tra nếu modal tồn tại
     if (searchModal) {
-        // Ép popup tìm kiếm luôn nổi lên trên cùng (z-index cực cao)
+        // Chỉ ép z-index để nó nổi lên trên, không ép display ở đây để tránh xung đột với toggleModal
         searchModal.style.setProperty('z-index', '20000', 'important');
-        searchModal.style.setProperty('display', 'flex', 'important');
     }
 
-    // --- GIỮ NGUYÊN 100% NỘI DUNG GỐC CỦA BẠN ---
+    // 2. Gọi hàm mở modal gốc của bạn (Giữ nguyên 100%)
     toggleModal('modal-search-msg');
+
+    // 3. Đảm bảo input và kết quả được reset (Giữ nguyên 100%)
     const input = document.getElementById('input-search-msg');
-    input.value = "";
-    input.focus();
-    document.getElementById('search-results-area').innerHTML = '<p style="text-align: center; color: #888; font-size: 0.8em;">Nhập từ khóa để tìm kiếm...</p>';
+    if (input) {
+        input.value = "";
+        input.focus();
+    }
+    const resultsArea = document.getElementById('search-results-area');
+    if (resultsArea) {
+        resultsArea.innerHTML = '<p style="text-align: center; color: #888; font-size: 0.8em;">Nhập từ khóa để tìm kiếm...</p>';
+    }
 }
 
 // 2. Thực hiện tìm kiếm Real-time
