@@ -8508,14 +8508,12 @@ function checkDailyCheckinReminder() {
 setInterval(checkDailyCheckinReminder, 60000);
 
 document.addEventListener('DOMContentLoaded', () => {
-    checkLoginStatus(); 
-    checkMinigameStatus(); // Kiểm tra giờ mở cửa
-    updateGameLimitsUI();  // Kiểm tra lượt chơi (Chốt hạ việc khóa card)
+    // 1. Chạy các hàm hệ thống (Giữ nguyên nội dung của bạn)
     updateClock();
     updateFloatingButton(); 
-if (currentUser) {
-        verifyStreak(); // Thêm dòng này để kiểm tra đứt chuỗi khi vào web
-    }
+
+    // 2. Kích hoạt trạm kiểm soát đăng nhập (Trạm trung tâm)
+    checkLoginStatus(); 
 });
 
 function checkLoginStatus() {
@@ -8531,14 +8529,14 @@ function checkLoginStatus() {
                 // --- PHẦN QUAN TRỌNG: Cập nhật dữ liệu vào biến toàn cục trước khi chạy logic ---
                 userData = snapshot.val();
                 
-                // Đảm bảo các object con tồn tại để không gây lỗi "reading properties of undefined"
+                // Đảm bảo các object con tồn tại để các hàm đếm ngược/kiểm tra không bị crash
                 if (!userData.gamePlays) userData.gamePlays = {};
                 if (!userData.profile) userData.profile = {};
                 
                 // Cập nhật tên người dùng từ Email Profile
                 currentUser = userData.profile.name || "Người chơi"; 
                 
-                // LƯU Ý QUAN TRỌNG: Ghi nhớ user để các hàm khác (như saveData) dùng đúng UID/Name
+                // LƯU Ý QUAN TRỌNG: Ghi nhớ user để đồng bộ với các hàm cũ dùng localStorage
                 localStorage.setItem('lastLoggedInUser', currentUser);
                 sessionStorage.setItem('currentUser', currentUser);
                 
@@ -8552,6 +8550,11 @@ function checkLoginStatus() {
                 updateGameLimitsUI();  
                 updateClock();
 
+                // --- BỔ SUNG: Kiểm tra đứt chuỗi (Streak) ngay khi dữ liệu sẵn sàng ---
+                if (typeof verifyStreak === 'function') {
+                    verifyStreak(); 
+                }
+
                 if (!isSocialInitialized) {
                     if (typeof initChatSystem === 'function') initChatSystem();
                     if (typeof initFriendStatusListener === 'function') initFriendStatusListener();
@@ -8562,7 +8565,7 @@ function checkLoginStatus() {
                     console.log("Hệ thống: Đã bật bộ lắng nghe Social (Duy nhất)");
                 }
             } else {
-                // Trường hợp có Auth nhưng chưa có Data (ví dụ lỗi mạng khi đang đăng ký)
+                // Trường hợp có Auth nhưng chưa có Data
                 if (authScreen) authScreen.style.display = 'flex';
             }
         } else {
