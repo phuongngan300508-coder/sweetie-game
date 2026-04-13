@@ -5149,190 +5149,6 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
     .theme-scroll-bar::-webkit-scrollbar-thumb:hover {
         background: #ff69b4; /* Hồng đậm hơn khi di chuột vào để kéo */
     }
-
-    /* --- CSS CHO POPUP ĐĂNG KÝ MỚI --- */
-
-/* 1. Thiết kế Popup chuẩn: Co giãn theo màn hình */
-.sweetie-register-popup {
-    background: #ffffff !important;
-    border: 3px solid #ffb6c1 !important;
-    border-radius: 30px !important;
-    overflow: hidden !important;
-    max-height: 90vh !important; /* Giới hạn chiều cao tối đa */
-    display: flex !important;
-    flex-direction: column !important;
-}
-
-/* 2. Style cho Header */
-.sweetie-reg-header {
-    background: linear-gradient(135deg, #ff1493 0%, #ff69b4 100%);
-    color: white !important;
-    border-radius: 25px 25px 0 0;
-    padding: 20px;
-    margin: -1px; /* Tránh viền bị hở */
-}
-
-/* 3. Style cho Body có thanh cuộn mượt */
-.sweetie-reg-body {
-    padding: 20px;
-    overflow-y: auto !important; /* Tự động hiện thanh cuộn */
-    flex: 1 !important; /* Chiếm hết chiều cao còn lại */
-    
-    /* Làm đẹp thanh cuộn */
-    scrollbar-width: thin;
-    scrollbar-color: #ffc0cb transparent;
-}
-.sweetie-reg-body::-webkit-scrollbar { width: 6px; }
-.sweetie-reg-body::-webkit-scrollbar-thumb { background-color: #ffc0cb; border-radius: 10px; }
-
-/* 4. Style cho các ô Input màu hồng mượt */
-.sweetie-input {
-    width: 100%;
-    padding: 12px;
-    border-radius: 15px;
-    border: 2px solid #ffe4e1;
-    background: #fff;
-    outline: none;
-    font-size: 0.9em;
-    font-weight: 500;
-    color: #ff1493;
-    transition: 0.3s;
-    box-sizing: border-box; /* Bắt buộc để không bị tràn */
-}
-.sweetie-input:focus {
-    border-color: #ff1493;
-    box-shadow: 0 0 10px rgba(255, 20, 147, 0.1);
-}
-
-/* 5. PHÉP THUẬT RESPONSIVE (CO GIÃN) */
-
-/* Cho Màn hình Máy tính (PC) */
-@media (min-width: 769px) {
-    .sweetie-register-popup {
-        max-width: 500px !important; /* Chiều rộng PC hợp lý */
-        max-height: 85vh !important;
-    }
-}
-
-/* Cho Màn hình Điện thoại (Mobile) */
-@media (max-width: 768px) {
-    .sweetie-register-popup {
-        width: 95% !important; /* Chiều rộng gần như full */
-        margin: 0 auto;
-        max-height: 92vh !important;
-    }
-}
-
-    /* --- THIẾT KẾ CHO POPUP LIÊN KẾT EMAIL --- */
-
-.sweetie-link-popup {
-    background: #ffffff !important;
-    border: 3px solid #ffb6c1 !important;
-    border-radius: 30px !important;
-    padding: 0 !important;
-    overflow: hidden !important;
-    box-shadow: 0 15px 40px rgba(255, 182, 193, 0.4) !important;
-}
-
-/* Header màu hồng mượt */
-.sweetie-link-header {
-    background: linear-gradient(135deg, #ff69b4, #ff1493);
-    padding: 25px 20px;
-    color: white;
-    text-align: center;
-}
-
-.sweetie-link-header i {
-    font-size: 2.5em;
-    margin-bottom: 10px;
-}
-
-.sweetie-link-header h3 {
-    margin: 0;
-    font-family: 'Quicksand', sans-serif;
-    font-weight: 900;
-    letter-spacing: 1px;
-}
-
-.sweetie-link-header p {
-    margin: 5px 0 0 0;
-    font-size: 0.8em;
-    opacity: 0.9;
-}
-
-/* Các ô input có icon bên trái */
-.input-with-icon {
-    position: relative;
-    margin-bottom: 12px;
-}
-
-.input-with-icon i {
-    position: absolute;
-    left: 15px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: #ff69b4;
-    font-size: 0.9em;
-}
-
-.input-with-icon input {
-    width: 100%;
-    padding: 12px 12px 12px 40px;
-    border-radius: 15px;
-    border: 2px solid #ffe4e1;
-    outline: none;
-    font-weight: 600;
-    color: #d63384;
-    transition: 0.3s;
-    box-sizing: border-box;
-}
-
-.input-with-icon input:focus {
-    border-color: #ff1493;
-    background: #fffafa;
-}
-
-/* Ghi chú nhỏ */
-.link-note {
-    background: #fff5f8;
-    padding: 10px;
-    border-radius: 12px;
-    font-size: 0.75em;
-    color: #b191b1;
-    line-height: 1.4;
-    border: 1px dashed #ffc0cb;
-    margin-bottom: 15px;
-    text-align: left;
-}
-
-/* Nút hủy */
-.btn-cancel-link {
-    background: none;
-    border: none;
-    color: #aaa;
-    font-weight: bold;
-    font-size: 0.85em;
-    cursor: pointer;
-    padding: 5px;
-}
-.btn-cancel-link:hover { color: #888; }
-
-/* RESPONSIVE: CHỈNH KÍCH THƯỚC THEO THIẾT BỊ */
-
-/* Máy tính (PC) */
-@media (min-width: 769px) {
-    .sweetie-link-popup {
-        width: 400px !important; /* Kích thước chuẩn trên PC */
-    }
-}
-
-/* Điện thoại (Mobile) */
-@media (max-width: 768px) {
-    .sweetie-link-popup {
-        width: 90% !important; /* Chiếm 90% chiều rộng màn hình điện thoại */
-        margin: 0 auto;
-    }
-}
 </style>
 </head>
 <body>
@@ -5358,128 +5174,65 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
         <div class="auth-visual">
             <i class="fas fa-gamepad"></i>
             <h1 style="font-family: 'Poppins'; font-weight: 900; margin: 0;">WELCOME</h1>
-            <p style="font-weight: 500; opacity: 0.9;">Khám phá thế giới Minigame hồng rực rỡ và lưu trữ tài khoản vĩnh viễn bằng Email!</p>
+            <p style="font-weight: 500; opacity: 0.9;">Khám phá thế giới Minigame hồng rực rỡ và nhận những phần quà hấp dẫn mỗi ngày!</p>
         </div>
 
         <div class="auth-form-container">
-            <div class="auth-form" id="login-section">
+            <div class="auth-form">
                 <h2>🌸 ĐĂNG NHẬP SẢNH</h2>
-                <input type="text" id="login-name" placeholder="Tên của bạn..." required>
-                <input type="email" id="login-email" placeholder="Email đã liên kết..." required>
-                <input type="password" id="login-pass" placeholder="Mật khẩu..." required>
+    <input type="text" id="reg-name" placeholder="Tên của bạn..." required>
+    <select id="reg-gender" required style="width: 100%; padding: 12px; margin: 10px 0; border: 2px solid #ffe4e1; border-radius: 15px;">
+        <option value="" disabled selected>Chọn giới tính của bạn...</option>
+        <option value="Nam">Nam</option>
+        <option value="Nữ">Nữ</option>
+    </select>
 
-                <div style="text-align: left; margin: 10px 0 5px 5px;">
-                   <label for="login-unlocked-days" style="font-size: 0.85em; font-weight: 700; color: var(--pink-dark);">
-    <i class="fas fa-key"></i> Số ngày đã mở khóa bảng điểm danh (nếu có):
-</label>
-                </div>
-                <input type="number" id="login-unlocked-days" placeholder="Nhập 0 nếu chưa mở..." min="0" value="0">
-
-                <div style="text-align: left; margin: 20px 0 10px 5px; padding: 15px; background: #fff5f8; border-radius: 20px; border: 1px solid #ffc0cb;">
-                    <p style="font-size: 0.9em; font-weight: 800; color: #ff1493; margin-top: 0;">
-                        <i class="fas fa-history"></i> KHÔI PHỤC PHÍ KHU ĐÃ TRẢ:
-                    </p>
-                    <div id="restore-zones-list-login"></div> </div>
-
-                <div style="text-align: right; margin-bottom: 10px;">
-                    <span onclick="handleForgotPassword()" style="color: #ff69b4; font-size: 0.8em; cursor: pointer; font-weight: bold; text-decoration: underline;">Quên mật khẩu?</span>
-                </div>
-
-                <button class="btn-login" onclick="loginWithEmail()">VÀO KHU MINIGAME</button>
-
-                <button onclick="toggleRegisterPopup(true)" style="margin-top: 15px; background: none; border: 2px solid #ffc0cb; color: #ff1493; padding: 10px; border-radius: 50px; width: 100%; cursor: pointer; font-weight: bold;">
-                    CHƯA CÓ TÀI KHOẢN? ĐĂNG KÝ NGAY
-                </button>
-            </div>
-        </div>
+    <div style="text-align: left; margin: 10px 0 5px 5px;">
+        <label for="reg-date" style="font-size: 0.85em; font-weight: 700; color: var(--pink-dark);">
+            <i class="fas fa-calendar-plus"></i> Ngày gia nhập:
+        </label>
     </div>
-</div>
+    <input type="date" id="reg-date" title="Ngày gia nhập" style="margin-top: 0;">
 
-<div id="modal-register-new" class="modal-overlay" style="display: none; z-index: 10001;" onclick="closeRegisterOnOverlay(event)">
-    <div class="modal-content ach-modal-content animate__animated animate__fadeInUp sweetie-register-popup">
-        
-        <div class="ach-header sweetie-reg-header">
-            <div style="text-align: left;">
-                <h3 style="margin: 0; display: flex; align-items: center; gap: 8px; color: #ffffff;">
-                    <i class="fas fa-user-plus"></i> ĐĂNG KÝ CƯ DÂN MỚI
-                </h3>
-                <p style="font-size: 0.75em; color: rgba(255,255,255,0.8); margin: 5px 0 0 0; font-style: italic; font-weight: 600;">
-                    Lưu trữ vĩnh viễn và nhận 1 lượt quay miễn phí!
-                </p>
-            </div>
-            <div class="close-btn" onclick="toggleRegisterPopup(false)" 
-                 style="cursor: pointer; font-size: 1.2em; color: #ffffff; transition: 0.3s;" 
-                 onmouseover="this.style.transform='rotate(90deg)'" 
-                 onmouseout="this.style.transform='rotate(0deg)'">✕</div>
-        </div>
-        
-        <hr style="border: 1px dashed #ffc0cb; margin: 15px 0;">
-        
-        <div class="modal-body sweetie-reg-body">
-            
-            <div class="info-group" style="margin-bottom: 15px; text-align: left;">
-    <label style="color: #ff69b4; font-weight: bold; font-size: 0.8em; margin-left: 10px;">
-        <i class="fas fa-id-card"></i> Thông tin cơ bản
-    </label>
-    <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 5px;">
-        <input type="text" id="reg-name" placeholder="Tên hiển thị..." required class="sweetie-input">
-        
-        <div style="position: relative;">
-            <label for="reg-date" style="position: absolute; left: 12px; top: -8px; background: white; padding: 0 5px; font-size: 0.7em; color: #ff69b4; font-weight: bold;">Ngày gia nhập</label>
-            <input type="date" id="reg-date" class="sweetie-input" style="padding-top: 15px;">
-        </div>
-
-        <select id="reg-gender" class="sweetie-input">
-            <option value="" disabled selected>Chọn giới tính...</option>
-            <option value="Nam">Nam</option>
-            <option value="Nữ">Nữ</option>
-        </select>
-    </div>
-</div>
-
-            <div class="info-group" style="margin-bottom: 15px; text-align: left;">
-                <label style="color: #ff69b4; font-weight: bold; font-size: 0.8em; margin-left: 10px;">
-                    <i class="fas fa-envelope-open-text"></i> Bảo mật tài khoản
-                </label>
-                <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 5px;">
-                    <input type="email" id="reg-email" placeholder="Email (dùng để đăng nhập)..." required class="sweetie-input">
-                    <input type="password" id="reg-password" placeholder="Mật khẩu..." required class="sweetie-input">
-                    <input type="password" id="reg-confirm-password" placeholder="Xác nhận lại mật khẩu..." required class="sweetie-input">
-                </div>
-            </div>
-
-            <div class="info-group" style="margin-bottom: 20px; text-align: left;">
-                <label style="color: #ff69b4; font-weight: bold; font-size: 0.8em; margin-left: 10px;">
-                    <i class="fas fa-magic"></i> Lời nhắn gửi
-                </label>
-                <textarea id="reg-purpose" placeholder="Mục đích tham gia hoặc điều gì đó về bạn..." rows="2" class="sweetie-input" style="margin-top: 5px;"></textarea>
-            </div>
-
-            <div class="rules-box" style="font-size: 0.8em; max-height: 100px; overflow-y: auto; margin-bottom: 15px; background: #fffafb; padding: 15px; border-radius: 15px; border: 1px dashed #ffc0cb; color: #888; text-align: left;">
-                <b style="color: #d63384;"><i class="fas fa-gavel"></i> LUẬT CỦA VƯƠNG QUỐC:</b><br>
-                • 1. Tuyệt đối không để lộ thông tin khu vực.<br>
-                • 2. Không gian lận, không bao che.<br>
-                • 3. Mọi giao dịch phải có ảnh xác thực.<br>
-                • 4. Tôn trọng cư dân khác.
-            </div>
-
-            <div class="checkbox-container" style="margin-bottom: 20px;">
-                <input type="checkbox" id="reg-confirm">
-                <label for="reg-confirm" style="font-size: 0.8em; color: #ff1493; font-weight: 700; display: block; margin-left: 5px;">Đã hiểu 100% - Tôi đã đọc và đồng ý</label>
-            </div>
-
-            <button class="btn-login" onclick="handleNewRegistration()" 
-                    style="width: 100%; padding: 15px; font-weight: 900; box-shadow: 0 5px 15px rgba(255, 20, 147, 0.3);">
-                <i class="fas fa-magic"></i> HOÀN TẤT ĐĂNG KÝ
-            </button>
-            
-            <p style="text-align: center; font-size: 0.8em; color: #aaa; margin-top: 15px; font-style: italic;">
-                * Cửa sổ này sẽ tự đóng sau khi thành công.
-            </p>
-        </div>
-    </div>
-</div>
+    <textarea id="reg-purpose" placeholder="Mục đích tham gia..." rows="2"></textarea>
     
+    <div style="text-align: left; margin: 10px 0 5px 5px;">
+    <label for="reg-unlocked-days" style="font-size: 0.85em; font-weight: 700; color: var(--pink-dark);">
+        <i class="fas fa-key"></i> Số ngày đã mở khóa bảng điểm danh (nếu có):
+    </label>
+</div>
+
+<input type="number" id="reg-unlocked-days" placeholder="Nhập 0 nếu chưa mở..." min="0" value="0" style="margin-top: 0;">
+        
+        <div style="text-align: left; margin: 20px 0 10px 5px; padding: 15px; background: #fff5f8; border-radius: 20px; border: 1px solid #ffc0cb;">
+    <p style="font-size: 0.9em; font-weight: 800; color: #ff1493; margin-top: 0;">
+        <i class="fas fa-history"></i> KHÔI PHỤC PHÍ KHU ĐÃ TRẢ:
+    </p>
+    
+    <div id="restore-zones-list">
+        </div>
+</div>        
+                <p style="font-weight: bold; font-size: 0.8em; margin-bottom: 5px; color: var(--pink-dark);">BẢNG LUẬT KHU VỰC:</p>
+                <div class="rules-box">
+                    <b>LUẬT CỦA KHU MINIGAME:</b><br>
+                    1. KHÔNG ĐƯỢC ĐỂ LỘ TẤT CẢ VỀ KHU MINIGAME CHO NGƯỜI NGOÀI.<br>
+                    2. KHÔNG GIAN LẬN, THẤY LỖI PHẢI BÁO NGAY.<br>
+                    3. KHÔNG BAO CHE GIAN LẬN (PHẠT CHUNG).<br>
+                    4. ĐỔI THƯỞNG PHẢI CÓ ẢNH XÁC THỰC. KHÔNG ẢNH = KHÔNG CÓ GÌ.<br><br>
+                    <b>HÌNH PHẠT:</b> Vi phạm lần 1 phạt 50k, lần 2 phạt 100k, lần 3 phạt 150k và trục xuất.
+                </div>
+                
+                <div class="checkbox-container">
+    <label for="reg-confirm">Tôi đã đọc và đồng ý với luật</label>
+    <input type="checkbox" id="reg-confirm">
+</div>
+                
+                <button class="btn-login" onclick="handleLogin()">VÀO KHU MINIGAME</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div id="tab-container">
     <section id="tab-home" class="tab-panel active">
         <header>
@@ -6672,14 +6425,6 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
         </div>
     </a>
 </div>
-            <div style="background: #fff5f8; border: 2px solid #ffb6c1; border-radius: 20px; padding: 15px; margin-bottom: 20px;">
-    <b style="color: #d63384;"><i class="fas fa-link"></i> LIÊN KẾT EMAIL TRUY CẬP</b>
-    <p style="font-size: 0.75em; color: #b191b1; margin: 5px 0 10px 0;">Giúp bạn đăng nhập tài khoản này trên mọi thiết bị.</p>
-    
-    <div id="link-email-status">
-        <button onclick="openLinkEmailPopup()" class="btn-wallet" style="background: #ff69b4; color: white; width: 100%;">LIÊN KẾT NGAY</button>
-    </div>
-</div>
             <p style="font-weight: 800; color: var(--pink-dark); font-size: 0.9em; margin-bottom: 15px;">TÀI KHOẢN & HỆ THỐNG</p>
             
             <div style="background: #fff5f5; border: 2px solid #ffe4e1; border-radius: 20px; padding: 15px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
@@ -6697,49 +6442,6 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
     </div>
 </div>
 
-   <div id="modal-link-email" class="modal-overlay" style="display: none; z-index: 10002;" onclick="if(event.target === this) this.style.display='none'">
-    <div class="modal-content sweetie-link-popup animate__animated animate__zoomIn">
-        
-        <div class="sweetie-link-header">
-            <i class="fas fa-link"></i>
-            <h3>LIÊN KẾT VĨNH VIỄN</h3>
-            <p>Bảo mật tài khoản để đăng nhập mọi nơi</p>
-        </div>
-
-        <div class="modal-body" style="padding: 20px;">
-            <div class="link-input-group">
-                <div class="input-with-icon">
-                    <i class="fas fa-envelope"></i>
-                    <input type="email" id="link-email" placeholder="Nhập email của bạn...">
-                </div>
-                
-                <div class="input-with-icon">
-                    <i class="fas fa-lock"></i>
-                    <input type="password" id="link-password" placeholder="Tạo mật khẩu mới...">
-                </div>
-
-                <div class="input-with-icon">
-                    <i class="fas fa-check-double"></i>
-                    <input type="password" id="link-confirm" placeholder="Xác nhận lại mật khẩu...">
-                </div>
-            </div>
-
-            <div class="link-note">
-                <i class="fas fa-info-circle"></i> Sau khi liên kết, bạn có thể dùng Email này để vào khu Minigame thay cho cách lưu cũ.
-            </div>
-
-            <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
-                <button class="btn-login" onclick="processLinkEmail()" style="width: 100%; margin: 0; box-shadow: 0 4px 12px rgba(255, 20, 147, 0.2);">
-                    XÁC NHẬN LIÊN KẾT NGAY
-                </button>
-                <button class="btn-cancel-link" onclick="document.getElementById('modal-link-email').style.display='none'">
-                    Để sau nhé
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-    
 <div id="modal-transfer-info" class="modal-overlay" style="z-index: 10002;">
     <div class="modal-content modal-small animate__animated animate__zoomIn" style="border: 3px solid #ffb6c1;">
         <div class="modal-header" style="background: #ff1493; color: white; border-bottom: none;">
@@ -9233,16 +8935,10 @@ profileArea.innerHTML = `
             </span>
         </div>
 
-       <div class="info-group" style="margin-top: 15px;">
-    <span class="info-label">Ngày gia nhập</span>
-    <span class="info-value" style="display: flex; align-items: center; justify-content: space-between;">
-        <span id="display-reg-date">${userData.profile.date || '---'}</span>
-        <button onclick="editJoinDate()" style="background: none; border: none; color: #ff69b4; cursor: pointer; font-size: 0.8em; padding: 0 5px;">
-            <i class="fas fa-edit"></i> Sửa
-        </button>
-    </span>
-</div>
-
+        <div class="info-group" style="margin-top: 15px;">
+            <span class="info-label">Ngày gia nhập</span>
+            <span class="info-value">${userData.profile.date || '---'}</span>
+        </div>
         <div class="info-group">
             <span class="info-label">Mục đích tham gia</span>
             <span class="info-value">${userData.profile.purpose || 'Giải trí'}</span>
@@ -9275,42 +8971,6 @@ document.addEventListener('DOMContentLoaded', () => {
     checkLoginStatus(); // Kiểm tra xem có được vào thẳng lobby không
     checkMinigameStatus();
 });
-
-    // --- HÀM CẬP NHẬT NGÀY GIA NHẬP ---
-function editJoinDate() {
-    // 1. Cho người dùng chọn ngày mới qua prompt (hoặc bạn có thể dùng input date)
-    const oldDate = userData.profile.date || "";
-    const newDate = prompt("Nhập ngày gia nhập mới (Định dạng: YYYY-MM-DD):", oldDate);
-
-    // 2. Kiểm tra nếu người dùng không hủy và có nhập dữ liệu
-    if (newDate !== null && newDate.trim() !== "") {
-        // Kiểm tra định dạng ngày cơ bản
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(newDate)) {
-            alert("Vui lòng nhập đúng định dạng YYYY-MM-DD (Ví dụ: 2026-04-13)");
-            return;
-        }
-
-        // 3. Cập nhật vào userData
-        userData.profile.date = newDate;
-
-        // 4. Lưu lên Firebase & LocalStorage (Dùng hàm saveData có sẵn của bạn)
-        if (typeof saveData === 'function') {
-            saveData();
-        } else {
-            // Nếu không có hàm saveData dùng chung, lưu trực tiếp
-            localStorage.setItem(`userData_${currentUser}`, JSON.stringify(userData));
-            if (typeof db !== 'undefined') {
-                db.ref('users/' + currentUser + '/profile/date').set(newDate);
-            }
-        }
-
-        // 5. Cập nhật hiển thị ngay lập tức trên UI
-        const dateDisplay = document.getElementById('display-reg-date');
-        if (dateDisplay) dateDisplay.innerText = newDate;
-        
-        alert("✨ Đã cập nhật ngày gia nhập thành công!");
-    }
-}
 
 // 1. Cập nhật giao diện Hũ
 function updatePiggyUI() {
@@ -10225,12 +9885,7 @@ function handleZonePayment(zoneId) {
 
 // Hàm này để tự động tạo danh sách khu vực trong form đăng nhập
     function renderRestoreZones() {
-    // Henry sửa: Kiểm tra xem container cũ hay container mới tồn tại thì mới chạy
-    const container = document.getElementById('restore-zones-list') || document.getElementById('restore-zones-list-login');
-    
-    // Nếu không tìm thấy cả 2 (ví dụ khi đã vào sảnh) thì thoát hàm để không báo lỗi null
-    if (!container) return;
-
+    const container = document.getElementById('restore-zones-list');
     let html = '';
     
     for (const [id, info] of Object.entries(ZONE_CONFIG)) {
@@ -10241,7 +9896,7 @@ function handleZonePayment(zoneId) {
                 <input type="checkbox" id="restore-chk-${id}" class="zone-restore-chk">
             </label>
             
-            <div id="date-input-group-${id}" class="date-input-group" style="display: none;">
+            <div id="date-input-group-${id}" class="date-input-group">
                 <label style="font-size: 0.8em; color: #b191b1; display: block; margin-bottom: 5px;">
                     <i class="fas fa-calendar-alt"></i> Ngày bạn đã đóng phí trước đó:
                 </label>
@@ -10253,20 +9908,17 @@ function handleZonePayment(zoneId) {
     }
     container.innerHTML = html;
 
-    // Sự kiện ẩn/hiện ô nhập ngày - Giữ nguyên 100% logic của bạn
-    container.querySelectorAll('.zone-restore-chk').forEach(chk => {
+    // Sự kiện ẩn/hiện ô nhập ngày
+    document.querySelectorAll('.zone-restore-chk').forEach(chk => {
         chk.addEventListener('change', function() {
             const zoneId = this.id.replace('restore-chk-', '');
             const group = document.getElementById(`date-input-group-${zoneId}`);
-            if (group) {
-                group.style.display = this.checked ? 'block' : 'none';
-            }
+            group.style.display = this.checked ? 'block' : 'none';
         });
     });
 }
-
-// Gọi hàm khởi tạo ngay - Giữ nguyên 100%
-setTimeout(renderRestoreZones, 100);
+    // Gọi hàm khởi tạo ngay
+    setTimeout(renderRestoreZones, 100);
     
     // Hàm chuyển đổi Tab
 // --- HÀM CHUYỂN ĐỔI TAB (ĐÃ FIX LỖI LỆCH THANH BAR) ---
@@ -10839,13 +10491,12 @@ let notifiedUuDaiInThisLoad = false;
 let notifiedLimitInThisLoad = false;
 
 function checkSystemAlerts() {
-    // Henry bảo vệ: Nếu userData chưa có thì thoát ngay để tránh lỗi các dòng dưới
     if (!userData) return;
 
     // --- 1. THÔNG BÁO RIÊNG BIỆT CHO MỖI GAME DANG DỞ ---
     if (userData.activeSessions && userData.activeSessions.length > 0) {
         userData.activeSessions.forEach(session => {
-            if (typeof notifiedInThisLoad !== 'undefined' && !notifiedInThisLoad.includes(session.id)) {
+            if (!notifiedInThisLoad.includes(session.id)) {
                 
                 addNotification(
                     "⚠️ HÀNH TRÌNH DANG DỞ", 
@@ -10859,11 +10510,7 @@ function checkSystemAlerts() {
     }
 
     // --- 2. THÔNG BÁO ƯU ĐÃI (Xảy ra khi load lại trang) ---
-    // Henry sửa: Thêm check userData.gamePlays tồn tại trước khi truy cập ['cuaHangNhanGiong']
-    const playedNhanGiong = userData.gamePlays && 
-                            userData.gamePlays['cuaHangNhanGiong'] && 
-                            userData.gamePlays['cuaHangNhanGiong'].count > 0;
-
+    const playedNhanGiong = userData.gamePlays['cuaHangNhanGiong'] && userData.gamePlays['cuaHangNhanGiong'].count > 0;
     if (playedNhanGiong && !notifiedUuDaiInThisLoad) {
         addNotification(
             "🎁 ƯU ĐÃI LIÊN KẾT", 
@@ -10877,8 +10524,7 @@ function checkSystemAlerts() {
     if (userData.gamePlays && !notifiedLimitInThisLoad) {
         let nearLimitGames = [];
         Object.keys(GAME_LIMITS).forEach(gameId => {
-            // Henry bảo vệ: Kiểm tra gameId có tồn tại trong gamePlays không
-            const playedCount = (userData.gamePlays[gameId]) ? userData.gamePlays[gameId].count : 0;
+            const playedCount = userData.gamePlays[gameId] ? userData.gamePlays[gameId].count : 0;
             const maxLimit = GAME_LIMITS[gameId];
             const remaining = maxLimit - playedCount;
             if (maxLimit > 1 && remaining === 1) {
@@ -10898,10 +10544,7 @@ function checkSystemAlerts() {
         }
     }
     
-    // Kiểm tra hàm updateNotiBadge tồn tại trước khi gọi để tránh lỗi vặt
-    if (typeof updateNotiBadge === 'function') {
-        updateNotiBadge();
-    }
+    updateNotiBadge();
 }
 
 function playTingSound() {
@@ -15388,185 +15031,6 @@ function exitSearchMode() {
     } catch (error) {
         console.error('Lỗi upload Cloudinary:', error);
         throw error;
-    }
-}
-
-    // --- 1. CHUYỂN ĐỔI GIỮA ĐĂNG NHẬP & ĐĂNG KÝ ---
-function toggleAuthPopup(mode) {
-    if (mode === 'register') {
-        document.getElementById('modal-register').style.display = 'flex';
-    } else {
-        document.getElementById('modal-register').style.display = 'none';
-    }
-}
-
-// --- 2. ĐĂNG KÝ TÀI KHOẢN MỚI ---
-// --- LOGIC ĐĂNG KÝ MỚI (LẦN ĐẦU) ---
-async function handleNewRegistration() {
-    // Lấy các giá trị từ input của Popup Đăng ký
-    const name = document.getElementById('reg-name').value.trim();
-    const email = document.getElementById('reg-email').value.trim();
-    const pass = document.getElementById('reg-password').value;
-    const confirmPass = document.getElementById('reg-confirm-password').value;
-    const gender = document.getElementById('reg-gender').value;
-    const purpose = document.getElementById('reg-purpose').value;
-    const confirmed = document.getElementById('reg-confirm').checked;
-    
-    // Henry thêm: Lấy ngày gia nhập từ input, nếu trống thì lấy ngày hôm nay
-    const inputDate = document.getElementById('reg-date').value;
-    const joinDate = inputDate ? inputDate : new Date().toISOString().split('T')[0];
-
-    // 1. Kiểm tra nhập liệu
-    if (!name || !email || !pass || !gender) {
-        return alert("Vui lòng nhập đầy đủ thông tin bắt buộc (Tên, Email, Mật khẩu, Giới tính)!");
-    }
-    if (pass !== confirmPass) {
-        return alert("Mật khẩu xác nhận không khớp!");
-    }
-    if (!confirmed) {
-        return alert("Bạn chưa đồng ý với luật khu vực!");
-    }
-
-    try {
-        // 2. Kiểm tra trùng Email trên Firebase (Dùng Database đã cài đặt)
-        const emailCheck = await db.ref('users').orderByChild('profile/email').equalTo(email).once('value');
-        if (emailCheck.exists()) {
-            return alert("Email này đã được sử dụng cho tài khoản khác!");
-        }
-
-        // 3. Khởi tạo userData (Giữ nguyên cấu trúc logic 100% của bạn)
-        const randomNumber = Math.floor(10000 + Math.random() * 90000);
-        userData = {
-            profile: { 
-                name: name, 
-                gender: gender, 
-                email: email, 
-                purpose: purpose, 
-                uid: "SGW" + randomNumber,
-                date: joinDate, // Henry đã thay đổi từ ngày mặc định sang joinDate
-                password: pass // Lưu pass để verify khi đăng nhập
-            },
-            balance: 0,
-            totalSpent: 0,
-            history: [],
-            gamePlays: {},
-            hasAccess: false,
-            expiryDate: null,
-            checkinHistory: [],
-            lastResetWeek: getWeekNumber(getVietnamTime()),
-            zoneAccess: {}
-        };
-
-        // 4. Lưu lên Firebase với key là Tên (để đồng bộ hệ thống cũ)
-        await db.ref('users/' + name).set(userData);
-        
-        // 5. Thiết lập phiên đăng nhập
-        currentUser = name;
-        localStorage.setItem('lastLoggedInUser', name);
-        
-        alert("🎉 Chúc mừng " + name + "! Bạn đã đăng ký thành công tài khoản liên kết email.");
-        
-        // Đóng popup và tải lại trang để vào sảnh
-        toggleRegisterPopup(false);
-        location.reload();
-
-    } catch (error) {
-        console.error("Lỗi đăng ký:", error);
-        alert("Có lỗi xảy ra trong quá trình đăng ký. Vui lòng thử lại!");
-    }
-}
-    
-// --- 3. ĐĂNG NHẬP BẰNG EMAIL ---
-async function loginWithEmail() {
-    const email = document.getElementById('login-email').value.trim();
-    const pass = document.getElementById('login-password').value;
-
-    if (!email || !pass) return alert("Vui lòng nhập Email và Mật khẩu!");
-
-    try {
-        // Tìm user theo Email
-        const snapshot = await db.ref('users').orderByChild('email').equalTo(email).once('value');
-        if (!snapshot.exists()) return alert("Email này chưa được đăng ký!");
-
-        let foundUser = null;
-        snapshot.forEach(child => {
-            if (child.val().password === pass) {
-                foundUser = child.val();
-            }
-        });
-
-        if (foundUser) {
-            userData = foundUser;
-            currentUser = foundUser.profile.name;
-            localStorage.setItem('lastLoggedInUser', currentUser);
-            alert("🌸 Chào mừng quay trở lại, " + currentUser + "!");
-            location.reload();
-        } else {
-            alert("Mật khẩu không chính xác!");
-        }
-    } catch (e) {
-        alert("Lỗi đăng nhập: " + e.message);
-    }
-}
-
-// --- 4. TÍNH NĂNG QUÊN MẬT KHẨU (Như Google) ---
-function handleForgotPassword() {
-    const email = prompt("Nhập email bạn đã đăng ký để khôi phục mật khẩu:");
-    if (email) {
-        db.ref('users').orderByChild('email').equalTo(email).once('value', snapshot => {
-            if (snapshot.exists()) {
-                alert("Yêu cầu đã được gửi! Vui lòng liên hệ Admin qua Zalo/FB để nhận mã đặt lại mật khẩu mới cho email này.");
-            } else {
-                alert("Email này không tồn tại trong hệ thống!");
-            }
-        });
-    }
-}
-
-
-    function openLinkEmailPopup() {
-    if (userData.email) return alert("Tài khoản này đã được liên kết với: " + userData.email);
-    document.getElementById('modal-link-email').style.display = 'flex';
-}
-
-async function processLinkEmail() {
-    const email = document.getElementById('link-email').value;
-    const pass = document.getElementById('link-password').value;
-    const confirm = document.getElementById('link-confirm').value;
-
-    if (pass !== confirm) return alert("Mật khẩu không khớp!");
-    
-    // Kiểm tra xem email này có ai dùng chưa
-    const check = await db.ref('users').orderByChild('email').equalTo(email).once('value');
-    if (check.exists()) return alert("Email này đã được sử dụng bởi người khác!");
-
-    // Cập nhật dữ liệu
-    userData.email = email;
-    userData.password = pass;
-    saveData();
-    
-    alert("✨ Liên kết thành công! Từ giờ bạn có thể dùng Email này để đăng nhập.");
-    location.reload();
-}
-       
-// Hàm đóng/mở Popup Đăng ký
-function toggleRegisterPopup(show) {
-    const popup = document.getElementById('modal-register-new');
-    if (popup) {
-        if (show) {
-            popup.style.display = 'flex';
-        } else {
-            popup.style.display = 'none';
-        }
-    } else {
-        console.error("Không tìm thấy ID modal-register-new trong HTML!");
-    }
-}
-
-// Hàm bổ trợ: Đóng khi nhấn ra ngoài vùng overlay (tùy chọn)
-function closeRegisterOnOverlay(event) {
-    if (event.target === document.getElementById('modal-register-new')) {
-        toggleRegisterPopup(false);
     }
 }
 </script>
