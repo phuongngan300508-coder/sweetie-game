@@ -5193,6 +5193,58 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
     width: 100%; padding: 12px; margin: 8px 0;
     border-radius: 15px; border: 2px solid #ffc0cb;
 }
+
+    /* Thiết kế nút Đăng ký mới */
+.btn-open-reg {
+    background: #fff0f5; /* LavenderBlush */
+    border: 2px solid #ffc0cb;
+    color: #ff1493;
+    padding: 10px 20px;
+    border-radius: 50px;
+    font-weight: 800;
+    font-size: 0.85em;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: block;
+    width: 80%;
+    margin: 15px auto 0;
+    text-align: center;
+    box-shadow: 0 4px 10px rgba(255, 182, 193, 0.3);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Hiệu ứng khi di chuột vào */
+.btn-open-reg:hover {
+    background: #ff69b4;
+    color: white;
+    border-color: #ff69b4;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(255, 20, 147, 0.4);
+}
+
+/* Hiệu ứng tia sáng lướt qua khi rê chuột vào */
+.btn-open-reg::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -60%;
+    width: 20%;
+    height: 200%;
+    background: rgba(255, 255, 255, 0.4);
+    transform: rotate(30deg);
+    transition: all 0.5s;
+}
+
+.btn-open-reg:hover::after {
+    left: 120%;
+}
+
+/* Hiệu ứng khi nhấn xuống */
+.btn-open-reg:active {
+    transform: translateY(1px);
+    box-shadow: 0 2px 5px rgba(255, 20, 147, 0.2);
+}
 </style>
 </head>
 <body>
@@ -5246,7 +5298,9 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
                 <p onclick="forgotPassword()" style="font-size: 0.8em; color: #ff1493; cursor: pointer; text-align: center; margin-top: 10px; font-weight: bold;">Quên mật khẩu?</p>
                 
                 <hr style="border: 0.5px solid #ffe4e1; margin: 20px 0;">
-                <button class="btn-open-reg" onclick="toggleRegPopup(true)">Chưa có tài khoản? Đăng ký ngay</button>
+                <button class="btn-open-reg" onclick="toggleRegPopup(true)">
+    <i class="fas fa-heart"></i> Chưa có tài khoản? Đăng ký ngay
+</button>
             </div>
         </div>
     </div>
