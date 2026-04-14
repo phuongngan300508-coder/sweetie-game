@@ -5291,10 +5291,12 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
     padding: 5px 0;
 }
 
+/* Trong file CSS của Henry */
 .typing-dots span {
     width: 6px;
     height: 6px;
-    background: #ff69b4; /* Màu hồng Sweetie của Henry */
+    /* Mặc định là màu hồng nếu chưa có theme */
+    background: var(--theme-main-color, #ff69b4); 
     border-radius: 50%;
     display: inline-block;
     animation: typingBounce 1.4s infinite ease-in-out both;
@@ -14788,7 +14790,6 @@ function applyThemeToUI(themeData) {
         
     } else if (themeData.type === 'premium') {
         // --- PHẦN SỬA ĐỔI ĐỂ HỖ TRỢ ẢNH TÙY CHỈNH ---
-        // Nếu có cờ isCustom, lấy từ customData (do Henry tự tạo), nếu không lấy từ config mặc định
         const theme = themeData.isCustom ? themeData.customData : CHAT_THEMES_CONFIG[themeData.themeKey];
         
         if (!theme) return;
@@ -14816,12 +14817,16 @@ function applyThemeToUI(themeData) {
         // --- KẾT THÚC PHẦN SỬA ĐỔI ---
     }
 
+    // --- BỔ SUNG: CẬP NHẬT BIẾN MÀU CHO HIỆU ỨNG ĐANG TRẢ LỜI (TYPING DOTS) ---
+    // Henry dùng biến này trong CSS của .typing-dots span { background: var(--theme-main-color); }
+    if (area) {
+        area.style.setProperty('--theme-main-color', mainThemeColor);
+    }
+
     // --- CẬP NHẬT MÀU ICON BIỂU CẢM & DẤU 3 CHẤM ---
-    // TỐI ƯU: Giới hạn phạm vi tìm kiếm trong 'area' thay vì toàn bộ 'document'
     const actionIcons = area.querySelectorAll('.msg-actions i');
     actionIcons.forEach(icon => {
         if (icon.classList.contains('fa-smile')) {
-            // Chỉ cập nhật nếu màu khác với màu theme (giảm tải xử lý DOM)
             if (icon.style.color !== mainThemeColor) icon.style.color = mainThemeColor;
         } 
         else if (icon.classList.contains('fa-ellipsis-v')) {
@@ -15501,7 +15506,7 @@ function handleTypingStatus() {
     }, 2500);
 }
 
-    function listenTypingIndicator(friendName) {
+   function listenTypingIndicator(friendName) {
     const chatRoomId = [currentUser, friendName].sort().join('_');
     const area = document.getElementById('chat-messages-area');
 
@@ -15513,13 +15518,19 @@ function handleTypingStatus() {
         if (oldIndicator) oldIndicator.remove();
 
         if (isTyping) {
+            // --- BỔ SUNG: LẤY MÀU THEME HIỆN TẠI ---
+            // Lấy từ biến CSS đã set trong applyThemeToUI, nếu không có thì mặc định là hồng
+            const currentColor = area.style.getPropertyValue('--theme-main-color') || '#ff69b4';
+
             // Tạo bong bóng 3 chấm
             const typingHtml = `
                 <div id="typing-indicator" class="msg-wrapper msg-friend-wrap animate__animated animate__fadeIn" 
                      style="display: flex; align-items: center; width: 100%; justify-content: flex-start; margin-bottom: 15px; align-items: flex-start;">
                     <div class="msg-bubble msg-friend" style="padding: 10px 18px; border-radius: 20px; background: #f0f0f0; width: fit-content; margin-left: 5px;">
                         <div class="typing-dots">
-                            <span></span><span></span><span></span>
+                            <span style="background: ${currentColor}"></span>
+                            <span style="background: ${currentColor}"></span>
+                            <span style="background: ${currentColor}"></span>
                         </div>
                     </div>
                 </div>`;
