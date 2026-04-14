@@ -12942,7 +12942,7 @@ function renderSingleMessage(msgId, msg, position = 'bottom', targetContainer = 
         let senderDisplayName = (typeof currentNicks !== 'undefined' && currentNicks[msg.replyData.sender]) 
                                 ? currentNicks[msg.replyData.sender] : msg.replyData.sender;
         replyHtml = `
-            <div class="reply-in-msg" onclick="scrollToMessage('${msg.replyData.id}')" style="cursor: pointer;">
+            <div class="reply-in-msg" onclick="scrollToMessage('${msg.replyData.id}'); event.stopPropagation();" style="cursor: pointer;">
                 <small>↩️ ${senderDisplayName}</small>
                 <div class="reply-text">${msg.replyData.text}</div>
             </div>`;
@@ -12954,7 +12954,7 @@ function renderSingleMessage(msgId, msg, position = 'bottom', targetContainer = 
     let reactionDisplayHtml = "";
     const uniqueReactions = [...new Set(Object.values(reactions))];
     if (uniqueReactions.length > 0) {
-        reactionDisplayHtml = `<div class="msg-reaction-display" onclick="sendReaction('${msgId}', '${myReaction}')" style="cursor:pointer;">${uniqueReactions.join('')}</div>`;
+        reactionDisplayHtml = `<div class="msg-reaction-display" onclick="sendReaction('${msgId}', '${myReaction}'); event.stopPropagation();" style="cursor:pointer;">${uniqueReactions.join('')}</div>`;
     }
     const getEmojiClass = (emoji) => (myReaction === emoji) ? "emoji-btn emoji-active" : "emoji-btn";
 
@@ -12975,7 +12975,7 @@ function renderSingleMessage(msgId, msg, position = 'bottom', targetContainer = 
         }
     }
 
-    // --- 4. LOGIC MEDIA, STICKER & HIGHLIGHT (CẬP NHẬT) ---
+    // --- 4. LOGIC MEDIA, STICKER & HIGHLIGHT (GIỮ NGUYÊN 100%) ---
     let finalMsgText = msg.text || "";
     if (typeof currentSearchKeyword !== 'undefined' && currentSearchKeyword && msg.text) {
         const regex = new RegExp(`(${currentSearchKeyword})`, 'gi');
@@ -12983,21 +12983,17 @@ function renderSingleMessage(msgId, msg, position = 'bottom', targetContainer = 
     }
 
     let bodyContentHtml = `<div class="text-content">${finalMsgText}</div>`;
-    
-    // Kiểm tra nếu là Sticker
     if (msg.type === 'sticker') {
-        bodyContentHtml = `<img src="${msg.mediaUrl}" class="animate__animated animate__zoomIn" style="width: 150px; height: auto; display: block; cursor: pointer;">`;
-    } 
-    // Nếu là Media thường (Ảnh/Video)
-    else if (msg.mediaUrl) {
+        bodyContentHtml = `<img src="${msg.mediaUrl}" class="animate__animated animate__zoomIn" style="width: 150px; height: auto; display: block; cursor: pointer;" onclick="event.stopPropagation();">`;
+    } else if (msg.mediaUrl) {
         if (msg.mediaType === 'image') {
-            bodyContentHtml = `<img src="${msg.mediaUrl}" onclick="openFS('${msg.mediaUrl}', 'image')" style="max-width:100%; border-radius:10px; cursor:pointer; display: block; margin-bottom: 5px;">`;
+            bodyContentHtml = `<img src="${msg.mediaUrl}" onclick="openFS('${msg.mediaUrl}', 'image'); event.stopPropagation();" style="max-width:100%; border-radius:10px; cursor:pointer; display: block; margin-bottom: 5px;">`;
         } else if (msg.mediaType === 'video') {
-            bodyContentHtml = `<div style="position:relative; display: block; margin-bottom: 5px;"><video src="${msg.mediaUrl}" muted style="max-width:100%; border-radius:10px; display: block;"></video><i class="fas fa-play-circle" onclick="openFS('${msg.mediaUrl}', 'video')" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); color:white; font-size:2.5em; cursor:pointer; opacity: 0.9;"></i></div>`;
+            bodyContentHtml = `<div style="position:relative; display: block; margin-bottom: 5px;" onclick="event.stopPropagation();"><video src="${msg.mediaUrl}" muted style="max-width:100%; border-radius:10px; display: block;"></video><i class="fas fa-play-circle" onclick="openFS('${msg.mediaUrl}', 'video'); event.stopPropagation();" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); color:white; font-size:2.5em; cursor:pointer; opacity: 0.9;"></i></div>`;
         }
     }
 
-    // --- 5. TEMPLATE HTML (SỬA ĐỂ ẨN BUBBLE KHI GỬI STICKER) ---
+    // --- 5. TEMPLATE HTML (TỐI ƯU HÓA CHẶN CLICK) ---
     const isSticker = msg.type === 'sticker';
     
     const msgHtml = `
@@ -13006,34 +13002,35 @@ function renderSingleMessage(msgId, msg, position = 'bottom', targetContainer = 
          data-id="${msgId}" data-text="${msg.text || ''}" data-sender="${msg.sender}"
          onclick="toggleMsgStatus('${msgId}')">
         
-        <div style="display: flex; align-items: center; width: fit-content; ${isMe ? 'flex-direction: row-reverse;' : 'flex-direction: row;'}">
-            <div id="picker-${msgId}" class="reaction-picker reaction-stay" style="display:none;">
-                <span class="${getEmojiClass('❤️')}" onclick="sendReaction('${msgId}', '❤️')">❤️</span>
-                <span class="${getEmojiClass('😆')}" onclick="sendReaction('${msgId}', '😆')">😆</span>
-                <span class="${getEmojiClass('😮')}" onclick="sendReaction('${msgId}', '😮')">😮</span>
-                <span class="${getEmojiClass('😢')}" onclick="sendReaction('${msgId}', '😢')">😢</span>
-                <span class="${getEmojiClass('😡')}" onclick="sendReaction('${msgId}', '😡')">😡</span>
-                <span class="${getEmojiClass('👍')}" onclick="sendReaction('${msgId}', '👍')">👍</span>
+        <div style="display: flex; align-items: center; width: fit-content; ${isMe ? 'flex-direction: row-reverse;' : 'flex-direction: row;'}" onclick="event.stopPropagation();">
+            <div id="picker-${msgId}" class="reaction-picker reaction-stay" style="display:none;" onclick="window.event ? window.event.cancelBubble = true : event.stopPropagation();">
+                <span class="${getEmojiClass('❤️')}" onclick="sendReaction('${msgId}', '❤️');">❤️</span>
+                <span class="${getEmojiClass('😆')}" onclick="sendReaction('${msgId}', '😆');">😆</span>
+                <span class="${getEmojiClass('😮')}" onclick="sendReaction('${msgId}', '😮');">😮</span>
+                <span class="${getEmojiClass('😢')}" onclick="sendReaction('${msgId}', '😢');">😢</span>
+                <span class="${getEmojiClass('😡')}" onclick="sendReaction('${msgId}', '😡');">😡</span>
+                <span class="${getEmojiClass('👍')}" onclick="sendReaction('${msgId}', '👍');">👍</span>
             </div>
 
             <div class="msg-bubble ${isSticker ? '' : (isMe ? 'msg-me' : 'msg-friend')}" 
                  style="display: flex; flex-direction: column; position: relative; ${isSticker ? 'background: transparent; box-shadow: none; border: none; padding: 0;' : ''}"
-                 ondblclick="sendReaction('${msgId}', '❤️')" 
+                 ondblclick="sendReaction('${msgId}', '❤️'); window.event ? window.event.cancelBubble = true : event.stopPropagation();" 
                  ontouchstart="handleTouchStart(event, '${msgId}')" 
                  ontouchend="handleTouchEnd()"
                  onmouseenter="showActionBtn('${msgId}')" 
-                 onmouseleave="hideActionBtn('${msgId}')">
+                 onmouseleave="hideActionBtn('${msgId}')"
+                 onclick="event.stopPropagation();">
                 ${replyHtml}
                 ${bodyContentHtml}
                 ${reactionDisplayHtml}
             </div>
 
-            <div class="msg-actions" id="actions-${msgId}" style="display: flex; align-items: center; ${isMe ? 'flex-direction: row-reverse;' : ''}">
-                <i class="far fa-smile reaction-stay" onclick="toggleReactionPicker('${msgId}')" style="cursor:pointer; ${isMe ? 'margin-left:5px;' : 'margin-right:5px;'} color:#ff69b4;"></i>
-                <i class="fas fa-ellipsis-v" onclick="showActionMenu('${msgId}', ${isMe})"></i>
-                <div class="action-menu" id="menu-${msgId}">
-                    <div onclick="setReply('${msgId}', '${msg.text || ''}', '${msg.sender}')"><i class="fas fa-reply"></i> Trả lời</div>
-                    <div onclick="deleteMessage('${msgId}', ${isMe})" style="color:red"><i class="fas fa-trash"></i> Xóa</div>
+            <div class="msg-actions" id="actions-${msgId}" style="display: flex; align-items: center; ${isMe ? 'flex-direction: row-reverse;' : ''}" onclick="window.event ? window.event.cancelBubble = true : event.stopPropagation();">
+                <i class="far fa-smile reaction-stay" onclick="toggleReactionPicker('${msgId}'); event.stopPropagation();" style="cursor:pointer; ${isMe ? 'margin-left:5px;' : 'margin-right:5px;'} color:#ff69b4;"></i>
+                <i class="fas fa-ellipsis-v" onclick="showActionMenu('${msgId}', ${isMe}); event.stopPropagation();" style="cursor:pointer;"></i>
+                <div class="action-menu" id="menu-${msgId}" onclick="event.stopPropagation();">
+                    <div onclick="setReply('${msgId}', '${msg.text || ''}', '${msg.sender}'); document.getElementById('menu-${msgId}').style.display='none'; event.stopPropagation();"><i class="fas fa-reply"></i> Trả lời</div>
+                    <div onclick="deleteMessage('${msgId}', ${isMe}); document.getElementById('menu-${msgId}').style.display='none'; event.stopPropagation();" style="color:red"><i class="fas fa-trash"></i> Xóa</div>
                 </div>
             </div>
         </div>
@@ -13049,7 +13046,6 @@ function renderSingleMessage(msgId, msg, position = 'bottom', targetContainer = 
         </div>
     </div>`;
 
-    // --- 6. PHẦN SỬA ĐỂ CHỐNG NHẢY TIN NHẮN (GIỮ NGUYÊN 100%) ---
     if (targetContainer) {
         targetContainer.innerHTML = msgHtml;
     } else {
