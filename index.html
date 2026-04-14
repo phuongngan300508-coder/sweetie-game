@@ -13106,9 +13106,31 @@ function scrollToMessage(msgId) {
 
 // Hàm xử lý hiện menu 3 chấm
 function showActionMenu(id, isMe) {
+    // 1. Dọn dẹp: Đóng tất cả các menu 3 chấm khác đang mở trên màn hình
     const allMenus = document.querySelectorAll('.action-menu');
     allMenus.forEach(m => m.style.display = 'none');
-    document.getElementById(`menu-${id}`).style.display = 'block';
+
+    // 2. Lấy menu mục tiêu
+    const targetMenu = document.getElementById(`menu-${id}`);
+    const actionsWrap = document.getElementById(`actions-${id}`);
+
+    if (targetMenu) {
+        // Hiện menu lên
+        targetMenu.style.display = 'block';
+        
+        // 3. QUAN TRỌNG: Ép thanh actions phải hiện (opacity 1)
+        // Khi menu đang mở, dù Henry có lỡ di chuột ra ngoài một chút 
+        // thì cái nút 3 chấm vẫn phải sáng đèn để Henry thấy mình đang thao tác với tin nhắn nào.
+        if (actionsWrap) {
+            actionsWrap.style.opacity = "1";
+        }
+
+        // Mẹo nhỏ: Ngăn sự kiện click này lan ra ngoài (Bubble up) 
+        // để không bị hàm "mousedown" ở trên tự động đóng menu ngay khi vừa mở.
+        if (window.event) window.event.stopPropagation();
+        
+        console.log(`🌸 Đã mở menu chức năng cho tin nhắn: ${id}`);
+    }
 }
 
 function showActionBtn(id) { 
@@ -14337,11 +14359,31 @@ function sendReaction(msgId, icon) {
 }
 
 document.addEventListener('mousedown', function(event) {
-    // Nếu click không phải vào thanh bar (reaction-stay) và không phải vào nút mở (mặt cười)
-    if (!event.target.closest('.reaction-stay')) {
+    // 1. Kiểm tra xem cú click có nằm TRONG một vùng an toàn nào không (nút mặt cười, menu, hoặc picker)
+    const isClickInsideStay = event.target.closest('.reaction-stay');
+    const isClickInsideAction = event.target.closest('.msg-actions');
+
+    // 2. Nếu click RA NGOÀI các vùng trên:
+    if (!isClickInsideStay && !isClickInsideAction) {
+        
+        // --- Đóng tất cả bảng cảm xúc ---
         document.querySelectorAll('.reaction-picker').forEach(picker => {
             picker.style.display = 'none';
         });
+
+        // --- Đóng tất cả menu 3 chấm (Trả lời/Xóa) ---
+        document.querySelectorAll('.action-menu').forEach(menu => {
+            menu.style.display = 'none';
+        });
+
+        // --- ẨN LUÔN THANH NÚT BẤM ---
+        // Vì Henry đã click ra ngoài, nên các icon mặt cười/3 chấm cũng nên ẩn đi 
+        // để tránh việc chúng hiện lơ lửng khi không dùng tới.
+        document.querySelectorAll('.msg-actions').forEach(actions => {
+            actions.style.opacity = "0";
+        });
+        
+        console.log("🌸 Đã dọn dẹp giao diện: Đóng toàn bộ menu và ẩn icon.");
     }
 });
 
