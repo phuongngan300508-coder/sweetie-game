@@ -5281,32 +5281,6 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
 }
 
 .popup-btn-close:active { transform: scale(0.95); }
-
-    /* Hiệu ứng 3 chấm nhảy */
-.typing-dots {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    height: 15px;
-}
-
-.typing-dots span {
-    width: 6px;
-    height: 6px;
-    background: #ff69b4; /* Màu hồng Sweetie */
-    border-radius: 50%;
-    display: inline-block;
-    animation: typingBounce 1.4s infinite ease-in-out both;
-}
-
-/* Delay cho từng chấm để tạo hiệu ứng sóng */
-.typing-dots span:nth-child(1) { animation-delay: -0.32s; }
-.typing-dots span:nth-child(2) { animation-delay: -0.16s; }
-
-@keyframes typingBounce {
-    0%, 80%, 100% { transform: scale(0); }
-    40% { transform: scale(1); }
-}
 </style>
 </head>
 <body>
@@ -12646,8 +12620,6 @@ function listenMessages(friendName) {
     isAllLoaded = false;
     msgRef.off(); 
     db.ref('chats/' + chatRoomId + '/config/theme').off();
-    // Ngắt lắng nghe typing của người cũ khi đổi chat
-    db.ref(`chats/${chatRoomId}/typing/${friendName}`).off();
 
     let currentThemeData = null;
 
@@ -12702,12 +12674,7 @@ function listenMessages(friendName) {
         loadMoreMessages(friendName, true);
     }
 
-    // --- BỔ SUNG: LẮNG NGHE HIỆU ỨNG ĐANG TRẢ LỜI (TYPING INDICATOR) ---
-    if (typeof listenTypingIndicator === 'function') {
-        listenTypingIndicator(friendName);
-    }
-
-    // 5. LẮNG NGHE TIN NHẮN MỚI (child_added) (Giữ nguyên & Đã xem)
+    // 5. LẮNG NGHE TIN NHẮN MỚI (child_added) (Giữ nguyên & Thêm logic cập nhật Đã xem)
     msgRef.limitToLast(1).on('child_added', (snapshot) => {
         const msgId = snapshot.key;
         if (document.getElementById(`msg-${msgId}`)) return; 
@@ -12718,6 +12685,8 @@ function listenMessages(friendName) {
 
         renderSingleMessage(msgId, msg, 'bottom');
         
+        // --- BỔ SUNG: CẬP NHẬT TRẠNG THÁI ĐÃ XEM KHI TIN NHẮN MỚI ĐẾN ---
+        // Nếu Henry đang mở chat với người này (currentChatFriend === friendName)
         if (typeof currentChatFriend !== 'undefined' && currentChatFriend === friendName) {
             if (typeof updateReadReceipt === 'function') {
                 updateReadReceipt(friendName);
@@ -12733,7 +12702,7 @@ function listenMessages(friendName) {
         }
     });
 
-    // --- LẮNG NGHE CẬP NHẬT CẢM XÚC (child_changed) (Giữ nguyên) ---
+    // --- MỚI: LẮNG NGHE CẬP NHẬT CẢM XÚC (child_changed) (Giữ nguyên) ---
     msgRef.on('child_changed', (snapshot) => {
         const msgId = snapshot.key;
         const msg = snapshot.val();
@@ -12749,7 +12718,7 @@ function listenMessages(friendName) {
         }
     });
 
-    // --- LẮNG NGHE XÓA TIN NHẮN (child_removed) (Giữ nguyên) ---
+    // --- MỚI: LẮNG NGHE XÓA TIN NHẮN (child_removed) (Giữ nguyên) ---
     msgRef.on('child_removed', (snapshot) => {
         const msgId = snapshot.key;
         const msgEl = document.getElementById(`msg-${msgId}`);
@@ -15472,25 +15441,6 @@ function toggleSeenFirebase(isOn) {
         addNotification("⚙️ CẬP NHẬT", isOn ? "Đã bật tính năng Đã xem." : "Đã tắt tính năng Đã xem.", true);
     });
 }
-
-    let typingTimeout;
-
-// Lắng nghe khi Henry gõ phím
-document.getElementById('chat-input').addEventListener('input', () => {
-    if (!currentChatFriend) return;
-    const chatRoomId = [currentUser, currentChatFriend].sort().join('_');
-
-    // Báo lên Firebase là mình đang gõ
-    db.ref(`chats/${chatRoomId}/typing/${currentUser}`).set(true);
-
-    // Xóa timeout cũ đi
-    clearTimeout(typingTimeout);
-
-    // Nếu sau 2 giây Henry không gõ nữa thì báo là đã ngừng gõ
-    typingTimeout = setTimeout(() => {
-        db.ref(`chats/${chatRoomId}/typing/${currentUser}`).set(false);
-    }, 2000);
-});
 </script>
 </body>
 </html>
