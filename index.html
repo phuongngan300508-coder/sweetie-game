@@ -16058,7 +16058,8 @@ function sendStickerMessage(url) {
         Object.keys(pins).reverse().forEach(msgId => {
             const data = pins[msgId];
             html += `
-                <div class="pinned-item-card animate__animated animate__fadeIn">
+                <div class="pinned-item-card animate__animated animate__fadeIn" 
+                     style="position: relative; overflow: visible; z-index: 1;">
                     <div style="display:flex; justify-content:space-between; align-items:flex-start;">
                         <div style="flex:1" onclick="viewInChat('${msgId}')">
                             <small style="color:#ff1493; font-weight:800;">${data.sender}</small>
@@ -16066,13 +16067,14 @@ function sendStickerMessage(url) {
                                 ${data.text}
                             </div>
                         </div>
-                        <i class="fas fa-ellipsis-h" style="padding:5px; color:#ccc;" onclick="showPinActions('${msgId}')"></i>
+                        <i class="fas fa-ellipsis-h" style="padding:5px; color:#ccc; cursor: pointer;" onclick="showPinActions('${msgId}')"></i>
                     </div>
-                    <div id="pin-actions-${msgId}" style="display:none; position:absolute; right:10px; top:35px; background:white; box-shadow:0 4px 10px rgba(0,0,0,0.2); border-radius:10px; z-index:10;">
-                        <div onclick="togglePinMessage('${msgId}')" style="padding:10px; font-size:0.7em; color:red; font-weight:bold; cursor:pointer; border-bottom:1px solid #eee;">
+                    <div id="pin-actions-${msgId}" class="pin-dropdown-menu" 
+                         style="display:none; position:absolute; right:10px; top:35px; background:white; box-shadow:0 4px 15px rgba(0,0,0,0.15); border-radius:10px; z-index: 1000; min-width: 130px; border: 1px solid #fff0f5;">
+                        <div onclick="togglePinMessage('${msgId}')" style="padding:10px; font-size:0.7em; color:red; font-weight:bold; cursor:pointer; border-bottom:1px solid #eee; display: flex; align-items: center; gap: 8px;">
                             <i class="fas fa-trash-alt"></i> Bỏ ghim
                         </div>
-                        <div onclick="viewInChat('${msgId}')" style="padding:10px; font-size:0.7em; color:#ff1493; font-weight:bold; cursor:pointer;">
+                        <div onclick="viewInChat('${msgId}')" style="padding:10px; font-size:0.7em; color:#ff1493; font-weight:bold; cursor:pointer; display: flex; align-items: center; gap: 8px;">
                             <i class="fas fa-eye"></i> Xem trong chat
                         </div>
                     </div>
@@ -16084,9 +16086,32 @@ function sendStickerMessage(url) {
 
 function showPinActions(msgId) {
     const el = document.getElementById(`pin-actions-${msgId}`);
+    if (!el) return;
+
     const isShowing = el.style.display === 'block';
-    document.querySelectorAll('[id^="pin-actions-"]').forEach(menu => menu.style.display = 'none');
-    el.style.display = isShowing ? 'none' : 'block';
+
+    // 1. Dọn dẹp: Ẩn tất cả các menu ghim khác đang mở
+    document.querySelectorAll('[id^="pin-actions-"]').forEach(menu => {
+        menu.style.display = 'none';
+    });
+
+    // 2. Reset z-index của tất cả các thẻ tin nhắn ghim về 1 (lớp nền)
+    document.querySelectorAll('.pinned-item-card').forEach(card => {
+        card.style.zIndex = '1';
+    });
+
+    // 3. Nếu menu đang đóng thì mới mở ra và đẩy lớp lên trên cùng
+    if (!isShowing) {
+        el.style.display = 'block';
+        
+        // Tìm thẻ cha (cái card chứa tin nhắn) và cho nó lên lớp cao nhất
+        const parentCard = el.closest('.pinned-item-card');
+        if (parentCard) {
+            parentCard.style.zIndex = '100'; 
+        }
+    } else {
+        el.style.display = 'none';
+    }
 }
 
   function viewInChat(msgId) {
