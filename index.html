@@ -12954,16 +12954,19 @@ function renderSingleMessage(msgId, msg, position = 'bottom', targetContainer = 
             bodyContentHtml = `<img src="${msg.mediaUrl}" onclick="openFS('${msg.mediaUrl}', 'image')" style="max-width:100%; border-radius:10px; cursor:pointer; display: block; margin-bottom: 5px;">`;
         } else if (msg.mediaType === 'video') {
             bodyContentHtml = `<div style="position:relative; display: block; margin-bottom: 5px;"><video src="${msg.mediaUrl}" muted style="max-width:100%; border-radius:10px; display: block;"></video><i class="fas fa-play-circle" onclick="openFS('${msg.mediaUrl}', 'video')" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); color:white; font-size:2.5em; cursor:pointer; opacity: 0.9;"></i></div>`;
-        } else if (msg.mediaType === 'sticker') {
-            // Henry thêm riêng phần này: Sticker sẽ to rõ, không có khung viền thô
-            bodyContentHtml = `<img src="${msg.mediaUrl}" style="width:120px; height:120px; object-fit:contain; display: block; border-radius:0;">`;
-        }
+} else if (msg.mediaType === 'sticker') {
+    // Sửa thành:
+    bodyContentHtml = `<img src="${msg.mediaUrl}" style="width:130px; height:auto; display: block; border-radius:0; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.05));">`;
+}
     }
 
-    // --- 5. TEMPLATE HTML (SỬA CSS ĐỂ STICKER ĐẸP HƠN) ---
-    // Nếu là Sticker thì Henry cho background trong suốt để khoe nhãn dán
-    const isSticker = msg.mediaType === 'sticker';
-    const bubbleExtraStyle = isSticker ? "background: transparent !important; box-shadow: none !important; border: none !important;" : "";
+    // --- 5. TEMPLATE HTML (SỬA ĐỂ STICKER BAY TỰ DO) ---
+const isSticker = (msg.mediaType === 'sticker');
+
+// Nếu là sticker: Bỏ nền, bỏ bóng đổ, bỏ viền của khung chat cũ
+const bubbleExtraStyle = isSticker 
+    ? "background: transparent !important; box-shadow: none !important; border: none !important; padding: 0 !important;" 
+    : "";
 
     const msgHtml = `
     <div class="msg-wrapper ${isMe ? 'msg-me-wrap' : 'msg-friend-wrap'}" id="msg-${msgId}"
