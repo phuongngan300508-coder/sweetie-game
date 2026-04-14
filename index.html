@@ -5388,21 +5388,21 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
 
     #scroll-bottom-btn {
     position: absolute;
-    bottom: 80px; /* Cách thanh nhập liệu một khoảng */
-    right: 20px;
+    bottom: 85px; /* Giữ nguyên khoảng cách trên thanh input */
+    left: 50%;    /* Đẩy nút ra giữa 50% chiều ngang */
+    transform: translateX(-50%); /* Dịch ngược lại 50% chiều rộng của chính nó để căn giữa tuyệt đối */
     width: 35px;
     height: 35px;
-    background: #ff1493; /* Màu mặc định, JS sẽ đổi theo theme */
+    background: #ff1493;
     color: white;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    z-index: 100;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    z-index: 99;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15); /* Tăng độ nổi một chút vì nằm giữa dễ bị che */
     transition: all 0.3s ease;
-    animation: bounceIn 0.5s;
 }
 
 /* Hiệu ứng hiện ra mượt mà */
@@ -7277,9 +7277,9 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
     <div id="chat-messages-area" class="chat-messages-area" style="display: flex; flex-direction: column;">
         </div>
 
-    <div id="scroll-bottom-btn" onclick="scrollToLatest()" 
-     style="display: none; position: absolute; bottom: 85px; right: 20px; width: 35px; height: 35px; 
-            border-radius: 50%; align-items: center; justify-content: center; 
+   <div id="scroll-bottom-btn" onclick="scrollToLatest()" 
+     style="display: none; position: absolute; bottom: 85px; left: 50%; transform: translateX(-50%); 
+            width: 35px; height: 35px; border-radius: 50%; align-items: center; justify-content: center; 
             cursor: pointer; z-index: 99; box-shadow: 0 4px 10px rgba(0,0,0,0.1); 
             transition: all 0.3s ease; background: #ff1493; color: white;">
     <i class="fas fa-chevron-down"></i>
