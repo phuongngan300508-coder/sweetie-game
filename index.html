@@ -15756,7 +15756,7 @@ async function handleStickerUpload(event) {
     const file = event.target.files[0];
     if (!file) return;
 
-    // --- HIỆN POPUP TIẾN ĐỘ (MỚI THÊM) ---
+    // --- HIỆN POPUP TIẾN ĐỘ ---
     const overlay = document.getElementById('sticker-loading-overlay');
     const bar = document.getElementById('sticker-progress-bar');
     const text = document.getElementById('sticker-progress-text');
@@ -15767,22 +15767,19 @@ async function handleStickerUpload(event) {
         text.innerText = '0%';
     }
 
-    // Hiện overlay đang xử lý (Giữ nguyên nội dung cũ)
     addNotification("⏳ ĐANG XỬ LÝ", "AI đang tách nền nhãn dán cho Henry...", true);
     
     const formData = new FormData();
     formData.append('file', file);
     formData.append('upload_preset', UPLOAD_PRESET);
     
-    // THUẬT TOÁN TÁCH NỀN THỰC SỰ: Kích hoạt Add-on AI của Cloudinary
+    // --- SỬA TẠI ĐÂY: ÉP CLOUDINARY CHỜ AI TÁCH XONG MỚI TRẢ VỀ URL ---
     formData.append('background_removal', 'cloudinary_ai'); 
 
     try {
-        // Sử dụng XMLHttpRequest để theo dõi % tải lên
         const xhr = new XMLHttpRequest();
         xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, true);
 
-        // Lắng nghe tiến độ
         xhr.upload.onprogress = function(e) {
             if (e.lengthComputable && bar && text) {
                 const percent = Math.round((e.loaded / e.total) * 100);
@@ -15790,7 +15787,7 @@ async function handleStickerUpload(event) {
                 text.innerText = percent + '%';
                 if (percent === 100) {
                     const statusH3 = document.querySelector('#sticker-loading-overlay h3');
-                    if (statusH3) statusH3.innerText = "ĐANG BÓC TÁCH NỀN...";
+                    if (statusH3) statusH3.innerText = "ĐANG BÓC TÁCH NỀN... (ĐỢI XÍU NHÉ)";
                 }
             }
         };
@@ -15798,18 +15795,19 @@ async function handleStickerUpload(event) {
         xhr.onload = function() {
             if (xhr.status === 200) {
                 const data = JSON.parse(xhr.responseText);
+                
+                // Mẹo của Henry: Lấy URL và ép định dạng PNG + Cắt lề trắng
                 let finalUrl = data.secure_url;
+                
+                // --- SỬA THUẬT TOÁN REPLACE: Ưu tiên f_png và e_trim lên đầu ---
+                // f_png: Ép ra file trong suốt
+                // e_trim: Cắt sạch phần lề thừa xung quanh nhân vật
+                finalUrl = finalUrl.replace('/upload/', '/upload/f_png,e_trim,c_limit,w_300/');
 
-                // Henry áp dụng biến đổi ảnh: (Giữ nguyên 100% nội dung logic cũ của Henry)
-                // Cập nhật thêm f_png để đảm bảo ảnh trả về luôn có nền trong suốt
-                finalUrl = finalUrl.replace('/upload/', '/upload/f_png,e_trim,c_limit,w_300,e_make_transparent:20,ar_1.1,c_pad,b_transparent/');
-
-                // Lưu vào kho sticker vĩnh viễn trên Firebase (Giữ nguyên nội dung cũ)
                 db.ref(`users/${currentUser}/stickers`).push({
                     url: finalUrl,
                     time: firebase.database.ServerValue.TIMESTAMP
                 }).then(() => {
-                    // TỰ ĐỘNG ẨN POPUP KHI XONG (MỚI THÊM)
                     if (overlay) {
                         overlay.classList.add('animate__animated', 'animate__fadeOut');
                         setTimeout(() => {
@@ -15818,18 +15816,20 @@ async function handleStickerUpload(event) {
                         }, 500);
                     }
 
-                    addNotification("✨ HOÀN TẤT", "Nhãn dán đã được thêm vào kho!", false);
+                    addNotification("✨ HOÀN TẤT", "Nhãn dán đã sạch nền 100%!", false);
                     showStickerTab('store');
                 });
             } else {
+                const errorData = JSON.parse(xhr.responseText);
+                console.error("Lỗi Cloudinary:", errorData.error.message);
                 if (overlay) overlay.style.display = 'none';
-                alert("Lỗi Cloudinary: " + xhr.statusText);
+                alert("Lỗi AI: " + errorData.error.message);
             }
         };
 
         xhr.onerror = function() {
             if (overlay) overlay.style.display = 'none';
-            alert("Lỗi kết nối khi tải nhãn dán!");
+            alert("Lỗi kết nối!");
         };
 
         xhr.send(formData);
@@ -15837,7 +15837,6 @@ async function handleStickerUpload(event) {
     } catch (err) {
         console.error("Lỗi tải sticker:", err);
         if (overlay) overlay.style.display = 'none';
-        alert("Lỗi tải nhãn dán!");
     }
 }
     
