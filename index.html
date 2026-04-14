@@ -15741,17 +15741,16 @@ async function handleStickerUpload(event) {
     const file = event.target.files[0];
     if (!file) return;
 
-    // Hiện overlay đang xử lý
+    // 1. Thông báo đang xử lý (Henry giữ nguyên style cũ)
     addNotification("⏳ ĐANG XỬ LÝ", "AI đang tách nền nhãn dán cho Henry...", true);
     
     const formData = new FormData();
     formData.append('file', file);
     formData.append('upload_preset', UPLOAD_PRESET);
     
-    // THUẬT TOÁN TÁCH NỀN: Thêm effect remove_background của Cloudinary
-    // Lưu ý: Cloudinary cần kích hoạt "Cloudinary AI Background Removal" (Add-on miễn phí có giới hạn)
-    // Nếu không có Add-on, ta sẽ dùng hiệu ứng lấn vùng trắng (e_make_transparent)
-    
+    // MẸO: Henry có thể thêm dòng này nếu đã bật Add-on Cloudinary AI Background Removal
+    // formData.append('background_removal', 'cloudinary_ai'); 
+
     try {
         const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
             method: 'POST',
@@ -15761,27 +15760,31 @@ async function handleStickerUpload(event) {
         
         let finalUrl = data.secure_url;
 
-        // Henry áp dụng biến đổi ảnh: 
-        // c_limit,w_300: Giới hạn kích thước nhãn dán
-        // e_make_transparent:20: Tự động biến màu nền trơn (trắng/đen) thành trong suốt
-        // ar_1:1,c_fill: Ép về tỉ lệ 1:1 nếu ảnh có nền phức tạp
-        finalUrl = finalUrl.replace('/upload/', '/upload/c_limit,w_300,e_make_transparent:20,ar_1.1,c_pad,b_transparent/');
+        // --- ĐOẠN Henry CẦN SỬA ĐỂ TÁCH NỀN "BAY" TỰ DO ---
+        // f_png: Ép về định dạng PNG để có độ trong suốt (BẮT BUỘC)
+        // e_make_transparent:10: Biến nền trắng/đen thành trong suốt (dung sai 10 để tránh lẹm vào hình)
+        // e_trim: Tự động cắt bỏ các khoảng trống dư thừa sát mép ảnh
+        // c_limit,w_300: Giới hạn chiều rộng 300px để nhãn dán sắc nét mà không nặng
+        finalUrl = finalUrl.replace('/upload/', '/upload/f_png,e_make_transparent:10,e_trim,c_limit,w_300/');
 
-        // Lưu vào kho sticker vĩnh viễn trên Firebase
+        // 2. Lưu vào kho sticker vĩnh viễn trên Firebase (Giữ nguyên logic của Henry)
         db.ref(`users/${currentUser}/stickers`).push({
             url: finalUrl,
             time: firebase.database.ServerValue.TIMESTAMP
         }).then(() => {
-            addNotification("✨ HOÀN TẤT", "Nhãn dán đã được thêm vào kho!", false);
-            showStickerTab('store');
+            addNotification("✨ HOÀN TẤT", "Nhãn dán 'không nền' đã sẵn sàng!", false);
+            
+            // Chuyển về tab kho để Henry thấy ngay sticker mới
+            if (typeof showStickerTab === 'function') {
+                showStickerTab('store');
+            }
         });
 
     } catch (err) {
         console.error("Lỗi tải sticker:", err);
-        alert("Lỗi tải nhãn dán!");
+        alert("Lỗi hệ thống khi tạo nhãn dán!");
     }
 }
-
 // --- 3. LẮNG NGHE KHO STICKER REAL-TIME ---
 function listenMyStickers() {
     db.ref(`users/${currentUser}/stickers`).on('value', (snapshot) => {
