@@ -7225,14 +7225,17 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
         
         <button onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
 
-        <div id="media-menu" style="display:none; position:absolute; bottom:60px; left:0; background:white; border-radius:15px; box-shadow:0 5px 20px rgba(0,0,0,0.1); padding:10px; z-index:100; min-width: 120px;">
-            <div onclick="triggerFile('image/*')" style="padding:10px; cursor:pointer; color:#ff1493; font-weight:800; font-size:0.8em; white-space: nowrap;">
-                <i class="fas fa-image"></i> HÌNH ẢNH
-            </div>
-            <div onclick="triggerFile('video/*')" style="padding:10px; cursor:pointer; color:#ff1493; font-weight:800; font-size:0.8em; white-space: nowrap;">
-                <i class="fas fa-video"></i> VIDEO
-            </div>
-        </div>
+       <div id="media-menu" style="display:none; position:absolute; bottom:60px; left:0; background:white; border-radius:15px; box-shadow:0 5px 20px rgba(0,0,0,0.1); padding:10px; z-index:100; min-width: 120px;">
+    <div onclick="triggerFile('image/*')" style="padding:10px; cursor:pointer; color:#ff1493; font-weight:800; font-size:0.8em; white-space: nowrap;">
+        <i class="fas fa-image"></i> HÌNH ẢNH
+    </div>
+    <div onclick="triggerFile('video/*')" style="padding:10px; cursor:pointer; color:#ff1493; font-weight:800; font-size:0.8em; white-space: nowrap;">
+        <i class="fas fa-video"></i> VIDEO
+    </div>
+    <div onclick="openStickerPopup()" style="padding:10px; cursor:pointer; color:#ff1493; font-weight:800; font-size:0.8em; white-space: nowrap;">
+        <i class="fas fa-sticky-note"></i> NHÃN DÁN
+    </div>
+</div>
     </div>
 </div>
 
@@ -7490,6 +7493,38 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
         </div>
 
         <button class="popup-btn-close" onclick="toggleModal('modal-seen-settings')">HOÀN TẤT</button>
+    </div>
+</div>
+
+    <div id="modal-sticker" class="modal-sweetie" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); z-index:10001; align-items:center; justify-content:center;">
+    <div class="modal-content animate__animated animate__zoomIn" style="background:white; width:90%; max-width:380px; border-radius:30px; overflow:hidden; box-shadow:0 10px 40px rgba(0,0,0,0.3); position: relative;">
+        
+        <div style="background:#ff69b4; color:white; padding:15px; text-align:center; font-weight:800; font-size:0.9em;">
+            <i class="fas fa-star"></i> KHO NHÃN DÁN CỦA BẠN
+        </div>
+
+        <div style="display:flex; border-bottom:1px solid #fff0f5;">
+            <button id="tab-sticker-store" onclick="showStickerTab('store')" style="flex:1; padding:12px; border:none; background:#fff5f8; color:#ff1493; font-weight:800; font-size:0.75em; cursor:pointer; border-bottom:3px solid #ff1493; transition: 0.3s;">KHO VĨNH VIỄN</button>
+            <button id="tab-sticker-upload" onclick="showStickerTab('upload')" style="flex:1; padding:12px; border:none; background:white; color:#888; font-weight:800; font-size:0.75em; cursor:pointer; transition: 0.3s;">TẢI NHÃN MỚI</button>
+        </div>
+
+        <div id="sticker-body" style="height:320px; overflow-y:auto; padding:15px; background:#fffafa;">
+            <div id="sticker-store-view" style="display:grid; grid-template-columns: repeat(3, 1fr); gap:10px;">
+                </div>
+
+            <div id="sticker-upload-view" style="display:none; text-align:center; padding-top:40px;">
+                <div onclick="document.getElementById('input-file-sticker').click()" style="border:2px dashed #ffc0cb; padding:30px; border-radius:20px; background:white; cursor:pointer; transition: 0.3s;" onmouseover="this.style.background='#fff5f8'" onmouseout="this.style.background='white'">
+                    <i class="fas fa-magic" style="font-size:2em; color:#ff69b4;"></i>
+                    <p style="color:#ff69b4; font-weight:800; font-size:0.75em; margin-top:10px;">BẤM ĐỂ TẠO NHÃN DÁN</p>
+                    <p style="color:#aaa; font-size:0.6em;">Tự động tách nền AI & Lưu vĩnh viễn</p>
+                </div>
+                <input type="file" id="input-file-sticker" accept="image/*" style="display:none;" onchange="handleStickerUpload(event)">
+            </div>
+        </div>
+
+        <div style="padding:10px; text-align:center; background: white;">
+            <button onclick="toggleModal('modal-sticker')" style="background:#f8f9fa; border:none; color:#888; padding:10px 30px; border-radius:50px; font-weight:800; font-size:0.75em; cursor:pointer; transition: 0.3s;" onmouseover="this.style.background='#eee'">ĐÓNG KHO</button>
+        </div>
     </div>
 </div>
 <script>
@@ -12905,22 +12940,31 @@ function renderSingleMessage(msgId, msg, position = 'bottom', targetContainer = 
         }
     }
 
-    // --- 4. LOGIC MEDIA & HIGHLIGHT (GIỮ NGUYÊN 100%) ---
+    // --- 4. LOGIC MEDIA & HIGHLIGHT (ĐÃ THÊM STICKER - GIỮ NGUYÊN CŨ) ---
     let finalMsgText = msg.text || "";
     if (typeof currentSearchKeyword !== 'undefined' && currentSearchKeyword && msg.text) {
         const regex = new RegExp(`(${currentSearchKeyword})`, 'gi');
         finalMsgText = msg.text.replace(regex, '<b style="background: yellow; color: black; padding: 0 2px; border-radius: 3px;">$1</b>');
     }
+    
     let bodyContentHtml = `<div class="text-content">${finalMsgText}</div>`;
+    
     if (msg.mediaUrl) {
         if (msg.mediaType === 'image') {
             bodyContentHtml = `<img src="${msg.mediaUrl}" onclick="openFS('${msg.mediaUrl}', 'image')" style="max-width:100%; border-radius:10px; cursor:pointer; display: block; margin-bottom: 5px;">`;
         } else if (msg.mediaType === 'video') {
             bodyContentHtml = `<div style="position:relative; display: block; margin-bottom: 5px;"><video src="${msg.mediaUrl}" muted style="max-width:100%; border-radius:10px; display: block;"></video><i class="fas fa-play-circle" onclick="openFS('${msg.mediaUrl}', 'video')" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); color:white; font-size:2.5em; cursor:pointer; opacity: 0.9;"></i></div>`;
+        } else if (msg.mediaType === 'sticker') {
+            // Henry thêm riêng phần này: Sticker sẽ to rõ, không có khung viền thô
+            bodyContentHtml = `<img src="${msg.mediaUrl}" style="width:120px; height:120px; object-fit:contain; display: block; border-radius:0;">`;
         }
     }
 
-   // --- 5. TEMPLATE HTML (ĐÃ SỬA: ÉP TRẠNG THÁI BÁM SÁT VỀ CÙNG PHÍA VỚI BONG BÓNG) ---
+    // --- 5. TEMPLATE HTML (SỬA CSS ĐỂ STICKER ĐẸP HƠN) ---
+    // Nếu là Sticker thì Henry cho background trong suốt để khoe nhãn dán
+    const isSticker = msg.mediaType === 'sticker';
+    const bubbleExtraStyle = isSticker ? "background: transparent !important; box-shadow: none !important; border: none !important;" : "";
+
     const msgHtml = `
     <div class="msg-wrapper ${isMe ? 'msg-me-wrap' : 'msg-friend-wrap'}" id="msg-${msgId}"
          style="position: relative; display: flex; flex-direction: column; width: 100%; margin-bottom: 12px; ${isMe ? 'align-items: flex-end;' : 'align-items: flex-start;'}"
@@ -12938,7 +12982,7 @@ function renderSingleMessage(msgId, msg, position = 'bottom', targetContainer = 
             </div>
 
             <div class="msg-bubble ${isMe ? 'msg-me' : 'msg-friend'}" 
-                 style="display: flex; flex-direction: column; position: relative;"
+                 style="display: flex; flex-direction: column; position: relative; ${bubbleExtraStyle}"
                  ondblclick="sendReaction('${msgId}', '❤️')" 
                  ontouchstart="handleTouchStart(event, '${msgId}')" 
                  ontouchend="handleTouchEnd()"
@@ -15649,6 +15693,149 @@ function handleTypingStatus() {
             // Tự động cuộn xuống cuối để thấy 3 chấm đang nhảy
             area.scrollTo({ top: area.scrollHeight, behavior: 'smooth' });
         }
+    });
+}
+
+    function showStickerTab(tab) {
+    const storeView = document.getElementById('sticker-store-view');
+    const uploadView = document.getElementById('sticker-upload-view');
+    const btnStore = document.getElementById('tab-sticker-store');
+    const btnUpload = document.getElementById('tab-sticker-upload');
+
+    if (tab === 'store') {
+        storeView.style.display = 'grid';
+        uploadView.style.display = 'none';
+        btnStore.style.background = '#fff5f8';
+        btnStore.style.color = '#ff1493';
+        btnStore.style.borderBottom = '3px solid #ff1493';
+        btnUpload.style.background = 'white';
+        btnUpload.style.color = '#888';
+        btnUpload.style.borderBottom = 'none';
+    } else {
+        storeView.style.display = 'none';
+        uploadView.style.display = 'block';
+        btnUpload.style.background = '#fff5f8';
+        btnUpload.style.color = '#ff1493';
+        btnUpload.style.borderBottom = '3px solid #ff1493';
+        btnStore.style.background = 'white';
+        btnStore.style.color = '#888';
+        btnStore.style.borderBottom = 'none';
+    }
+}
+
+// Hàm mở popup nhãn dán
+function openStickerPopup() {
+    toggleMediaMenu(); // Đóng cái menu nhỏ đi
+    const m = document.getElementById('modal-sticker');
+    if (m) m.style.display = 'flex';
+    
+    // Henry gọi hàm lắng nghe Firebase ở đây để cập nhật sticker vĩnh viễn
+    if(typeof listenMyStickers === 'function') listenMyStickers(); 
+}
+
+    // --- 2. TẢI VÀ TÁCH NỀN AI (CLOUDINARY) ---
+async function handleStickerUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Hiện overlay đang xử lý
+    addNotification("⏳ ĐANG XỬ LÝ", "AI đang tách nền nhãn dán cho Henry...", true);
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', UPLOAD_PRESET);
+    
+    // THUẬT TOÁN TÁCH NỀN: Thêm effect remove_background của Cloudinary
+    // Lưu ý: Cloudinary cần kích hoạt "Cloudinary AI Background Removal" (Add-on miễn phí có giới hạn)
+    // Nếu không có Add-on, ta sẽ dùng hiệu ứng lấn vùng trắng (e_make_transparent)
+    
+    try {
+        const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
+            method: 'POST',
+            body: formData
+        });
+        const data = await response.json();
+        
+        let finalUrl = data.secure_url;
+
+        // Henry áp dụng biến đổi ảnh: 
+        // c_limit,w_300: Giới hạn kích thước nhãn dán
+        // e_make_transparent:20: Tự động biến màu nền trơn (trắng/đen) thành trong suốt
+        // ar_1:1,c_fill: Ép về tỉ lệ 1:1 nếu ảnh có nền phức tạp
+        finalUrl = finalUrl.replace('/upload/', '/upload/c_limit,w_300,e_make_transparent:20,ar_1.1,c_pad,b_transparent/');
+
+        // Lưu vào kho sticker vĩnh viễn trên Firebase
+        db.ref(`users/${currentUser}/stickers`).push({
+            url: finalUrl,
+            time: firebase.database.ServerValue.TIMESTAMP
+        }).then(() => {
+            addNotification("✨ HOÀN TẤT", "Nhãn dán đã được thêm vào kho!", false);
+            showStickerTab('store');
+        });
+
+    } catch (err) {
+        console.error("Lỗi tải sticker:", err);
+        alert("Lỗi tải nhãn dán!");
+    }
+}
+
+// --- 3. LẮNG NGHE KHO STICKER REAL-TIME ---
+function listenMyStickers() {
+    db.ref(`users/${currentUser}/stickers`).on('value', (snapshot) => {
+        const store = document.getElementById('sticker-store-view');
+        store.innerHTML = "";
+        const data = snapshot.val();
+        
+        if (!data) {
+            store.innerHTML = "<p style='grid-column:1/4; font-size:0.7em; color:#ccc;'>Kho đang trống...</p>";
+            return;
+        }
+
+        Object.keys(data).reverse().forEach(id => {
+            const sticker = data[id];
+            const img = document.createElement('img');
+            img.src = sticker.url;
+            img.style = "width:100%; aspect-ratio:1/1; object-fit:contain; cursor:pointer; background:#f9f9f9; border-radius:10px; padding:5px; transition:0.2s;";
+            img.onclick = () => sendSticker(sticker.url);
+            
+            // Nhấn giữ để xóa nhãn dán
+            img.oncontextmenu = (e) => {
+                e.preventDefault();
+                if(confirm("Xóa nhãn dán này khỏi kho?")) db.ref(`users/${currentUser}/stickers/${id}`).remove();
+            };
+
+            store.appendChild(img);
+        });
+    });
+}
+
+// --- 4. GỬI STICKER VÀO CHAT ---
+function sendSticker(url) {
+    if (!currentChatFriend) return;
+    const chatRoomId = [currentUser, currentChatFriend].sort().join('_');
+    const now = new Date();
+    const displayTime = now.getHours().toString().padStart(2, '0') + ":" + now.getMinutes().toString().padStart(2, '0');
+
+    const msgData = {
+        sender: currentUser,
+        text: "✨ [Nhãn dán]",
+        mediaUrl: url,
+        mediaType: 'sticker', // Loại mới
+        displayTime: displayTime,
+        timestamp: firebase.database.ServerValue.TIMESTAMP
+    };
+
+    db.ref('chats/' + chatRoomId + '/messages').push(msgData).then(() => {
+        toggleModal('modal-sticker'); // Đóng kho sau khi gửi
+        
+        // Thông báo Push cho đối phương
+        db.ref('notifications_queue/' + currentChatFriend).push({
+            from: currentUser,
+            title: "✨ NHÃN DÁN MỚI",
+            text: `${currentUser} vừa gửi một nhãn dán cho bạn.`,
+            type: 'chat',
+            time: Date.now()
+        });
     });
 }
 </script>
