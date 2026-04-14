@@ -15856,11 +15856,12 @@ function listenStickerStore() {
             img.onclick = () => sendStickerMessage(sticker.url);
             img.onmouseover = () => img.style.transform = "scale(1.1)";
             img.onmouseout = () => img.style.transform = "scale(1)";
-            grid.appendChild(img);
+            
+            // Sửa dòng này từ appendChild sang prepend để cái mới nằm đầu
+            grid.prepend(img);
         });
     });
 }
-
 // Gửi sticker (Tách biệt khỏi bubble chat)
 function sendStickerMessage(url) {
     const chatRoomId = [currentUser, currentChatFriend].sort().join('_');
