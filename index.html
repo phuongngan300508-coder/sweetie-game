@@ -5385,6 +5385,31 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
     position: relative;
     cursor: pointer;
 }
+
+    #scroll-bottom-btn {
+    position: absolute;
+    bottom: 80px; /* Cách thanh nhập liệu một khoảng */
+    right: 20px;
+    width: 35px;
+    height: 35px;
+    background: #ff1493; /* Màu mặc định, JS sẽ đổi theo theme */
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 100;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+    animation: bounceIn 0.5s;
+}
+
+/* Hiệu ứng hiện ra mượt mà */
+@keyframes bounceIn {
+    from { opacity: 0; transform: scale(0.5); }
+    to { opacity: 1; transform: scale(1); }
+}
 </style>
 </head>
 <body>
@@ -7252,6 +7277,14 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
     <div id="chat-messages-area" class="chat-messages-area" style="display: flex; flex-direction: column;">
         </div>
 
+    <div id="scroll-bottom-btn" onclick="scrollToLatest()" 
+     style="display: none; position: absolute; bottom: 85px; right: 20px; width: 35px; height: 35px; 
+            border-radius: 50%; align-items: center; justify-content: center; 
+            cursor: pointer; z-index: 99; box-shadow: 0 4px 10px rgba(0,0,0,0.1); 
+            transition: all 0.3s ease; background: #ff1493; color: white;">
+    <i class="fas fa-chevron-down"></i>
+</div>
+    
     <div id="chat-reply-bar" style="display:none; background: #fff0f5; padding: 8px 15px; border-top: 1px solid #ffc0cb; align-items: center; justify-content: space-between; border-left: 5px solid #ff1493;">
         <div style="overflow: hidden; flex: 1;">
             <div id="reply-preview-text" style="color: #ff1493; font-weight: 800; font-size: 0.75em; margin-bottom: 2px;"></div>
@@ -12905,14 +12938,37 @@ function listenMessages(friendName) {
         }
     });
 
-    // 6. SỰ KIỆN CUỘN LÊN ĐỂ TẢI TIN CŨ (Giữ nguyên)
+    // 6. SỰ KIỆN CUỘN (Giữ nguyên logic load tin cũ & Thêm ẩn hiện nút quay lại)
     area.onscroll = () => {
+        // Tải tin cũ (Giữ nguyên)
         if (area.scrollTop < 50 && !isLoadingMore && !isAllLoaded) {
             if (typeof currentSearchKeyword === 'undefined' || !currentSearchKeyword) {
                 loadMoreMessages(friendName);
             }
         }
+
+        // --- BỔ SUNG: ẨN HIỆN NÚT CUỘN XUỐNG DƯỚI ---
+        const scrollBtn = document.getElementById('scroll-bottom-btn');
+        if (scrollBtn) {
+            // Tính khoảng cách từ đáy lên trên
+            const isScrolledUp = (area.scrollHeight - area.scrollTop - area.clientHeight) > 300;
+            // Chỉ hiện khi KHÔNG ở chế độ tìm kiếm
+            const isNotSearching = (typeof currentSearchKeyword === 'undefined' || !currentSearchKeyword);
+            
+            scrollBtn.style.display = (isScrolledUp && isNotSearching) ? 'flex' : 'none';
+        }
     };
+}
+
+    // Hàm khi ấn nút sẽ chạy xuống cuối
+function scrollToLatest() {
+    const area = document.getElementById('chat-messages-area');
+    if (area) {
+        area.scrollTo({ 
+            top: area.scrollHeight, 
+            behavior: 'smooth' 
+        });
+    }
 }
     
     function loadMoreMessages(friendName, isInitial = false) {
@@ -15141,6 +15197,12 @@ function applyThemeToUI(themeData) {
             }
         }
     });
+
+    // --- MỚI: CẬP NHẬT MÀU NÚT QUAY LẠI TIN NHẮN MỚI (SCROLL TO BOTTOM) ---
+    const scrollBtn = document.getElementById('scroll-bottom-btn');
+    if (scrollBtn) {
+        scrollBtn.style.background = mainThemeColor;
+    }
 }
 
 function resetToDefaultTheme() {
@@ -15226,6 +15288,12 @@ function resetDefaultTheme() {
         b.style.background = "";
         b.style.color = "";
     });
+
+    // --- MỚI: RESET MÀU NÚT QUAY LẠI TIN NHẮN MỚI (SCROLL TO BOTTOM) ---
+    const scrollBtn = document.getElementById('scroll-bottom-btn');
+    if (scrollBtn) {
+        scrollBtn.style.background = "#ff1493"; // Reset về màu hồng Sweetie mặc định
+    }
 }
     // --- HÀM XỬ LÝ ĐÓNG THÔNG BÁO KHI CLICK RA NGOÀI ---
 function closeNotiOnClickOutside(event) {
