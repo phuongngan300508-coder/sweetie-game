@@ -5339,9 +5339,30 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
     z-index: 10;
 }
 
-    @keyframes spin {
+    /* Thanh phần trăm màu hồng */
+#sticker-upload-bar {
+    width: 0%;
+    height: 100%;
+    background: linear-gradient(to right, #ff69b4, #ff1493);
+    transition: width 0.8s ease-in-out; 
+    border-radius: 10px;
+}
+
+/* Spinner quay kiểu nghệ thuật */
+.sticker-loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 5px solid #fff0f5;
+    border-top: 5px solid #ff1493;
+    border-radius: 50%;
+    /* Quay 1 vòng mất 2 giây, tạo cảm giác rất nhẹ nhàng */
+    animation: spin 2s ease-in-out infinite;
+    margin: 0 auto 15px;
+}
+
+@keyframes spin {
     0% { transform: rotate(0deg); }
-    100% { transform: rotate(3600deg); }
+    100% { transform: rotate(360deg); }
 }
 </style>
 </head>
@@ -7526,16 +7547,19 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
     </div>
 </div>
 
-    <div id="sticker-progress-overlay" style="display:none; position:fixed; inset:0; background:rgba(255,192,203,0.7); backdrop-filter:blur(5px); z-index:99999; align-items:center; justify-content:center; flex-direction:column; color:#ff1493;">
-    <div style="background:white; padding:30px; border-radius:25px; text-align:center; box-shadow:0 10px 30px rgba(0,0,0,0.1); border:3px solid #ffc0cb; width:280px;">
-        <div class="sticker-loading-spinner" style="width:50px; height:50px; border:5px solid #fff0f5; border-top:5px solid #ff1493; border-radius:50%; animation: spin 1s linear infinite; margin:0 auto 15px;"></div>
-        <b style="font-size:0.9em; display:block; margin-bottom:5px;">AI ĐANG XỬ LÝ...</b>
-        <p style="font-size:0.7em; color:#888;">Đang tách nền & tối ưu nhãn dán cho Henry ✨</p>
+    <div id="sticker-progress-overlay" style="display:none; position:fixed; inset:0; background:rgba(255,192,203,0.7); backdrop-filter:blur(8px); z-index:99999; align-items:center; justify-content:center; flex-direction:column; color:#ff1493;">
+    <div style="background:white; padding:30px; border-radius:30px; text-align:center; box-shadow:0 15px 35px rgba(255,20,147,0.2); border:3px solid #ffc0cb; width:280px;">
         
-        <div style="width:100%; height:8px; background:#fff0f5; border-radius:10px; margin-top:15px; overflow:hidden;">
-            <div id="sticker-upload-bar" style="width:0%; height:100%; background:linear-gradient(to right, #ff69b4, #ff1493); transition:width 0.3s;"></div>
+        <div class="sticker-loading-spinner" style="width:45px; height:45px; border:5px solid #fff0f5; border-top:5px solid #ff1493; border-radius:50%; animation: spin 1.5s ease-in-out infinite; margin:0 auto 20px;"></div>
+        
+        <b style="font-size:0.9em; display:block; margin-bottom:5px; letter-spacing: 1px;">AI ĐANG XỬ LÝ...</b>
+        <p style="font-size:0.7em; color:#888; margin-bottom: 20px;">Đang tách nền & tối ưu cho Henry ✨</p>
+        
+        <div style="width:100%; height:10px; background:#fff0f5; border-radius:20px; overflow:hidden; position: relative;">
+            <div id="sticker-upload-bar" style="width:0%; height:100%; background:linear-gradient(to right, #ff69b4, #ff1493); transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1); border-radius: 20px;"></div>
         </div>
-        <span id="sticker-upload-percent" style="font-size:0.8em; font-weight:800; margin-top:10px; display:block;">0%</span>
+        
+        <span id="sticker-upload-percent" style="font-size:0.9em; font-weight:800; margin-top:12px; display:block; font-family: sans-serif;">0%</span>
     </div>
 </div>
 <script>
@@ -15753,10 +15777,12 @@ async function handleStickerProcessing(event) {
     percentText.innerText = '0%';
 
     try {
-        // BƯỚC A: Tách nền (Dùng API tách nền của Henry)
-        // Lưu ý: Nếu bước này nhanh quá, Henry có thể fake progress lên 30% cho đẹp
-        progressBar.style.width = '30%';
-        percentText.innerText = '30%';
+        // BƯỚC A: Tách nền (Giữ nguyên nội dung logic nhưng làm mượt hiệu ứng)
+        // Cho thanh bar chạy nhẹ lên 30% để Henry thấy AI đang bắt đầu làm việc
+        setTimeout(() => {
+            progressBar.style.width = '30%';
+            percentText.innerText = '30%';
+        }, 100);
 
         // BƯỚC B: Tải lên Cloudinary (Dùng XHR để lấy tiến độ thực)
         const formData = new FormData();
@@ -15769,7 +15795,9 @@ async function handleStickerProcessing(event) {
         // Lắng nghe tiến độ tải lên
         xhr.upload.onprogress = (e) => {
             if (e.lengthComputable) {
-                const percent = Math.round((e.loaded / e.total) * 70) + 30; // Chạy từ 30% đến 100%
+                // Tính toán: 30% đầu là tách nền, 70% sau là upload
+                // Dùng công thức này để thanh bar chạy tiếp từ 30% một cách liên tục
+                const percent = Math.round((e.loaded / e.total) * 60) + 30; 
                 progressBar.style.width = percent + '%';
                 percentText.innerText = percent + '%';
             }
@@ -15779,15 +15807,21 @@ async function handleStickerProcessing(event) {
             if (xhr.status === 200) {
                 const data = JSON.parse(xhr.responseText);
                 
+                // Khi upload xong, cho thanh bar chạy nốt lên 100% thật mượt
+                progressBar.style.width = '100%';
+                percentText.innerText = '100%';
+
                 // BƯỚC C: Lưu vào Firebase
                 db.ref(`users/${currentUser}/stickers`).push({
                     url: data.secure_url,
                     time: firebase.database.ServerValue.TIMESTAMP
                 }).then(() => {
-                    // HOÀN TẤT: Ẩn Overlay
-                    overlay.style.display = 'none';
-                    addNotification("✨ HOÀN TẤT", "Nhãn dán đã sẵn sàng trong kho!", false);
-                    showStickerTab('store');
+                    // Để Henry và người dùng kịp nhìn thấy con số 100% trước khi đóng
+                    setTimeout(() => {
+                        overlay.style.display = 'none';
+                        addNotification("✨ HOÀN TẤT", "Nhãn dán đã sẵn sàng trong kho!", false);
+                        showStickerTab('store');
+                    }, 500); 
                 });
             } else {
                 overlay.style.display = 'none';
@@ -15800,6 +15834,7 @@ async function handleStickerProcessing(event) {
             alert("Lỗi kết nối!");
         };
 
+        // Gửi tệp đi
         xhr.send(formData);
 
     } catch (err) {
