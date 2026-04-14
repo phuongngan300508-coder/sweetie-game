@@ -5364,49 +5364,6 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
-
-/* Menu đặc trị - Fix lỗi "tàng hình" và bị che khuất */
-#pinned-msgs-area .action-menu {
-    display: none; /* Mặc định ẩn, JS sẽ chuyển thành block */
-    position: fixed; /* Ép nổi lên trên toàn bộ lớp web */
-    z-index: 2000000 !important; /* Cao nhất có thể để đè lên Modal */
-    background: #ffffff !important;
-    min-width: 160px;
-    border-radius: 15px;
-    border: 2px solid #ffc0cb;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-    overflow: hidden;
-    padding: 0;
-    /* Loại bỏ các giá trị kế thừa gây lỗi */
-    left: 0;
-    top: 0;
-    margin: 0;
-}
-
-#pinned-msgs-area .action-menu div {
-    padding: 12px 15px;
-    font-size: 0.85em;
-    font-weight: bold;
-    color: #444 !important;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    background: #ffffff;
-    transition: all 0.2s ease;
-}
-
-#pinned-msgs-area .action-menu div:hover {
-    background: #fff0f5 !important;
-    color: #ff1493 !important;
-}
-
-#pinned-msgs-area .action-menu div i {
-    width: 20px;
-    color: #ff69b4;
-    text-align: center;
-    font-size: 1.1em;
-}
 </style>
 </head>
 <body>
@@ -7603,55 +7560,6 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
         </div>
         
         <span id="sticker-upload-percent" style="font-size:0.9em; font-weight:800; margin-top:12px; display:block; font-family: sans-serif;">0%</span>
-    </div>
-</div>
-
-    <div id="modal-pinned-msgs" class="modal-sweetie" 
-     style="display:none; 
-            position: fixed; 
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            height: 100%; 
-            background: rgba(0, 0, 0, 0.4); /* Nền tối mờ phía sau */
-            backdrop-filter: blur(5px);    /* Làm mờ các thành phần bên dưới */
-            z-index: 99999;               /* Đảm bảo nằm trên cả khung chat */
-            display: none;                /* Mặc định ẩn, sẽ đổi thành flex khi mở */
-            align-items: center;          /* Căn giữa theo chiều dọc */
-            justify-content: center;      /* Căn giữa theo chiều ngang */
-            padding: 20px;">
-            
-    <div class="modal-content animate__animated animate__zoomIn" 
-         style="width: 100%; 
-                max-width: 400px; 
-                max-height: 80vh; 
-                border-radius: 30px; 
-                background: #fffafb; 
-                box-shadow: 0 15px 35px rgba(255, 20, 147, 0.2); 
-                overflow: hidden; 
-                display: flex; 
-                flex-direction: column;">
-        
-        <div class="modal-header-pink" 
-             style="display:flex; justify-content:space-between; align-items:center; padding: 18px 25px; background: linear-gradient(135deg, #ff1493, #ff69b4); color: white;">
-            <b style="font-size: 0.9em; letter-spacing: 0.5px;">
-                <i class="fas fa-thumbtack"></i> TIN NHẮN ĐÃ GHIM
-            </b>
-            <i class="fas fa-times" onclick="toggleModal('modal-pinned-msgs')" 
-               style="cursor:pointer; font-size: 1.2em; opacity: 0.8;"></i>
-        </div>
-
-        <div id="pinned-msgs-area" 
-             style="flex: 1; 
-                    overflow-y: auto; 
-                    padding: 15px; 
-                    background: #fffafb;
-                    scrollbar-width: thin;">
-            </div>
-        
-        <div style="padding: 10px; text-align: center; background: #fffafb;">
-            <div style="width: 40px; height: 4px; background: #ffc0cb; border-radius: 10px; margin: 0 auto;"></div>
-        </div>
     </div>
 </div>
 <script>
@@ -12881,9 +12789,6 @@ function listenMessages(friendName) {
                     <div onclick="openSeenSettings()" style="color:#ff1493; padding:12px; font-weight:bold; font-size:0.7em; cursor:pointer; border-bottom: 1px solid #eee;">
                         <i class="fas fa-user-shield"></i> Cài đặt tin nhắn
                     </div>
-                   <div onclick="openPinnedMessages()" style="color:#ff1493; padding:12px; font-weight:bold; font-size:0.7em; cursor:pointer; border-bottom: 1px solid #eee;">
-                        <i class="fas fa-thumbtack"></i> Tin nhắn đã ghim
-                    </div>
                     <div onclick="blockUser('${friendName}')" style="color:red; padding:12px; font-weight:bold; font-size:0.7em; cursor:pointer; white-space: nowrap; border-radius:10px;">
                         <i class="fas fa-ban"></i> Chặn cư dân này
                     </div>
@@ -13090,11 +12995,8 @@ function renderSingleMessage(msgId, msg, position = 'bottom', targetContainer = 
         }
     }
 
-    // --- 5. TEMPLATE HTML (SỬA CẤU TRÚC BỌC ĐỂ FIX LỖI HOVER & THÊM GHIM) ---
+    // --- 5. TEMPLATE HTML (SỬA CẤU TRÚC BỌC ĐỂ FIX LỖI HOVER) ---
     const isSticker = msg.type === 'sticker';
-    
-    // TÍNH TOÁN ICON GHIM (Hiện sẵn nếu tin nhắn load từ Firebase đã có trạng thái ghim)
-    const pinIconHtml = (msg.pinnedAt) ? `<i id="pin-icon-${msgId}" class="fas fa-thumbtack" style="position: absolute; top: -10px; right: -5px; color: #ff1493; font-size: 0.7em; transform: rotate(45deg); z-index: 5;"></i>` : "";
     
     const msgHtml = `
     <div class="msg-wrapper ${isMe ? 'msg-me-wrap' : 'msg-friend-wrap'}" id="msg-${msgId}"
@@ -13121,7 +13023,6 @@ function renderSingleMessage(msgId, msg, position = 'bottom', targetContainer = 
                  ondblclick="sendReaction('${msgId}', '❤️')" 
                  ontouchstart="handleTouchStart(event, '${msgId}')" 
                  ontouchend="handleTouchEnd()">
-                ${pinIconHtml}
                 ${replyHtml}
                 ${bodyContentHtml}
                 ${reactionDisplayHtml}
@@ -13133,7 +13034,6 @@ function renderSingleMessage(msgId, msg, position = 'bottom', targetContainer = 
                 <i class="fas fa-ellipsis-v" onclick="showActionMenu('${msgId}', ${isMe})" style="cursor:pointer; padding: 0 5px;"></i>
                 <div class="action-menu" id="menu-${msgId}">
                     <div onclick="setReply('${msgId}', '${msg.text || ''}', '${msg.sender}')"><i class="fas fa-reply"></i> Trả lời</div>
-                    <div onclick="pinMessage('${msgId}')"><i class="fas fa-thumbtack"></i> Ghim tin nhắn</div>
                     <div onclick="deleteMessage('${msgId}', ${isMe})" style="color:red"><i class="fas fa-trash"></i> Xóa</div>
                 </div>
             </div>
@@ -13159,11 +13059,6 @@ function renderSingleMessage(msgId, msg, position = 'bottom', targetContainer = 
         } else {
             area.insertAdjacentHTML('afterbegin', msgHtml);
         }
-    }
-
-    // KÍCH HOẠT LẮNG NGHE TRẠNG THÁI GHIM THỜI GIAN THỰC CHO TIN NHẮN NÀY
-    if (typeof listenPinnedStatus === 'function') {
-        listenPinnedStatus(msgId);
     }
 
     const el = document.getElementById(`msg-${msgId}`);
@@ -16065,186 +15960,6 @@ function sendStickerMessage(url) {
         });
     });
 }
-
-    function pinMessage(msgId) {
-    const chatRoomId = [currentUser, currentChatFriend].sort().join('_');
-    
-    // 1. Lấy dữ liệu tin nhắn gốc
-    db.ref(`chats/${chatRoomId}/messages/${msgId}`).once('value', (snapshot) => {
-        const msgData = snapshot.val();
-        if (!msgData) return;
-
-        // 2. Đưa vào nhánh ghim
-        db.ref(`chats/${chatRoomId}/pinned_messages/${msgId}`).set({
-            ...msgData,
-            pinnedAt: firebase.database.ServerValue.TIMESTAMP
-        }).then(() => {
-            addNotification("📌 HỆ THỐNG", "Đã gỡ một tin nhắn quan trọng vào bảng ghim!");
-            
-            // 3. Báo cho đối phương biết
-            db.ref('notifications_queue/' + currentChatFriend).push({
-                from: currentUser,
-                title: "📌 TIN NHẮN GHIM MỚI",
-                text: `${currentUser} đã ghim một tin nhắn trong cuộc trò chuyện.`,
-                type: 'chat',
-                time: Date.now()
-            });
-        });
-    });
-}
-
-    // Henry lắng nghe thêm nhánh pinned_messages để hiển thị icon
-function listenPinnedStatus(msgId) {
-    const chatRoomId = [currentUser, currentChatFriend].sort().join('_');
-    db.ref(`chats/${chatRoomId}/pinned_messages/${msgId}`).on('value', (snap) => {
-        const pinIcon = document.getElementById(`pin-icon-${msgId}`);
-        if (snap.exists()) {
-            if (!pinIcon) {
-                const bubble = document.querySelector(`#msg-${msgId} .msg-bubble`);
-                bubble.insertAdjacentHTML('afterbegin', `<i id="pin-icon-${msgId}" class="fas fa-thumbtack" style="position: absolute; top: -10px; right: -5px; color: #ff1493; font-size: 0.7em; transform: rotate(45deg);"></i>`);
-            }
-        } else if (pinIcon) {
-            pinIcon.remove();
-        }
-    });
-}
-
-    // 1. Hàm mở Popup chính xác
-function openPinnedMessages() {
-    if (!currentChatFriend) {
-        alert("Henry ơi, hãy chọn một cư dân để xem tin nhắn ghim nhé!");
-        return;
-    }
-
-    // Đóng menu header nếu đang mở
-    const moreMenu = document.getElementById('chat-more-menu');
-    if (moreMenu) moreMenu.style.display = 'none';
-
-    // Mở Modal
-    toggleModal('modal-pinned-msgs');
-
-    // Kích hoạt render dữ liệu
-    renderPinnedMessagesList();
-}
-
-// 2. Hàm Render danh sách (Đã sửa logic lắng nghe)
-function renderPinnedMessagesList() {
-    const chatRoomId = [currentUser, currentChatFriend].sort().join('_');
-    const area = document.getElementById('pinned-msgs-area');
-    
-    // Dùng .on để dữ liệu tự cập nhật khi Henry bấm "Bỏ ghim"
-    db.ref(`chats/${chatRoomId}/pinned_messages`).on('value', (snapshot) => {
-        area.innerHTML = "";
-        const data = snapshot.val();
-        
-        if (!data) {
-            area.innerHTML = `<p style="text-align:center; color:#888; font-size:0.75em; padding:20px;">Chưa có tin nhắn nào được ghim.</p>`;
-            return;
-        }
-
-        // Đảo ngược để tin mới nhất lên đầu
-        const keys = Object.keys(data).reverse();
-        keys.forEach(msgId => {
-            const msg = data[msgId];
-            
-            // GIỮ NGUYÊN 100% NỘI DUNG CỦA HENRY - CHỈ THÊM WRAPPER ĐỂ FIX HIỂN THỊ
-            const itemHtml = `
-            <div class="pinned-item animate__animated animate__fadeIn" id="pin-item-${msgId}" 
-                 style="background:white; margin-bottom:15px; padding:15px; border-radius:20px; border-left:5px solid #ff1493; position:relative;">
-                
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                    <b style="font-size:0.7em; color:#d63384;">📌 ${msg.sender}</b>
-                    
-                    <div style="position: relative;">
-                        <i class="fas fa-ellipsis-h" 
-                           onclick="showPinnedActionMenu(event, '${msgId}')" 
-                           style="cursor:pointer; color:#bbb; padding: 5px; font-size: 1.2em;"></i>
-                        
-                        <div id="pin-menu-${msgId}" class="action-menu" 
-                             style="display:none; position: absolute; right: 0; top: 30px; z-index: 10000; background: white; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); min-width: 140px; border: 1px solid #eee;">
-                            <div onclick="jumpToMessageInChat('${msgId}')" style="padding: 10px; font-size: 0.85em; cursor: pointer; display: flex; align-items: center; gap: 8px;">
-                                <i class="fas fa-eye"></i> Xem tin gốc
-                            </div>
-                            <div onclick="unpinMessage('${msgId}')" style="padding: 10px; font-size: 0.85em; cursor: pointer; color:#ff4d4d; border-top: 1px solid #eee; display: flex; align-items: center; gap: 8px;">
-                                <i class="fas fa-trash-alt"></i> Bỏ ghim
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div style="font-size:0.9em; color:#333; line-height:1.5; word-break: break-word;">${msg.text}</div>
-                <div style="font-size:0.65em; color:#999; margin-top:8px; text-align:right;">${msg.displayTime || ''}</div>
-            </div>`;
-            
-            area.insertAdjacentHTML('beforeend', itemHtml);
-        });
-    });
-}
-
-// 3. Các hàm bổ trợ (Giữ nguyên logic Henry nhưng bọc lỗi)
-function showPinnedActionMenu(event, msgId) {
-    // 1. Chặn tuyệt đối các sự kiện lan truyền để tránh đóng modal/menu ngay lập tức
-    event.preventDefault();
-    event.stopPropagation();
-    
-    console.log("Đang kích hoạt menu cho ID: pin-menu-" + msgId);
-
-    // 2. Ẩn tất cả các menu đang mở khác (dùng selector chính xác hơn)
-    document.querySelectorAll('#pinned-msgs-area .action-menu').forEach(m => {
-        m.style.display = 'none';
-    });
-
-    const menu = document.getElementById(`pin-menu-${msgId}`);
-    if (menu) {
-        // 3. ÉP HIỂN THỊ (Sử dụng !important trực tiếp trong code để vượt qua CSS)
-        menu.style.setProperty('display', 'block', 'important');
-        menu.style.setProperty('visibility', 'visible', 'important');
-        menu.style.setProperty('opacity', '1', 'important');
-
-        // 4. TÍNH TOÁN TỌA ĐỘ CHUẨN (Fixed Positioning)
-        let x = event.clientX;
-        let y = event.clientY;
-
-        // Kiểm tra xem nếu hiện menu ở đây có bị tràn mép phải màn hình không
-        const menuWidth = 160; 
-        if (x + menuWidth > window.innerWidth) {
-            x = x - menuWidth; // Đẩy menu sang trái
-        }
-
-        // Kiểm tra mép dưới màn hình
-        const menuHeight = 100;
-        if (y + menuHeight > window.innerHeight) {
-            y = y - menuHeight; // Đẩy menu lên trên
-        }
-
-        // 5. GÁN TỌA ĐỘ
-        menu.style.left = x + "px";
-        menu.style.top = y + "px";
-        
-        // Bonus: Thêm một listener để tự đóng menu khi Henry click bất kỳ đâu khác
-        const closeMenu = () => {
-            menu.style.display = 'none';
-            document.removeEventListener('click', closeMenu);
-        };
-        setTimeout(() => document.addEventListener('click', closeMenu), 10);
-
-    } else {
-        console.error("Lỗi: Không tìm thấy ID pin-menu-" + msgId + ". Hãy kiểm tra hàm renderPinnedMessagesList xem ID có khớp không!");
-    }
-}
-
-function unpinMessage(msgId) {
-    if (!confirm("Bạn muốn bỏ ghim tin nhắn này?")) return;
-    const chatRoomId = [currentUser, currentChatFriend].sort().join('_');
-    db.ref(`chats/${chatRoomId}/pinned_messages/${msgId}`).remove()
-    .then(() => {
-        addNotification("📌 HỆ THỐNG", "Đã gỡ tin nhắn khỏi bảng ghim.");
-    });
-}
-    
-    document.addEventListener('click', () => {
-    document.querySelectorAll('.pinned-item .action-menu').forEach(m => m.style.display = 'none');
-});
 </script>
 </body>
 </html>
