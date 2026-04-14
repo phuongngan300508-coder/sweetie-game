@@ -5161,13 +5161,126 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
     background: rgba(0, 0, 0, 0.5); /* Làm mờ nền để làm nổi bật popup */
 }
 
-    /* Style cho nút gạt Switch màu hồng */
-.switch-sweetie { position: relative; display: inline-block; width: 45px; height: 24px; }
-.switch-sweetie input { opacity: 0; width: 0; height: 0; }
-.slider-sweetie { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 24px; }
-.slider-sweetie:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
-input:checked + .slider-sweetie { background-color: #ff1493; }
-input:checked + .slider-sweetie:before { transform: translateX(21px); }
+   /* --- PHẦN CSS SWEETIE SWITCH NÂNG CẤP --- */
+
+/* 1. Lớp phủ mờ toàn màn hình */
+.sweetie-popup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.4); /* Làm tối nền xung quanh */
+    backdrop-filter: blur(4px);    /* Làm mờ hậu cảnh cho xịn */
+    display: flex;
+    align-items: center;           /* Căn giữa dọc */
+    justify-content: center;      /* Căn giữa ngang */
+    z-index: 99999;               /* Con số cực lớn để luôn nằm trên cùng */
+}
+
+/* 2. Khung nội dung Popup */
+.sweetie-popup-content {
+    width: 90%;
+    max-width: 320px;
+    background: white;
+    border-radius: 30px;
+    border: 4px solid #ffc0cb;
+    box-shadow: 0 15px 35px rgba(255, 182, 193, 0.4);
+    padding: 25px;
+    text-align: center;
+    position: relative;
+}
+
+/* 3. Header & Text */
+.popup-header {
+    color: #ff1493;
+    font-weight: 900;
+    font-size: 1.1em;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.popup-desc {
+    font-size: 0.75em;
+    color: #888;
+    line-height: 1.5;
+    margin-bottom: 20px;
+}
+
+/* 4. Dòng cài đặt */
+.setting-row {
+    background: #fff5f8;
+    padding: 15px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.setting-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #d63384;
+    font-weight: 800;
+    font-size: 0.85em;
+}
+
+/* 5. Custom Switch (Nút gạt hồng) */
+.sweetie-switch {
+    position: relative;
+    display: inline-block;
+    width: 46px;
+    height: 24px;
+}
+
+.sweetie-switch input { opacity: 0; width: 0; height: 0; }
+
+.sweetie-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: #ffd1dc;
+    transition: .4s;
+    border-radius: 34px;
+}
+
+.sweetie-slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+input:checked + .sweetie-slider { background-color: #ff1493; }
+input:checked + .sweetie-slider:before { transform: translateX(22px); }
+
+/* 6. Nút hoàn tất */
+.popup-btn-close {
+    background: linear-gradient(135deg, #ff1493, #ff69b4);
+    color: white;
+    border: none;
+    padding: 12px;
+    width: 100%;
+    border-radius: 15px;
+    font-weight: 800;
+    font-size: 0.8em;
+    cursor: pointer;
+    box-shadow: 0 5px 15px rgba(255, 20, 147, 0.3);
+    transition: 0.3s;
+}
+
+.popup-btn-close:active { transform: scale(0.95); }
 </style>
 </head>
 <body>
@@ -7292,20 +7405,30 @@ input:checked + .slider-sweetie:before { transform: translateX(21px); }
     </div>
 </div>
 
-    <div id="modal-seen-settings" class="modal-sweetie" style="display:none; z-index: 20001;">
-    <div class="modal-content animate__animated animate__zoomIn" style="max-width: 320px; border-radius: 25px; border: 3px solid #ffc0cb; padding: 25px;">
-        <h3 style="color: #ff1493; margin-top: 0;"><i class="fas fa-eye"></i> Quyền riêng tư</h3>
-        <p style="font-size: 0.8em; color: #888;">Khi tắt tính năng này, bạn và đối phương sẽ không thấy nhau đã xem tin nhắn hay chưa.</p>
+    <div id="modal-seen-settings" class="sweetie-popup-overlay" style="display:none;">
+    <div class="sweetie-popup-content animate__animated animate__zoomIn">
         
-        <div style="display: flex; align-items: center; justify-content: space-between; background: #fff5f8; padding: 15px; border-radius: 15px; margin: 15px 0;">
-            <span style="font-weight: 800; color: #d63384; font-size: 0.9em;">Hiển thị "Đã xem"</span>
-            <label class="switch-sweetie">
-                <input type="checkbox" id="seen-toggle-input" onchange="toggleSeenFirebase(this.checked)">
-                <span class="slider-sweetie"></span>
-            </label>
+        <div class="popup-header">
+            <i class="fas fa-user-shield"></i>
+            <span>QUYỀN RIÊNG TƯ</span>
         </div>
 
-        <button class="btn-action-pink" onclick="toggleModal('modal-seen-settings')" style="width: 100%;">HOÀN TẤT</button>
+        <div class="popup-body">
+            <p class="popup-desc">Khi tắt tính năng này, bạn và đối phương sẽ không thấy trạng thái "Đã xem" của nhau.</p>
+            
+            <div class="setting-row">
+                <div class="setting-info">
+                    <i class="fas fa-eye"></i>
+                    <span>Hiển thị "Đã xem"</span>
+                </div>
+                <label class="sweetie-switch">
+                    <input type="checkbox" id="seen-toggle-input" onchange="toggleSeenFirebase(this.checked)">
+                    <span class="sweetie-slider"></span>
+                </label>
+            </div>
+        </div>
+
+        <button class="popup-btn-close" onclick="toggleModal('modal-seen-settings')">HOÀN TẤT</button>
     </div>
 </div>
 <script>
