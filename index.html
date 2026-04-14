@@ -13033,8 +13033,8 @@ function renderSingleMessage(msgId, msg, position = 'bottom', targetContainer = 
     // --- 5. TEMPLATE HTML (TÍCH HỢP GHIM VÀO CẤU TRÚC CŨ) ---
     const isSticker = msg.type === 'sticker';
     
-    // Tạo nhãn ghim nếu tin nhắn có thuộc tính isPinned
-    let pinMarkerHtml = msg.isPinned ? `<div class="pin-marker" style="font-size: 0.6em; color: #ff1493; margin-bottom: 3px; font-weight: bold;"><i class="fas fa-thumbtack"></i> Đã ghim</div>` : "";
+   // Tìm đoạn này trong hàm renderSingleMessage của Henry:
+let pinMarkerHtml = msg.isPinned ? `<div class="pin-marker" style="font-size: 0.8em; color: #ff1493; margin-bottom: 3px;"><i class="fas fa-thumbtack"></i></div>` : "";
     
     const msgHtml = `
     <div class="msg-wrapper ${isMe ? 'msg-me-wrap' : 'msg-friend-wrap'}" id="msg-${msgId}"
@@ -16002,7 +16002,7 @@ function sendStickerMessage(url) {
     });
 }
 
-    function togglePinMessage(msgId, currentText) {
+  function togglePinMessage(msgId, currentText) {
     if (!currentChatFriend) return;
     const chatRoomId = [currentUser, currentChatFriend].sort().join('_');
     
@@ -16011,12 +16011,12 @@ function sendStickerMessage(url) {
 
     pinRef.once('value', (snap) => {
         if (snap.exists()) {
-            // Nếu đã ghim thì bỏ ghim
+            // Nếu đã ghim thì bỏ ghim (Giữ nguyên)
             pinRef.remove();
             msgRef.set(null);
             addNotification("📌 HỆ THỐNG", "Đã bỏ ghim tin nhắn.");
         } else {
-            // Nếu chưa ghim thì tiến hành ghim
+            // Nếu chưa ghim thì tiến hành ghim (Giữ nguyên)
             pinRef.set({
                 text: currentText,
                 sender: currentChatFriend, // Hoặc sender gốc từ data
@@ -16026,11 +16026,19 @@ function sendStickerMessage(url) {
             addNotification("📌 HỆ THỐNG", "Đã ghim tin nhắn vào bộ sưu tập!");
         }
     });
-    // Đóng menu sau khi chọn
+
+    // --- PHẦN SỬA ĐỔI: ĐÓNG CÁC MENU LIÊN QUAN ---
+    
+    // 1. Đóng menu 3 chấm của chính tin nhắn đó (Giữ nguyên logic cũ của Henry)
     const menu = document.getElementById(`menu-${msgId}`);
     if (menu) menu.style.display = 'none';
-}
 
+    // 2. BỔ SUNG: Đóng menu thao tác bên trong Popup Ghim (nếu Henry đang gỡ ghim từ trong Popup)
+    const pinActionMenu = document.getElementById(`pin-actions-${msgId}`);
+    if (pinActionMenu) {
+        pinActionMenu.style.display = 'none';
+    }
+}
     function openPinnedMessages() {
     if (!currentChatFriend) return;
     const chatRoomId = [currentUser, currentChatFriend].sort().join('_');
@@ -16081,22 +16089,30 @@ function showPinActions(msgId) {
     el.style.display = isShowing ? 'none' : 'block';
 }
 
-    function viewInChat(msgId) {
+  function viewInChat(msgId) {
     const targetMsg = document.getElementById(`msg-${msgId}`);
     
-    // Đóng popup ghim trước
+    // 1. Đóng popup ghim trước (Giữ nguyên)
     toggleModal('modal-pinned-messages');
 
+    // --- BỔ SUNG: Tự động đóng menu 3 chấm của khung chat ---
+    const chatMoreMenu = document.getElementById('chat-more-menu');
+    if (chatMoreMenu) {
+        chatMoreMenu.style.display = 'none';
+    }
+
     if (targetMsg) {
+        // 2. Cuộn đến tin nhắn (Giữ nguyên)
         targetMsg.scrollIntoView({ behavior: 'smooth', block: 'center' });
         
-        // Hiệu ứng nháy nhẹ để người dùng nhận ra
+        // 3. Hiệu ứng nháy nhẹ (Giữ nguyên)
         targetMsg.style.transition = "0.5s";
         targetMsg.style.backgroundColor = "rgba(255, 20, 147, 0.1)";
         setTimeout(() => {
             targetMsg.style.backgroundColor = "transparent";
         }, 1500);
     } else {
+        // 4. Thông báo nếu tin chưa được load (Giữ nguyên)
         alert("📍 Tin nhắn này nằm ở khá xa, Henry hãy cuộn lên trên một chút để hệ thống tải dữ liệu cũ nhé!");
     }
 }
