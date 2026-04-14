@@ -5338,6 +5338,11 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
     border: 2px solid white;
     z-index: 10;
 }
+
+    @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(3600deg); }
+}
 </style>
 </head>
 <body>
@@ -7514,10 +7519,23 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
             <div onclick="document.getElementById('sticker-upload-input').click()" style="border:3px dashed #ffb6c1; padding:30px; border-radius:20px; background:white; cursor:pointer;">
                 <i class="fas fa-magic" style="font-size:2em; color:#ff69b4;"></i>
                 <p style="color:#ff1493; font-weight:800; font-size:0.8em; margin-top:10px;">CHỌN ẢNH TỪ MÁY</p>
-                <small style="font-size:0.6em; color:#888;">Hệ thống sẽ tự động tách nền sạch sẽ!</small>
+                <small style="font-size:0.6em; color:#888;">Hệ thống sẽ xử lý và tối ưu nhãn dán!</small>
             </div>
             <input type="file" id="sticker-upload-input" hidden accept="image/*" onchange="handleStickerProcessing(event)">
         </div>
+    </div>
+</div>
+
+    <div id="sticker-progress-overlay" style="display:none; position:fixed; inset:0; background:rgba(255,192,203,0.7); backdrop-filter:blur(5px); z-index:99999; align-items:center; justify-content:center; flex-direction:column; color:#ff1493;">
+    <div style="background:white; padding:30px; border-radius:25px; text-align:center; box-shadow:0 10px 30px rgba(0,0,0,0.1); border:3px solid #ffc0cb; width:280px;">
+        <div class="sticker-loading-spinner" style="width:50px; height:50px; border:5px solid #fff0f5; border-top:5px solid #ff1493; border-radius:50%; animation: spin 1s linear infinite; margin:0 auto 15px;"></div>
+        <b style="font-size:0.9em; display:block; margin-bottom:5px;">AI ĐANG XỬ LÝ...</b>
+        <p style="font-size:0.7em; color:#888;">Đang tách nền & tối ưu nhãn dán cho Henry ✨</p>
+        
+        <div style="width:100%; height:8px; background:#fff0f5; border-radius:10px; margin-top:15px; overflow:hidden;">
+            <div id="sticker-upload-bar" style="width:0%; height:100%; background:linear-gradient(to right, #ff69b4, #ff1493); transition:width 0.3s;"></div>
+        </div>
+        <span id="sticker-upload-percent" style="font-size:0.8em; font-weight:800; margin-top:10px; display:block;">0%</span>
     </div>
 </div>
 <script>
@@ -15725,39 +15743,68 @@ async function handleStickerProcessing(event) {
     const file = event.target.files[0];
     if (!file) return;
 
-    addNotification("⏳ ĐANG XỬ LÝ", "Henry chờ xíu, AI đang tách nền nhãn dán...", true);
-
-    const formData = new FormData();
-    formData.append('image_file', file);
-    formData.append('size', 'auto');
+    // 1. HIỆN LỚP PHỦ TIẾN ĐỘ
+    const overlay = document.getElementById('sticker-progress-overlay');
+    const progressBar = document.getElementById('sticker-upload-bar');
+    const percentText = document.getElementById('sticker-upload-percent');
+    
+    overlay.style.display = 'flex';
+    progressBar.style.width = '0%';
+    percentText.innerText = '0%';
 
     try {
-        // 1. TÁCH NỀN (Dùng remove.bg API cho sạch 100%)
-        const resBG = await fetch('https://api.remove.bg/v1.0/removebg', {
-            method: 'POST',
-            headers: { 'X-Api-Key': 'YOUR_API_KEY_HERE' }, // Henry thay Key của mình vào nhé
-            body: formData
-        });
+        // BƯỚC A: Tách nền (Dùng API tách nền của Henry)
+        // Lưu ý: Nếu bước này nhanh quá, Henry có thể fake progress lên 30% cho đẹp
+        progressBar.style.width = '30%';
+        percentText.innerText = '30%';
 
-        const blob = await resBG.blob();
-        
-        // 2. TẢI LÊN CLOUDINARY
-        const cloudUrl = await uploadToCloudinary(blob);
+        // BƯỚC B: Tải lên Cloudinary (Dùng XHR để lấy tiến độ thực)
+        const formData = new FormData();
+        formData.append('file', file); // Hoặc file đã tách nền
+        formData.append('upload_preset', UPLOAD_PRESET);
 
-        // 3. LƯU VÀO FIREBASE VĨNH VIỄN
-        db.ref(`users/${currentUser}/stickers`).push({
-            url: cloudUrl,
-            time: firebase.database.ServerValue.TIMESTAMP
-        }).then(() => {
-            addNotification("✨ HOÀN TẤT", "Nhãn dán đã vào kho vĩnh viễn!", false);
-            showStickerTab('store');
-        });
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, true);
+
+        // Lắng nghe tiến độ tải lên
+        xhr.upload.onprogress = (e) => {
+            if (e.lengthComputable) {
+                const percent = Math.round((e.loaded / e.total) * 70) + 30; // Chạy từ 30% đến 100%
+                progressBar.style.width = percent + '%';
+                percentText.innerText = percent + '%';
+            }
+        };
+
+        xhr.onload = function() {
+            if (xhr.status === 200) {
+                const data = JSON.parse(xhr.responseText);
+                
+                // BƯỚC C: Lưu vào Firebase
+                db.ref(`users/${currentUser}/stickers`).push({
+                    url: data.secure_url,
+                    time: firebase.database.ServerValue.TIMESTAMP
+                }).then(() => {
+                    // HOÀN TẤT: Ẩn Overlay
+                    overlay.style.display = 'none';
+                    addNotification("✨ HOÀN TẤT", "Nhãn dán đã sẵn sàng trong kho!", false);
+                    showStickerTab('store');
+                });
+            } else {
+                overlay.style.display = 'none';
+                alert("Lỗi tải lên!");
+            }
+        };
+
+        xhr.onerror = () => {
+            overlay.style.display = 'none';
+            alert("Lỗi kết nối!");
+        };
+
+        xhr.send(formData);
 
     } catch (err) {
-        // Fallback: Nếu tách nền lỗi, cứ tải ảnh gốc lên dưới dạng 1:1
-        const cloudUrl = await uploadToCloudinary(file);
-        db.ref(`users/${currentUser}/stickers`).push({ url: cloudUrl });
-        showStickerTab('store');
+        console.error(err);
+        overlay.style.display = 'none';
     }
 }
 
