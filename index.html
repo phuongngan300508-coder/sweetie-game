@@ -15741,15 +15741,15 @@ async function handleStickerUpload(event) {
     const file = event.target.files[0];
     if (!file) return;
 
-    // 1. Thông báo đang xử lý (Henry giữ nguyên style cũ)
-    addNotification("⏳ ĐANG XỬ LÝ", "AI đang tách nền nhãn dán cho Henry...", true);
+    addNotification("⏳ ĐANG XỬ LÝ", "AI đang bóc tách nhân vật cho Henry...", true);
     
     const formData = new FormData();
     formData.append('file', file);
     formData.append('upload_preset', UPLOAD_PRESET);
     
-    // MẸO: Henry có thể thêm dòng này nếu đã bật Add-on Cloudinary AI Background Removal
-    // formData.append('background_removal', 'cloudinary_ai'); 
+    // --- BƯỚC QUAN TRỌNG: Kích hoạt AI bóc nền ---
+    // Henry dùng 'cloudinary_ai' để tách nền mọi loại ảnh phức tạp
+    formData.append('background_removal', 'cloudinary_ai'); 
 
     try {
         const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
@@ -15758,33 +15758,35 @@ async function handleStickerUpload(event) {
         });
         const data = await response.json();
         
+        if (data.error) {
+            console.error("Lỗi từ Cloudinary:", data.error.message);
+            alert("Henry ơi, hãy kiểm tra xem đã bật Add-on Background Removal trong Cloudinary chưa nhé!");
+            return;
+        }
+
         let finalUrl = data.secure_url;
 
-        // --- ĐOẠN Henry CẦN SỬA ĐỂ TÁCH NỀN "BAY" TỰ DO ---
-        // f_png: Ép về định dạng PNG để có độ trong suốt (BẮT BUỘC)
-        // e_make_transparent:10: Biến nền trắng/đen thành trong suốt (dung sai 10 để tránh lẹm vào hình)
-        // e_trim: Tự động cắt bỏ các khoảng trống dư thừa sát mép ảnh
-        // c_limit,w_300: Giới hạn chiều rộng 300px để nhãn dán sắc nét mà không nặng
-        finalUrl = finalUrl.replace('/upload/', '/upload/f_png,e_make_transparent:10,e_trim,c_limit,w_300/');
+        // --- CẤU HÌNH URL ĐỂ LẤY ẢNH TRONG SUỐT ---
+        // f_png: Ép về PNG để giữ độ trong suốt
+        // e_trim: Cắt bỏ hết khoảng trắng thừa xung quanh nhân vật
+        // c_limit,w_300: Giới hạn độ rộng để nhãn dán không quá nặng
+        finalUrl = finalUrl.replace('/upload/', '/upload/f_png,e_trim,c_limit,w_300/');
 
-        // 2. Lưu vào kho sticker vĩnh viễn trên Firebase (Giữ nguyên logic của Henry)
         db.ref(`users/${currentUser}/stickers`).push({
             url: finalUrl,
             time: firebase.database.ServerValue.TIMESTAMP
         }).then(() => {
-            addNotification("✨ HOÀN TẤT", "Nhãn dán 'không nền' đã sẵn sàng!", false);
-            
-            // Chuyển về tab kho để Henry thấy ngay sticker mới
-            if (typeof showStickerTab === 'function') {
-                showStickerTab('store');
-            }
+            addNotification("✨ HOÀN TẤT", "Nhãn dán đã tách nền thành công!", false);
+            showStickerTab('store');
         });
 
     } catch (err) {
         console.error("Lỗi tải sticker:", err);
-        alert("Lỗi hệ thống khi tạo nhãn dán!");
+        alert("Lỗi hệ thống khi bóc nền nhãn dán!");
     }
 }
+
+    
 // --- 3. LẮNG NGHE KHO STICKER REAL-TIME ---
 function listenMyStickers() {
     db.ref(`users/${currentUser}/stickers`).on('value', (snapshot) => {
