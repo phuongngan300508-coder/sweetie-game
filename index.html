@@ -5160,50 +5160,6 @@ div[onclick="toggleModal('modal-handbook')"]:hover {
     height: 100%;
     background: rgba(0, 0, 0, 0.5); /* Làm mờ nền để làm nổi bật popup */
 }
-
-    .sweetie-switch { position: relative; display: inline-block; width: 45px; height: 24px; }
-.sweetie-switch input { opacity: 0; width: 0; height: 0; }
-.slider-round {
-  position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
-  background-color: #ccc; transition: .4s; border-radius: 34px;
-}
-.slider-round:before {
-  position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px;
-  background-color: white; transition: .4s; border-radius: 50%;
-}
-input:checked + .slider-round { background-color: #ff1493; }
-input:checked + .slider-round:before { transform: translateX(21px); }
-
-/* Avatar nhỏ xíu dưới tin nhắn */
-.seen-avatar-mini {
-    width: 14px; height: 14px; border-radius: 50%; border: 1px solid white;
-    object-fit: cover; margin-top: 2px; margin-left: auto; display: block;
-}
-.status-text-mini {
-    font-size: 0.55em; color: #aaa; text-align: right; margin-top: 2px; font-weight: bold;
-}
-
-    .msg-status-container {
-    display: flex;
-    justify-content: flex-end;
-    margin-top: 2px;
-    min-height: 14px;
-}
-
-.seen-avatar-mini {
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    border: 1px solid white;
-    object-fit: cover;
-}
-
-.status-text-mini {
-    font-size: 0.55em;
-    color: #bbb;
-    font-weight: bold;
-    text-transform: uppercase;
-}
 </style>
 </head>
 <body>
@@ -12172,11 +12128,6 @@ function openChatWith(friendName) {
         // --- 6. BẮT ĐẦU LẮNG NGHE TIN NHẮN REALTIME ---
         listenMessages(friendName);
         listenNicknames(friendName);
-        
-        // --- [MỚI] ĐÁNH DẤU LÀ ĐÃ XEM KHI VỪA MỞ CHAT ---
-        if (typeof markAsSeen === 'function') {
-            markAsSeen(friendName);
-        }
 
         // --- 7. ĐỒNG BỘ KẾT NỐI: XÓA THÔNG BÁO CHƯA ĐỌC ---
         if (currentUser && friendName) {
@@ -12538,9 +12489,6 @@ function listenMessages(friendName) {
                     <div onclick="openThemeModal()" style="color:#ff1493; padding:12px; font-weight:bold; font-size:0.7em; cursor:pointer; white-space: nowrap; border-bottom: 1px solid #eee;">
                         <i class="fas fa-palette"></i> Đổi giao diện
                     </div>
-                    <div onclick="openPrivacyModal()" style="color:#ff1493; padding:12px; font-weight:bold; font-size:0.7em; cursor:pointer; border-bottom: 1px solid #eee;">
-    <i class="fas fa-eye-slash"></i> Xem tin nhắn
-</div>
                     <div onclick="blockUser('${friendName}')" style="color:red; padding:12px; font-weight:bold; font-size:0.7em; cursor:pointer; white-space: nowrap; border-radius:10px;">
                         <i class="fas fa-ban"></i> Chặn cư dân này
                     </div>
@@ -12709,16 +12657,19 @@ function renderSingleMessage(msgId, msg, position = 'bottom', targetContainer = 
     }
     const getEmojiClass = (emoji) => (myReaction === emoji) ? "emoji-btn emoji-active" : "emoji-btn";
 
-    // --- 3. LOGIC THỜI GIAN (GIỮ NGUYÊN 100%) ---
+    // --- 3. LOGIC THỜI GIAN (ĐÃ CẬP NHẬT THEO YÊU CẦU) ---
     let timeDisplay = msg.displayTime || ""; 
     if (msg.timestamp) {
         const msgDate = new Date(msg.timestamp);
         const today = new Date();
+        
+        // Kiểm tra xem có phải tin nhắn hôm nay không
         const isToday = msgDate.getDate() === today.getDate() &&
                         msgDate.getMonth() === today.getMonth() &&
                         msgDate.getFullYear() === today.getFullYear();
 
         if (!isToday) {
+            // Nếu không phải hôm nay, thêm ngày tháng năm vào trước hoặc sau giờ
             const dateFull = msgDate.getDate().toString().padStart(2, '0') + "/" + 
                              (msgDate.getMonth() + 1).toString().padStart(2, '0') + "/" + 
                              msgDate.getFullYear();
@@ -12742,11 +12693,7 @@ function renderSingleMessage(msgId, msg, position = 'bottom', targetContainer = 
         }
     }
 
-    // --- [MỚI] TẠO CONTAINER TRẠNG THÁI SEEN ---
-    const statusId = `status-${msgId}`;
-    const statusContainerHtml = isMe ? `<div id="${statusId}" class="msg-status-container"></div>` : "";
-
-    // --- 5. TEMPLATE HTML (GIỮ NGUYÊN 100%, CHỈ CHÈN statusContainerHtml) ---
+    // --- 5. TEMPLATE HTML (GIỮ NGUYÊN 100%) ---
     const msgHtml = `
     <div class="msg-wrapper ${isMe ? 'msg-me-wrap' : 'msg-friend-wrap'}" id="msg-${msgId}"
          style="position: relative; display: flex; align-items: center; width: 100%; ${isMe ? 'flex-direction: row-reverse; justify-content: flex-start;' : 'justify-content: flex-start;'}" 
@@ -12768,7 +12715,7 @@ function renderSingleMessage(msgId, msg, position = 'bottom', targetContainer = 
             ${bodyContentHtml}
             ${timeHtml}
             ${reactionDisplayHtml}
-            ${statusContainerHtml} </div>
+        </div>
 
         <div class="msg-actions" id="actions-${msgId}" style="display: flex; align-items: center; ${isMe ? 'flex-direction: row-reverse;' : ''}">
             <i class="far fa-smile reaction-stay" onclick="toggleReactionPicker('${msgId}')" style="cursor:pointer; ${isMe ? 'margin-left:5px;' : 'margin-right:5px;'} color:#ff69b4;"></i>
@@ -12793,12 +12740,8 @@ function renderSingleMessage(msgId, msg, position = 'bottom', targetContainer = 
 
     const el = document.getElementById(`msg-${msgId}`);
     if (el) initSwipe(el, isMe, msgId, msg.text, msg.sender);
-
-    // --- [MỚI] KÍCH HOẠT LẮNG NGHE TRẠNG THÁI SEEN CHO TIN NHẮN NÀY ---
-    if (isMe) {
-        updateSeenStatusUI(msgId, msg);
-    }
 }
+
 function toggleChatMoreMenu() {
     const menu = document.getElementById('chat-more-menu');
     if (menu) {
@@ -15229,105 +15172,6 @@ function exitSearchMode() {
         console.error('Lỗi upload Cloudinary:', error);
         throw error;
     }
-}
-
-    // --- 1. HÀM CẬP NHẬT TRẠNG THÁI "ĐÃ XEM" ---
-function markAsSeen(friendName) {
-    // Nếu Henry đang tắt tính năng Seen thì không gửi tín hiệu "Đã xem" cho người kia
-    if (userData.privacy && userData.privacy.showSeen === false) return;
-
-    if (!currentUser || !friendName) return;
-    const chatRoomId = [currentUser, friendName].sort().join('_');
-    const msgRef = db.ref(`chats/${chatRoomId}/messages`);
-
-    // Lấy tin nhắn cuối cùng để đánh dấu
-    msgRef.limitToLast(1).once('value', (snapshot) => {
-        snapshot.forEach((child) => {
-            const msgData = child.val();
-            // Nếu mình không phải người gửi và mình chưa có trong danh sách seenBy
-            if (msgData.sender !== currentUser) {
-                db.ref(`chats/${chatRoomId}/messages/${child.key}/seenBy/${currentUser}`).set(true);
-            }
-        });
-    });
-}
-
-// --- 2. POPUP TÙY CHỈNH QUYỀN RIÊNG TƯ (Màu hồng Sweetie) ---
-function openPrivacyModal() {
-    // Đóng menu 3 chấm trước
-    if (typeof toggleChatMoreMenu === 'function') toggleChatMoreMenu();
-    
-    let modal = document.getElementById('modal-privacy-settings');
-    if (!modal) {
-        // Tạo Modal nếu chưa có trong HTML
-        const modalHtml = `
-            <div id="modal-privacy-settings" class="modal-sweetie" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:30000; align-items:center; justify-content:center;">
-                <div class="animate__animated animate__zoomIn" style="background:white; width:90%; max-width:350px; border-radius:30px; padding:25px; text-align:center; box-shadow:0 15px 35px rgba(255,105,180,0.3); border: 2px solid #ffc0cb;">
-                    <div style="width:60px; height:60px; background:#fff0f5; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 15px; color:#ff1493; font-size:1.5em;">
-                        <i class="fas fa-user-shield"></i>
-                    </div>
-                    <h3 style="color:#ff1493; margin-bottom:10px; font-size:1.1em;">QUYỀN RIÊNG TƯ</h3>
-                    <p style="font-size:0.75em; color:#888; margin-bottom:20px;">Khi tắt, mọi người sẽ không thấy bạn đã xem tin nhắn và bạn cũng không thấy trạng thái của họ.</p>
-                    
-                    <div style="display:flex; align-items:center; justify-content:space-between; background:#fff5f8; padding:15px; border-radius:20px; margin-bottom:20px;">
-                        <span style="font-size:0.85em; font-weight:800; color:#d63384;">Trạng thái "Đã xem"</span>
-                        <label class="sweetie-switch">
-                            <input type="checkbox" id="check-seen-privacy" onchange="updatePrivacySeen(this.checked)">
-                            <span class="slider-round"></span>
-                        </label>
-                    </div>
-
-                    <button class="btn-action-pink" style="width:100%;" onclick="toggleModal('modal-privacy-settings')">HOÀN TẤT</button>
-                </div>
-            </div>`;
-        document.body.insertAdjacentHTML('beforeend', modalHtml);
-        modal = document.getElementById('modal-privacy-settings');
-    }
-
-    // Cập nhật trạng thái checkbox từ dữ liệu user
-    const isSeenOn = (userData.privacy && userData.privacy.showSeen !== false);
-    document.getElementById('check-seen-privacy').checked = isSeenOn;
-    
-    modal.style.display = 'flex';
-}
-
-// --- 3. CẬP NHẬT LÊN FIREBASE ---
-function updatePrivacySeen(isValid) {
-    if (!currentUser) return;
-    db.ref(`users/${currentUser}/privacy/showSeen`).set(isValid).then(() => {
-        if (!userData.privacy) userData.privacy = {};
-        userData.privacy.showSeen = isValid;
-        addNotification("🛡️ HỆ THỐNG", isValid ? "Đã bật hiển thị Đã xem." : "Đã ẩn trạng thái Đã xem.");
-    });
-}
-
-    function updateSeenStatusUI(msgId, msg) {
-    if (!currentChatFriend) return;
-    const chatRoomId = [currentUser, currentChatFriend].sort().join('_');
-    const container = document.getElementById(`status-${msgId}`);
-    if (!container) return;
-
-    // Lắng nghe xem đối phương đã xem chưa
-    db.ref(`chats/${chatRoomId}/messages/${msgId}/seenBy/${currentChatFriend}`).on('value', async (snap) => {
-        const isSeen = snap.val() === true;
-        
-        // Kiểm tra quyền riêng tư của đối phương (Họ có cho mình thấy họ đã xem hay không)
-        const privacySnap = await db.ref(`users/${currentChatFriend}/privacy/showSeen`).once('value');
-        const canSeeAvatar = privacySnap.val() !== false;
-
-        if (isSeen && canSeeAvatar) {
-            // Lấy Avatar đối phương
-            db.ref(`users/${currentChatFriend}/profile`).once('value', (uSnap) => {
-                const p = uSnap.val() || {};
-                const avatar = p.customAvatar || "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png";
-                container.innerHTML = `<img src="${avatar}" class="seen-avatar-mini animate__animated animate__fadeIn">`;
-            });
-        } else {
-            // Nếu chưa xem hoặc họ tắt Seen -> Hiện chữ Đã gửi/Đã nhận
-            // (Henry có thể dùng Firebase để check 'received' nếu muốn làm trạng thái Đã nhận)
-            container.innerHTML = `<span class="status-text-mini">Đã gửi</span>`;
-        }
-    });
 }
 </script>
 </body>
