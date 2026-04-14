@@ -9731,18 +9731,13 @@ function finalizeReward() {
     checkMinigameStatus(); 
 
     // --- ĐOẠN THÊM MỚI: KÍCH HOẠT ƯU ĐÃI NGAY LẬP TỨC ---
-    if (activeGame.id === 'cuaHangNhanGiong') {
-        // Kiểm tra xem đã từng thông báo ưu đãi này chưa dựa trên userData
-        if (!userData.hasNotifiedUuDaiNhanGiong) {
-            addNotification(
-                "🎁 ƯU ĐÃI LIÊN KẾT", 
-                "Chúc mừng! Bạn đã sở hữu Cửa Hàng Nhân Giống. Phí vào khu Thỏ Phiêu Lưu đã được GIẢM GIÁ ngay bây giờ!"
-            );
-            
-            // Đánh dấu đã thông báo vào dữ liệu người dùng
-            userData.hasNotifiedUuDaiNhanGiong = true;
-        }
-    }
+    if (activeGame.id === 'cuaHangNhanGiong' && !notifiedUuDaiInThisLoad) {
+        addNotification(
+            "🎁 ƯU ĐÃI LIÊN KẾT", 
+            "Chúc mừng! Bạn đã sở hữu Cửa Hàng Nhân Giống. Phí vào khu Thỏ Phiêu Lưu đã được GIẢM GIÁ ngay bây giờ!"
+        );
+        notifiedUuDaiInThisLoad = true;
+    }
 
     alert(message);
     toggleModal('modal-finish');
