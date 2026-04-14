@@ -5393,23 +5393,23 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
     color: #ff1493;
 }
 
-    /* CSS đặc trị cho Menu trong bảng tin nhắn ghim */
+    /* CSS chuyên biệt cho menu trong bảng Tin nhắn đã ghim */
 #pinned-msgs-area .action-menu {
-    display: none; /* Mặc định ẩn, sẽ hiện khi click */
+    display: none; /* Mặc định ẩn */
     position: absolute;
-    right: 30px; /* Căn chỉnh để hiện cạnh dấu 3 chấm */
-    top: 10px;
+    right: 20px;
+    top: 35px;
     background: white;
-    min-width: 150px;
-    border-radius: 15px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-    z-index: 100001; /* Đảm bảo nằm trên cùng của popup */
+    min-width: 160px;
+    border-radius: 12px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+    z-index: 100001; /* Phải cực cao để đè lên các tin nhắn khác */
     border: 1px solid #ffc0cb;
     overflow: hidden;
 }
 
 #pinned-msgs-area .action-menu div {
-    padding: 12px 15px;
+    padding: 10px 15px;
     font-size: 0.85em;
     font-weight: bold;
     color: #444;
@@ -5417,7 +5417,7 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
     display: flex;
     align-items: center;
     gap: 10px;
-    transition: all 0.2s;
+    transition: background 0.2s;
 }
 
 #pinned-msgs-area .action-menu div:hover {
@@ -5426,8 +5426,9 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
 }
 
 #pinned-msgs-area .action-menu div i {
-    width: 18px;
+    width: 16px;
     color: #ff69b4;
+    text-align: center;
 }
 </style>
 </head>
@@ -16168,30 +16169,31 @@ function renderPinnedMessagesList() {
         const keys = Object.keys(data).reverse();
         keys.forEach(msgId => {
             const msg = data[msgId];
-            const itemHtml = `
-    <div class="pinned-item" id="pin-item-${msgId}" 
-         style="background:white; margin-bottom:15px; padding:15px; border-radius:20px; border-left:5px solid #ff1493; position:relative;">
+            // Thay đổi đoạn itemHtml trong vòng lặp Render của Henry:
+const itemHtml = `
+    <div class="pinned-item animate__animated animate__fadeIn" id="pin-item-${msgId}" 
+         style="background:white; margin-bottom:15px; padding:15px; border-radius:20px; border-left:5px solid #ff1493; position:relative; overflow: visible;">
         
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-            <b style="font-size:0.7em; color:#d63384;">📌 ${msg.sender}</b>
+            <b style="font-size:0.7em; color:#d63384; text-transform:uppercase;">📌 ${msg.sender}</b>
             
             <div style="position: relative;">
                 <i class="fas fa-ellipsis-h" 
                    onclick="showPinnedActionMenu(event, '${msgId}')" 
-                   style="cursor:pointer; color:#bbb; padding: 5px; font-size: 1.2em;"></i>
+                   style="cursor:pointer; color:#ccc; padding: 5px; font-size: 1.2em;"></i>
                 
                 <div id="pin-menu-${msgId}" class="action-menu">
                     <div onclick="jumpToMessageInChat('${msgId}')">
                         <i class="fas fa-eye"></i> Xem tin gốc
                     </div>
-                    <div onclick="unpinMessage('${msgId}')" style="color:#ff4d4d; border-top:1px solid #eee;">
+                    <div onclick="unpinMessage('${msgId}')" style="color:#ff4d4d; border-top: 1px solid #eee;">
                         <i class="fas fa-trash-alt"></i> Bỏ ghim
                     </div>
                 </div>
             </div>
         </div>
 
-        <div style="font-size:0.9em; color:#333; line-height:1.5;">${msg.text}</div>
+        <div style="font-size:0.9em; color:#333; line-height:1.5; word-break: break-word;">${msg.text}</div>
         <div style="font-size:0.65em; color:#999; margin-top:8px; text-align:right;">${msg.displayTime || ''}</div>
     </div>
 `;
