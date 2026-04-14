@@ -12975,7 +12975,7 @@ function renderSingleMessage(msgId, msg, position = 'bottom', targetContainer = 
         }
     }
 
-    // --- 4. LOGIC MEDIA, STICKER & HIGHLIGHT (CẬP NHẬT) ---
+    // --- 4. LOGIC MEDIA, STICKER & HIGHLIGHT (GIỮ NGUYÊN 100%) ---
     let finalMsgText = msg.text || "";
     if (typeof currentSearchKeyword !== 'undefined' && currentSearchKeyword && msg.text) {
         const regex = new RegExp(`(${currentSearchKeyword})`, 'gi');
@@ -12984,11 +12984,9 @@ function renderSingleMessage(msgId, msg, position = 'bottom', targetContainer = 
 
     let bodyContentHtml = `<div class="text-content">${finalMsgText}</div>`;
     
-    // Kiểm tra nếu là Sticker
     if (msg.type === 'sticker') {
         bodyContentHtml = `<img src="${msg.mediaUrl}" class="animate__animated animate__zoomIn" style="width: 150px; height: auto; display: block; cursor: pointer;">`;
     } 
-    // Nếu là Media thường (Ảnh/Video)
     else if (msg.mediaUrl) {
         if (msg.mediaType === 'image') {
             bodyContentHtml = `<img src="${msg.mediaUrl}" onclick="openFS('${msg.mediaUrl}', 'image')" style="max-width:100%; border-radius:10px; cursor:pointer; display: block; margin-bottom: 5px;">`;
@@ -12997,7 +12995,7 @@ function renderSingleMessage(msgId, msg, position = 'bottom', targetContainer = 
         }
     }
 
-    // --- 5. TEMPLATE HTML (SỬA ĐỂ ẨN BUBBLE KHI GỬI STICKER) ---
+    // --- 5. TEMPLATE HTML (SỬA CẤU TRÚC BỌC ĐỂ FIX LỖI HOVER) ---
     const isSticker = msg.type === 'sticker';
     
     const msgHtml = `
@@ -13006,7 +13004,11 @@ function renderSingleMessage(msgId, msg, position = 'bottom', targetContainer = 
          data-id="${msgId}" data-text="${msg.text || ''}" data-sender="${msg.sender}"
          onclick="toggleMsgStatus('${msgId}')">
         
-        <div style="display: flex; align-items: center; width: fit-content; ${isMe ? 'flex-direction: row-reverse;' : 'flex-direction: row;'}">
+        <div class="msg-content-container" 
+             style="display: flex; align-items: center; width: fit-content; ${isMe ? 'flex-direction: row-reverse;' : 'flex-direction: row;'}"
+             onmouseenter="showActionBtn('${msgId}')" 
+             onmouseleave="hideActionBtn('${msgId}')">
+
             <div id="picker-${msgId}" class="reaction-picker reaction-stay" style="display:none;">
                 <span class="${getEmojiClass('❤️')}" onclick="sendReaction('${msgId}', '❤️')">❤️</span>
                 <span class="${getEmojiClass('😆')}" onclick="sendReaction('${msgId}', '😆')">😆</span>
@@ -13020,17 +13022,16 @@ function renderSingleMessage(msgId, msg, position = 'bottom', targetContainer = 
                  style="display: flex; flex-direction: column; position: relative; ${isSticker ? 'background: transparent; box-shadow: none; border: none; padding: 0;' : ''}"
                  ondblclick="sendReaction('${msgId}', '❤️')" 
                  ontouchstart="handleTouchStart(event, '${msgId}')" 
-                 ontouchend="handleTouchEnd()"
-                 onmouseenter="showActionBtn('${msgId}')" 
-                 onmouseleave="hideActionBtn('${msgId}')">
+                 ontouchend="handleTouchEnd()">
                 ${replyHtml}
                 ${bodyContentHtml}
                 ${reactionDisplayHtml}
             </div>
 
-            <div class="msg-actions" id="actions-${msgId}" style="display: flex; align-items: center; ${isMe ? 'flex-direction: row-reverse;' : ''}">
+            <div class="msg-actions" id="actions-${msgId}" 
+                 style="display: flex; align-items: center; opacity: 0; transition: opacity 0.2s; ${isMe ? 'flex-direction: row-reverse;' : ''}">
                 <i class="far fa-smile reaction-stay" onclick="toggleReactionPicker('${msgId}')" style="cursor:pointer; ${isMe ? 'margin-left:5px;' : 'margin-right:5px;'} color:#ff69b4;"></i>
-                <i class="fas fa-ellipsis-v" onclick="showActionMenu('${msgId}', ${isMe})"></i>
+                <i class="fas fa-ellipsis-v" onclick="showActionMenu('${msgId}', ${isMe})" style="cursor:pointer; padding: 0 5px;"></i>
                 <div class="action-menu" id="menu-${msgId}">
                     <div onclick="setReply('${msgId}', '${msg.text || ''}', '${msg.sender}')"><i class="fas fa-reply"></i> Trả lời</div>
                     <div onclick="deleteMessage('${msgId}', ${isMe})" style="color:red"><i class="fas fa-trash"></i> Xóa</div>
@@ -13049,7 +13050,7 @@ function renderSingleMessage(msgId, msg, position = 'bottom', targetContainer = 
         </div>
     </div>`;
 
-    // --- 6. PHẦN SỬA ĐỂ CHỐNG NHẢY TIN NHẮN (GIỮ NGUYÊN 100%) ---
+    // --- 6. PHẦN RENDER (GIỮ NGUYÊN 100%) ---
     if (targetContainer) {
         targetContainer.innerHTML = msgHtml;
     } else {
@@ -13110,10 +13111,28 @@ function showActionMenu(id, isMe) {
     document.getElementById(`menu-${id}`).style.display = 'block';
 }
 
-function showActionBtn(id) { document.getElementById(`actions-${id}`).style.opacity = "1"; }
-function hideActionBtn(id) { 
-    document.getElementById(`actions-${id}`).style.opacity = "0"; 
-    document.getElementById(`menu-${id}`).style.display = 'none';
+function showActionBtn(id) { 
+    const actions = document.getElementById(`actions-${id}`);
+    if (actions) actions.style.opacity = "1"; 
+}
+
+function hideActionBtn(id) {
+    const picker = document.getElementById(`picker-${id}`);
+    const menu = document.getElementById(`menu-${id}`);
+    const actions = document.getElementById(`actions-${id}`);
+
+    // KIỂM TRA: Nếu bảng chọn cảm xúc đang hiện HOẶC menu 3 chấm đang hiện
+    // thì Henry KHÔNG ĐƯỢC ẩn các nút này đi.
+    const isPickerOpen = picker && picker.style.display === 'flex';
+    const isMenuOpen = menu && menu.style.display === 'block';
+
+    if (!isPickerOpen && !isMenuOpen) {
+        if (actions) {
+            actions.style.opacity = "0";
+            // Đảm bảo menu cũng đóng lại khi chuột đã rời đi hoàn toàn
+            if (menu) menu.style.display = 'none';
+        }
+    }
 }
 
 // --- HÀM XỬ LÝ VUỐT (SWIPE) ---
@@ -14296,9 +14315,24 @@ function sendReaction(msgId, icon) {
                 });
             });
         }
-        // Đóng thanh cảm xúc sau khi thao tác
+
+        // --- ĐOẠN Henry CẦN SỬA ĐỂ ĐỒNG BỘ UI ---
+        
+        // 1. Đóng thanh chọn icon (Code cũ của Henry)
         const picker = document.getElementById(`picker-${msgId}`);
         if (picker) picker.style.display = 'none';
+
+        // 2. MỚI: Ép ẩn luôn thanh actions để tránh bị "dính" giao diện khi chuột đã rời đi
+        const actions = document.getElementById(`actions-${msgId}`);
+        if (actions) {
+            actions.style.opacity = "0";
+        }
+
+        // 3. MỚI: Đóng luôn menu 3 chấm nếu lỡ đang mở
+        const menu = document.getElementById(`menu-${msgId}`);
+        if (menu) {
+            menu.style.display = 'none';
+        }
     });
 }
 
