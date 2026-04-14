@@ -12725,14 +12725,14 @@ function renderSingleMessage(msgId, msg, position = 'bottom', targetContainer = 
         }
     }
 
-    // --- 5. TEMPLATE HTML (ĐÃ SỬA: ĐƯA THỜI GIAN & TRẠNG THÁI RA NGOÀI BONG BÓNG) ---
+   // --- 5. TEMPLATE HTML (ĐÃ SỬA: ÉP TRẠNG THÁI BÁM SÁT VỀ CÙNG PHÍA VỚI BONG BÓNG) ---
     const msgHtml = `
     <div class="msg-wrapper ${isMe ? 'msg-me-wrap' : 'msg-friend-wrap'}" id="msg-${msgId}"
-         style="position: relative; display: flex; flex-direction: column; width: 100%; margin-bottom: 12px;"
+         style="position: relative; display: flex; flex-direction: column; width: 100%; margin-bottom: 12px; ${isMe ? 'align-items: flex-end;' : 'align-items: flex-start;'}"
          data-id="${msgId}" data-text="${msg.text}" data-sender="${msg.sender}"
          onclick="toggleMsgStatus('${msgId}')">
         
-        <div style="display: flex; align-items: center; width: 100%; ${isMe ? 'flex-direction: row-reverse;' : 'flex-direction: row;'}">
+        <div style="display: flex; align-items: center; width: fit-content; ${isMe ? 'flex-direction: row-reverse;' : 'flex-direction: row;'}">
             <div id="picker-${msgId}" class="reaction-picker reaction-stay" style="display:none;">
                 <span class="${getEmojiClass('❤️')}" onclick="sendReaction('${msgId}', '❤️')">❤️</span>
                 <span class="${getEmojiClass('😆')}" onclick="sendReaction('${msgId}', '😆')">😆</span>
@@ -12765,13 +12765,13 @@ function renderSingleMessage(msgId, msg, position = 'bottom', targetContainer = 
         </div>
 
         <div id="status-${msgId}" class="msg-external-status" 
-             style="display: none; font-size: 0.65em; opacity: 0.7; margin-top: 4px; ${isMe ? 'text-align: right; padding-right: 10px;' : 'text-align: left; padding-left: 10px;'}">
+             style="display: none; font-size: 0.6em; opacity: 0.7; margin-top: 2px; width: fit-content; ${isMe ? 'margin-right: 5px; text-align: right;' : 'margin-left: 5px; text-align: left;'}">
             ${timeDisplay} • <span class="status-text-val">Đã gửi</span>
         </div>
 
         <div id="seen-${msgId}" class="seen-avatar-wrap" 
-             style="display: none; margin-top: 2px; ${isMe ? 'text-align: right; padding-right: 10px;' : 'text-align: left; padding-left: 10px;'}">
-            <img class="seen-avatar-img" src="" style="width: 14px; height: 14px; border-radius: 50%; border: 1px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+             style="display: none; margin-top: 2px; width: fit-content; ${isMe ? 'margin-right: 5px;' : 'margin-left: 5px;'}">
+            <img class="seen-avatar-img" src="" style="width: 12px; height: 12px; border-radius: 50%; border: 1px solid white; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
         </div>
     </div>`;
 
