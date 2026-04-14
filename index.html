@@ -5365,32 +5365,35 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
     100% { transform: rotate(360deg); }
 }
 
-   /* Style riêng cho menu trong bảng ghim */
-.pinned-item .action-menu {
+/* Menu đặc trị - Phải hiện trên mọi bề mặt */
+#pinned-msgs-area .action-menu {
     display: none;
-    position: absolute;
-    right: 15px;
-    top: 40px;
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
-    z-index: 100001; /* Nằm trên cả modal */
-    min-width: 140px;
-    border: 1px solid #ffc0cb;
+    position: fixed; /* Nổi hoàn toàn khỏi khung cuộn */
+    background-color: #ffffff !important; /* Trắng tinh khiết */
+    min-width: 160px;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    z-index: 1000000 !important; /* Cao hơn cả Modal (99999) */
+    border: 2px solid #ffc0cb; /* Viền hồng pastel cho rõ */
+    overflow: hidden;
+    visibility: visible !important;
 }
-.pinned-item .action-menu div {
-    padding: 10px 15px;
-    font-size: 0.8em;
+
+#pinned-msgs-area .action-menu div {
+    padding: 12px 15px;
+    font-size: 0.85em;
+    font-weight: bold;
+    color: #444 !important;
     cursor: pointer;
-    color: #444;
     display: flex;
     align-items: center;
-    gap: 8px;
-    font-weight: bold;
+    gap: 10px;
+    background: white;
 }
-.pinned-item .action-menu div:hover {
-    background: #fff0f5;
-    color: #ff1493;
+
+#pinned-msgs-area .action-menu div:hover {
+    background: #fff0f5 !important;
+    color: #ff1493 !important;
 }
 
   /* Menu đặc trị - Chống bị che khuất tuyệt đối */
@@ -16166,33 +16169,36 @@ function renderPinnedMessagesList() {
         const keys = Object.keys(data).reverse();
         keys.forEach(msgId => {
             const msg = data[msgId];
-            // Thay đổi đoạn itemHtml trong vòng lặp Render của Henry:
-// Đoạn itemHtml trong renderPinnedMessagesList:
-const itemHtml = `
-    <div class="pinned-item animate__animated animate__fadeIn" id="pin-item-${msgId}" 
-         style="background:white; margin-bottom:15px; padding:15px; border-radius:20px; border-left:5px solid #ff1493; position:relative;">
-        
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-            <b style="font-size:0.7em; color:#d63384;">📌 ${msg.sender}</b>
             
-            <i class="fas fa-ellipsis-h" 
-               onclick="showPinnedActionMenu(event, '${msgId}')" 
-               style="cursor:pointer; color:#bbb; padding: 5px; font-size: 1.2em;"></i>
-            
-            <div id="pin-menu-${msgId}" class="action-menu">
-                <div onclick="jumpToMessageInChat('${msgId}')">
-                    <i class="fas fa-eye"></i> Xem tin gốc
+            // GIỮ NGUYÊN 100% NỘI DUNG CỦA HENRY - CHỈ THÊM WRAPPER ĐỂ FIX HIỂN THỊ
+            const itemHtml = `
+            <div class="pinned-item animate__animated animate__fadeIn" id="pin-item-${msgId}" 
+                 style="background:white; margin-bottom:15px; padding:15px; border-radius:20px; border-left:5px solid #ff1493; position:relative;">
+                
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                    <b style="font-size:0.7em; color:#d63384;">📌 ${msg.sender}</b>
+                    
+                    <div style="position: relative;">
+                        <i class="fas fa-ellipsis-h" 
+                           onclick="showPinnedActionMenu(event, '${msgId}')" 
+                           style="cursor:pointer; color:#bbb; padding: 5px; font-size: 1.2em;"></i>
+                        
+                        <div id="pin-menu-${msgId}" class="action-menu" 
+                             style="display:none; position: absolute; right: 0; top: 30px; z-index: 10000; background: white; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); min-width: 140px; border: 1px solid #eee;">
+                            <div onclick="jumpToMessageInChat('${msgId}')" style="padding: 10px; font-size: 0.85em; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                                <i class="fas fa-eye"></i> Xem tin gốc
+                            </div>
+                            <div onclick="unpinMessage('${msgId}')" style="padding: 10px; font-size: 0.85em; cursor: pointer; color:#ff4d4d; border-top: 1px solid #eee; display: flex; align-items: center; gap: 8px;">
+                                <i class="fas fa-trash-alt"></i> Bỏ ghim
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div onclick="unpinMessage('${msgId}')" style="color:#ff4d4d; border-top: 1px solid #eee;">
-                    <i class="fas fa-trash-alt"></i> Bỏ ghim
-                </div>
-            </div>
-        </div>
 
-        <div style="font-size:0.9em; color:#333; line-height:1.5;">${msg.text}</div>
-        <div style="font-size:0.65em; color:#999; margin-top:8px; text-align:right;">${msg.displayTime || ''}</div>
-    </div>
-`;
+                <div style="font-size:0.9em; color:#333; line-height:1.5; word-break: break-word;">${msg.text}</div>
+                <div style="font-size:0.65em; color:#999; margin-top:8px; text-align:right;">${msg.displayTime || ''}</div>
+            </div>`;
+            
             area.insertAdjacentHTML('beforeend', itemHtml);
         });
     });
@@ -16200,17 +16206,29 @@ const itemHtml = `
 
 // 3. Các hàm bổ trợ (Giữ nguyên logic Henry nhưng bọc lỗi)
 function showPinnedActionMenu(event, msgId) {
+    // 1. Ngừng các sự kiện khác để không bị đóng modal
+    event.preventDefault();
     event.stopPropagation();
     
-    // Đóng tất cả menu khác
-    document.querySelectorAll('#pinned-msgs-area .action-menu').forEach(m => m.style.display = 'none');
+    console.log("Đang mở menu cho tin nhắn: " + msgId); // Henry bấm F12 xem có dòng này hiện ra không nhé
+
+    // 2. Đóng toàn bộ các menu pin khác đang mở
+    document.querySelectorAll('.action-menu').forEach(m => m.style.display = 'none');
 
     const menu = document.getElementById(`pin-menu-${msgId}`);
     if (menu) {
-        // Tính toán vị trí dựa trên vị trí click chuột
+        // 3. Hiện menu
         menu.style.display = 'block';
-        menu.style.left = (event.clientX - 150) + "px"; // Hiện bên trái con trỏ 150px
-        menu.style.top = (event.clientY + 10) + "px";  // Hiện dưới con trỏ 10px
+        
+        // 4. Đưa menu đến đúng vị trí chuột vừa bấm
+        // Trừ đi một khoảng để menu không bị lệch khỏi màn hình
+        const x = event.clientX > window.innerWidth - 180 ? event.clientX - 160 : event.clientX;
+        const y = event.clientY > window.innerHeight - 100 ? event.clientY - 80 : event.clientY;
+        
+        menu.style.left = x + "px";
+        menu.style.top = y + "px";
+    } else {
+        console.error("Không tìm thấy menu có ID: pin-menu-" + msgId);
     }
 }
 
