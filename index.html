@@ -15756,7 +15756,7 @@ async function handleStickerUpload(event) {
     const file = event.target.files[0];
     if (!file) return;
 
-    // --- HIỆN POPUP TIẾN ĐỘ ---
+    // --- HIỆN POPUP TIẾN ĐỘ (Giữ nguyên) ---
     const overlay = document.getElementById('sticker-loading-overlay');
     const bar = document.getElementById('sticker-progress-bar');
     const text = document.getElementById('sticker-progress-text');
@@ -15767,14 +15767,14 @@ async function handleStickerUpload(event) {
         text.innerText = '0%';
     }
 
-    addNotification("⏳ ĐANG XỬ LÝ", "AI đang tách nền nhãn dán cho Henry...", true);
+    addNotification("⏳ ĐANG XỬ LÝ", "AI đang chuẩn bị tách nền cho Henry...", true);
     
     const formData = new FormData();
     formData.append('file', file);
     formData.append('upload_preset', UPLOAD_PRESET);
     
-    // --- SỬA TẠI ĐÂY: ÉP CLOUDINARY CHỜ AI TÁCH XONG MỚI TRẢ VỀ URL ---
-    formData.append('background_removal', 'cloudinary_ai'); 
+    // --- KHẮC PHỤC LỖI 400: Xóa dòng background_removal ở đây ---
+    // Vì Unsigned không được phép dùng tham số này trực tiếp khi gửi file.
 
     try {
         const xhr = new XMLHttpRequest();
@@ -15787,7 +15787,7 @@ async function handleStickerUpload(event) {
                 text.innerText = percent + '%';
                 if (percent === 100) {
                     const statusH3 = document.querySelector('#sticker-loading-overlay h3');
-                    if (statusH3) statusH3.innerText = "ĐANG BÓC TÁCH NỀN... (ĐỢI XÍU NHÉ)";
+                    if (statusH3) statusH3.innerText = "ĐANG BÓC TÁCH NỀN... (SẼ HIỆN KHI XONG)";
                 }
             }
         };
@@ -15795,14 +15795,13 @@ async function handleStickerUpload(event) {
         xhr.onload = function() {
             if (xhr.status === 200) {
                 const data = JSON.parse(xhr.responseText);
-                
-                // Mẹo của Henry: Lấy URL và ép định dạng PNG + Cắt lề trắng
                 let finalUrl = data.secure_url;
                 
-                // --- SỬA THUẬT TOÁN REPLACE: Ưu tiên f_png và e_trim lên đầu ---
-                // f_png: Ép ra file trong suốt
-                // e_trim: Cắt sạch phần lề thừa xung quanh nhân vật
-                finalUrl = finalUrl.replace('/upload/', '/upload/f_png,e_trim,c_limit,w_300/');
+                // --- ĐÂY LÀ CHÌA KHÓA: Sửa lại thuật toán replace ---
+                // f_png: Ép định dạng trong suốt.
+                // e_background_removal: ĐÂY LÀ LỆNH TÁCH NỀN AI (Chạy mượt với Unsigned).
+                // e_trim: Cắt sát nhân vật.
+                finalUrl = finalUrl.replace('/upload/', '/upload/f_png,e_background_removal,e_trim,c_limit,w_300/');
 
                 db.ref(`users/${currentUser}/stickers`).push({
                     url: finalUrl,
@@ -15823,7 +15822,7 @@ async function handleStickerUpload(event) {
                 const errorData = JSON.parse(xhr.responseText);
                 console.error("Lỗi Cloudinary:", errorData.error.message);
                 if (overlay) overlay.style.display = 'none';
-                alert("Lỗi AI: " + errorData.error.message);
+                alert("Lỗi hệ thống: " + errorData.error.message);
             }
         };
 
