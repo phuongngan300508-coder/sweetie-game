@@ -15783,60 +15783,77 @@ function updateReadReceipt(friendName) {
 
     function listenReadReceipts(friendName) {
     const chatRoomId = [currentUser, friendName].sort().join('_');
+    const area = document.getElementById('chat-messages-area');
     
-    // 1. Lấy Avatar của bạn để làm icon Seen
+    // 1. Lấy Avatar của bạn để làm icon Seen (Giữ nguyên)
     let friendAvatar = "";
     db.ref(`users/${friendName}/profile/customAvatar`).once('value', s => friendAvatar = s.val());
 
-    // 2. Lắng nghe cấu hình Seen của cả 2
+    // 2. Lắng nghe cấu hình Seen của cả 2 (Giữ nguyên)
     let mySeenSetting = true;
     let friendSeenSetting = true;
-
     db.ref(`chats/${chatRoomId}/settings`).on('value', (snap) => {
         const settings = snap.val() || {};
         mySeenSetting = settings[currentUser]?.showSeen !== false;
         friendSeenSetting = settings[friendName]?.showSeen !== false;
     });
 
-    // 3. Lắng nghe mốc thời gian xem tin của bạn
-    db.ref(`chats/${chatRoomId}/read_receipts/${friendName}`).on('value', (snap) => {
-        const lastReadTime = snap.val() || 0;
-        const messages = document.querySelectorAll('.msg-me-wrap'); // Chỉ xét tin mình gửi
-        
+    // --- HÀM BỔ TRỢ: Tách logic vẽ Seen ra để dùng lại nhiều lần ---
+    const updateSeenUI = (lastReadTime) => {
+        const messages = document.querySelectorAll('.msg-me-wrap');
         let foundLastSeen = false;
 
-        // Quét ngược từ tin mới nhất đến tin cũ
         for (let i = messages.length - 1; i >= 0; i--) {
             const msgEl = messages[i];
             const msgId = msgEl.id.replace('msg-', '');
-            const statusTextEl = msgEl.querySelector('.status-text');
+            const statusTextEl = msgEl.querySelector('.status-text-val'); // Đảm bảo khớp class trong render
             const seenWrap = msgEl.querySelector('.seen-avatar-wrap');
             const seenImg = msgEl.querySelector('.seen-avatar-img');
 
-            // Giả định logic: Firebase đã lưu thì là "Đã nhận"
-            if (statusTextEl) statusTextEl.innerText = "Đã nhận";
+            if (statusTextEl && statusTextEl.innerText === "Đã gửi") {
+                statusTextEl.innerText = "Đã nhận";
+            }
 
-            // HIỂN THỊ AVATAR SEEN
-            // Nếu CẢ 2 cùng bật tính năng Seen và tin nhắn có timestamp nhỏ hơn lúc bạn xem
             if (mySeenSetting && friendSeenSetting && !foundLastSeen) {
+                // Lấy timestamp từ data attribute (Henry nên thêm data-time vào msg-wrapper khi render)
+                // Hoặc lấy trực tiếp từ Firebase nếu Henry muốn chính xác 100%
                 db.ref(`chats/${chatRoomId}/messages/${msgId}/timestamp`).once('value', (tSnap) => {
-                    if (tSnap.val() <= lastReadTime) {
-                        seenWrap.style.display = 'block';
-                        seenImg.src = friendAvatar || 'https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png';
+                    const msgTime = tSnap.val();
+                    if (msgTime <= lastReadTime) {
+                        if (seenWrap) seenWrap.style.display = 'block';
+                        if (seenImg) seenImg.src = friendAvatar || 'https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png';
                         if (statusTextEl) statusTextEl.innerText = "Đã xem";
-                        foundLastSeen = true; // Chỉ hiện avatar ở tin cuối cùng được xem
+                        foundLastSeen = true;
                     } else {
-                        seenWrap.style.display = 'none';
+                        if (seenWrap) seenWrap.style.display = 'none';
                     }
                 });
             } else {
-                seenWrap.style.display = 'none';
+                if (seenWrap) seenWrap.style.display = 'none';
             }
-            
-            // Luôn hiện trạng thái cho tin cuối cùng (giống Messenger)
+
             if (i === messages.length - 1) {
-                msgEl.querySelector('.msg-external-status').style.display = 'block';
+                const extStatus = msgEl.querySelector('.msg-external-status');
+                if (extStatus) extStatus.style.display = 'block';
             }
+        }
+    };
+
+    // 3. LẮNG NGHE CHÍNH: Khi mốc thời gian Seen thay đổi (Giữ nguyên logic Henry)
+    db.ref(`chats/${chatRoomId}/read_receipts/${friendName}`).on('value', (snap) => {
+        const lastReadTime = snap.val() || 0;
+        
+        // Lưu mốc này vào bộ nhớ tạm để dùng khi tin nhắn thay đổi
+        window.currentLastReadTime = lastReadTime; 
+        updateSeenUI(lastReadTime);
+    });
+
+    // --- PHẦN SỬA QUAN TRỌNG ---
+    // Lắng nghe sự thay đổi của tin nhắn (ví dụ: thả cảm xúc) để vẽ lại Seen ngay lập tức
+    db.ref(`chats/${chatRoomId}/messages`).limitToLast(1).on('value', () => {
+        if (window.currentLastReadTime) {
+            // Đợi một chút để DOM kịp render xong rồi mới vẽ Seen đè lên
+            setTimeout(() => updateSeenUI(window.currentLastReadTime), 100);
         }
     });
 }
