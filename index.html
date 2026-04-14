@@ -16066,67 +16066,125 @@ function listenPinnedStatus(msgId) {
     });
 }
 
-    function openPinnedMessages() {
+    // --- 1. HÀM MỞ POPUP (Sửa lại để load data chuẩn) ---
+function openPinnedMessagesPopup() {
+    if (!currentChatFriend) {
+        alert("Hãy chọn một cư dân để xem tin nhắn ghim!");
+        return;
+    }
+    
+    // Đóng menu 3 chấm header nếu đang mở
+    const moreMenu = document.getElementById('chat-more-menu');
+    if (moreMenu) moreMenu.style.display = 'none';
+
+    // Mở Modal
+    toggleModal('modal-pinned-msgs');
+
+    // Kiểm tra nếu đang mở thì load dữ liệu
+    const modal = document.getElementById('modal-pinned-msgs');
+    if (modal && modal.style.display === 'flex') {
+        renderPinnedMessagesList(); // Gọi hàm render bên dưới
+    }
+}
+
+// --- 2. HÀM RENDER DANH SÁCH (Fix lỗi logic hiển thị) ---
+function renderPinnedMessagesList() {
     const chatRoomId = [currentUser, currentChatFriend].sort().join('_');
     const area = document.getElementById('pinned-msgs-area');
-    toggleModal('modal-pinned-msgs');
-    if (typeof toggleChatMoreMenu === 'function') toggleChatMoreMenu(); // Đóng menu cũ
-
+    
+    // Lắng nghe Real-time từ nhánh pinned_messages
     db.ref(`chats/${chatRoomId}/pinned_messages`).on('value', (snapshot) => {
         area.innerHTML = "";
         const data = snapshot.val();
+        
         if (!data) {
             area.innerHTML = `<p style="text-align:center; color:#888; font-size:0.75em; padding:20px;">Chưa có tin nhắn nào được ghim.</p>`;
             return;
         }
 
-        Object.keys(data).forEach(msgId => {
+        // Đưa về mảng để đảo ngược (tin mới ghim lên đầu)
+        Object.keys(data).reverse().forEach(msgId => {
             const msg = data[msgId];
             const itemHtml = `
-                <div class="pinned-item animate__animated animate__fadeIn" style="background:white; margin-bottom:10px; padding:12px; border-radius:15px; border-left:4px solid #ff1493; position:relative; box-shadow: 0 3px 10px rgba(0,0,0,0.05);">
+                <div class="pinned-item animate__animated animate__fadeInIn" id="pin-item-${msgId}"
+                     style="background:white; margin-bottom:10px; padding:12px; border-radius:15px; border-left:4px solid #ff1493; position:relative; box-shadow: 0 3px 10px rgba(0,0,0,0.05);">
                     <div style="font-size:0.65em; color:#ff69b4; font-weight:800; margin-bottom:5px;">${msg.sender}</div>
-                    <div style="font-size:0.8em; color:#333; margin-bottom:5px;">${msg.text}</div>
+                    <div style="font-size:0.8em; color:#333; margin-bottom:5px; word-break: break-word;">${msg.text}</div>
                     <div style="display:flex; justify-content:space-between; align-items:center;">
                         <small style="font-size:0.6em; color:#999;">${msg.displayTime || ''}</small>
-                        <i class="fas fa-ellipsis-h" onclick="showPinnedActionMenu(event, '${msgId}')" style="cursor:pointer; color:#ccc;"></i>
+                        <i class="fas fa-ellipsis-h" onclick="showPinnedActionMenu(event, '${msgId}')" style="cursor:pointer; color:#ccc; padding: 5px;"></i>
                     </div>
-                    <div id="pin-menu-${msgId}" class="action-menu" style="display:none; right:10px; bottom:10px;">
-                        <div onclick="jumpToMessageInChat('${msgId}')"><i class="fas fa-eye"></i> Xem trong đoạn chat</div>
-                        <div onclick="unpinMessage('${msgId}')" style="color:red;"><i class="fas fa-eraser"></i> Bỏ ghim</div>
+                    
+                    <div id="pin-menu-${msgId}" class="action-menu" style="display:none; position:absolute; right:10px; bottom:10px; z-index:100; min-width:120px;">
+                        <div onclick="jumpToMessageInChat('${msgId}')" style="font-size:0.8em;"><i class="fas fa-eye"></i> Xem tin gốc</div>
+                        <div onclick="unpinMessage('${msgId}')" style="color:red; font-size:0.8em;"><i class="fas fa-eraser"></i> Bỏ ghim</div>
                     </div>
                 </div>
             `;
-            area.insertAdjacentHTML('afterbegin', itemHtml);
+            area.insertAdjacentHTML('beforeend', itemHtml);
         });
     });
 }
 
-// Hàm xem trong đoạn chat (Chỉ di chuyển, không reset real-time)
-function jumpToMessageInChat(msgId) {
-    toggleModal('modal-pinned-msgs');
-    const target = document.getElementById(`msg-${msgId}`);
-    if (target) {
-        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        // Hiệu ứng highlight nhẹ
-        target.style.background = "rgba(255, 20, 147, 0.1)";
-        setTimeout(() => target.style.background = "transparent", 2000);
-    } else {
-        alert("📍 Tin nhắn này ở quá xa, hãy cuộn lên để tải thêm tin nhắn cũ nhé!");
-    }
-}
-
-// Hàm bỏ ghim
+// --- 3. HÀM BỎ GHIM (FIX LỖI KHÔNG CHẠY) ---
 function unpinMessage(msgId) {
+    if (!confirm("Bạn muốn bỏ ghim tin nhắn này?")) return;
+    
     const chatRoomId = [currentUser, currentChatFriend].sort().join('_');
-    db.ref(`chats/${chatRoomId}/pinned_messages/${msgId}`).remove().then(() => {
-        console.log("Đã bỏ ghim tin nhắn.");
+    
+    // Xóa trên Firebase
+    db.ref(`chats/${chatRoomId}/pinned_messages/${msgId}`).remove()
+    .then(() => {
+        addNotification("📌 HỆ THỐNG", "Đã gỡ tin nhắn khỏi bảng ghim.");
+        // Đóng menu con ngay lập tức
+        const menu = document.getElementById(`pin-menu-${msgId}`);
+        if(menu) menu.style.display = 'none';
+    })
+    .catch(err => {
+        console.error("Lỗi gỡ ghim:", err);
+        alert("Không thể gỡ ghim, Henry kiểm tra lại kết nối nhé!");
     });
 }
 
+// --- 4. HÀM NHẢY ĐẾN TIN NHẮN (FIX LỖI TIN NHẮN Ở XA) ---
+function jumpToMessageInChat(msgId) {
+    // 1. Đóng popup ghim trước
+    toggleModal('modal-pinned-msgs');
+    
+    // 2. Tìm tin nhắn trong giao diện
+    const target = document.getElementById(`msg-${msgId}`);
+    
+    if (target) {
+        // TRƯỜNG HỢP 1: Tin nhắn đã load sẵn trong khung chat
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        target.style.transition = "all 0.5s ease";
+        target.style.filter = "brightness(1.5)";
+        target.style.transform = "scale(1.05)";
+        setTimeout(() => {
+            target.style.filter = "none";
+            target.style.transform = "scale(1)";
+        }, 2000);
+    } else {
+        // TRƯỜNG HỢP 2: Tin nhắn cũ quá chưa load, dùng hàm jumpToMessage Henry đã có
+        if (typeof jumpToMessage === 'function') {
+            console.log("Tin nhắn ở xa, đang kích hoạt chế độ truy xuất tin nhắn cũ...");
+            jumpToMessage(msgId);
+        } else {
+            alert("📍 Tin nhắn này quá cũ, Henry hãy cuộn lên để hệ thống tải thêm nhé!");
+        }
+    }
+}
+
+// --- 5. HÀM HIỆN MENU PHỤ (FIX BUBBLING) ---
 function showPinnedActionMenu(event, msgId) {
     event.stopPropagation();
-    document.querySelectorAll('.action-menu').forEach(m => m.style.display = 'none');
-    document.getElementById(`pin-menu-${msgId}`).style.display = 'block';
+    // Đóng tất cả các menu pin khác đang mở
+    document.querySelectorAll('.pinned-item .action-menu').forEach(m => m.style.display = 'none');
+    
+    const targetMenu = document.getElementById(`pin-menu-${msgId}`);
+    if (targetMenu) {
+        targetMenu.style.display = 'block';
+    }
 }
 
     function openPinnedMessagesPopup() {
@@ -16139,6 +16197,10 @@ function showPinnedActionMenu(event, msgId) {
         listenPinnedMessages(); // Hàm này Henry viết để lấy tin nhắn từ Firebase nhé
     }
 }
+
+    document.addEventListener('click', () => {
+    document.querySelectorAll('.pinned-item .action-menu').forEach(m => m.style.display = 'none');
+});
 </script>
 </body>
 </html>
