@@ -7527,6 +7527,21 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
         </div>
     </div>
 </div>
+
+    <div id="sticker-loading-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.8); backdrop-filter:blur(4px); z-index:20002; align-items:center; justify-content:center; flex-direction:column;">
+    <div class="animate__animated animate__bounceIn" style="text-align:center;">
+        <div style="font-size: 3em; color: #ff69b4; margin-bottom: 15px;">
+            <i class="fas fa-magic fa-wand-magic-sparkles animate__animated animate__pulse animate__infinite"></i>
+        </div>
+        <h3 style="color: #ff1493; margin: 0; font-size: 1em; font-weight: 800;">AI ĐANG TÁCH NỀN...</h3>
+        <p style="color: #888; font-size: 0.7em; margin-top: 5px;">Vui lòng đợi trong giây lát nhé Henry!</p>
+        
+        <div style="width: 200px; height: 8px; background: #eee; border-radius: 10px; margin: 15px auto; overflow: hidden; position: relative;">
+            <div id="sticker-progress-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #ff69b4, #ff1493); transition: width 0.3s;"></div>
+        </div>
+        <span id="sticker-progress-text" style="font-size: 0.7em; color: #ff1493; font-weight: 800;">0%</span>
+    </div>
+</div>
 <script>
   let replyingTo = null; // Lưu tin nhắn đang được trả lời {id, text, sender}
   // Biến cờ để đảm bảo mỗi máy chỉ "nghe" Firebase đúng 1 lần duy nhất
@@ -15738,48 +15753,92 @@ function openStickerPopup() {
 
     // --- 2. TẢI VÀ TÁCH NỀN AI (CLOUDINARY) ---
 async function handleStickerUpload(event) {
-    const file = event.target.files[0];
-    if (!file) return;
+    const file = event.target.files[0];
+    if (!file) return;
 
-    // Hiện overlay đang xử lý
-    addNotification("⏳ ĐANG XỬ LÝ", "AI đang tách nền nhãn dán cho Henry...", true);
-    
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('upload_preset', UPLOAD_PRESET);
-    
-    // THUẬT TOÁN TÁCH NỀN: Thêm effect remove_background của Cloudinary
-    // Lưu ý: Cloudinary cần kích hoạt "Cloudinary AI Background Removal" (Add-on miễn phí có giới hạn)
-    // Nếu không có Add-on, ta sẽ dùng hiệu ứng lấn vùng trắng (e_make_transparent)
-    
-    try {
-        const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
-            method: 'POST',
-            body: formData
-        });
-        const data = await response.json();
-        
-        let finalUrl = data.secure_url;
+    // --- HIỆN POPUP TIẾN ĐỘ (MỚI THÊM) ---
+    const overlay = document.getElementById('sticker-loading-overlay');
+    const bar = document.getElementById('sticker-progress-bar');
+    const text = document.getElementById('sticker-progress-text');
+    
+    if (overlay) {
+        overlay.style.display = 'flex';
+        bar.style.width = '0%';
+        text.innerText = '0%';
+    }
 
-        // Henry áp dụng biến đổi ảnh: 
-        // c_limit,w_300: Giới hạn kích thước nhãn dán
-        // e_make_transparent:20: Tự động biến màu nền trơn (trắng/đen) thành trong suốt
-        // ar_1:1,c_fill: Ép về tỉ lệ 1:1 nếu ảnh có nền phức tạp
-        finalUrl = finalUrl.replace('/upload/', '/upload/c_limit,w_300,e_make_transparent:20,ar_1.1,c_pad,b_transparent/');
+    // Hiện overlay đang xử lý (Giữ nguyên nội dung cũ)
+    addNotification("⏳ ĐANG XỬ LÝ", "AI đang tách nền nhãn dán cho Henry...", true);
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', UPLOAD_PRESET);
+    
+    // THUẬT TOÁN TÁCH NỀN THỰC SỰ: Kích hoạt Add-on AI của Cloudinary
+    formData.append('background_removal', 'cloudinary_ai'); 
 
-        // Lưu vào kho sticker vĩnh viễn trên Firebase
-        db.ref(`users/${currentUser}/stickers`).push({
-            url: finalUrl,
-            time: firebase.database.ServerValue.TIMESTAMP
-        }).then(() => {
-            addNotification("✨ HOÀN TẤT", "Nhãn dán đã được thêm vào kho!", false);
-            showStickerTab('store');
-        });
+    try {
+        // Sử dụng XMLHttpRequest để theo dõi % tải lên
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, true);
 
-    } catch (err) {
-        console.error("Lỗi tải sticker:", err);
-        alert("Lỗi tải nhãn dán!");
-    }
+        // Lắng nghe tiến độ
+        xhr.upload.onprogress = function(e) {
+            if (e.lengthComputable && bar && text) {
+                const percent = Math.round((e.loaded / e.total) * 100);
+                bar.style.width = percent + '%';
+                text.innerText = percent + '%';
+                if (percent === 100) {
+                    const statusH3 = document.querySelector('#sticker-loading-overlay h3');
+                    if (statusH3) statusH3.innerText = "ĐANG BÓC TÁCH NỀN...";
+                }
+            }
+        };
+
+        xhr.onload = function() {
+            if (xhr.status === 200) {
+                const data = JSON.parse(xhr.responseText);
+                let finalUrl = data.secure_url;
+
+                // Henry áp dụng biến đổi ảnh: (Giữ nguyên 100% nội dung logic cũ của Henry)
+                // Cập nhật thêm f_png để đảm bảo ảnh trả về luôn có nền trong suốt
+                finalUrl = finalUrl.replace('/upload/', '/upload/f_png,e_trim,c_limit,w_300,e_make_transparent:20,ar_1.1,c_pad,b_transparent/');
+
+                // Lưu vào kho sticker vĩnh viễn trên Firebase (Giữ nguyên nội dung cũ)
+                db.ref(`users/${currentUser}/stickers`).push({
+                    url: finalUrl,
+                    time: firebase.database.ServerValue.TIMESTAMP
+                }).then(() => {
+                    // TỰ ĐỘNG ẨN POPUP KHI XONG (MỚI THÊM)
+                    if (overlay) {
+                        overlay.classList.add('animate__animated', 'animate__fadeOut');
+                        setTimeout(() => {
+                            overlay.style.display = 'none';
+                            overlay.classList.remove('animate__fadeOut');
+                        }, 500);
+                    }
+
+                    addNotification("✨ HOÀN TẤT", "Nhãn dán đã được thêm vào kho!", false);
+                    showStickerTab('store');
+                });
+            } else {
+                if (overlay) overlay.style.display = 'none';
+                alert("Lỗi Cloudinary: " + xhr.statusText);
+            }
+        };
+
+        xhr.onerror = function() {
+            if (overlay) overlay.style.display = 'none';
+            alert("Lỗi kết nối khi tải nhãn dán!");
+        };
+
+        xhr.send(formData);
+
+    } catch (err) {
+        console.error("Lỗi tải sticker:", err);
+        if (overlay) overlay.style.display = 'none';
+        alert("Lỗi tải nhãn dán!");
+    }
 }
     
 // --- 3. LẮNG NGHE KHO STICKER REAL-TIME ---
