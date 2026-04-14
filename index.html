@@ -5365,18 +5365,22 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
     100% { transform: rotate(360deg); }
 }
 
-/* Menu đặc trị - Phải hiện trên mọi bề mặt */
+/* Menu đặc trị - Fix lỗi "tàng hình" và bị che khuất */
 #pinned-msgs-area .action-menu {
-    display: none;
-    position: fixed; /* Nổi hoàn toàn khỏi khung cuộn */
-    background-color: #ffffff !important; /* Trắng tinh khiết */
+    display: none; /* Mặc định ẩn, JS sẽ chuyển thành block */
+    position: fixed; /* Ép nổi lên trên toàn bộ lớp web */
+    z-index: 2000000 !important; /* Cao nhất có thể để đè lên Modal */
+    background: #ffffff !important;
     min-width: 160px;
     border-radius: 15px;
+    border: 2px solid #ffc0cb;
     box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-    z-index: 1000000 !important; /* Cao hơn cả Modal (99999) */
-    border: 2px solid #ffc0cb; /* Viền hồng pastel cho rõ */
     overflow: hidden;
-    visibility: visible !important;
+    padding: 0;
+    /* Loại bỏ các giá trị kế thừa gây lỗi */
+    left: 0;
+    top: 0;
+    margin: 0;
 }
 
 #pinned-msgs-area .action-menu div {
@@ -5388,7 +5392,8 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
     display: flex;
     align-items: center;
     gap: 10px;
-    background: white;
+    background: #ffffff;
+    transition: all 0.2s ease;
 }
 
 #pinned-msgs-area .action-menu div:hover {
@@ -5396,39 +5401,11 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
     color: #ff1493 !important;
 }
 
-  /* Menu đặc trị - Chống bị che khuất tuyệt đối */
-#pinned-msgs-area .action-menu {
-    display: none;
-    position: fixed; /* Chuyển từ absolute sang fixed */
-    background: white;
-    min-width: 160px;
-    border-radius: 15px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-    z-index: 999999; /* Cao hơn cả modal */
-    border: 1px solid #ffc0cb;
-    overflow: hidden;
-}
-
-#pinned-msgs-area .action-menu div {
-    padding: 12px 15px;
-    font-size: 0.85em;
-    font-weight: bold;
-    color: #444;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-#pinned-msgs-area .action-menu div:hover {
-    background: #fff0f5;
-    color: #ff1493;
-}
-
 #pinned-msgs-area .action-menu div i {
-    width: 16px;
+    width: 20px;
     color: #ff69b4;
     text-align: center;
+    font-size: 1.1em;
 }
 </style>
 </head>
@@ -16206,29 +16183,53 @@ function renderPinnedMessagesList() {
 
 // 3. Các hàm bổ trợ (Giữ nguyên logic Henry nhưng bọc lỗi)
 function showPinnedActionMenu(event, msgId) {
-    // 1. Ngừng các sự kiện khác để không bị đóng modal
+    // 1. Chặn tuyệt đối các sự kiện lan truyền để tránh đóng modal/menu ngay lập tức
     event.preventDefault();
     event.stopPropagation();
     
-    console.log("Đang mở menu cho tin nhắn: " + msgId); // Henry bấm F12 xem có dòng này hiện ra không nhé
+    console.log("Đang kích hoạt menu cho ID: pin-menu-" + msgId);
 
-    // 2. Đóng toàn bộ các menu pin khác đang mở
-    document.querySelectorAll('.action-menu').forEach(m => m.style.display = 'none');
+    // 2. Ẩn tất cả các menu đang mở khác (dùng selector chính xác hơn)
+    document.querySelectorAll('#pinned-msgs-area .action-menu').forEach(m => {
+        m.style.display = 'none';
+    });
 
     const menu = document.getElementById(`pin-menu-${msgId}`);
     if (menu) {
-        // 3. Hiện menu
-        menu.style.display = 'block';
-        
-        // 4. Đưa menu đến đúng vị trí chuột vừa bấm
-        // Trừ đi một khoảng để menu không bị lệch khỏi màn hình
-        const x = event.clientX > window.innerWidth - 180 ? event.clientX - 160 : event.clientX;
-        const y = event.clientY > window.innerHeight - 100 ? event.clientY - 80 : event.clientY;
-        
+        // 3. ÉP HIỂN THỊ (Sử dụng !important trực tiếp trong code để vượt qua CSS)
+        menu.style.setProperty('display', 'block', 'important');
+        menu.style.setProperty('visibility', 'visible', 'important');
+        menu.style.setProperty('opacity', '1', 'important');
+
+        // 4. TÍNH TOÁN TỌA ĐỘ CHUẨN (Fixed Positioning)
+        let x = event.clientX;
+        let y = event.clientY;
+
+        // Kiểm tra xem nếu hiện menu ở đây có bị tràn mép phải màn hình không
+        const menuWidth = 160; 
+        if (x + menuWidth > window.innerWidth) {
+            x = x - menuWidth; // Đẩy menu sang trái
+        }
+
+        // Kiểm tra mép dưới màn hình
+        const menuHeight = 100;
+        if (y + menuHeight > window.innerHeight) {
+            y = y - menuHeight; // Đẩy menu lên trên
+        }
+
+        // 5. GÁN TỌA ĐỘ
         menu.style.left = x + "px";
         menu.style.top = y + "px";
+        
+        // Bonus: Thêm một listener để tự đóng menu khi Henry click bất kỳ đâu khác
+        const closeMenu = () => {
+            menu.style.display = 'none';
+            document.removeEventListener('click', closeMenu);
+        };
+        setTimeout(() => document.addEventListener('click', closeMenu), 10);
+
     } else {
-        console.error("Không tìm thấy menu có ID: pin-menu-" + msgId);
+        console.error("Lỗi: Không tìm thấy ID pin-menu-" + msgId + ". Hãy kiểm tra hàm renderPinnedMessagesList xem ID có khớp không!");
     }
 }
 
