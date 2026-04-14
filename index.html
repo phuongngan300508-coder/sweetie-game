@@ -37,6 +37,7 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-messaging.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation"></script>
 
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Quicksand:wght@500;700&display=swap');
@@ -15756,86 +15757,49 @@ async function handleStickerUpload(event) {
     const file = event.target.files[0];
     if (!file) return;
 
-    // --- HIỆN POPUP TIẾN ĐỘ (Giữ nguyên) ---
     const overlay = document.getElementById('sticker-loading-overlay');
-    const bar = document.getElementById('sticker-progress-bar');
-    const text = document.getElementById('sticker-progress-text');
-    
-    if (overlay) {
-        overlay.style.display = 'flex';
-        bar.style.width = '0%';
-        text.innerText = '0%';
-    }
-
-    addNotification("⏳ ĐANG XỬ LÝ", "AI đang chuẩn bị tách nền cho Henry...", true);
-    
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('upload_preset', UPLOAD_PRESET);
-    
-    // --- KHẮC PHỤC LỖI 400: Xóa dòng background_removal ở đây ---
-    // Vì Unsigned không được phép dùng tham số này trực tiếp khi gửi file.
+    if (overlay) overlay.style.display = 'flex';
+    addNotification("⏳ ĐANG XỬ LÝ", "AI máy Henry đang tự tách nền...", true);
 
     try {
+        // 1. Chuyển file thành thẻ IMG để AI đọc
+        const img = new Image();
+        img.src = URL.createObjectURL(file);
+        await img.decode();
+
+        // 2. CHẠY AI TÁCH NỀN NGAY TRÊN MÁY (Local)
+        const cleanBlob = await removeBackgroundLocal(img);
+        
+        // 3. TẢI FILE ĐÃ SẠCH NỀN LÊN CLOUDINARY (Chỉ dùng để lưu trữ)
+        const formData = new FormData();
+        formData.append('file', cleanBlob, 'sticker.png');
+        formData.append('upload_preset', UPLOAD_PRESET);
+
         const xhr = new XMLHttpRequest();
         xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, true);
-
-        xhr.upload.onprogress = function(e) {
-            if (e.lengthComputable && bar && text) {
-                const percent = Math.round((e.loaded / e.total) * 100);
-                bar.style.width = percent + '%';
-                text.innerText = percent + '%';
-                if (percent === 100) {
-                    const statusH3 = document.querySelector('#sticker-loading-overlay h3');
-                    if (statusH3) statusH3.innerText = "ĐANG BÓC TÁCH NỀN... (SẼ HIỆN KHI XONG)";
-                }
-            }
-        };
 
         xhr.onload = function() {
             if (xhr.status === 200) {
                 const data = JSON.parse(xhr.responseText);
-                let finalUrl = data.secure_url;
-                
-                // --- ĐÂY LÀ CHÌA KHÓA: Sửa lại thuật toán replace ---
-                // f_png: Ép định dạng trong suốt.
-                // e_background_removal: ĐÂY LÀ LỆNH TÁCH NỀN AI (Chạy mượt với Unsigned).
-                // e_trim: Cắt sát nhân vật.
-                finalUrl = finalUrl.replace('/upload/', '/upload/f_png,e_background_removal,e_trim,c_limit,w_300/');
+                // Vì ảnh đã sạch nền từ máy rồi, Henry chỉ cần dùng link gốc + e_trim (để cắt sát)
+                let finalUrl = data.secure_url.replace('/upload/', '/upload/e_trim/');
 
                 db.ref(`users/${currentUser}/stickers`).push({
                     url: finalUrl,
                     time: firebase.database.ServerValue.TIMESTAMP
                 }).then(() => {
-                    if (overlay) {
-                        overlay.classList.add('animate__animated', 'animate__fadeOut');
-                        setTimeout(() => {
-                            overlay.style.display = 'none';
-                            overlay.classList.remove('animate__fadeOut');
-                        }, 500);
-                    }
-
-                    addNotification("✨ HOÀN TẤT", "Nhãn dán đã sạch nền 100%!", false);
+                    if (overlay) overlay.style.display = 'none';
+                    addNotification("✨ HOÀN TẤT", "Đã tách nền bằng máy Henry!", false);
                     showStickerTab('store');
                 });
-            } else {
-                const errorData = JSON.parse(xhr.responseText);
-                console.error("Lỗi Cloudinary:", errorData.error.message);
-                if (overlay) overlay.style.display = 'none';
-                alert("Lỗi hệ thống: " + errorData.error.message);
             }
         };
-
-        xhr.onerror = function() {
-            if (overlay) overlay.style.display = 'none';
-            alert("Lỗi kết nối!");
-        };
-
         xhr.send(formData);
 
     } catch (err) {
-        console.error("Lỗi tải sticker:", err);
+        console.error("Lỗi:", err);
         if (overlay) overlay.style.display = 'none';
+        alert("AI không hỗ trợ ảnh này, Henry thử ảnh khác nhé!");
     }
 }
     
@@ -15896,6 +15860,37 @@ function sendSticker(url) {
             type: 'chat',
             time: Date.now()
         });
+    });
+}
+
+    async function removeBackgroundLocal(imageElement) {
+    const selfieSegmentation = new SelfieSegmentation({
+        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${file}`,
+    });
+
+    selfieSegmentation.setOptions({ modelSelection: 1 }); // 1 là chế độ tách chính xác
+
+    return new Promise((resolve) => {
+        selfieSegmentation.onResults((results) => {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = results.image.width;
+            canvas.height = results.image.height;
+
+            // 1. Vẽ mặt nạ (phần người)
+            ctx.drawImage(results.segmentationMask, 0, 0, canvas.width, canvas.height);
+            
+            // 2. Chỉ giữ lại phần người, bỏ phần nền
+            ctx.globalCompositeOperation = 'source-in';
+            ctx.drawImage(results.image, 0, 0, canvas.width, canvas.height);
+
+            // Xuất ra dạng file để upload
+            canvas.toBlob((blob) => {
+                resolve(blob);
+            }, 'image/png');
+        });
+
+        selfieSegmentation.send({ image: imageElement });
     });
 }
 </script>
