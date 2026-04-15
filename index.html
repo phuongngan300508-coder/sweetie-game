@@ -16859,33 +16859,45 @@ function handleCallEvents(call, type) {
     });
 }
     
-   async function showIncomingCallPopup(from, type) {
+  async function showIncomingCallPopup(from, type) {
     // 1. Gán tên người gọi vào giao diện
     const nameEl = document.getElementById('call-caller-name');
     if (nameEl) nameEl.innerText = from;
 
-    // --- MỚI: XỬ LÝ HIỂN THỊ AVATAR (Bản sửa lỗi) ---
+    // --- MỚI: XỬ LÝ HIỂN THỊ AVATAR (LẤY TỪ HỒ SƠ THEO TÊN) ---
     const photoEl = document.getElementById('call-caller-photo');
     const iconEl = document.getElementById('call-caller-icon');
 
     try {
-        // Henry lưu ý: 'from' phải khớp 100% với Key trong nhánh 'users' trên Firebase
-        // Ví dụ: db.ref('users/HenryDao')
+        // Henry kiểm tra Console xem 'from' có khớp 100% với tên trên Firebase không nhé
+        console.log("🔍 Đang tìm hồ sơ người chơi:", from);
+        
         const userSnap = await db.ref(`users/${from}`).once('value');
         const userData = userSnap.val();
         
         if (userData && userData.avatar && photoEl && iconEl) {
             photoEl.src = userData.avatar;
-            photoEl.style.display = 'block';
-            iconEl.style.display = 'none';
-            console.log("🌸 Đã cập nhật avatar thành công!");
+            
+            // Đảm bảo ảnh tải xong mới hiển thị để tránh bị nháy icon
+            photoEl.onload = () => {
+                photoEl.style.display = 'block';
+                iconEl.style.display = 'none';
+                console.log("🌸 Đã cập nhật avatar từ hồ sơ thành công!");
+            };
+            
+            // Trường hợp lỗi link ảnh trong hồ sơ
+            photoEl.onerror = () => {
+                photoEl.style.display = 'none';
+                iconEl.style.display = 'block';
+            };
         } else if (photoEl && iconEl) {
-            // Nếu không tìm thấy data hoặc không có link ảnh
+            // Nếu hồ sơ không tồn tại hoặc không có ảnh
             photoEl.style.display = 'none';
             iconEl.style.display = 'block';
+            console.log("⚠️ Không tìm thấy ảnh trong hồ sơ người chơi.");
         }
     } catch (err) {
-        console.log("🌸 Lỗi khi truy cập Firebase lấy avatar:", err);
+        console.log("🌸 Lỗi khi truy cập Firebase lấy hồ sơ:", err);
         if (photoEl && iconEl) {
             photoEl.style.display = 'none';
             iconEl.style.display = 'block';
