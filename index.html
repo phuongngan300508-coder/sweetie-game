@@ -16683,6 +16683,10 @@ function initCallSystem() {
 // --- 2. HÀM THỰC HIỆN CUỘC GỌI ---
 async function makeCall(type) { // type: 'audio' hoặc 'video'
     window.currentCallType = type; // Gán loại cuộc gọi để hệ thống ghi nhớ
+    
+    // --- QUAN TRỌNG: Đánh dấu bạn là người gọi để endCallUI phân biệt logic ---
+    window.isCaller = true; 
+
     if (!currentChatFriend) return;
 
     try {
@@ -17008,20 +17012,19 @@ function endCallUI(explicitReason = null) {
     const callScreen = document.getElementById('call-screen');
     const timerEl = document.getElementById('call-timer');
 
-    // Kiểm tra xem người dùng hiện tại có phải là người NHẬN cuộc gọi hay không
-    // (Dựa vào việc popup gọi đến đang hiển thị)
+    // 1. Kiểm tra xem người dùng hiện tại có phải là người NHẬN cuộc gọi hay không
     const isReceiver = (incomingPopup && incomingPopup.style.display === 'block') || 
                        (overlay && overlay.style.display === 'flex' && !window.isCaller);
 
-    // Kiểm tra xem cuộc gọi đã bắt đầu đếm giờ chưa
-    const isConnected = timerEl && timerEl.style.display !== 'none' && timerEl.innerText !== "00:00";
+    // 2. KIỂM TRA KẾT NỐI: Sử dụng biến cờ toàn cục từ startCallTimer để chính xác tuyệt đối
+    const isConnected = window.isCallConnected === true;
 
-    // --- PHÂN LOẠI TRẠNG THÁI THEO LOGIC MỚI ---
+    // --- BƯỚC 3: PHÂN LOẠI TRẠNG THÁI (Đúng theo 3 loại Henry phân tích) ---
     let status = 'ended'; 
     const callType = window.currentCallType || 'audio'; 
 
     if (isConnected) {
-        // LOẠI 1: Đã bắt đầu đếm giờ -> Luôn là ENDED (không ngoại lệ)
+        // LOẠI 1: Đã bắt đầu đếm giờ -> Luôn là ENDED
         status = 'ended';
     } else if (explicitReason === 'timeout') {
         // LOẠI 2: Hết thời gian 1 phút -> Luôn là MISSED
@@ -17046,7 +17049,7 @@ function endCallUI(explicitReason = null) {
 
     if (typeof stopRingtone === 'function') stopRingtone();
 
-    // --- GỬI THÔNG BÁO HỆ THỐNG ---
+    // --- GỬI THÔNG BÁO HỆ THỐNG & RESET ---
     if (window.isEndingCall) return; 
     window.isEndingCall = true;
 
@@ -17059,8 +17062,11 @@ function endCallUI(explicitReason = null) {
         console.log(`🌸 Kết thúc triệt để. Trạng thái xác định: ${status.toUpperCase()}`);
     }
 
-    // Reset cờ chống lặp
-    setTimeout(() => { window.isEndingCall = false; }, 1000);
+    // Reset cờ chống lặp và vai trò người gọi sau khi hoàn tất xử lý
+    setTimeout(() => { 
+        window.isEndingCall = false; 
+        window.isCaller = false; 
+    }, 1000);
 }
     
     let callTimerInterval;
@@ -17102,34 +17108,34 @@ function startCallTimer() {
 }
     
 // Hàm dừng đếm giờ
-// --- PHÂN LOẠI TRẠNG THÁI THEO LOGIC MỚI ---
-    let status = 'ended'; 
-    const callType = window.currentCallType || 'audio'; 
-
-    // 1. Kiểm tra dựa trên biến cờ từ startCallTimer
-    if (window.isCallConnected) {
-        // LOẠI 1: Bộ đếm đã hoạt động -> Luôn là ENDED
-        status = 'ended';
-    } 
-    // 2. Nếu chưa kết nối, kiểm tra xem có phải do hết thời gian (1 phút) không
-    else if (explicitReason === 'timeout') {
-        // LOẠI 2: Hệ thống tự ngắt sau 1 phút -> MISSED
-        status = 'missed';
-    } 
-    // 3. Nếu không phải timeout, kiểm tra ai là người nhấn nút Tắt
-    else {
-        // Xác định xem người đang đứng ở máy này là Người Nhận hay Người Gọi
-        const incomingPopup = document.getElementById('incoming-call-popup');
-        const isReceiver = (incomingPopup && incomingPopup.style.display === 'block');
-
-        if (isReceiver) {
-            // LOẠI 3: Người nhận chủ động nhấn từ chối khi chuông đang reo -> DECLINED
-            status = 'declined';
-        } else {
-            // TRƯỜNG HỢP CÒN LẠI: Người gọi chủ động tắt khi đối phương chưa nghe máy -> MISSED
-            status = 'missed';
-        }
+function stopCallTimer() {
+    // 1. Dừng bộ đếm setInterval
+    if (callTimerInterval) {
+        clearInterval(callTimerInterval);
+        callTimerInterval = null;
     }
+    
+    // --- QUAN TRỌNG: Reset biến cờ kết nối về false ---
+    // Việc này đảm bảo cuộc gọi sau sẽ không bị mặc định là 'ended' ngay từ đầu
+    window.isCallConnected = false;
+
+    const timerEl = document.getElementById('call-timer');
+    const statusEl = document.getElementById('call-status');
+
+    // 2. Reset trạng thái hiển thị về mặc định
+    if (timerEl) {
+        timerEl.innerText = "00:00";
+        timerEl.style.display = "none"; // Ẩn đồng hồ
+        timerEl.style.opacity = "1";    // Reset hiệu ứng nhịp đập
+    }
+
+    if (statusEl) {
+        statusEl.innerText = "Đang kết nối..."; // Nội dung mặc định cho lần gọi tới
+        statusEl.style.display = "block";       // Hiện lại chữ trạng thái
+    }
+    
+    console.log("🌸 Đã dừng bộ đếm giờ và reset trạng thái kết nối.");
+}
 
 
     // Hàm tự động gửi thông báo cuộc gọi vào đoạn chat
