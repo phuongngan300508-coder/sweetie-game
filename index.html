@@ -16899,38 +16899,38 @@ function showCallScreen(name, type, isOutgoing) {
 }
 
 function endCallUI() {
+    // --- MỚI: KIỂM TRA TRẠNG THÁI TRƯỚC KHI ẨN (Để phân biệt Từ chối/Nhỡ) ---
+    const overlay = document.getElementById('call-overlay');
+    const incomingPopup = document.getElementById('incoming-call-popup');
+    
+    // Lưu lại trạng thái hiển thị vào biến trước khi dọn dẹp UI
+    const isIncomingShowing = (overlay && overlay.style.display === 'flex') || 
+                               (incomingPopup && incomingPopup.style.display === 'block');
+
     // --- GIỮ NGUYÊN NỘI DUNG CŨ 100% ---
     document.getElementById('call-screen').style.display = 'none';
-    document.getElementById('incoming-call-popup').style.display = 'none';
+    if (incomingPopup) incomingPopup.style.display = 'none'; // Ẩn sau khi đã kiểm tra
     const remoteVideo = document.getElementById('remote-video');
     const localVideo = document.getElementById('local-video');
     remoteVideo.srcObject = null;
     localVideo.srcObject = null;
 
-    // --- MỚI: ẨN LỚP PHỦ OVERLAY VÀ DỪNG NHẠC CHUÔNG ---
-    const overlay = document.getElementById('call-overlay');
-    
-    // Kiểm tra trạng thái popup TRƯỚC khi ẩn overlay đi
-    const isIncomingShowing = (overlay && overlay.style.display === 'flex') || 
-                               (document.getElementById('incoming-call-popup').style.display === 'block');
-
+    // --- ẨN LỚP PHỦ OVERLAY VÀ DỪNG NHẠC CHUÔNG ---
     if (overlay) overlay.style.display = 'none';
     
     if (typeof stopRingtone === 'function') {
         stopRingtone();
     }
 
-    // --- LOGIC GỬI TIN NHẮN THÔNG BÁO (ĐÃ CẬP NHẬT 3 TRẠNG THÁI) ---
+    // --- LOGIC GỬI TIN NHẮN THÔNG BÁO ---
     const timerEl = document.getElementById('call-timer');
     const duration = timerEl ? timerEl.innerText : "00:00";
     const callType = window.currentCallType || 'audio'; 
     
-    let status = 'ended'; // Mặc định là đã bắt máy và nói chuyện xong
+    let status = 'ended'; 
 
     if (duration === "00:00") {
-        // Nếu chưa bắt máy (00:00), ta phân biệt Từ chối và Nhỡ:
-        // Nếu popup đang hiện mà bị tắt -> Người nhận chủ động bấm "Từ chối"
-        // Nếu không có popup (máy người gọi) mà tắt -> "Cuộc gọi nhỡ"
+        // Bây giờ isIncomingShowing đã có giá trị chính xác vì được lưu từ đầu hàm
         status = isIncomingShowing ? 'declined' : 'missed';
     }
     
@@ -16987,12 +16987,14 @@ function sendCallSystemMessage(type, status) {
     let msgText = "";
     const isVideo = (type === 'video');
 
-    // --- LOGIC PHÂN LOẠI NỘI DUNG TIN NHẮN ---
+    // --- LOGIC PHÂN LOẠI NỘI DUNG TIN NHẮN (MESSENGER STYLE) ---
     if (status === 'ended') {
         msgText = isVideo ? "🎥 Cuộc gọi video đã kết thúc" : "📞 Cuộc gọi thoại đã kết thúc";
     } else if (status === 'declined') {
+        // Nếu mình là người gửi tin nhắn này, tức là mình là người nhấn "Từ chối"
         msgText = isVideo ? "🎥 Cuộc gọi video bị từ chối" : "📞 Cuộc gọi thoại bị từ chối";
     } else {
+        // Chỉ hiện "Cuộc gọi nhỡ" khi status thực sự là 'missed'
         msgText = isVideo ? "🎥 Cuộc gọi video nhỡ" : "📞 Cuộc gọi thoại nhỡ";
     }
 
@@ -17004,7 +17006,7 @@ function sendCallSystemMessage(type, status) {
     const msgData = {
         sender: currentUser,
         text: msgText,
-        type: 'call_system', // Loại tin nhắn mới để Henry có thể trang trí riêng
+        type: 'call_system',
         timestamp: firebase.database.ServerValue.TIMESTAMP,
         displayTime: displayTime
     };
