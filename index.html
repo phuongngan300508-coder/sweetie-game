@@ -5410,16 +5410,6 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
     from { opacity: 0; transform: scale(0.5); }
     to { opacity: 1; transform: scale(1); }
 }
-
-    .seen-avatars-container {
-    min-height: 16px; /* Đảm bảo có khoảng trống để avatar hiện ra */
-    margin-top: 2px;
-    transition: all 0.3s ease;
-}
-
-.seen-avatars-container img {
-    animation: zoomIn 0.3s ease; /* Thêm hiệu ứng hiện ra cho xịn */
-}
 </style>
 </head>
 <body>
@@ -7688,13 +7678,9 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
 <div id="call-screen" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:999999; flex-direction:column; align-items:center; backdrop-filter:blur(20px);">
     <video id="remote-video" style="width:100%; height:100%; object-fit:cover; position:absolute; top:0; left:0; transition: opacity 0.3s;"></video>
     
-    <div id="remote-status-icons" style="position: absolute; bottom: 22%; right: 20px; z-index: 6; display: flex; flex-direction: column; gap: 10px; pointer-events: none;">
-        <div id="wrapper-remote-mic-off" style="opacity: 0; transition: 0.3s; background: rgba(0,0,0,0.5); width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(5px);">
-            <i id="icon-remote-mic-off" class="fas fa-microphone-slash" style="color: white; font-size: 1.1em;"></i>
-        </div>
-        <div id="wrapper-remote-cam-off" style="opacity: 0; transition: 0.3s; background: rgba(0,0,0,0.5); width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(5px);">
-            <i id="icon-remote-cam-off" class="fas fa-video-slash" style="color: white; font-size: 1.1em;"></i>
-        </div>
+    <div id="remote-status-icons" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 4; display: flex; gap: 30px; pointer-events: none;">
+        <i id="icon-remote-mic-off" class="fas fa-microphone-slash" style="color: white; font-size: 3.5em; opacity: 0; transition: 0.3s; text-shadow: 0 0 15px rgba(0,0,0,0.5);"></i>
+        <i id="icon-remote-cam-off" class="fas fa-video-slash" style="color: white; font-size: 3.5em; opacity: 0; transition: 0.3s; text-shadow: 0 0 15px rgba(0,0,0,0.5);"></i>
     </div>
 
     <video id="local-video" muted style="width:100px; height:150px; object-fit:cover; position:absolute; top:20px; right:20px; border-radius:12px; border:1.5px solid rgba(255,255,255,0.6); z-index:10; background:#111; box-shadow: 0 4px 15px rgba(0,0,0,0.5); transition: opacity 0.3s;"></video>
@@ -7707,6 +7693,7 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
     </div>
 
     <div style="position:absolute; bottom: 12%; z-index:5; width:100%; display:flex; justify-content:center; align-items:center; gap: 35px;">
+        
         <div style="display:flex; flex-direction:column; align-items:center; gap:10px;">
             <button id="btn-toggle-mic" onclick="toggleMic()" style="background:rgba(255,255,255,0.2); color:white; border:none; width:55px; height:55px; border-radius:50%; font-size:1.3em; cursor:pointer; backdrop-filter:blur(5px); transition:0.3s;">
                 <i class="fas fa-microphone"></i>
@@ -7727,6 +7714,7 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
             </button>
             <span style="color:white; font-size:0.65em; text-transform:uppercase; opacity:0.8;">Video</span>
         </div>
+
     </div>
 </div>
 <script>
@@ -13290,10 +13278,6 @@ function renderSingleMessage(msgId, msg, position = 'bottom', targetContainer = 
              style="display: none; font-size: 0.6em; opacity: 0.7; margin-top: 2px; width: fit-content; ${isMe ? 'margin-right: 5px; text-align: right;' : 'margin-left: 5px; text-align: left;'}">
             ${timeDisplay} • <span class="status-text-val">Đã gửi</span>
         </div>
-
-        <div class="seen-avatars-container" id="seen-container-${msgId}" 
-             style="display: flex; gap: 2px; margin-top: 2px; ${isMe ? 'justify-content: flex-end; margin-right: 5px;' : 'justify-content: flex-start; margin-left: 5px;'}">
-        </div>
     </div>`;
 
     // --- 6. PHẦN RENDER (GIỮ NGUYÊN 100%) ---
@@ -17270,36 +17254,6 @@ function toggleCam() {
 
     // Lưu trạng thái lên Firebase
     db.ref(`calls/${currentUser}/settings/cam`).set(isCamOn);
-}
-
-    function renderSeenAvatars(msgId, seenUsers) {
-    const container = document.getElementById(`seen-container-${msgId}`);
-    if (!container) return;
-
-    // Xóa cũ để hiện mới, tránh bị lặp avatar
-    container.innerHTML = "";
-
-    // seenUsers là danh sách ID những người đã xem tin nhắn này
-    seenUsers.forEach(userId => {
-        // Chỉ hiện avatar của đối phương, không hiện của chính mình cho đỡ rối
-        if (userId !== currentUser) {
-            // Lấy ảnh từ Firebase (hoặc từ cache userData nếu Henry có lưu)
-            db.ref(`users/${userId}/profile/customAvatar`).once('value').then(snap => {
-                const avatarUrl = snap.val() || 'link_anh_mac_dinh.png';
-                
-                const img = document.createElement('img');
-                img.src = avatarUrl;
-                img.style.width = "14px";
-                img.style.height = "14px";
-                img.style.borderRadius = "50%";
-                img.style.objectFit = "cover";
-                img.style.border = "1px solid white";
-                img.title = userId; // Di chuột vào hiện tên
-
-                container.appendChild(img);
-            });
-        }
-    });
 }
 </script>
 </body>
