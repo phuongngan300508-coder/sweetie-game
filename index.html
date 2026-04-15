@@ -7645,32 +7645,34 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
     </div>
 </div>
 
-  <div id="call-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); z-index:1000000; display:flex; align-items:center; justify-content:center; backdrop-filter: blur(2px);">
+  <div id="call-overlay" 
+     style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 1000000; align-items: center; justify-content: center; backdrop-filter: blur(2px);">
     
     <div id="incoming-call-popup" 
-         style="width:90%; max-width:320px; background:white; border-radius:30px; box-shadow:0 20px 60px rgba(0,0,0,0.3); padding:25px; border:2px solid #ffc0cb; text-align:center; position:relative;" 
+         style="width: 90%; max-width: 320px; background: white; border-radius: 30px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); padding: 25px; border: 2px solid #ffc0cb; text-align: center; position: relative;" 
          class="animate__animated animate__zoomIn">
         
-        <div id="call-caller-avatar" style="width:90px; height:90px; background:#fff0f5; border-radius:50%; margin:0 auto 15px; display:flex; align-items:center; justify-content:center; color:#ff1493; font-size:2.2em; border:3px solid #ffc0cb; overflow:hidden;">
+        <div id="call-caller-avatar" style="width: 90px; height: 90px; background: #fff0f5; border-radius: 50%; margin: 0 auto 15px; display: flex; align-items: center; justify-content: center; color: #ff1493; font-size: 2.2em; border: 3px solid #ffc0cb; overflow: hidden;">
             <i class="fas fa-user"></i>
         </div>
         
-        <b id="call-caller-name" style="color:#d63384; display:block; font-size:1.3em; margin-bottom: 5px;">Cư dân...</b>
-        <span style="font-size:0.95em; color:#888; display:block; margin-bottom:25px;">Đang gọi cho bạn ❤️</span>
+        <b id="call-caller-name" style="color: #d63384; display: block; font-size: 1.3em; margin-bottom: 5px;">Cư dân...</b>
+        <span style="font-size: 0.95em; color: #888; display: block; margin-bottom: 25px;">Đang gọi cho bạn ❤️</span>
 
-        <div style="display:flex; justify-content:center; gap:30px;">
-            <div style="display:flex; flex-direction:column; align-items:center; gap:8px;">
-                <button onclick="acceptCall()" style="background:#28a745; color:white; border:none; width:60px; height:60px; border-radius:50%; cursor:pointer; font-size:1.3em; box-shadow:0 8px 20px rgba(40,167,69,0.3); transition: 0.2s;" onactive="this.style.transform='scale(0.9)'"><i class="fas fa-phone"></i></button>
-                <span style="font-size:0.7em; color:#28a745; font-weight:bold;">CHẤP NHẬN</span>
+        <div style="display: flex; justify-content: center; gap: 30px;">
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                <button onclick="acceptCall()" style="background: #28a745; color: white; border: none; width: 60px; height: 60px; border-radius: 50%; cursor: pointer; font-size: 1.3em; box-shadow: 0 8px 20px rgba(40,167,69,0.3); transition: 0.2s;"><i class="fas fa-phone"></i></button>
+                <span style="font-size: 0.7em; color: #28a745; font-weight: bold;">CHẤP NHẬN</span>
             </div>
 
-            <div style="display:flex; flex-direction:column; align-items:center; gap:8px;">
-                <button onclick="endCall()" style="background:#dc3545; color:white; border:none; width:60px; height:60px; border-radius:50%; cursor:pointer; font-size:1.3em; box-shadow:0 8px 20px rgba(220,53,69,0.3); transition: 0.2s;" onactive="this.style.transform='scale(0.9)'"><i class="fas fa-times"></i></button>
-                <span style="font-size:0.7em; color:#dc3545; font-weight:bold;">TỪ CHỐI</span>
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                <button onclick="endCall()" style="background: #dc3545; color: white; border: none; width: 60px; height: 60px; border-radius: 50%; cursor: pointer; font-size: 1.3em; box-shadow: 0 8px 20px rgba(220,53,69,0.3); transition: 0.2s;"><i class="fas fa-times"></i></button>
+                <span style="font-size: 0.7em; color: #dc3545; font-weight: bold;">TỪ CHỐI</span>
             </div>
         </div>
     </div>
 </div>
+    
 <div id="call-screen" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:999999; flex-direction:column; align-items:center; justify-content:center; backdrop-filter:blur(15px);">
     <video id="remote-video" style="width:100%; height:100%; object-fit:cover; position:absolute;"></video>
     <video id="local-video" muted style="width:110px; height:160px; object-fit:cover; position:absolute; top:30px; right:20px; border-radius:15px; border:2px solid white; z-index:10; background:#222;"></video>
@@ -16628,12 +16630,10 @@ function initCallSystem() {
     peer.on('call', async (call) => {
         currentCall = call;
         
-        // Lấy thông tin loại cuộc gọi từ Firebase (đã được người gọi set trước đó)
         const callSnap = await db.ref(`calls/${currentUser}`).once('value');
         const callData = callSnap.val();
 
         if (callData) {
-            // --- MỚI: Lưu loại cuộc gọi vào global để endCallUI gửi thông báo chuẩn ---
             window.currentCallType = callData.type; 
             showIncomingCallPopup(callData.from, callData.type);
         }
@@ -16641,16 +16641,19 @@ function initCallSystem() {
 
     // Lắng nghe lệnh kết thúc/từ chối từ đối phương (Real-time Firebase)
     db.ref(`calls/${currentUser}`).on('value', (snap) => {
-        // Nếu nhánh dữ liệu bị xóa (!snap.exists()) và đang có cuộc gọi hoặc đang hiện popup
-        const isPopupVisible = document.getElementById('incoming-call-popup').style.display === 'block';
+        // --- SỬA LẠI ĐIỀU KIỆN KIỂM TRA POPUP ---
+        // Kiểm tra xem Overlay (lớp bao ngoài) có đang hiện hay không
+        const overlay = document.getElementById('call-overlay');
+        const isPopupVisible = overlay && overlay.style.display !== 'none';
         
+        // CHỈ xử lý khi: Dữ liệu bị xóa VÀ (Đang có cuộc gọi PeerJS HOẶC Popup đang hiện trên màn hình)
         if (!snap.exists() && (currentCall || isPopupVisible)) {
             console.log("🌸 Cuộc gọi đã được bên kia xử lý (kết thúc hoặc từ chối).");
             
-            // Nếu đối phương dập máy khi mình chưa kịp bắt máy, vẫn phải đóng UI
             if (currentCall) {
                 if (localStream) localStream.getTracks().forEach(track => track.stop());
                 currentCall.close();
+                currentCall = null; // Giải phóng biến
             }
             
             endCallUI();
