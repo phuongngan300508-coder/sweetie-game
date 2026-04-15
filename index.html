@@ -5410,6 +5410,16 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
     from { opacity: 0; transform: scale(0.5); }
     to { opacity: 1; transform: scale(1); }
 }
+
+    .seen-avatars-container {
+    min-height: 16px; /* Đảm bảo có khoảng trống để avatar hiện ra */
+    margin-top: 2px;
+    transition: all 0.3s ease;
+}
+
+.seen-avatars-container img {
+    animation: zoomIn 0.3s ease; /* Thêm hiệu ứng hiện ra cho xịn */
+}
 </style>
 </head>
 <body>
@@ -17260,6 +17270,36 @@ function toggleCam() {
 
     // Lưu trạng thái lên Firebase
     db.ref(`calls/${currentUser}/settings/cam`).set(isCamOn);
+}
+
+    function renderSeenAvatars(msgId, seenUsers) {
+    const container = document.getElementById(`seen-container-${msgId}`);
+    if (!container) return;
+
+    // Xóa cũ để hiện mới, tránh bị lặp avatar
+    container.innerHTML = "";
+
+    // seenUsers là danh sách ID những người đã xem tin nhắn này
+    seenUsers.forEach(userId => {
+        // Chỉ hiện avatar của đối phương, không hiện của chính mình cho đỡ rối
+        if (userId !== currentUser) {
+            // Lấy ảnh từ Firebase (hoặc từ cache userData nếu Henry có lưu)
+            db.ref(`users/${userId}/profile/customAvatar`).once('value').then(snap => {
+                const avatarUrl = snap.val() || 'link_anh_mac_dinh.png';
+                
+                const img = document.createElement('img');
+                img.src = avatarUrl;
+                img.style.width = "14px";
+                img.style.height = "14px";
+                img.style.borderRadius = "50%";
+                img.style.objectFit = "cover";
+                img.style.border = "1px solid white";
+                img.title = userId; // Di chuột vào hiện tên
+
+                container.appendChild(img);
+            });
+        }
+    });
 }
 </script>
 </body>
