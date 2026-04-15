@@ -16723,6 +16723,10 @@ async function acceptCall() {
     // --- MỚI: Dừng nhạc chuông ngay khi bấm nghe ---
     if (typeof stopRingtone === 'function') stopRingtone();
 
+    // --- MỚI: ẨN LỚP PHỦ OVERLAY KHI BẮT MÁY ---
+    const overlay = document.getElementById('call-overlay');
+    if (overlay) overlay.style.display = 'none';
+
     const callSnap = await db.ref(`calls/${currentUser}`).once('value');
     const type = callSnap.val()?.type || 'audio';
 
@@ -16741,6 +16745,8 @@ async function acceptCall() {
 
     } catch (err) {
         alert("Lỗi kết nối âm thanh/hình ảnh!");
+        // Nếu lỗi không bắt máy được thì cũng nên ẩn overlay để Henry dùng tiếp web
+        if (overlay) overlay.style.display = 'none';
     }
 }
 
