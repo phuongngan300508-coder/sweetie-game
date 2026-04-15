@@ -7676,17 +7676,30 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
     
 <div id="call-screen" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:999999; flex-direction:column; align-items:center; justify-content:center; backdrop-filter:blur(15px);">
     <video id="remote-video" style="width:100%; height:100%; object-fit:cover; position:absolute;"></video>
+    
     <video id="local-video" muted style="width:110px; height:160px; object-fit:cover; position:absolute; top:30px; right:20px; border-radius:15px; border:2px solid white; z-index:10; background:#222;"></video>
     
-    <div style="position:relative; z-index:1; text-align:center;">
+    <div style="position:absolute; top:15%; z-index:1; text-align:center; width: 100%;">
         <div id="call-target-avatar-large" style="width:100px; height:100px; border-radius:50%; border:3px solid #ff69b4; margin: 0 auto 15px; background:white; overflow:hidden; display:none;"></div>
         <h2 id="call-target-display-name" style="color:white; text-shadow:0 2px 10px rgba(0,0,0,0.5); font-size:1.5em; margin-bottom:5px;">Tên đối phương</h2>
-<div id="call-status" style="color:#ffc0cb; margin-bottom:10px; font-size:1em; font-weight:lighter;">Đang kết nối...</div>
-<div id="call-timer" style="color:#ffc0cb; margin-bottom:30px; font-weight:bold; font-size:1.2em; letter-spacing:2px; font-family:monospace; display:none;">00:00</div>
+        <div id="call-status" style="color:#ffc0cb; margin-bottom:10px; font-size:1em; font-weight:lighter;">Đang kết nối...</div>
+        <div id="call-timer" style="color:#ffc0cb; font-weight:bold; font-size:1.2em; letter-spacing:2px; font-family:monospace; display:none;">00:00</div>
+    </div>
+
+    <div style="position:absolute; bottom:50px; left:0; width:100%; display:flex; justify-content:center; align-items:center; gap:30px; z-index:20;">
         
+        <button id="btn-toggle-mic" onclick="toggleMic()" style="background:rgba(255,255,255,0.2); color:white; border:none; width:50px; height:50px; border-radius:50%; font-size:1.2em; cursor:pointer; backdrop-filter:blur(5px); transition:0.3s;">
+            <i class="fas fa-microphone"></i>
+        </button>
+
         <button onclick="endCall()" style="background:#dc3545; color:white; border:none; width:65px; height:65px; border-radius:50%; font-size:1.8em; cursor:pointer; box-shadow:0 5px 25px rgba(220,53,69,0.5); transition:0.3s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
             <i class="fas fa-phone-slash"></i>
         </button>
+
+        <button id="btn-toggle-video" onclick="toggleVideo()" style="background:rgba(255,255,255,0.2); color:white; border:none; width:50px; height:50px; border-radius:50%; font-size:1.2em; cursor:pointer; backdrop-filter:blur(5px); transition:0.3s;">
+            <i class="fas fa-video"></i>
+        </button>
+        
     </div>
 </div>
 <script>
@@ -16626,6 +16639,7 @@ let peer;
 let currentCall;
 let localStream;
 let callTimeoutTimer; // Biến quản lý bộ đếm 60s
+let isCallStarted = false; // Biến này sẽ là "trọng tài" chính xác nhất
 
 // --- 1. KHỞI TẠO PEER (KẾT NỐI TRUNG GIAN) ---
 function initCallSystem() {
@@ -16675,32 +16689,40 @@ function initCallSystem() {
 
 // --- 2. HÀM THỰC HIỆN CUỘC GỌI ---
 async function makeCall(type) { // type: 'audio' hoặc 'video'
-    window.currentCallType = type; // Gán loại cuộc gọi để hệ thống ghi nhớ
+    window.currentCallType = type; 
     if (!currentChatFriend) return;
 
     try {
-        // Yêu cầu quyền truy cập Camera/Micro
+        // 1. Luôn yêu cầu cả Audio và Video để sẵn sàng bật/tắt
         const constraints = {
             audio: true,
-            video: type === 'video'
+            video: true 
         };
         localStream = await navigator.mediaDevices.getUserMedia(constraints);
 
-        // Hiện giao diện đang gọi (Henry có thể tùy biến CSS sau)
+        // --- PHẦN SỬA ĐỔI: Nếu là gọi thoại, tắt mặc định track camera ---
+        if (type === 'audio') {
+            localStream.getVideoTracks().forEach(track => {
+                track.enabled = false; // Vẫn giữ quyền nhưng tắt truyền hình ảnh
+            });
+            window.isVideoOn = false; // Cập nhật trạng thái biến cờ
+        } else {
+            window.isVideoOn = true;
+        }
+
+        // Hiện giao diện đang gọi
         showCallScreen(currentChatFriend, type, true);
 
-        // --- MỚI: TỰ ĐỘNG NGẮT SAU 60 GIÂY NẾU KHÔNG AI TRẢ LỜI ---
+        // --- MỚI: TỰ ĐỘNG NGẮT SAU 60 GIÂY ---
         if (window.callTimeoutTimer) clearTimeout(window.callTimeoutTimer); 
         window.callTimeoutTimer = setTimeout(() => {
             console.log("⏰ Đã quá 1 phút, tự động chuyển thành cuộc gọi nhỡ.");
-            // SỬA TẠI ĐÂY: Truyền 'timeout' để endCall biết đây là cuộc gọi nhỡ
             endCall('timeout'); 
         }, 60000); 
 
         // --- PHẦN LOGIC FIREBASE ---
         const callRef = db.ref(`calls/${currentChatFriend}`);
         
-        // Báo hiệu lên Firebase cho đối phương
         callRef.set({
             from: currentUser,
             type: type,
@@ -16708,15 +16730,12 @@ async function makeCall(type) { // type: 'audio' hoặc 'video'
             time: Date.now()
         });
 
-        // --- MỚI: LẮNG NGHE NẾU ĐỐI PHƯƠNG TỪ CHỐI (XÓA NHÁNH) ---
+        // --- LẮNG NGHE NẾU ĐỐI PHƯƠNG TỪ CHỐI ---
         callRef.on('value', (snap) => {
             if (!snap.exists()) {
                 console.log("🌸 Đối phương đã từ chối hoặc hủy cuộc gọi.");
-                
-                // Gỡ bỏ bộ lắng nghe để tránh chạy lặp lại
                 callRef.off(); 
 
-                // Nếu đang trong quá trình gọi mà nhánh bị xóa -> Tắt kết nối ngay
                 if (localStream) {
                     localStream.getTracks().forEach(track => track.stop());
                 }
@@ -16724,7 +16743,6 @@ async function makeCall(type) { // type: 'audio' hoặc 'video'
                     currentCall.close();
                 }
                 
-                // Quay về khung chat
                 endCallUI();
             }
         });
@@ -16978,15 +16996,34 @@ function stopRingtone() {
 function showCallScreen(name, type, isOutgoing) {
     document.getElementById('call-screen').style.display = 'flex';
     document.getElementById('call-target-display-name').innerText = name;
-    document.getElementById('remote-video').style.display = type === 'video' ? 'block' : 'none';
-    document.getElementById('local-video').style.display = type === 'video' ? 'block' : 'none';
 
-    // --- MỚI: XỬ LÝ HIỂN THỊ TRẠNG THÁI KẾT NỐI ---
+    // --- PHẦN SỬA ĐỔI: CHỈ HIỆN VIDEO MẶC ĐỊNH NẾU LÀ TYPE VIDEO ---
+    const remoteVideo = document.getElementById('remote-video');
+    const localVideo = document.getElementById('local-video');
+    const avatarLarge = document.getElementById('call-target-avatar-large');
+    const btnVideo = document.getElementById('btn-toggle-video');
+
+    if (type === 'video') {
+        // Nếu gọi video: Hiện khung hình ngay
+        remoteVideo.style.display = 'block';
+        localVideo.style.display = 'block';
+        if (avatarLarge) avatarLarge.style.display = 'none';
+    } else {
+        // Nếu gọi thoại: Ẩn khung hình video (nhưng nút bật cam vẫn có thể bấm sau này)
+        remoteVideo.style.display = 'none';
+        localVideo.style.display = 'none';
+        // Hiện avatar lớn cho đỡ trống trải (Messenger Style)
+        if (avatarLarge) avatarLarge.style.display = 'block';
+    }
+
+    // Đảm bảo nút camera luôn hiện để Henry có thể "đổi ý" bật lên bất cứ lúc nào
+    if (btnVideo) btnVideo.style.display = 'flex';
+
+    // --- GIỮ NGUYÊN NỘI DUNG KHÔNG LIÊN QUAN ---
     const statusEl = document.getElementById('call-status');
     const timerEl = document.getElementById('call-timer');
 
     if (isOutgoing) {
-        // Nếu Henry là người gọi: Hiện "Đang đổ chuông..." và ẩn đồng hồ đếm giây
         if (statusEl) {
             statusEl.innerText = "Đang đổ chuông...";
             statusEl.style.display = "block";
@@ -16995,7 +17032,6 @@ function showCallScreen(name, type, isOutgoing) {
             timerEl.style.display = "none";
         }
     } else {
-        // Nếu Henry là người nhận (đã bấm Accept): Ẩn chữ trạng thái, hiện đồng hồ
         if (statusEl) {
             statusEl.style.display = "none";
         }
@@ -17007,75 +17043,80 @@ function showCallScreen(name, type, isOutgoing) {
 
 // Thêm tham số explicitReason để nhận biết các trường hợp đặc biệt như 'timeout'
 function endCallUI(explicitReason = null) {
-    // --- 1. LẤY DỮ LIỆU "BĂNG GIÁ" NGAY LẬP TỨC ---
-    const timerEl = document.getElementById('call-timer');
+    // 1. LẤY TRẠNG THÁI UI NGAY LẬP TỨC (QUAN TRỌNG)
     const overlay = document.getElementById('call-overlay');
     const incomingPopup = document.getElementById('incoming-call-popup');
     const callScreen = document.getElementById('call-screen');
 
-    // Lấy thời lượng TRƯỚC khi làm bất cứ việc gì khác
-    const currentDuration = timerEl ? timerEl.innerText.trim() : "00:00";
-    
-    // Kiểm tra xem đồng hồ đã chạy chưa (để biết đã bắt máy chưa)
-    const isStarted = currentDuration !== "00:00" && currentDuration !== "";
-    
-    // Kiểm tra trạng thái UI TRƯỚC khi ẩn
-    const isIncomingShowing = (overlay && overlay.style.display === 'flex') || 
+    const isIncomingShowing = (overlay && (overlay.style.display === 'flex' || overlay.style.display === 'block')) || 
                                (incomingPopup && incomingPopup.style.display === 'block');
     const isCallScreenShowing = (callScreen && callScreen.style.display === 'flex');
 
-    // --- 2. PHÂN LOẠI TRẠNG THÁI CHÍNH XÁC ---
+    // 2. PHÂN LOẠI TRẠNG THÁI (Dựa trên biến isCallStarted)
     const callType = window.currentCallType || 'audio'; 
     let status = 'ended'; 
 
-    if (!isStarted) {
-        // TRƯỜNG HỢP: ĐỒNG HỒ ĐANG 00:00 (CHƯA NÓI CHUYỆN)
+    if (!isCallStarted) {
         if (explicitReason === 'timeout') {
             status = 'missed';
         } else if (isIncomingShowing) {
-            // Mình đang thấy popup gọi đến mà cuộc gọi kết thúc -> Mình bấm "Từ chối"
-            status = 'declined';
+            status = 'declined'; // Mình từ chối cuộc gọi đến
         } else if (isCallScreenShowing) {
-            // Mình đang chờ người ta bắt máy (màn hình gọi đi hiện) mà bị tắt 
-            // -> Đối phương bấm "Từ chối" hoặc mình chủ động "Hủy"
-            // Theo Messenger: Đây vẫn là "Cuộc gọi nhỡ" vì chưa kết nối thành công.
-            status = 'missed';
+            status = 'missed';   // Đối phương từ chối hoặc mình hủy lúc đang đổ chuông
         } else {
             status = 'missed';
         }
     } else {
-        // TRƯỜNG HỢP: ĐÃ BẮT MÁY VÀ NÓI CHUYỆN (> 00:00)
-        status = 'ended';
+        status = 'ended'; // Đã bắt máy thành công
     }
 
-    // Gửi tin nhắn ngay khi đã chốt được status
+    // 3. GỬI TIN NHẮN HỆ THỐNG
     if (typeof sendCallSystemMessage === 'function') {
         sendCallSystemMessage(callType, status);
     }
 
-    // --- 3. DỌN DẸP GIAO DIỆN (GIỮ NGUYÊN 100%) ---
+    // 4. DỌN DẸP GIAO DIỆN & RESET TRẠNG THÁI (Giữ nguyên nội dung không liên quan)
     if (callScreen) callScreen.style.display = 'none';
     if (incomingPopup) incomingPopup.style.display = 'none'; 
     if (overlay) overlay.style.display = 'none';
 
+    // Dừng luồng media
     const remoteVideo = document.getElementById('remote-video');
     const localVideo = document.getElementById('local-video');
-    if (remoteVideo) { remoteVideo.srcObject = null; }
-    if (localVideo) { localVideo.srcObject = null; }
+    if (remoteVideo) remoteVideo.srcObject = null;
+    if (localVideo) localVideo.srcObject = null;
 
     if (typeof stopRingtone === 'function') stopRingtone();
-
-    // --- 4. RESET ĐỒNG HỒ (GỌI SAU CÙNG) ---
-    if (typeof stopCallTimer === 'function') {
-        stopCallTimer();
+    
+    // --- PHẦN KẾT HỢP: RESET TRẠNG THÁI CÁC NÚT ĐIỀU KHIỂN ---
+    isMicOn = true;
+    isVideoOn = true;
+    const btnMic = document.getElementById('btn-toggle-mic');
+    const btnVid = document.getElementById('btn-toggle-video');
+    
+    if (btnMic) {
+        btnMic.style.background = 'rgba(255,255,255,0.2)';
+        btnMic.style.color = 'white';
+        btnMic.innerHTML = '<i class="fas fa-microphone"></i>';
     }
+    if (btnVid) {
+        // Reset về trạng thái ban đầu, hiện lại nút video nếu trước đó bị ẩn do gọi thoại
+        btnVid.style.display = 'flex'; 
+        btnVid.style.background = 'rgba(255,255,255,0.2)';
+        btnVid.style.color = 'white';
+        btnVid.innerHTML = '<i class="fas fa-video"></i>';
+    }
+
+    // 5. RESET DỮ LIỆU GỐC (LUÔN GỌI CUỐI CÙNG)
+    if (typeof stopCallTimer === 'function') stopCallTimer();
+    isCallStarted = false; // Reset biến cờ cho cuộc gọi tiếp theo
 
     if (window.callTimeoutTimer) {
         clearTimeout(window.callTimeoutTimer);
         window.callTimeoutTimer = null;
     }
     
-    console.log(`🌸 Trạng thái chốt hạ: ${status} (Thời gian: ${currentDuration})`);
+    console.log(`🌸 Trạng thái chốt hạ: ${status}`);
 }
     
     let callTimerInterval;
@@ -17086,47 +17127,52 @@ function startCallTimer() {
     // Reset lại nếu có timer cũ
     stopCallTimer();
     
-    // --- MỚI: CHUYỂN ĐỔI GIAO DIỆN TỪ "ĐỔ CHUÔNG" SANG "ĐẾM GIỜ" ---
+    // --- KẾT HỢP: ĐÁNH DẤU ĐÃ KẾT NỐI THÀNH CÔNG ---
+    isCallStarted = true; 
+    console.log("🌸 Hệ thống ghi nhận: Cuộc gọi đã bắt đầu đàm thoại.");
+
+    // --- CHUYỂN ĐỔI GIAO DIỆN TỪ "ĐỔ CHUÔNG" SANG "ĐẾM GIỜ" ---
     const statusEl = document.getElementById('call-status');
     const timerEl = document.getElementById('call-timer');
     
-    if (statusEl) statusEl.style.display = "none"; // Ẩn dòng chữ "Đang đổ chuông..."
-    if (timerEl) timerEl.style.display = "block";  // Hiện con số 00:00 lên
+    if (statusEl) statusEl.style.display = "none"; 
+    if (timerEl) timerEl.style.display = "block";  
 
     callStartTime = Date.now();
     
     callTimerInterval = setInterval(() => {
         const now = Date.now();
-        const diff = Math.floor((now - callStartTime) / 1000); // Đổi ra giây
+        const diff = Math.floor((now - callStartTime) / 1000); 
         
         const minutes = Math.floor(diff / 60).toString().padStart(2, '0');
         const seconds = (diff % 60).toString().padStart(2, '0');
         
         if (timerEl) {
             timerEl.innerText = `${minutes}:${seconds}`;
-            
-            // Hiệu ứng nhịp đập nhẹ cho chữ cho xịn (Giữ nguyên của Henry)
             timerEl.style.opacity = (diff % 2 === 0) ? "1" : "0.7";
         }
     }, 1000);
 }
-    
+
 // Hàm dừng đếm giờ
 function stopCallTimer() {
     clearInterval(callTimerInterval);
     
+    // --- LƯU Ý: Không reset isCallStarted ở đây ngay lập tức ---
+    // Việc reset isCallStarted = false nên để ở cuối hàm endCallUI 
+    // để endCallUI có đủ thời gian kiểm tra trạng thái trước đó.
+
     const timerEl = document.getElementById('call-timer');
     const statusEl = document.getElementById('call-status');
 
-    // --- MỚI: RESET TRẠNG THÁI HIỂN THỊ VỀ MẶC ĐỊNH ---
     if (timerEl) {
         timerEl.innerText = "00:00";
-        timerEl.style.display = "none"; // Ẩn đồng hồ để lần sau hiện "Đang kết nối" trước
+        timerEl.style.display = "none"; 
     }
 
     if (statusEl) {
-        statusEl.innerText = "Đang kết nối..."; // Reset nội dung chữ trạng thái
-        statusEl.style.display = "block";       // Hiện lại để sẵn sàng cho cuộc gọi mới
+        statusEl.innerText = "Đang kết nối..."; 
+        statusEl.style.display = "block";       
     }
 }
 
@@ -17175,6 +17221,83 @@ function sendCallSystemMessage(type, status) {
             time: Date.now()
         });
     });
+}
+
+    // Biến để theo dõi trạng thái
+let isMicOn = true;
+let isVideoOn = true;
+
+// Hàm Tắt/Mở Mic
+// Hàm xử lý Tắt/Mở Mic
+function toggleMic() {
+    if (!localStream) return;
+    
+    isMicOn = !isMicOn;
+    // Tìm tất cả các đường truyền âm thanh và bật/tắt chúng
+    localStream.getAudioTracks().forEach(track => track.enabled = isMicOn);
+
+    // Cập nhật giao diện nút
+    const btn = document.getElementById('btn-toggle-mic');
+    if (btn) {
+        btn.style.background = isMicOn ? 'rgba(255,255,255,0.2)' : '#ffffff';
+        btn.style.color = isMicOn ? 'white' : '#dc3545';
+        btn.innerHTML = isMicOn ? '<i class="fas fa-microphone"></i>' : '<i class="fas fa-microphone-slash"></i>';
+    }
+}
+
+// Hàm xử lý Tắt/Mở Camera
+async function toggleVideo() {
+    if (!localStream) return;
+
+    // Kiểm tra xem hiện tại đã có track video nào chưa
+    let videoTrack = localStream.getVideoTracks()[0];
+
+    if (!videoTrack) {
+        // TRƯỜNG HỢP: Đang gọi thoại mà muốn bật Camera (Nâng cấp cuộc gọi)
+        try {
+            const newStream = await navigator.mediaDevices.getUserMedia({ video: true });
+            const newVideoTrack = newStream.getVideoTracks()[0];
+            
+            // Thêm track mới vào stream hiện tại
+            localStream.addTrack(newVideoTrack);
+            videoTrack = newVideoTrack;
+            
+            // Thông báo cho bên kia biết mình đã bật Cam (PeerJS tự xử lý khi track được add)
+            if (currentCall && currentCall.peerConnection) {
+                const sender = currentCall.peerConnection.getSenders().find(s => s.track.kind === 'video');
+                if (sender) {
+                    sender.replaceTrack(newVideoTrack);
+                }
+            }
+        } catch (err) {
+            alert("❌ Không thể khởi động Camera Henry ơi!");
+            return;
+        }
+    }
+
+    // Sau khi đã chắc chắn có videoTrack, ta thực hiện bật/tắt
+    isVideoOn = !isVideoOn;
+    videoTrack.enabled = isVideoOn;
+
+    // Cập nhật giao diện nút
+    const btn = document.getElementById('btn-toggle-video');
+    const localVideo = document.getElementById('local-video');
+    const remoteVideo = document.getElementById('remote-video');
+
+    if (btn) {
+        btn.style.background = isVideoOn ? 'rgba(255,255,255,0.2)' : '#ffffff';
+        btn.style.color = isVideoOn ? 'white' : '#dc3545';
+        btn.innerHTML = isVideoOn ? '<i class="fas fa-video"></i>' : '<i class="fas fa-video-slash"></i>';
+    }
+
+    if (localVideo) {
+        localVideo.style.display = 'block'; // Hiện khung video lên
+        localVideo.srcObject = localStream;
+        localVideo.style.opacity = isVideoOn ? "1" : "0";
+    }
+    
+    // Hiện video của đối phương nếu họ cũng bật
+    if (remoteVideo) remoteVideo.style.display = 'block';
 }
 </script>
 </body>
