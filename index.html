@@ -16779,38 +16779,50 @@ async function acceptCall() {
 }
 
 // --- 4. KẾT THÚC CUỘC GỌI ---
-// Thêm tham số reason (mặc định là null) để phân biệt lý do tắt máy
 function endCall(reason = null) {
-    // --- MỚI: Dừng nhạc chuông nếu đang reo mà bấm từ chối ---
+    console.log("🌸 Lệnh kết thúc cuộc gọi được kích hoạt. Lý do:", reason || "Chủ động tắt");
+
+    // --- MỚI: Dừng nhạc chuông ngay lập tức ---
     if (typeof stopRingtone === 'function') stopRingtone();
 
-    // --- MỚI: Dọn dẹp bộ đếm chờ 1 phút (nếu có) để tránh tự ngắt sai lúc ---
+    // --- MỚI: Dọn dẹp bộ đếm 60 giây để không bị nhảy thông báo "Nhỡ" sai lúc ---
     if (window.callTimeoutTimer) {
         clearTimeout(window.callTimeoutTimer);
         window.callTimeoutTimer = null;
     }
 
-    // 1. Dừng tất cả các luồng âm thanh/hình ảnh cục bộ
+    // 1. Dừng tất cả các luồng âm thanh/hình ảnh cục bộ (Camera/Micro)
     if (localStream) {
         localStream.getTracks().forEach(track => track.stop());
+        localStream = null; // Giải phóng bộ nhớ
     }
     
     // 2. Đóng kết nối PeerJS
-    if (currentCall) currentCall.close();
+    if (currentCall) {
+        currentCall.close();
+        // Không gán null ngay để logic dưới còn lấy được currentCall.peer nếu cần
+    }
     
-    // 3. XÓA TÍN HIỆU TRÊN FIREBASE
+    // 3. XỬ LÝ FIREBASE TRIỆT ĐỂ
     const target = currentChatFriend || (currentCall ? currentCall.peer : null);
+    
     if (target) {
-        // --- MỚI: Gỡ bộ lắng nghe trước khi xóa để tránh lặp logic xử lý ---
+        // QUAN TRỌNG: Gỡ tất cả bộ lắng nghe trước khi xóa để tránh sự kiện 'value' bị kích hoạt ngược lại gây lặp tin nhắn
         db.ref(`calls/${target}`).off();
+        db.ref(`calls/${currentUser}`).off();
         
+        // Xóa dữ liệu cuộc gọi trên cả 2 phía để dọn dẹp database
         db.ref(`calls/${target}`).remove();
         db.ref(`calls/${currentUser}`).remove();
     }
     
-    // 4. Cập nhật giao diện và gửi thông báo
-    // Truyền 'reason' vào đây để endCallUI phân tích được là "Nhỡ", "Từ chối" hay "Kết thúc"
+    // 4. CẬP NHẬT GIAO DIỆN VÀ GỬI THÔNG BÁO
+    // Truyền 'reason' (ví dụ: 'timeout') vào endCallUI
+    // Tại endCallUI, nó sẽ check: Nếu đồng hồ đang hiện -> ENDED, nếu không mới xét 'reason'
     endCallUI(reason);
+
+    // 5. Giải phóng biến sau khi đã xử lý xong UI
+    currentCall = null;
 }
     
 // --- 5. XỬ LÝ SỰ KIỆN LUỒNG DỮ LIỆU ---
