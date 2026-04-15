@@ -13152,32 +13152,24 @@ function renderSingleMessage(msgId, msg, position = 'bottom', targetContainer = 
 
     let bodyContentHtml = `<div class="text-content">${finalMsgText}</div>`;
     
-    // --- PHẦN SỬA ĐỔI: XỬ LÝ Ô TIN NHẮN CUỘC GỌI (MESSENGER STYLE) ---
+   // --- PHẦN SỬA ĐỔI: XỬ LÝ Ô TIN NHẮN CUỘC GỌI (MESSENGER STYLE) ---
     if (msg.type === 'call_system') {
-        const textLower = msg.text.toLowerCase();
-        // Xác định rõ 3 trạng thái để đổi màu/nội dung phụ
-        const isDeclined = textLower.includes('từ chối');
-        const isMissed = textLower.includes('nhỡ');
-        const isEnded = textLower.includes('kết thúc');
-
         const callIcon = msg.text.includes('video') ? 'fas fa-video' : 'fas fa-phone';
+        // Sử dụng màu trắng nếu là mình gửi, hoặc màu hồng pastel chủ đạo nếu bạn gửi
         const themeColor = isMe ? '#ffffff' : (area.style.getPropertyValue('--theme-main-color') || '#ff69b4');
-        
-        // Nếu nhỡ hoặc từ chối thì icon màu đỏ, nếu kết thúc thành công thì theo màu theme (hoặc xanh)
-        const iconColor = (isMissed || isDeclined) ? '#ff4d4d' : themeColor;
-        const subText = (isMissed || isDeclined) ? 'Nhấn để gọi lại' : 'Cuộc gọi đã hoàn tất';
+        const subText = "Nhấn để gọi lại"; // Luôn hiện gợi ý gọi lại cho tiện
 
         bodyContentHtml = `
             <div class="call-msg-bubble" style="display: flex; align-items: center; gap: 12px; padding: 5px 10px; min-width: 180px;">
                 <div style="width: 35px; height: 35px; border-radius: 50%; background: ${isMe ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.05)'}; display: flex; align-items: center; justify-content: center;">
-                    <i class="${callIcon}" style="font-size: 1.1em; color: ${iconColor};"></i>
+                    <i class="${callIcon}" style="font-size: 1.1em; color: ${themeColor};"></i>
                 </div>
                 <div style="display: flex; flex-direction: column;">
                     <span style="font-size: 0.9em; font-weight: bold; color: ${isMe ? '#fff' : '#333'}">${msg.text}</span>
                     <span style="font-size: 0.75em; opacity: 0.8; color: ${isMe ? '#fff' : '#666'}">${subText}</span>
                 </div>
             </div>`;
-    } 
+    }
     else if (msg.type === 'sticker') {
         bodyContentHtml = `<img src="${msg.mediaUrl}" class="animate__animated animate__zoomIn" style="width: 150px; height: auto; display: block; cursor: pointer;">`;
     } 
@@ -17006,36 +16998,10 @@ function showCallScreen(name, type, isOutgoing) {
 }
 
 // Thêm tham số explicitReason để nhận biết các trường hợp đặc biệt như 'timeout'
-function endCallUI(explicitReason = null) {
+function endCallUI() {
     const overlay = document.getElementById('call-overlay');
     const incomingPopup = document.getElementById('incoming-call-popup');
     const callScreen = document.getElementById('call-screen');
-    const timerEl = document.getElementById('call-timer');
-
-    // 1. Kiểm tra xem người dùng hiện tại có phải là người NHẬN cuộc gọi hay không
-    const isReceiver = (incomingPopup && incomingPopup.style.display === 'block') || 
-                       (overlay && overlay.style.display === 'flex' && !window.isCaller);
-
-    // 2. KIỂM TRA KẾT NỐI: Sử dụng biến cờ toàn cục từ startCallTimer để chính xác tuyệt đối
-    const isConnected = window.isCallConnected === true;
-
-    // --- BƯỚC 3: PHÂN LOẠI TRẠNG THÁI (Đúng theo 3 loại Henry phân tích) ---
-    let status = 'ended'; 
-    const callType = window.currentCallType || 'audio'; 
-
-    if (isConnected) {
-        // LOẠI 1: Đã bắt đầu đếm giờ -> Luôn là ENDED
-        status = 'ended';
-    } else if (explicitReason === 'timeout') {
-        // LOẠI 2: Hết thời gian 1 phút -> Luôn là MISSED
-        status = 'missed';
-    } else if (isReceiver) {
-        // LOẠI 3: Người nhận chủ động tắt khi chưa kết nối -> DECLINED
-        status = 'declined';
-    } else {
-        // TRƯỜNG HỢP CÒN LẠI: Người gọi chủ động tắt khi chưa kết nối -> MISSED
-        status = 'missed';
-    }
 
     // --- DỌN DẸP GIAO DIỆN ---
     if (callScreen) callScreen.style.display = 'none';
@@ -17049,20 +17015,22 @@ function endCallUI(explicitReason = null) {
 
     if (typeof stopRingtone === 'function') stopRingtone();
 
-    // --- GỬI THÔNG BÁO HỆ THỐNG & RESET ---
+    // --- GỬI THÔNG BÁO HỆ THỐNG DUY NHẤT: ENDED ---
     if (window.isEndingCall) return; 
     window.isEndingCall = true;
 
+    const callType = window.currentCallType || 'audio';
+    
+    // Luôn gửi trạng thái 'ended' bất kể lý do gì
     if (typeof sendCallSystemMessage === 'function') {
-        sendCallSystemMessage(callType, status);
+        sendCallSystemMessage(callType, 'ended');
     }
 
     if (typeof stopCallTimer === 'function') {
         stopCallTimer();
-        console.log(`🌸 Kết thúc triệt để. Trạng thái xác định: ${status.toUpperCase()}`);
     }
 
-    // Reset cờ chống lặp và vai trò người gọi sau khi hoàn tất xử lý
+    // Reset cờ
     setTimeout(() => { 
         window.isEndingCall = false; 
         window.isCaller = false; 
@@ -17140,24 +17108,11 @@ function stopCallTimer() {
 
     // Hàm tự động gửi thông báo cuộc gọi vào đoạn chat
 function sendCallSystemMessage(type, status) {
-    // type: 'audio' hoặc 'video'
-    // status: 'ended' (kết thúc), 'missed' (cuộc gọi nhỡ), hoặc 'declined' (từ chối)
-    
     if (!currentChatFriend) return;
 
-    let msgText = "";
     const isVideo = (type === 'video');
-
-    // --- LOGIC PHÂN LOẠI NỘI DUNG TIN NHẮN (MESSENGER STYLE) ---
-    if (status === 'ended') {
-        msgText = isVideo ? "🎥 Cuộc gọi video đã kết thúc" : "📞 Cuộc gọi thoại đã kết thúc";
-    } else if (status === 'declined') {
-        // Nếu mình là người gửi tin nhắn này, tức là mình là người nhấn "Từ chối"
-        msgText = isVideo ? "🎥 Cuộc gọi video bị từ chối" : "📞 Cuộc gọi thoại bị từ chối";
-    } else {
-        // Chỉ hiện "Cuộc gọi nhỡ" khi status thực sự là 'missed'
-        msgText = isVideo ? "🎥 Cuộc gọi video nhỡ" : "📞 Cuộc gọi thoại nhỡ";
-    }
+    // Quy chuẩn nội dung thông báo
+    const msgText = isVideo ? "🎥 Cuộc gọi video đã kết thúc" : "📞 Cuộc gọi thoại đã kết thúc";
 
     const chatRoomId = [currentUser, currentChatFriend].sort().join('_');
     const now = new Date();
@@ -17172,9 +17127,7 @@ function sendCallSystemMessage(type, status) {
         displayTime: displayTime
     };
 
-    // Gửi lên Firebase (Giữ nguyên logic cũ của Henry)
     db.ref('chats/' + chatRoomId + '/messages').push(msgData).then(() => {
-        // Bắn thông báo cho đối phương
         db.ref('notifications_queue/' + currentChatFriend).push({
             from: currentUser,
             title: "📞 THÔNG BÁO CUỘC GỌI",
