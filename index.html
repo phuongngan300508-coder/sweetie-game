@@ -15579,9 +15579,29 @@ function sendMediaMessage(url, type) {
     const now = new Date();
     const displayTime = now.getHours().toString().padStart(2, '0') + ":" + now.getMinutes().toString().padStart(2, '0');
 
+    // Xác định nội dung hiển thị trong tin nhắn (Dòng này Henry thêm điều kiện voice)
+    let msgText = "";
+    if (type === 'image') msgText = "📷 Đã gửi một ảnh";
+    else if (type === 'video') msgText = "🎥 Đã gửi một video";
+    else if (type === 'voice') msgText = "🎙️ Tin nhắn thoại";
+
+    // Xác định tiêu đề và nội dung thông báo
+    let notiTitle = "";
+    let notiText = "";
+    if (type === 'image') {
+        notiTitle = "📷 HÌNH ẢNH MỚI";
+        notiText = `${currentUser} vừa gửi cho bạn một ảnh.`;
+    } else if (type === 'video') {
+        notiTitle = "🎥 VIDEO MỚI";
+        notiText = `${currentUser} vừa gửi cho bạn một video.`;
+    } else if (type === 'voice') {
+        notiTitle = "🎙️ TIN NHẮN THOẠI";
+        notiText = `${currentUser} vừa gửi một tin nhắn thoại.`;
+    }
+
     const msgData = {
         sender: currentUser,
-        text: type === 'image' ? "📷 Đã gửi một ảnh" : "🎥 Đã gửi một video",
+        text: msgText,
         mediaUrl: url,
         mediaType: type,
         displayTime: displayTime,
@@ -15589,11 +15609,11 @@ function sendMediaMessage(url, type) {
     };
 
     db.ref('chats/' + chatRoomId + '/messages').push(msgData).then(() => {
-        // Thông báo cho đối phương
+        // Thông báo cho đối phương với thông tin đã phân loại
         db.ref('notifications_queue/' + currentChatFriend).push({
             from: currentUser,
-            title: type === 'image' ? "📷 HÌNH ẢNH MỚI" : "🎥 VIDEO MỚI",
-            text: `${currentUser} vừa gửi cho bạn một ${type === 'image' ? 'ảnh' : 'video'}.`,
+            title: notiTitle,
+            text: notiText,
             type: 'chat',
             time: Date.now()
         });
@@ -16396,7 +16416,7 @@ function showPinActions(msgId) {
     }
 }
 
-    let mediaRecorder;
+let mediaRecorder;
 let audioChunks = [];
 let recordingInterval;
 let startTime;
