@@ -16602,43 +16602,60 @@ let callData = null; // Lưu thông tin cuộc gọi hiện tại
 
 // --- 1. KHỞI TẠO PEER (Cần chạy sau khi có currentUser) ---
 function initPeer() {
-    // Henry dùng luôn UID làm ID cho Peer để dễ kết nối
+    // 1. Kiểm tra an toàn: Nếu chưa có UID thì không khởi tạo, tránh lỗi treo
+    if (!currentUser) {
+        console.warn("⏳ Đang đợi thông tin tài khoản để khởi tạo hệ thống Call...");
+        return; 
+    }
+
+    // Nếu đã tồn tại Peer cũ mà chưa bị hủy, thì hủy để làm mới (tránh trùng ID)
+    if (myPeer) myPeer.destroy();
+
+    // 2. Khởi tạo kết nối
     myPeer = new Peer(currentUser, {
-        host: '0.peerjs.com', // Server miễn phí của PeerJS
+        host: '0.peerjs.com',
         port: 443,
-        secure: true
+        secure: true,
+        debug: 1 // Chỉ hiện lỗi quan trọng trong Console
     });
 
     myPeer.on('open', (id) => {
         console.log('✅ Hệ thống Call: Đã sẵn sàng với ID:', id);
-        // Khi nhận được ID, thuộc tính myPeer.open sẽ tự động thành true
-    });
-
-    // --- PHẦN BỔ SUNG: Bắt lỗi hệ thống để không bị đứng code ---
-    myPeer.on('error', (err) => {
-        console.error('❌ Lỗi PeerJS:', err.type);
-        if (err.type === 'peer-unavailable') {
-            alert("Đối phương hiện không trực tuyến hoặc đã tắt trình duyệt!");
-        } else if (err.type === 'unavailable-id') {
-            alert("Tài khoản này đang được mở ở một tab khác, hãy đóng tab cũ để gọi điện nhé!");
-        } else if (err.type === 'network') {
-            console.warn("Lỗi mạng, đang thử kết nối lại...");
+        
+        // CẬP NHẬT GIAO DIỆN: Henry nhìn vào header chat sẽ thấy chấm xanh
+        const statusEl = document.getElementById('chat-target-status');
+        if (statusEl) {
+            statusEl.innerHTML = `<i class="fas fa-circle" style="font-size: 0.8em; color: #2ecc71;"></i> Sẵn sàng`;
         }
     });
 
-    // --- MỚI: Tự động kết nối lại nếu bị rớt mạng ---
+    // --- PHẦN BỔ SUNG: Bắt lỗi hệ thống ---
+    myPeer.on('error', (err) => {
+        console.error('❌ Lỗi PeerJS:', err.type);
+        const statusEl = document.getElementById('chat-target-status');
+        
+        if (err.type === 'peer-unavailable') {
+            alert("Đối phương hiện không trực tuyến hoặc đã tắt trình duyệt!");
+        } else if (err.type === 'unavailable-id') {
+            alert("Tài khoản này đang mở ở một tab khác. Henry hãy đóng tab kia đi nhé!");
+        } else if (err.type === 'network') {
+            if (statusEl) statusEl.innerHTML = `<i class="fas fa-circle" style="font-size: 0.8em; color: #e74c3c;"></i> Lỗi mạng`;
+        }
+    });
+
+    // Tự động kết nối lại nếu bị rớt mạng
     myPeer.on('disconnected', () => {
         console.log("⚠️ Mất kết nối server Peer, đang thử kết nối lại...");
         myPeer.reconnect();
     });
 
-    // Lắng nghe cuộc gọi đến
+    // Lắng nghe cuộc gọi đến (Quan trọng để nhận được tín hiệu bắt tay)
     myPeer.on('call', (incomingCall) => {
+        console.log("☎️ Nhận được luồng dữ liệu cuộc gọi...");
         currentCall = incomingCall;
-        // Lúc này Firebase đã bắn thông báo "Bảng gọi đến" trước đó rồi (xem hàm listenCall)
         
-        // --- PHẦN BỔ SUNG: Đảm bảo luồng dữ liệu luôn mở ---
-        console.log("☎️ Có cuộc gọi đến từ PeerJS...");
+        // Nếu người nhận đang bấm 'Chấp nhận' (answerCall), 
+        // nó sẽ dùng cái currentCall này để trả lời.
     });
 }
     
