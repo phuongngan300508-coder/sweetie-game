@@ -13089,6 +13089,28 @@ function renderSingleMessage(msgId, msg, position = 'bottom', targetContainer = 
     const area = document.getElementById('chat-messages-area');
     const isMe = msg.sender === currentUser;
 
+    // --- PHẦN MỚI: RENDER TIN NHẮN HỆ THỐNG CUỘC GỌI ---
+    if (msg.type === 'call_system') {
+        const isMissed = msg.text.toLowerCase().includes('nhỡ');
+        const systemHtml = `
+            <div class="msg-wrapper system-call-msg" id="msg-${msgId}" 
+                 style="width: 100%; text-align: center; margin: 15px 0; clear: both; display: flex; flex-direction: column; align-items: center;">
+                <div style="background: rgba(0, 0, 0, 0.05); color: #666; font-size: 0.7em; padding: 6px 15px; border-radius: 20px; display: inline-flex; align-items: center; gap: 8px; font-weight: 500;">
+                    <i class="${msg.text.includes('video') ? 'fas fa-video' : 'fas fa-phone'} ${isMissed ? 'animate__animated animate__shakeX' : ''}" 
+                       style="color: ${isMissed ? '#ff4d4d' : '#888'};"></i>
+                    <span>${msg.text}</span>
+                    <span style="opacity: 0.6; font-weight: normal;">• ${msg.displayTime || ''}</span>
+                </div>
+            </div>`;
+
+        if (targetContainer) {
+            targetContainer.innerHTML = systemHtml;
+        } else {
+            area.insertAdjacentHTML(position === 'bottom' ? 'beforeend' : 'afterbegin', systemHtml);
+        }
+        return; // Thoát hàm sớm vì tin nhắn hệ thống không cần các logic reply/reaction bên dưới
+    }
+
     // --- 1. LOGIC REPLY (GIỮ NGUYÊN 100%) ---
     let replyHtml = "";
     if (msg.replyData && msg.replyData.sender) {
@@ -16753,10 +16775,22 @@ function endCallUI() {
     remoteVideo.srcObject = null;
     localVideo.srcObject = null;
 
+    // --- MỚI: TỰ ĐỘNG GỬI TIN NHẮN THÔNG BÁO CUỘC GỌI ---
+    const timerEl = document.getElementById('call-timer');
+    const duration = timerEl ? timerEl.innerText : "00:00";
+    const callType = window.currentCallType || 'audio'; // Henry nhớ gán biến này lúc bắt đầu gọi nhé
+    
+    // Nếu duration khác 00:00 là đã nghe máy (Ended), nếu vẫn là 00:00 là cuộc gọi nhỡ (Missed)
+    const status = (duration !== "00:00") ? 'ended' : 'missed';
+    
+    if (typeof sendCallSystemMessage === 'function') {
+        sendCallSystemMessage(callType, status);
+    }
+
     // --- MỚI: DỪNG ĐỒNG HỒ VÀ RESET THỜI GIAN ---
     if (typeof stopCallTimer === 'function') {
         stopCallTimer();
-        console.log("🌸 Đã đóng giao diện và reset đồng hồ cuộc gọi.");
+        console.log("🌸 Đã đóng giao diện, gửi thông báo và reset đồng hồ.");
     }
 }
 
@@ -16790,6 +16824,46 @@ function stopCallTimer() {
     clearInterval(callTimerInterval);
     const timerEl = document.getElementById('call-timer');
     if (timerEl) timerEl.innerText = "00:00";
+}
+
+    // Hàm tự động gửi thông báo cuộc gọi vào đoạn chat
+function sendCallSystemMessage(type, status) {
+    // type: 'audio' hoặc 'video'
+    // status: 'ended' (kết thúc) hoặc 'missed' (cuộc gọi nhỡ)
+    
+    if (!currentChatFriend) return;
+
+    let msgText = "";
+    if (type === 'video') {
+        msgText = (status === 'ended') ? "🎥 Cuộc gọi video đã kết thúc" : "🎥 Cuộc gọi video nhỡ";
+    } else {
+        msgText = (status === 'ended') ? "📞 Cuộc gọi thoại đã kết thúc" : "📞 Cuộc gọi thoại nhỡ";
+    }
+
+    const chatRoomId = [currentUser, currentChatFriend].sort().join('_');
+    const now = new Date();
+    const displayTime = now.getHours().toString().padStart(2, '0') + ":" + 
+                        now.getMinutes().toString().padStart(2, '0');
+
+    const msgData = {
+        sender: currentUser,
+        text: msgText,
+        type: 'call_system', // Loại tin nhắn mới để Henry có thể trang trí riêng
+        timestamp: firebase.database.ServerValue.TIMESTAMP,
+        displayTime: displayTime
+    };
+
+    // Gửi lên Firebase
+    db.ref('chats/' + chatRoomId + '/messages').push(msgData).then(() => {
+        // Bắn thông báo cho đối phương
+        db.ref('notifications_queue/' + currentChatFriend).push({
+            from: currentUser,
+            title: "📞 THÔNG BÁO CUỘC GỌI",
+            text: msgText,
+            type: 'chat',
+            time: Date.now()
+        });
+    });
 }
 </script>
 </body>
