@@ -16813,7 +16813,7 @@ function endCall(reason = null) {
 function handleCallEvents(call, type) {
     currentCall = call;
 
-    call.on('stream', (remoteStream) => {
+    call.on('stream', async (remoteStream) => { // Thêm async ở đây để dùng được await
         // --- MỚI: HỦY BỘ ĐẾM CHỜ 1 PHÚT NGAY KHI KẾT NỐI THÀNH CÔNG ---
         if (window.callTimeoutTimer) {
             clearTimeout(window.callTimeoutTimer);
@@ -16827,13 +16827,20 @@ function handleCallEvents(call, type) {
         if (type === 'video') {
             remoteVideo.srcObject = remoteStream;
             localVideo.srcObject = localStream;
-            remoteVideo.play();
-            localVideo.play();
+            
+            // Dùng try-catch để "bắt" lỗi play() bị ngắt quãng
+            try {
+                await remoteVideo.play();
+                await localVideo.play();
+            } catch (err) {
+                console.log("🌸 Đã xử lý lỗi play() bị ngắt quãng:", err.name);
+            }
         } else {
             // Nếu là audio, chỉ cần phát tiếng
             const audio = new Audio();
             audio.srcObject = remoteStream;
-            audio.play();
+            // Catch lỗi play cho audio luôn cho chắc ăn
+            audio.play().catch(err => console.log("🌸 Audio play pending..."));
         }
 
         // --- MỚI: KÍCH HOẠT ĐỒNG HỒ ĐẾM GIỜ KHI STREAM BẮT ĐẦU ---
