@@ -37,7 +37,7 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-messaging.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
-
+<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Quicksand:wght@500;700&display=swap');
 
@@ -7247,9 +7247,11 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
     </span>
 </div>
         </div>
-        <div class="messenger-actions" style="display: flex; gap: 15px; font-size: 1.2em; cursor: pointer;">
-            <i class="fas fa-times" onclick="closeChat()"></i>
-        </div>
+       <div class="messenger-actions" style="display: flex; gap: 18px; font-size: 1.1em; cursor: pointer; align-items: center;">
+    <i class="fas fa-phone-alt" onclick="makeCall('audio')" title="Gọi thoại" style="color: white; opacity: 0.9;"></i>    
+    <i class="fas fa-video" onclick="makeCall('video')" title="Gọi video" style="color: white; opacity: 0.9;"></i>
+    <i class="fas fa-times" onclick="closeChat()" style="color: white; margin-left: 5px;"></i>
+</div>
     </div>
 <div id="search-mode-bar" 
      style="display:none; background: #fff5f8; padding: 10px 15px; align-items: center; 
@@ -7640,6 +7642,31 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
         </div>
         <div id="pinned-list-area" style="max-height: 450px; overflow-y: auto; padding: 15px; background: #fff5f8;">
             </div>
+    </div>
+</div>
+
+    <div id="incoming-call-popup" style="display:none; position:fixed; top:20px; left:50%; transform:translateX(-50%); width:320px; background:white; border-radius:20px; box-shadow:0 10px 30px rgba(0,0,0,0.2); z-index:99999; padding:15px; border:2px solid #ffc0cb;" class="animate__animated animate__bounceInDown">
+    <div style="display:flex; align-items:center; gap:15px;">
+        <div id="call-caller-avatar" style="width:50px; height:50px; background:#fff0f5; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#ff1493; font-size:1.5em; border:2px solid #ffc0cb; overflow:hidden;"></div>
+        <div style="flex:1">
+            <b id="call-caller-name" style="color:#d63384; display:block;">Cư dân...</b>
+            <span style="font-size:0.8em; color:#888;">Đang gọi cho bạn ❤️</span>
+        </div>
+        <div style="display:flex; gap:8px;">
+            <button onclick="acceptCall()" style="background:#28a745; color:white; border:none; width:40px; height:40px; border-radius:50%; cursor:pointer;"><i class="fas fa-phone"></i></button>
+            <button onclick="endCall()" style="background:#dc3545; color:white; border:none; width:40px; height:40px; border-radius:50%; cursor:pointer;"><i class="fas fa-times"></i></button>
+        </div>
+    </div>
+</div>
+
+<div id="call-screen" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,192,203,0.95); z-index:99998; flex-direction:column; align-items:center; justify-content:center; backdrop-filter:blur(10px);">
+    <video id="remote-video" style="width:100%; height:100%; object-fit:cover; position:absolute;"></video>
+    <video id="local-video" muted style="width:100px; height:150px; object-fit:cover; position:absolute; top:20px; right:20px; border-radius:15px; border:3px solid white; box-shadow:0 5px 15px rgba(0,0,0,0.2); background:#333;"></video>
+    
+    <div style="position:relative; z-index:1; text-align:center;">
+        <h2 id="call-target-display-name" style="color:white; text-shadow:0 2px 10px rgba(0,0,0,0.2);">Tên đối phương</h2>
+        <div id="call-timer" style="color:white; margin-bottom:20px; font-weight:bold;">00:00</div>
+        <button onclick="endCall()" style="background:#dc3545; color:white; border:none; width:60px; height:60px; border-radius:50%; font-size:1.5em; cursor:pointer; box-shadow:0 5px 20px rgba(220,53,69,0.4);"><i class="fas fa-phone-slash"></i></button>
     </div>
 </div>
 <script>
@@ -8975,9 +9002,16 @@ function handleLogin() {
     checkDailyCheckinReminder();    
     checkSystemAlerts(); 
 
-    // --- ĐOẠN SỬA ĐỂ FIX LỖI 3 THÔNG BÁO ---
+    // --- ĐOẠN SỬA ĐỂ FIX LỖI 3 THÔNG BÁO & KÍCH HOẠT CALL ---
     if (!isSocialInitialized) {
         initChatSystem(); 
+        
+        // --- MỚI: KÍCH HOẠT HỆ THỐNG GỌI THOẠI & VIDEO ---
+        if (typeof initCallSystem === 'function') {
+            initCallSystem();
+            console.log("Hệ thống: Đã kích hoạt Call Center cho Henry.");
+        }
+
         if (typeof initFriendRequestListener === 'function') {
             initFriendRequestListener();
         }
@@ -12272,7 +12306,7 @@ function scanFriendQR() {
     });
 }
 
-    const firebaseConfig = {
+   const firebaseConfig = {
     apiKey: "AIzaSyDV8KseaFVPPcpEU0-jrqqxnGG6xLyJGfE",
     authDomain: "sweetie-game-world.firebaseapp.com",
     databaseURL: "https://sweetie-game-world-default-rtdb.asia-southeast1.firebasedatabase.app/", 
@@ -12295,6 +12329,14 @@ if ('serviceWorker' in navigator) {
         .then(function(registration) {
             console.log('✅ PWA: App đã sẵn sàng!');
             
+            // --- MỚI: Kích hoạt hệ thống Call ngay khi PWA/Web đã sẵn sàng ---
+            // Henry kiểm tra nếu đã có currentUser (đã login trước đó và reload trang)
+            if (typeof currentUser !== 'undefined' && currentUser) {
+                if (typeof initCallSystem === 'function') {
+                    initCallSystem();
+                }
+            }
+
             // Ép Service Worker cập nhật bản mới nhất từ server
             registration.update(); 
 
@@ -12307,7 +12349,6 @@ if ('serviceWorker' in navigator) {
         .then((token) => {
             if (token) {
                 console.log("✅ Token thiết bị mới nhất:", token);
-                // Henry nhớ lưu token này vào Firebase Database của User nhé!
                 if (typeof currentUser !== 'undefined' && currentUser) {
                     db.ref('users/' + currentUser + '/fcmToken').set(token);
                 }
@@ -12318,7 +12359,8 @@ if ('serviceWorker' in navigator) {
         });
     });
 }
-    let deferredPrompt;
+
+let deferredPrompt;
 
 window.addEventListener('beforeinstallprompt', (e) => {
   // Ngăn bảng hỏi mặc định
@@ -12341,7 +12383,7 @@ window.addEventListener('click', () => {
       deferredPrompt = null;
     });
   }
-}, { once: true }); // "once: true" để nó chỉ chạy đúng 1 lần duy nhất khi click lần đầu
+}, { once: true });
     
 // --- 5. LẮNG NGHE HỆ THỐNG THÔNG BÁO & TIN NHẮN REAL-TIME ---
 function initChatSystem() {
@@ -16538,6 +16580,163 @@ function playVoice(btn, url) {
         btn.className = "fas fa-exclamation-circle";
         alert("Không thể phát đoạn âm thanh này!");
     };
+}
+
+    let peer;
+let currentCall;
+let localStream;
+
+// --- 1. KHỞI TẠO PEER (KẾT NỐI TRUNG GIAN) ---
+function initCallSystem() {
+    if (!currentUser) return;
+
+    // Khởi tạo Peer với ID là tên tài khoản Henry
+    peer = new Peer(currentUser);
+
+    peer.on('open', (id) => {
+        console.log('✅ Hệ thống Call sẵn sàng. Peer ID:', id);
+    });
+
+    // LẮNG NGHE CUỘC GỌI ĐẾN
+    peer.on('call', async (call) => {
+        currentCall = call;
+        
+        // Lấy thông tin loại cuộc gọi từ Firebase (đã được người gọi set trước đó)
+        const callSnap = await db.ref(`calls/${currentUser}`).once('value');
+        const callData = callSnap.val();
+
+        if (callData) {
+            showIncomingCallPopup(callData.from, callData.type);
+        }
+    });
+
+    // Lắng nghe lệnh kết thúc từ đối phương (Real-time Firebase)
+    db.ref(`calls/${currentUser}`).on('value', (snap) => {
+        if (!snap.exists() && currentCall) {
+            endCallUI();
+        }
+    });
+}
+
+// --- 2. HÀM THỰC HIỆN CUỘC GỌI ---
+async function makeCall(type) { // type: 'audio' hoặc 'video'
+    if (!currentChatFriend) return;
+
+    try {
+        // Yêu cầu quyền truy cập Camera/Micro
+        const constraints = {
+            audio: true,
+            video: type === 'video'
+        };
+        localStream = await navigator.mediaDevices.getUserMedia(constraints);
+
+        // Hiện giao diện đang gọi (Henry có thể tùy biến CSS sau)
+        showCallScreen(currentChatFriend, type, true);
+
+        // Báo hiệu lên Firebase cho đối phương
+        db.ref(`calls/${currentChatFriend}`).set({
+            from: currentUser,
+            type: type,
+            status: 'calling',
+            time: Date.now()
+        });
+
+        // Thực hiện gọi qua PeerJS
+        const call = peer.call(currentChatFriend, localStream);
+        handleCallEvents(call, type);
+
+    } catch (err) {
+        alert("❌ Henry ơi, bạn chưa cấp quyền Camera/Micro rồi!");
+        console.error(err);
+    }
+}
+
+// --- 3. CHẤP NHẬN CUỘC GỌI ---
+async function acceptCall() {
+    const callSnap = await db.ref(`calls/${currentUser}`).once('value');
+    const type = callSnap.val()?.type || 'audio';
+
+    try {
+        localStream = await navigator.mediaDevices.getUserMedia({
+            audio: true,
+            video: type === 'video'
+        });
+
+        currentCall.answer(localStream); // Trả lời với luồng dữ liệu của mình
+        showCallScreen(currentCall.peer, type, false);
+        handleCallEvents(currentCall, type);
+        
+        // Ẩn popup gọi đến
+        document.getElementById('incoming-call-popup').style.display = 'none';
+
+    } catch (err) {
+        alert("Lỗi kết nối âm thanh/hình ảnh!");
+    }
+}
+
+// --- 4. KẾT THÚC CUỘC GỌI ---
+function endCall() {
+    if (localStream) {
+        localStream.getTracks().forEach(track => track.stop());
+    }
+    if (currentCall) currentCall.close();
+    
+    // Xóa tín hiệu trên Firebase để máy bên kia cũng tắt
+    const target = currentChatFriend || (currentCall ? currentCall.peer : null);
+    if (target) {
+        db.ref(`calls/${target}`).remove();
+        db.ref(`calls/${currentUser}`).remove();
+    }
+    
+    endCallUI();
+}
+
+// --- 5. XỬ LÝ SỰ KIỆN LUỒNG DỮ LIỆU ---
+function handleCallEvents(call, type) {
+    currentCall = call;
+
+    call.on('stream', (remoteStream) => {
+        const remoteVideo = document.getElementById('remote-video');
+        const localVideo = document.getElementById('local-video');
+
+        if (type === 'video') {
+            remoteVideo.srcObject = remoteStream;
+            localVideo.srcObject = localStream;
+            remoteVideo.play();
+            localVideo.play();
+        } else {
+            // Nếu là audio, chỉ cần phát tiếng
+            const audio = new Audio();
+            audio.srcObject = remoteStream;
+            audio.play();
+        }
+    });
+
+    call.on('close', () => {
+        endCallUI();
+    });
+}
+
+    function showIncomingCallPopup(from, type) {
+    document.getElementById('call-caller-name').innerText = from;
+    document.getElementById('incoming-call-popup').style.display = 'block';
+    // Henry có thể thêm âm thanh reo tại đây
+}
+
+function showCallScreen(name, type, isOutgoing) {
+    document.getElementById('call-screen').style.display = 'flex';
+    document.getElementById('call-target-display-name').innerText = name;
+    document.getElementById('remote-video').style.display = type === 'video' ? 'block' : 'none';
+    document.getElementById('local-video').style.display = type === 'video' ? 'block' : 'none';
+}
+
+function endCallUI() {
+    document.getElementById('call-screen').style.display = 'none';
+    document.getElementById('incoming-call-popup').style.display = 'none';
+    const remoteVideo = document.getElementById('remote-video');
+    const localVideo = document.getElementById('local-video');
+    remoteVideo.srcObject = null;
+    localVideo.srcObject = null;
 }
 </script>
 </body>
