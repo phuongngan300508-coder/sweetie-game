@@ -16617,22 +16617,53 @@ function initPeer() {
     });
 }
 
+    // Thêm một hàm kiểm tra và lấy stream riêng để dùng chung cho gọn
+async function getMediaStream(type) {
+    // Nếu đã có stream cũ đang chạy, tắt nó đi trước
+    if (localStream) {
+        localStream.getTracks().forEach(track => track.stop());
+    }
+
+    const constraints = {
+        video: type === 'video' ? {
+            width: { ideal: 640 },
+            height: { ideal: 480 },
+            facingMode: "user"
+        } : false,
+        audio: true
+    };
+
+    return await navigator.mediaDevices.getUserMedia(constraints);
+}
+    
 // --- 2. BẮT ĐẦU GỌI (Người gọi) ---
 async function startCall(type) {
     if (!currentChatFriend) return;
 
     try {
-        // Lấy stream từ Camera/Mic
-        localStream = await navigator.mediaDevices.getUserMedia({
-            video: type === 'video',
-            audio: true
-        });
+        // --- PHẦN SỬA: Đóng stream cũ trước khi xin quyền mới ---
+        if (window.localStream) {
+            window.localStream.getTracks().forEach(track => track.stop());
+        }
 
-        // Hiển thị màn hình gọi
+        // --- PHẦN SỬA: Cấu hình chuẩn để tránh lỗi trình duyệt chặn ---
+        const constraints = {
+            audio: true,
+            video: type === 'video' ? {
+                width: { ideal: 1280 },
+                height: { ideal: 720 },
+                facingMode: "user"
+            } : false
+        };
+
+        // Lấy stream từ Camera/Mic
+        localStream = await navigator.mediaDevices.getUserMedia(constraints);
+
+        // Hiển thị màn hình gọi (GIỮ NGUYÊN NỘI DUNG CŨ)
         showCallScreen(type);
         document.getElementById('local-video').srcObject = localStream;
 
-        // Bắn tín hiệu lên Firebase để đối phương hiện Popup
+        // Bắn tín hiệu lên Firebase để đối phương hiện Popup (GIỮ NGUYÊN NỘI DUNG CŨ)
         db.ref('calls/' + currentChatFriend).set({
             caller: currentUser,
             type: type,
@@ -16640,12 +16671,20 @@ async function startCall(type) {
             status: 'calling'
         });
 
-        // Thực hiện call qua PeerJS
+        // Thực hiện call qua PeerJS (GIỮ NGUYÊN NỘI DUNG CŨ)
         const call = myPeer.call(currentChatFriend, localStream);
         handleCallEvents(call);
 
     } catch (err) {
-        alert("❌ Lỗi: Không thể truy cập Camera/Micro!");
+        console.error("Lỗi Media:", err);
+        // Thông báo chi tiết hơn để Henry dễ debug
+        if (err.name === 'NotAllowedError') {
+            alert("❌ Bạn đã chặn quyền truy cập Camera/Micro trên trình duyệt!");
+        } else if (err.name === 'NotFoundError') {
+            alert("❌ Không tìm thấy thiết bị Camera hoặc Micro trên máy này!");
+        } else {
+            alert("❌ Lỗi: Không thể truy cập Camera/Micro! (Hãy kiểm tra HTTPS)");
+        }
     }
 }
 
