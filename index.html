@@ -16510,7 +16510,7 @@ async function uploadVoiceToCloudinary(blob) {
     formData.append('upload_preset', UPLOAD_PRESET); // Dùng chung preset với ảnh/sticker
 
     // Hiện loading (Henry có thể dùng cái popup tiến độ cũ)
-    addNotification("⏳ ĐANG GỬI...", "Đang xử lý tin nhắn thoại...", true);
+    addNotification("✅ THÀNH CÔNG", "Đã gửi Voice thành công!", true);
 
     try {
         const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/video/upload`, {
