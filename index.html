@@ -8974,6 +8974,15 @@ function handleLogin() {
         console.log("Hệ thống: Đã kích hoạt trạng thái Online cho " + name);
     }
 
+    // --- MỚI: KÍCH HOẠT HỆ THỐNG GỌI ĐIỆN (PEERJS) ---
+    // Henry thêm đoạn này: Sử dụng UID vừa được cấp/load để làm địa chỉ gọi
+    if (typeof initPeer === 'function' && userData.profile && userData.profile.uid) {
+        // Gán UID vào biến môi trường nếu cần thiết cho initPeer sử dụng
+        // Ở đây initPeer thường dùng currentUser hoặc userData.profile.uid
+        initPeer(); 
+        if (typeof listenCallSignals === 'function') listenCallSignals();
+    }
+
     // --- SỬA LẠI: Yêu cầu quyền thông báo tối ưu cho Web Push ---
     if ("Notification" in window) {
         Notification.requestPermission().then(permission => {
@@ -16619,15 +16628,15 @@ function initPeer() {
         debug: 1 // Chỉ hiện lỗi quan trọng trong Console
     });
 
-    myPeer.on('open', (id) => {
-        console.log('✅ Hệ thống Call: Đã sẵn sàng với ID:', id);
-        
-        // CẬP NHẬT GIAO DIỆN: Henry nhìn vào header chat sẽ thấy chấm xanh
-        const statusEl = document.getElementById('chat-target-status');
-        if (statusEl) {
-            statusEl.innerHTML = `<i class="fas fa-circle" style="font-size: 0.8em; color: #2ecc71;"></i> Sẵn sàng`;
-        }
-    });
+   myPeer.on('open', (id) => {
+    console.log('✅ Hệ thống Call: Đã sẵn sàng với ID:', id);
+    
+    // Henry thêm dòng này để "nhắc bài" cho mình
+    const myStatus = document.getElementById('chat-target-status');
+    if (myStatus) {
+        myStatus.innerHTML = `<i class="fas fa-circle" style="color: #2ecc71;"></i> Hệ thống đã thông suốt`;
+    }
+});
 
     // --- PHẦN BỔ SUNG: Bắt lỗi hệ thống ---
     myPeer.on('error', (err) => {
