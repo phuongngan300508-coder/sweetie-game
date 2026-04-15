@@ -16660,8 +16660,9 @@ function initCallSystem() {
         const isInCall = callScreen && callScreen.style.display === 'flex';
 
         // --- 2. XỬ LÝ KHI DỮ LIỆU BỊ XÓA (ĐỐI PHƯƠNG NGẮT) ---
-        if (!snap.exists() && (currentCall || isPopupVisible || isInCall)) {
-            console.log("🌸 Đối phương đã xử lý cuộc gọi (Hủy/Từ chối/Kết thúc).");
+        // Thêm điều kiện: CHỈ chạy khi UI vẫn còn đang mở (tránh lặp tin nhắn nếu mình đã tắt trước)
+        if (!snap.exists() && (isPopupVisible || isInCall)) {
+            console.log("🌸 Đối phương đã ngắt kết nối (Hủy/Từ chối/Kết thúc).");
 
             // Dừng luồng dữ liệu PeerJS
             if (currentCall) {
@@ -16673,10 +16674,8 @@ function initCallSystem() {
                 currentCall = null;
             }
 
-            // --- 3. GỌI UI VỚI LOGIC THÔNG MINH ---
-            // Nếu popup đang hiện mà data mất -> Họ đã hủy cuộc gọi (missed)
-            // Nếu màn hình đang gọi (đã bắt máy) mà data mất -> Cuộc gọi kết thúc (ended)
-            // endCallUI() sẽ tự động check timer để ghi log phù hợp.
+            // --- 3. GỌI UI DỌN DẸP ---
+            // Gọi endCallUI để nó tự check cờ window.isEndingCall và timerEl.style.display
             endCallUI();
         }
     });
@@ -17004,19 +17003,19 @@ function showCallScreen(name, type, isOutgoing) {
 
 // Thêm tham số explicitReason để nhận biết các trường hợp đặc biệt như 'timeout'
 function endCallUI(explicitReason = null) {
-    // --- BƯỚC 1: KIỂM TRA TRẠNG THÁI TRƯỚC KHI DỌN DẸP (Rất quan trọng) ---
+    // --- BƯỚC 1: KIỂM TRA TRẠNG THÁI TRƯỚC KHI DỌN DẸP ---
     const overlay = document.getElementById('call-overlay');
     const incomingPopup = document.getElementById('incoming-call-popup');
     const callScreen = document.getElementById('call-screen');
     const timerEl = document.getElementById('call-timer');
 
-    // Kiểm tra xem Popup gọi đến có ĐANG HIỆN hay không
-    const isIncomingShowing = (overlay && overlay.style.display === 'flex') || 
+    // 1. Kiểm tra xem Popup gọi đến có ĐANG HIỆN hay không
+    const isIncomingShowing = (overlay && (overlay.style.display === 'flex' || overlay.style.display === 'block')) || 
                                (incomingPopup && incomingPopup.style.display === 'block');
     
-    // Kiểm tra xem cuộc gọi đã thực sự bắt đầu nói chuyện chưa (timer đã chạy chưa)
-    const duration = timerEl ? timerEl.innerText : "00:00";
-    const isConnected = duration !== "00:00";
+    // 2. CHỐT CHẶN TRẠNG THÁI: Nếu đồng hồ đã hiện lên (block) thì chắc chắn là đã kết nối thành công
+    // Cách này chính xác hơn innerText vì đôi khi 00:00 nhưng cuộc gọi đã "thông"
+    const isConnected = timerEl && timerEl.style.display !== 'none';
 
     // --- BƯỚC 2: DỌN DẸP UI (Giữ nguyên logic của Henry) ---
     if (callScreen) callScreen.style.display = 'none';
@@ -17036,15 +17035,19 @@ function endCallUI(explicitReason = null) {
 
     if (!isConnected) {
         if (explicitReason === 'timeout') {
-            status = 'missed'; // Hết 60s
+            status = 'missed';
         } else if (isIncomingShowing) {
-            status = 'declined'; // Người dùng chủ động bấm nút Từ chối khi đang hiện popup
+            status = 'declined';
         } else {
-            status = 'missed'; // Người gọi chủ động tắt máy khi người kia chưa kịp nghe
+            status = 'missed';
         }
     }
 
-    // --- BƯỚC 4: GỬI THÔNG BÁO VÀ RESET ---
+    // --- BƯỚC 4: GỬI THÔNG BÁO (THÊM CHỐNG LẶP TIN NHẮN) ---
+    // Kiểm tra nếu đang xử lý kết thúc rồi thì không gửi tin nhắn nữa
+    if (window.isEndingCall) return; 
+    window.isEndingCall = true;
+
     if (typeof sendCallSystemMessage === 'function') {
         sendCallSystemMessage(callType, status);
     }
@@ -17058,6 +17061,9 @@ function endCallUI(explicitReason = null) {
         clearTimeout(window.callTimeoutTimer);
         window.callTimeoutTimer = null;
     }
+
+    // Reset cờ sau 1 giây để sẵn sàng cho cuộc gọi tiếp theo
+    setTimeout(() => { window.isEndingCall = false; }, 1000);
 }
     
     let callTimerInterval;
