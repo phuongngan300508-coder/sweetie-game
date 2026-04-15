@@ -7674,20 +7674,26 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
     </div>
 </div>
     
-<div id="call-screen" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:999999; flex-direction:column; align-items:center; justify-content:center; backdrop-filter:blur(15px);">
-    <video id="remote-video" style="width:100%; height:100%; object-fit:cover; position:absolute;"></video>
-    <video id="local-video" muted style="width:110px; height:160px; object-fit:cover; position:absolute; top:30px; right:20px; border-radius:15px; border:2px solid white; z-index:10; background:#222;"></video>
+<div id="call-screen" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:999999; flex-direction:column; align-items:center; backdrop-filter:blur(15px); padding: 50px 0;">
+    <video id="remote-video" style="width:100%; height:100%; object-fit:cover; position:absolute; top:0; left:0;"></video>
     
-    <div style="position:relative; z-index:1; text-align:center;">
-        <div id="call-target-avatar-large" style="width:100px; height:100px; border-radius:50%; border:3px solid #ff69b4; margin: 0 auto 15px; background:white; overflow:hidden; display:none;"></div>
-        <h2 id="call-target-display-name" style="color:white; text-shadow:0 2px 10px rgba(0,0,0,0.5); font-size:1.5em; margin-bottom:5px;">Tên đối phương</h2>
-<div id="call-status" style="color:#ffc0cb; margin-bottom:10px; font-size:1em; font-weight:lighter;">Đang kết nối...</div>
-<div id="call-timer" style="color:#ffc0cb; margin-bottom:30px; font-weight:bold; font-size:1.2em; letter-spacing:2px; font-family:monospace; display:none;">00:00</div>
-        
-        <button onclick="endCall()" style="background:#dc3545; color:white; border:none; width:65px; height:65px; border-radius:50%; font-size:1.8em; cursor:pointer; box-shadow:0 5px 25px rgba(220,53,69,0.5); transition:0.3s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
-            <i class="fas fa-phone-slash"></i>
-        </button>
+    <video id="local-video" muted style="width:110px; height:160px; object-fit:cover; position:absolute; top:30px; right:20px; border-radius:15px; border:2px solid rgba(255,255,255,0.5); z-index:10; background:#222; box-shadow: 0 8px 20px rgba(0,0,0,0.3);"></video>
+    
+    <div style="position:relative; z-index:5; text-align:center; margin-top: 40px;">
+        <div id="call-target-avatar-large" style="width:100px; height:100px; border-radius:50%; border:3px solid #ff69b4; margin: 0 auto 15px; background:white; overflow:hidden; display:none; box-shadow: 0 0 20px rgba(255,105,180,0.3);"></div>
+        <h2 id="call-target-display-name" style="color:white; text-shadow:0 2px 10px rgba(0,0,0,0.8); font-size:1.6em; margin-bottom:5px;">Tên đối phương</h2>
+        <div id="call-status" style="color:#ffc0cb; text-shadow:0 1px 5px rgba(0,0,0,0.5); margin-bottom:10px; font-size:1em; font-weight:lighter;">Đang kết nối...</div>
+        <div id="call-timer" style="color:white; text-shadow:0 1px 5px rgba(0,0,0,0.5); margin-bottom:30px; font-weight:bold; font-size:1.2em; letter-spacing:2px; font-family:monospace; display:none;">00:00</div>
     </div>
+
+    <div style="position:absolute; bottom:50px; z-index:5; width:100%; display:flex; justify-content:center; align-items:center; gap: 30px;">
+        <button onclick="endCall()" style="background:#ff4d4d; color:white; border:none; width:70px; height:70px; border-radius:50%; font-size:2em; cursor:pointer; box-shadow:0 5px 25px rgba(255,77,77,0.4); transition:0.3s; display:flex; align-items:center; justify-content:center;" 
+                onmouseover="this.style.transform='scale(1.1) rotate(135deg)'" 
+                onmouseout="this.style.transform='scale(1) rotate(0deg)'">
+            <i class="fas fa-phone-slash" style="transform: rotate(0deg);"></i>
+        </button>
+
+        </div>
 </div>
 <script>
   let replyingTo = null; // Lưu tin nhắn đang được trả lời {id, text, sender}
