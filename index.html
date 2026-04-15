@@ -16400,91 +16400,62 @@ function showPinActions(msgId) {
 let audioChunks = [];
 let recordingInterval;
 let startTime;
-    let isCancelling = false; // Biến để biết Henry đang muốn Hủy hay Gửi
-let voiceStream = null;   // Để tắt hẳn Micro sau khi thu xong
 
 // --- 1. BẮT ĐẦU THU ÂM ---
 async function startVoiceRecording() {
     try {
-        // Henry kiểm tra xem thiết bị có hỗ trợ MediaRecorder không
-        if (!window.MediaRecorder) {
-            alert("❌ Trình duyệt của bạn không hỗ trợ thu âm!");
-            return;
-        }
-
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        voiceStream = stream; // Lưu lại để tắt micro sau này
-        
-        // Henry thêm phần kiểm tra định dạng để mượt hơn trên mọi thiết bị
-        const mimeType = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4';
-        mediaRecorder = new MediaRecorder(stream, { mimeType });
-        
+        mediaRecorder = new MediaRecorder(stream);
         audioChunks = [];
-        isCancelling = false; // Reset trạng thái mỗi khi bắt đầu mới
 
         mediaRecorder.ondataavailable = (event) => {
-            if (event.data.size > 0) {
-                audioChunks.push(event.data);
-            }
+            audioChunks.push(event.data);
         };
 
         mediaRecorder.onstop = async () => {
-            // Tắt Micro ngay lập tức để tiết kiệm pin và bảo mật
-            if (voiceStream) {
-                voiceStream.getTracks().forEach(track => track.stop());
-            }
-
-            // NẾU KHÔNG PHẢI ĐANG HỦY THÌ MỚI GỬI
-            if (!isCancelling) {
-                // Sử dụng blob với type chuẩn mà trình duyệt vừa dùng
-                const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType });
-                if (audioBlob.size > 1000) {
-                    uploadVoiceToCloudinary(audioBlob);
-                }
-            } else {
-                console.log("🌸 Đã hủy đoạn thu âm, không tải lên Cloudinary.");
+            const audioBlob = new Blob(audioChunks, { type: 'audio/mpeg' });
+            if (audioBlob.size > 1000) { // Tránh gửi file rỗng
+                uploadVoiceToCloudinary(audioBlob);
             }
         };
 
-        // Chuyển giao diện (Giữ nguyên logic của Henry)
+        // Chuyển giao diện
         document.getElementById('chat-input').style.display = 'none';
         document.getElementById('voice-recording-bar').style.display = 'flex';
-        
-        const sendBtn = document.querySelector('.input-container button');
-        if (sendBtn) sendBtn.style.display = 'none';
+        toggleMediaMenu(); // Đóng menu dấu cộng
 
-        if (typeof toggleMediaMenu === 'function') toggleMediaMenu();
-
-        // HENRY LƯU Ý: Thêm số 100 vào start để thu âm ổn định hơn
-        mediaRecorder.start(100); 
-        
+        // Bắt đầu đếm giờ
+        mediaRecorder.start();
         startTime = Date.now();
-        // Xóa interval cũ nếu có để tránh chạy đè
-        if (recordingInterval) clearInterval(recordingInterval);
         recordingInterval = setInterval(updateRecordingTimer, 1000);
 
     } catch (err) {
-        console.error("Lỗi Micro:", err);
-        alert("❌ Henry ơi, bạn hãy kiểm tra xem Micro có đang bị app khác dùng không hoặc chạy web trên HTTPS nhé!");
+        alert("❌ Henry ơi, bạn cần cấp quyền truy cập Micro để dùng tính năng này nhé!");
     }
 }
 
-// --- 3. HỦY THU ÂM (KHI ẤN THÙNG RÁC) ---
+// --- 2. CẬP NHẬT ĐỒNG HỒ ---
+function updateRecordingTimer() {
+    const diff = Math.floor((Date.now() - startTime) / 1000);
+    const m = Math.floor(diff / 60).toString().padStart(2, '0');
+    const s = (diff % 60).toString().padStart(2, '0');
+    document.getElementById('recording-time').innerText = `${m}:${s}`;
+}
+
+// --- 3. HỦY THU ÂM (THÙNG RÁC) ---
 function cancelRecording() {
-    isCancelling = true; // Bật cờ Hủy lên
     if (mediaRecorder && mediaRecorder.state !== 'inactive') {
         mediaRecorder.stop();
     }
     resetChatBar();
     audioChunks = [];
-    addNotification("🗑️ HỆ THỐNG", "Đã hủy tin nhắn thoại.");
+    addNotification("🗑️ HỆ THỐNG", "Đã hủy đoạn thu âm.");
 }
 
-// --- 4. DỪNG VÀ GỬI (KHI ẤN NÚT GỬI TRÊN THANH VOICE) ---
+// --- 4. DỪNG VÀ GỬI ---
 function stopAndSendVoice() {
-    isCancelling = false; // Đảm bảo cờ Hủy đang tắt
     if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-        mediaRecorder.stop();
+        mediaRecorder.stop(); // Kích hoạt sự kiện onstop để upload
         resetChatBar();
     }
 }
@@ -16493,11 +16464,6 @@ function resetChatBar() {
     clearInterval(recordingInterval);
     document.getElementById('voice-recording-bar').style.display = 'none';
     document.getElementById('chat-input').style.display = 'block';
-    
-    // Hiện lại nút gửi văn bản cũ
-    const sendBtn = document.querySelector('.input-container button');
-    if (sendBtn) sendBtn.style.display = 'block';
-    
     document.getElementById('recording-time').innerText = "00:00";
 }
 
