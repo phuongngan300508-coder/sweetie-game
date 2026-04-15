@@ -16859,42 +16859,47 @@ function handleCallEvents(call, type) {
     });
 }
     
-  async function showIncomingCallPopup(from, type) {
+ async function showIncomingCallPopup(from, type) {
     // 1. Gán tên người gọi vào giao diện
     const nameEl = document.getElementById('call-caller-name');
     if (nameEl) nameEl.innerText = from;
 
-    // --- MỚI: XỬ LÝ HIỂN THỊ AVATAR (LẤY TỪ HỒ SƠ THEO TÊN) ---
+    // --- MỚI: XỬ LÝ HIỂN THỊ AVATAR (TRUY XUẤT ĐÚNG CẤU TRÚC HỒ SƠ) ---
     const photoEl = document.getElementById('call-caller-photo');
     const iconEl = document.getElementById('call-caller-icon');
 
     try {
-        // Henry kiểm tra Console xem 'from' có khớp 100% với tên trên Firebase không nhé
         console.log("🔍 Đang tìm hồ sơ người chơi:", from);
         
         const userSnap = await db.ref(`users/${from}`).once('value');
         const userData = userSnap.val();
         
-        if (userData && userData.avatar && photoEl && iconEl) {
-            photoEl.src = userData.avatar;
+        // SỬA TẠI ĐÂY: Truy cập vào userData.profile.customAvatar để khớp với hàm toggleModal
+        if (userData && userData.profile && userData.profile.customAvatar && photoEl && iconEl) {
+            photoEl.src = userData.profile.customAvatar;
             
-            // Đảm bảo ảnh tải xong mới hiển thị để tránh bị nháy icon
             photoEl.onload = () => {
                 photoEl.style.display = 'block';
                 iconEl.style.display = 'none';
-                console.log("🌸 Đã cập nhật avatar từ hồ sơ thành công!");
+                console.log("🌸 Đã cập nhật avatar từ hồ sơ (customAvatar) thành công!");
             };
             
-            // Trường hợp lỗi link ảnh trong hồ sơ
             photoEl.onerror = () => {
                 photoEl.style.display = 'none';
                 iconEl.style.display = 'block';
             };
         } else if (photoEl && iconEl) {
-            // Nếu hồ sơ không tồn tại hoặc không có ảnh
+            // Nếu không có ảnh custom, ta dùng icon dựa trên giới tính giống như trong hồ sơ
             photoEl.style.display = 'none';
             iconEl.style.display = 'block';
-            console.log("⚠️ Không tìm thấy ảnh trong hồ sơ người chơi.");
+            
+            // Logic icon giới tính đồng bộ với hồ sơ của Henry
+            if (userData && userData.profile && userData.profile.gender === 'Nữ') {
+                iconEl.className = 'fas fa-user-graduate';
+            } else {
+                iconEl.className = 'fas fa-user-tie';
+            }
+            console.log("⚠️ Dùng icon mặc định theo giới tính từ hồ sơ.");
         }
     } catch (err) {
         console.log("🌸 Lỗi khi truy cập Firebase lấy hồ sơ:", err);
@@ -16918,6 +16923,7 @@ function handleCallEvents(call, type) {
 
     console.log(`📞 Đang hiển thị cuộc gọi đến từ: ${from} (${type})`);
 }
+    
     // Biến toàn cục để quản lý âm thanh
 let callAudioContext;
 let callRingtoneInterval;
