@@ -7681,7 +7681,8 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
     <div style="position:relative; z-index:1; text-align:center;">
         <div id="call-target-avatar-large" style="width:100px; height:100px; border-radius:50%; border:3px solid #ff69b4; margin: 0 auto 15px; background:white; overflow:hidden; display:none;"></div>
         <h2 id="call-target-display-name" style="color:white; text-shadow:0 2px 10px rgba(0,0,0,0.5); font-size:1.5em; margin-bottom:5px;">Tên đối phương</h2>
-        <div id="call-timer" style="color:#ffc0cb; margin-bottom:30px; font-weight:bold; font-size:1.2em; letter-spacing:2px; font-family:monospace;">00:00</div>
+<div id="call-status" style="color:#ffc0cb; margin-bottom:10px; font-size:1em; font-weight:lighter;">Đang kết nối...</div>
+<div id="call-timer" style="color:#ffc0cb; margin-bottom:30px; font-weight:bold; font-size:1.2em; letter-spacing:2px; font-family:monospace; display:none;">00:00</div>
         
         <button onclick="endCall()" style="background:#dc3545; color:white; border:none; width:65px; height:65px; border-radius:50%; font-size:1.8em; cursor:pointer; box-shadow:0 5px 25px rgba(220,53,69,0.5); transition:0.3s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
             <i class="fas fa-phone-slash"></i>
@@ -16943,6 +16944,29 @@ function showCallScreen(name, type, isOutgoing) {
     document.getElementById('call-target-display-name').innerText = name;
     document.getElementById('remote-video').style.display = type === 'video' ? 'block' : 'none';
     document.getElementById('local-video').style.display = type === 'video' ? 'block' : 'none';
+
+    // --- MỚI: XỬ LÝ HIỂN THỊ TRẠNG THÁI KẾT NỐI ---
+    const statusEl = document.getElementById('call-status');
+    const timerEl = document.getElementById('call-timer');
+
+    if (isOutgoing) {
+        // Nếu Henry là người gọi: Hiện "Đang đổ chuông..." và ẩn đồng hồ đếm giây
+        if (statusEl) {
+            statusEl.innerText = "Đang đổ chuông...";
+            statusEl.style.display = "block";
+        }
+        if (timerEl) {
+            timerEl.style.display = "none";
+        }
+    } else {
+        // Nếu Henry là người nhận (đã bấm Accept): Ẩn chữ trạng thái, hiện đồng hồ
+        if (statusEl) {
+            statusEl.style.display = "none";
+        }
+        if (timerEl) {
+            timerEl.style.display = "block";
+        }
+    }
 }
 
 // Thêm tham số explicitReason để nhận biết các trường hợp đặc biệt như 'timeout'
@@ -17016,8 +17040,14 @@ function startCallTimer() {
     // Reset lại nếu có timer cũ
     stopCallTimer();
     
-    callStartTime = Date.now();
+    // --- MỚI: CHUYỂN ĐỔI GIAO DIỆN TỪ "ĐỔ CHUÔNG" SANG "ĐẾM GIỜ" ---
+    const statusEl = document.getElementById('call-status');
     const timerEl = document.getElementById('call-timer');
+    
+    if (statusEl) statusEl.style.display = "none"; // Ẩn dòng chữ "Đang đổ chuông..."
+    if (timerEl) timerEl.style.display = "block";  // Hiện con số 00:00 lên
+
+    callStartTime = Date.now();
     
     callTimerInterval = setInterval(() => {
         const now = Date.now();
@@ -17026,18 +17056,32 @@ function startCallTimer() {
         const minutes = Math.floor(diff / 60).toString().padStart(2, '0');
         const seconds = (diff % 60).toString().padStart(2, '0');
         
-        timerEl.innerText = `${minutes}:${seconds}`;
-        
-        // Hiệu ứng nhịp đập nhẹ cho chữ cho xịn
-        timerEl.style.opacity = (diff % 2 === 0) ? "1" : "0.7";
+        if (timerEl) {
+            timerEl.innerText = `${minutes}:${seconds}`;
+            
+            // Hiệu ứng nhịp đập nhẹ cho chữ cho xịn (Giữ nguyên của Henry)
+            timerEl.style.opacity = (diff % 2 === 0) ? "1" : "0.7";
+        }
     }, 1000);
 }
-
+    
 // Hàm dừng đếm giờ
 function stopCallTimer() {
     clearInterval(callTimerInterval);
+    
     const timerEl = document.getElementById('call-timer');
-    if (timerEl) timerEl.innerText = "00:00";
+    const statusEl = document.getElementById('call-status');
+
+    // --- MỚI: RESET TRẠNG THÁI HIỂN THỊ VỀ MẶC ĐỊNH ---
+    if (timerEl) {
+        timerEl.innerText = "00:00";
+        timerEl.style.display = "none"; // Ẩn đồng hồ để lần sau hiện "Đang kết nối" trước
+    }
+
+    if (statusEl) {
+        statusEl.innerText = "Đang kết nối..."; // Reset nội dung chữ trạng thái
+        statusEl.style.display = "block";       // Hiện lại để sẵn sàng cho cuộc gọi mới
+    }
 }
 
     // Hàm tự động gửi thông báo cuộc gọi vào đoạn chat
