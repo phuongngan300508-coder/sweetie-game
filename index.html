@@ -7676,9 +7676,14 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
 </div>
     
 <div id="call-screen" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:999999; flex-direction:column; align-items:center; backdrop-filter:blur(20px);">
-    <video id="remote-video" style="width:100%; height:100%; object-fit:cover; position:absolute; top:0; left:0;"></video>
+    <video id="remote-video" style="width:100%; height:100%; object-fit:cover; position:absolute; top:0; left:0; transition: opacity 0.3s;"></video>
     
-    <video id="local-video" muted style="width:100px; height:150px; object-fit:cover; position:absolute; top:20px; right:20px; border-radius:12px; border:1.5px solid rgba(255,255,255,0.6); z-index:10; background:#111; box-shadow: 0 4px 15px rgba(0,0,0,0.5);"></video>
+    <div id="remote-status-icons" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 4; display: flex; gap: 30px; pointer-events: none;">
+        <i id="icon-remote-mic-off" class="fas fa-microphone-slash" style="color: white; font-size: 3.5em; opacity: 0; transition: 0.3s; text-shadow: 0 0 15px rgba(0,0,0,0.5);"></i>
+        <i id="icon-remote-cam-off" class="fas fa-video-slash" style="color: white; font-size: 3.5em; opacity: 0; transition: 0.3s; text-shadow: 0 0 15px rgba(0,0,0,0.5);"></i>
+    </div>
+
+    <video id="local-video" muted style="width:100px; height:150px; object-fit:cover; position:absolute; top:20px; right:20px; border-radius:12px; border:1.5px solid rgba(255,255,255,0.6); z-index:10; background:#111; box-shadow: 0 4px 15px rgba(0,0,0,0.5); transition: opacity 0.3s;"></video>
     
     <div style="position:relative; z-index:5; text-align:center; margin-top: 15vh;"> 
         <div id="call-target-avatar-large" style="width:90px; height:90px; border-radius:50%; border:2px solid #ff69b4; margin: 0 auto 15px; background:white; overflow:hidden; display:none;"></div>
@@ -7687,15 +7692,29 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
         <div id="call-timer" style="color:white; text-shadow:0 1px 4px rgba(0,0,0,0.6); font-weight:bold; font-size:1.1em; letter-spacing:1.5px; font-family:monospace; display:none; margin-top:5px;">00:00</div>
     </div>
 
-    <div style="position:absolute; bottom: 12%; z-index:5; width:100%; display:flex; justify-content:center; align-items:center;">
-        <div style="display:flex; flex-direction:column; align-items:center; gap:15px;">
-            <button onclick="endCall()" style="background:#ff4d4d; color:white; border:none; width:65px; height:65px; border-radius:50%; font-size:1.6em; cursor:pointer; box-shadow:0 4px 20px rgba(255,77,77,0.5); transition:all 0.3s ease; display:flex; align-items:center; justify-content:center;" 
-                    onmouseover="this.style.backgroundColor='#ff3333'; this.style.transform='scale(1.05)'" 
-                    onmouseout="this.style.backgroundColor='#ff4d4d'; this.style.transform='scale(1)'">
+    <div style="position:absolute; bottom: 12%; z-index:5; width:100%; display:flex; justify-content:center; align-items:center; gap: 35px;">
+        
+        <div style="display:flex; flex-direction:column; align-items:center; gap:10px;">
+            <button id="btn-toggle-mic" onclick="toggleMic()" style="background:rgba(255,255,255,0.2); color:white; border:none; width:55px; height:55px; border-radius:50%; font-size:1.3em; cursor:pointer; backdrop-filter:blur(5px); transition:0.3s;">
+                <i class="fas fa-microphone"></i>
+            </button>
+            <span style="color:white; font-size:0.65em; text-transform:uppercase; opacity:0.8;">Mic</span>
+        </div>
+
+        <div style="display:flex; flex-direction:column; align-items:center; gap:10px;">
+            <button onclick="endCall()" style="background:#ff4d4d; color:white; border:none; width:65px; height:65px; border-radius:50%; font-size:1.6em; cursor:pointer; box-shadow:0 4px 20px rgba(255,77,77,0.5); transition:all 0.3s ease; display:flex; align-items:center; justify-content:center;">
                 <i class="fas fa-phone-slash"></i>
             </button>
-            <span style="color:white; font-size:0.75em; text-transform:uppercase; letter-spacing:1px; opacity:0.8; text-shadow: 0 1px 3px rgba(0,0,0,0.5);">Kết thúc</span>
+            <span style="color:white; font-size:0.65em; text-transform:uppercase; opacity:0.8;">Kết thúc</span>
         </div>
+
+        <div id="container-toggle-cam" style="display:flex; flex-direction:column; align-items:center; gap:10px;">
+            <button id="btn-toggle-cam" onclick="toggleCam()" style="background:rgba(255,255,255,0.2); color:white; border:none; width:55px; height:55px; border-radius:50%; font-size:1.3em; cursor:pointer; backdrop-filter:blur(5px); transition:0.3s;">
+                <i class="fas fa-video"></i>
+            </button>
+            <span style="color:white; font-size:0.65em; text-transform:uppercase; opacity:0.8;">Video</span>
+        </div>
+
     </div>
 </div>
 <script>
@@ -16821,6 +16840,24 @@ function endCall(reason = null) {
 // --- 5. XỬ LÝ SỰ KIỆN LUỒNG DỮ LIỆU ---
 function handleCallEvents(call, type) {
     currentCall = call;
+    const targetID = call.peer; // ID của người ở đầu dây bên kia
+
+    // --- MỚI: LẮNG NGHE TRẠNG THÁI MIC/CAM TỪ ĐỐI PHƯƠNG (Firebase Realtime) ---
+    db.ref(`calls/${targetID}/settings`).on('value', (snap) => {
+        const settings = snap.val();
+        const micIcon = document.getElementById('icon-remote-mic-off');
+        const camIcon = document.getElementById('icon-remote-cam-off');
+        const remoteVid = document.getElementById('remote-video');
+
+        if (settings) {
+            // Hiển thị icon gạch chéo nếu đối phương tắt mic/cam
+            if (micIcon) micIcon.style.opacity = (settings.mic === false) ? "1" : "0";
+            if (camIcon) camIcon.style.opacity = (settings.cam === false) ? "1" : "0";
+            
+            // Nếu đối phương tắt cam, ẩn video của họ đi (hiện nền đen/avatar)
+            if (remoteVid) remoteVid.style.opacity = (settings.cam === false) ? "0" : "1";
+        }
+    });
 
     call.on('stream', async (remoteStream) => { // Thêm async ở đây để dùng được await
         // --- MỚI: HỦY BỘ ĐẾM CHỜ 1 PHÚT NGAY KHI KẾT NỐI THÀNH CÔNG ---
@@ -16832,6 +16869,12 @@ function handleCallEvents(call, type) {
 
         const remoteVideo = document.getElementById('remote-video');
         const localVideo = document.getElementById('local-video');
+
+        // Hiện/Ẩn nút Cam dựa theo loại call khi bắt đầu nhận stream
+        const camBtnContainer = document.getElementById('container-toggle-cam');
+        if (camBtnContainer) {
+            camBtnContainer.style.display = (type === 'video') ? 'flex' : 'none';
+        }
 
         if (type === 'video') {
             remoteVideo.srcObject = remoteStream;
@@ -16860,6 +16903,9 @@ function handleCallEvents(call, type) {
     });
 
     call.on('close', () => {
+        // Gỡ bỏ lắng nghe Firebase của đối phương để tránh rác bộ nhớ
+        db.ref(`calls/${targetID}/settings`).off();
+
         // --- MỚI: DỪNG ĐỒNG HỒ KHI KẾT THÚC ---
         if (typeof stopCallTimer === 'function') {
             stopCallTimer();
@@ -17167,6 +17213,48 @@ function sendCallSystemMessage(type, status) {
         if (currentChatFriend) db.ref(`calls/${currentChatFriend}`).remove();
     }
 });
+
+    let isMicOn = true;
+let isCamOn = true;
+
+// 1. Hàm Bật/Tắt Mic
+function toggleMic() {
+    if (!localStream) return;
+    isMicOn = !isMicOn;
+    
+    // Tắt track âm thanh trong luồng dữ liệu
+    localStream.getAudioTracks().forEach(track => track.enabled = isMicOn);
+    
+    // Cập nhật giao diện nút bấm
+    const btn = document.getElementById('btn-toggle-mic');
+    btn.style.background = isMicOn ? "rgba(255,255,255,0.2)" : "white";
+    btn.style.color = isMicOn ? "white" : "#333";
+    btn.innerHTML = isMicOn ? '<i class="fas fa-microphone"></i>' : '<i class="fas fa-microphone-slash"></i>';
+
+    // Lưu trạng thái lên Firebase để đối phương thấy
+    db.ref(`calls/${currentUser}/settings/mic`).set(isMicOn);
+}
+
+// 2. Hàm Bật/Tắt Camera
+function toggleCam() {
+    if (!localStream || window.currentCallType !== 'video') return;
+    isCamOn = !isCamOn;
+    
+    // Tắt track hình ảnh
+    localStream.getVideoTracks().forEach(track => track.enabled = isCamOn);
+    
+    // Ẩn/Hiện video nhỏ của mình
+    document.getElementById('local-video').style.opacity = isCamOn ? "1" : "0";
+
+    // Cập nhật giao diện nút bấm
+    const btn = document.getElementById('btn-toggle-cam');
+    btn.style.background = isCamOn ? "rgba(255,255,255,0.2)" : "white";
+    btn.style.color = isCamOn ? "white" : "#333";
+    btn.innerHTML = isCamOn ? '<i class="fas fa-video"></i>' : '<i class="fas fa-video-slash"></i>';
+
+    // Lưu trạng thái lên Firebase
+    db.ref(`calls/${currentUser}/settings/cam`).set(isCamOn);
+}
 </script>
 </body>
 </html>
