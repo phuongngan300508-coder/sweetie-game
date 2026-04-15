@@ -17009,15 +17009,14 @@ function endCallUI(explicitReason = null) {
     const callScreen = document.getElementById('call-screen');
     const timerEl = document.getElementById('call-timer');
 
-    // 1. Kiểm tra xem Popup gọi đến có ĐANG HIỆN hay không
+    // 1. Kiểm tra Popup gọi đến có ĐANG HIỆN hay không
     const isIncomingShowing = (overlay && (overlay.style.display === 'flex' || overlay.style.display === 'block')) || 
                                (incomingPopup && incomingPopup.style.display === 'block');
     
-    // 2. CHỐT CHẶN TRẠNG THÁI: Nếu đồng hồ đã hiện lên (block) thì chắc chắn là đã kết nối thành công
-    // Cách này chính xác hơn innerText vì đôi khi 00:00 nhưng cuộc gọi đã "thông"
+    // 2. CHỐT CHẶN: Chỉ cần timerEl đang hiển thị (block) -> Đã bắt đầu cuộc gọi thành công
     const isConnected = timerEl && timerEl.style.display !== 'none';
 
-    // --- BƯỚC 2: DỌN DẸP UI (Giữ nguyên logic của Henry) ---
+    // --- BƯỚC 2: DỌN DẸP UI (Giữ nguyên 100% nội dung của Henry) ---
     if (callScreen) callScreen.style.display = 'none';
     if (incomingPopup) incomingPopup.style.display = 'none'; 
     if (overlay) overlay.style.display = 'none';
@@ -17029,11 +17028,15 @@ function endCallUI(explicitReason = null) {
 
     if (typeof stopRingtone === 'function') stopRingtone();
 
-    // --- BƯỚC 3: PHÂN LOẠI TRẠNG THÁI ---
+    // --- BƯỚC 3: PHÂN LOẠI TRẠNG THÁI (Sửa triệt để tại đây) ---
     let status = 'ended'; 
     const callType = window.currentCallType || 'audio'; 
 
-    if (!isConnected) {
+    if (isConnected) {
+        // NẾU ĐÃ HIỆN BỘ ĐẾM GIỜ -> LUÔN LUÔN LÀ ENDED
+        status = 'ended';
+    } else {
+        // Chỉ khi CHƯA hiện bộ đếm giờ mới xét các trường hợp dưới đây
         if (explicitReason === 'timeout') {
             status = 'missed';
         } else if (isIncomingShowing) {
@@ -17043,8 +17046,7 @@ function endCallUI(explicitReason = null) {
         }
     }
 
-    // --- BƯỚC 4: GỬI THÔNG BÁO (THÊM CHỐNG LẶP TIN NHẮN) ---
-    // Kiểm tra nếu đang xử lý kết thúc rồi thì không gửi tin nhắn nữa
+    // --- BƯỚC 4: GỬI THÔNG BÁO & CHỐNG LẶP ---
     if (window.isEndingCall) return; 
     window.isEndingCall = true;
 
@@ -17054,7 +17056,7 @@ function endCallUI(explicitReason = null) {
 
     if (typeof stopCallTimer === 'function') {
         stopCallTimer();
-        console.log(`🌸 Trạng thái: ${status}. Đã đóng giao diện và reset đồng hồ.`);
+        console.log(`🌸 Kết thúc triệt để. Trạng thái: ${status}`);
     }
 
     if (window.callTimeoutTimer) {
@@ -17062,7 +17064,7 @@ function endCallUI(explicitReason = null) {
         window.callTimeoutTimer = null;
     }
 
-    // Reset cờ sau 1 giây để sẵn sàng cho cuộc gọi tiếp theo
+    // Reset cờ sau 1 giây để tránh lặp từ các sự kiện Firebase/PeerJS chạy song song
     setTimeout(() => { window.isEndingCall = false; }, 1000);
 }
     
