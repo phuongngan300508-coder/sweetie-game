@@ -17007,24 +17007,33 @@ function showCallScreen(name, type, isOutgoing) {
 
 // Thêm tham số explicitReason để nhận biết các trường hợp đặc biệt như 'timeout'
 function endCallUI(explicitReason = null) {
-    // --- 1. LẤY DỮ LIỆU NGAY LẬP TỨC (QUAN TRỌNG NHẤT) ---
+    // --- 1. LẤY DỮ LIỆU NGAY LẬP TỨC ---
     const timerEl = document.getElementById('call-timer');
     const overlay = document.getElementById('call-overlay');
     const incomingPopup = document.getElementById('incoming-call-popup');
+    const callScreen = document.getElementById('call-screen');
 
-    // Phải lấy thời lượng TRƯỚC khi thực hiện bất kỳ lệnh ẩn giao diện nào
-    const currentDuration = timerEl ? timerEl.innerText : "00:00";
+    // Lấy thời lượng
+    const currentDuration = timerEl ? timerEl.innerText.trim() : "00:00";
     
-    // Kiểm tra trạng thái hiển thị TRƯỚC khi gán style.display = 'none'
+    // Kiểm tra xem màn hình đàm thoại có đang hiện không (Nếu hiện nghĩa là đã bắt máy)
+    const isChatting = callScreen && callScreen.style.display === 'flex';
+    
+    // Kiểm tra trạng thái popup gọi đến
     const isIncomingShowing = (overlay && overlay.style.display === 'flex') || 
                                (incomingPopup && incomingPopup.style.display === 'block');
 
-    // --- 2. PHÂN LOẠI TRẠNG THÁI (Dựa trên biến vừa lưu) ---
+    // --- 2. PHÂN LOẠI TRẠNG THÁI ---
     const callType = window.currentCallType || 'audio'; 
     let status = 'ended'; 
 
+    // Nếu thời gian là 00:00, ta xét tiếp
     if (currentDuration === "00:00") {
-        if (explicitReason === 'timeout') {
+        if (isChatting) {
+            // Trường hợp đặc biệt: Đã hiện màn hình nói chuyện nhưng tắt quá nhanh (< 1s)
+            // Ta vẫn tính là 'ended' (Đã kết thúc) thay vì nhỡ
+            status = 'ended';
+        } else if (explicitReason === 'timeout') {
             status = 'missed';
         } else if (isIncomingShowing) {
             status = 'declined';
@@ -17033,35 +17042,34 @@ function endCallUI(explicitReason = null) {
         }
     }
 
-    // Gửi tin nhắn thông báo ngay
+    // Gửi tin nhắn thông báo
     if (typeof sendCallSystemMessage === 'function') {
         sendCallSystemMessage(callType, status);
     }
 
-    // --- 3. DỌN DẸP GIAO DIỆN (GIỮ NGUYÊN NỘI DUNG CŨ 100%) ---
-    document.getElementById('call-screen').style.display = 'none';
+    // --- 3. DỌN DẸP GIAO DIỆN (GIỮ NGUYÊN 100%) ---
+    if (callScreen) callScreen.style.display = 'none';
     if (incomingPopup) incomingPopup.style.display = 'none'; 
+    if (overlay) overlay.style.display = 'none';
+
     const remoteVideo = document.getElementById('remote-video');
     const localVideo = document.getElementById('local-video');
     if (remoteVideo) remoteVideo.srcObject = null;
     if (localVideo) localVideo.srcObject = null;
 
-    if (overlay) overlay.style.display = 'none';
-    
-    if (typeof stopRingtone === 'function') {
-        stopRingtone();
-    }
+    if (typeof stopRingtone === 'function') stopRingtone();
 
-    // --- 4. RESET ĐỒNG HỒ VÀ BỘ ĐẾM ---
+    // --- 4. RESET ĐỒNG HỒ ---
     if (typeof stopCallTimer === 'function') {
         stopCallTimer();
-        console.log(`🌸 Trạng thái: ${status}. Đã đóng giao diện và reset đồng hồ.`);
     }
 
     if (window.callTimeoutTimer) {
         clearTimeout(window.callTimeoutTimer);
         window.callTimeoutTimer = null;
     }
+    
+    console.log(`🌸 Chốt trạng thái: ${status}`);
 }
     
     let callTimerInterval;
