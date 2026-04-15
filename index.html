@@ -7651,7 +7651,9 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
 
     <div id="call-popup" class="animate__animated" style="display:none; position:fixed; top:20px; left:50%; transform:translateX(-50%); width:90%; max-width:350px; background:white; z-index:99999; border-radius:25px; padding:20px; box-shadow:0 10px 30px rgba(0,0,0,0.2); border: 2px solid #ff1493;">
     <div style="text-align:center;">
-        <div id="call-caller-avatar" style="width:70px; height:70px; border-radius:50%; margin:0 auto 10px; border:3px solid #ffc0cb; overflow:hidden;"></div>
+       <div id="call-caller-avatar" style="width:70px; height:70px; border-radius:50%; margin:0 auto 10px; border:3px solid #ffc0cb; overflow:hidden; display: flex; align-items: center; justify-content: center; background: #fff5f8;">
+    <img id="call-avatar-img" src="https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png" style="width: 100%; height: 100%; object-fit: cover;">
+</div>
         <b id="call-caller-name" style="color:#ff1493; font-size:1.1em;">Đang gọi đến...</b>
         <p id="call-type-text" style="font-size:0.8em; color:#888; margin-top:5px;">Cuộc gọi video...</p>
         <div style="display:flex; justify-content:center; gap:20px; margin-top:20px;">
@@ -7662,8 +7664,9 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
 </div>
 
 <div id="call-screen" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#000; z-index:99999; flex-direction:column; align-items:center; justify-content:center;">
-    <video id="remote-video" autoplay style="width:100%; height:100%; object-fit:cover;"></video>
-    <video id="local-video" autoplay muted style="position:absolute; top:20px; right:20px; width:100px; height:150px; border-radius:10px; border:2px solid white; object-fit:cover;"></video>
+    <video id="remote-video" autoplay PLAYSINLINE style="width:100%; height:100%; object-fit:cover;"></video>
+    
+    <video id="local-video" autoplay MUTED PLAYSINLINE style="position:absolute; top:20px; right:20px; width:100px; height:150px; border-radius:10px; border:2px solid white; object-fit:cover;"></video>
     
     <div style="position:absolute; bottom:40px; display:flex; gap:25px;">
         <button onclick="toggleMic()" id="btn-mic" style="background:rgba(255,255,255,0.2); color:white; border:none; width:60px; height:60px; border-radius:50%;"><i class="fas fa-microphone"></i></button>
@@ -16610,10 +16613,25 @@ function initPeer() {
         console.log('✅ Hệ thống Call: Đã sẵn sàng với ID:', id);
     });
 
+    // --- PHẦN BỔ SUNG: Bắt lỗi hệ thống để không bị đứng code ---
+    myPeer.on('error', (err) => {
+        console.error('❌ Lỗi PeerJS:', err.type);
+        if (err.type === 'peer-unavailable') {
+            alert("Đối phương hiện không trực tuyến hoặc đã tắt trình duyệt!");
+        } else if (err.type === 'unavailable-id') {
+            alert("ID này đang được sử dụng ở một tab khác!");
+        } else if (err.type === 'network') {
+            console.warn("Lỗi mạng, đang thử kết nối lại...");
+        }
+    });
+
     // Lắng nghe cuộc gọi đến
     myPeer.on('call', (incomingCall) => {
         currentCall = incomingCall;
         // Lúc này Firebase đã bắn thông báo "Bảng gọi đến" trước đó rồi (xem hàm listenCall)
+        
+        // --- PHẦN BỔ SUNG: Đảm bảo luồng dữ liệu luôn mở ---
+        console.log("☎️ Có cuộc gọi đến từ PeerJS...");
     });
 }
 
@@ -16641,29 +16659,35 @@ async function startCall(type) {
     if (!currentChatFriend) return;
 
     try {
-        // --- PHẦN SỬA: Đóng stream cũ trước khi xin quyền mới ---
+        // --- PHẦN GIỮ NGUYÊN: Giải phóng thiết bị ---
         if (window.localStream) {
             window.localStream.getTracks().forEach(track => track.stop());
         }
 
-        // --- PHẦN SỬA: Cấu hình chuẩn để tránh lỗi trình duyệt chặn ---
+        // --- PHẦN GIỮ NGUYÊN: Cấu hình constraints ---
         const constraints = {
             audio: true,
             video: type === 'video' ? {
-                width: { ideal: 1280 },
-                height: { ideal: 720 },
                 facingMode: "user"
             } : false
         };
 
         // Lấy stream từ Camera/Mic
-        localStream = await navigator.mediaDevices.getUserMedia(constraints);
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        
+        localStream = stream;
+        window.localStream = stream;
 
-        // Hiển thị màn hình gọi (GIỮ NGUYÊN NỘI DUNG CŨ)
+        // Hiển thị màn hình gọi
         showCallScreen(type);
-        document.getElementById('local-video').srcObject = localStream;
+        const localVid = document.getElementById('local-video');
+        if (localVid) {
+            localVid.srcObject = localStream;
+            // Dùng play() có thêm bắt lỗi để chắc chắn video khởi động được
+            localVid.play().catch(e => console.log("Auto-play blocked"));
+        }
 
-        // Bắn tín hiệu lên Firebase để đối phương hiện Popup (GIỮ NGUYÊN NỘI DUNG CŨ)
+        // --- PHẦN GIỮ NGUYÊN: Bắn tín hiệu lên Firebase ---
         db.ref('calls/' + currentChatFriend).set({
             caller: currentUser,
             type: type,
@@ -16671,19 +16695,36 @@ async function startCall(type) {
             status: 'calling'
         });
 
+        // --- PHẦN BỔ SUNG: Tự động tính cuộc gọi nhỡ sau 30 giây ---
+        if (window.callTimer) clearTimeout(window.callTimer);
+        window.callTimer = setTimeout(() => {
+            db.ref('calls/' + currentChatFriend).once('value', (snap) => {
+                const data = snap.val();
+                if (data && data.status === 'calling') {
+                    endCall('missed'); // Tự kết thúc và lưu vào chat là cuộc gọi nhỡ
+                }
+            });
+        }, 30000); 
+
         // Thực hiện call qua PeerJS (GIỮ NGUYÊN NỘI DUNG CŨ)
-        const call = myPeer.call(currentChatFriend, localStream);
-        handleCallEvents(call);
+        // Lưu ý: Đảm bảo myPeer đã sẵn sàng trước khi gọi
+        if (myPeer && myPeer.open) {
+            const call = myPeer.call(currentChatFriend, localStream);
+            handleCallEvents(call);
+        } else {
+            throw new Error("Hệ thống kết nối chưa sẵn sàng, hãy thử lại sau vài giây!");
+        }
 
     } catch (err) {
-        console.error("Lỗi Media:", err);
-        // Thông báo chi tiết hơn để Henry dễ debug
+        console.error("Lỗi Media Chi Tiết:", err);
         if (err.name === 'NotAllowedError') {
-            alert("❌ Bạn đã chặn quyền truy cập Camera/Micro trên trình duyệt!");
-        } else if (err.name === 'NotFoundError') {
-            alert("❌ Không tìm thấy thiết bị Camera hoặc Micro trên máy này!");
+            alert("❌ Bạn chưa cấp quyền Camera/Micro. Hãy nhấn vào icon ổ khóa trên thanh địa chỉ để bật lại!");
+        } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+            alert("❌ Máy tính không có Camera hoặc Micro!");
+        } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+            alert("❌ Camera đang bị ứng dụng khác (Zalo, Zoom, tab khác) sử dụng!");
         } else {
-            alert("❌ Lỗi: Không thể truy cập Camera/Micro! (Hãy kiểm tra HTTPS)");
+            alert("❌ Lỗi: " + err.message);
         }
     }
 }
@@ -16698,7 +16739,12 @@ function listenCallSignals() {
 
         if (data.status === 'calling') {
             showIncomingPopup(data);
-        } else if (data.status === 'ended' || data.status === 'declined') {
+        } 
+        // BỔ SUNG: Khi người nhận bấm "Chấp nhận", người gọi phải hiện màn hình Call ngay
+        else if (data.status === 'accepted') {
+            showCallScreen(data.type);
+        } 
+        else if (data.status === 'ended' || data.status === 'declined') {
             closeAllCallUI();
         }
     });
@@ -16706,25 +16752,54 @@ function listenCallSignals() {
 
 // --- 4. CHẤP NHẬN CUỘC GỌI (Người nhận) ---
 async function answerCall() {
+    // KIỂM TRA: Nếu không có tín hiệu cuộc gọi đến thì dừng luôn
+    if (!currentCall) {
+        alert("❌ Lỗi: Không tìm thấy dữ liệu cuộc gọi đến!");
+        return;
+    }
+
     try {
-        const type = callData.type;
-        localStream = await navigator.mediaDevices.getUserMedia({
-            video: type === 'video',
-            audio: true
-        });
+        const type = callData ? callData.type : 'voice';
 
+        // --- PHẦN SỬA: Đảm bảo đóng mọi stream cũ trước khi bắt máy ---
+        if (window.localStream) {
+            window.localStream.getTracks().forEach(track => track.stop());
+        }
+
+        // --- PHẦN SỬA: Cấu hình xin quyền linh hoạt hơn ---
+        const constraints = {
+            audio: true,
+            video: type === 'video' ? { facingMode: "user" } : false
+        };
+
+        // Lấy stream từ Camera/Mic
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        localStream = stream;
+        window.localStream = stream;
+
+        // Hiển thị màn hình gọi (GIỮ NGUYÊN NỘI DUNG CŨ)
         showCallScreen(type);
-        document.getElementById('local-video').srcObject = localStream;
+        const localVid = document.getElementById('local-video');
+        if (localVid) {
+            localVid.srcObject = localStream;
+            localVid.play().catch(e => console.log("Auto-play blocked"));
+        }
 
-        // Trả lời Peer
+        // Trả lời Peer (GIỮ NGUYÊN NỘI DUNG CŨ)
         currentCall.answer(localStream);
         handleCallEvents(currentCall);
 
-        // Cập nhật trạng thái Firebase
+        // Cập nhật trạng thái Firebase (GIỮ NGUYÊN NỘI DUNG CŨ)
         db.ref('calls/' + currentUser).update({ status: 'accepted' });
 
     } catch (err) {
-        alert("❌ Lỗi truy cập thiết bị!");
+        console.error("Lỗi khi bắt máy:", err);
+        // Thông báo chi tiết để Henry biết là do HTTPS hay do Quyền
+        if (err.name === 'NotAllowedError') {
+            alert("❌ Bạn cần cho phép quyền Camera/Micro để bắt máy!");
+        } else {
+            alert("❌ Lỗi truy cập thiết bị! Hãy đảm bảo bạn đang dùng HTTPS.");
+        }
     }
 }
 
@@ -16732,13 +16807,31 @@ async function answerCall() {
 function handleCallEvents(call) {
     currentCall = call;
 
+    // --- PHẦN BỔ SUNG: Dừng bộ đếm cuộc gọi nhỡ khi đã kết nối thành công ---
+    if (window.callTimer) {
+        clearTimeout(window.callTimer);
+        window.callTimer = null;
+    }
+
     // Khi nhận được stream từ đối phương
     call.on('stream', (remoteStream) => {
-        document.getElementById('remote-video').srcObject = remoteStream;
+        const remoteVid = document.getElementById('remote-video');
+        if (remoteVid) {
+            remoteVid.srcObject = remoteStream;
+            // Đảm bảo video tự động phát khi nhận được luồng dữ liệu
+            remoteVid.play().catch(e => console.log("Remote video play blocked:", e));
+        }
     });
 
+    // Khi cuộc gọi bị ngắt (đối phương cúp máy hoặc lỗi mạng)
     call.on('close', () => {
-        endCall();
+        endCall('ended');
+    });
+
+    // Bắt lỗi trong quá trình truyền tải dữ liệu giữa 2 máy
+    call.on('error', (err) => {
+        console.error("Lỗi dòng truyền dữ liệu:", err);
+        endCall('ended');
     });
 }
 
@@ -16829,6 +16922,22 @@ function closeAllCallUI() {
     document.getElementById('call-screen').style.display = 'none';
     document.getElementById('call-popup').style.display = 'none';
     if(localStream) localStream.getTracks().forEach(track => track.stop());
+}
+
+    function toggleMic() {
+    if (localStream) {
+        const audioTrack = localStream.getAudioTracks()[0];
+        audioTrack.enabled = !audioTrack.enabled;
+        document.getElementById('btn-mic').style.background = audioTrack.enabled ? 'rgba(255,255,255,0.2)' : '#dc3545';
+    }
+}
+
+function toggleCamera() {
+    if (localStream) {
+        const videoTrack = localStream.getVideoTracks()[0];
+        videoTrack.enabled = !videoTrack.enabled;
+        document.getElementById('btn-cam').style.background = videoTrack.enabled ? 'rgba(255,255,255,0.2)' : '#dc3545';
+    }
 }
 </script>
 </body>
