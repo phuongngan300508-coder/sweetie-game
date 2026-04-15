@@ -16401,39 +16401,50 @@ let audioChunks = [];
 let recordingInterval;
 let startTime;
 
-// --- 1. BẮT ĐẦU THU ÂM ---
+// Thêm biến này ở đầu file cùng với mediaRecorder
+let isDiscarded = false; 
+
+// --- 1. SỬA LẠI HÀM BẮT ĐẦU ---
 async function startVoiceRecording() {
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         mediaRecorder = new MediaRecorder(stream);
         audioChunks = [];
+        isDiscarded = false; // Reset chốt chặn mỗi lần thu mới
 
         mediaRecorder.ondataavailable = (event) => {
             audioChunks.push(event.data);
         };
 
         mediaRecorder.onstop = async () => {
+            // Tắt Micro hẳn để trình duyệt không báo chấm đỏ nữa
+            stream.getTracks().forEach(track => track.stop());
+
+            // CHỐT CHẶN: Nếu isDiscarded là true (đã ấn thùng rác) thì DỪNG LUÔN
+            if (isDiscarded) {
+                console.log("🌸 Hệ thống: Đã hủy bỏ đoạn thu âm theo yêu cầu.");
+                return; 
+            }
+
             const audioBlob = new Blob(audioChunks, { type: 'audio/mpeg' });
-            if (audioBlob.size > 1000) { // Tránh gửi file rỗng
+            if (audioBlob.size > 1000) {
                 uploadVoiceToCloudinary(audioBlob);
             }
         };
 
-        // Chuyển giao diện
         document.getElementById('chat-input').style.display = 'none';
         document.getElementById('voice-recording-bar').style.display = 'flex';
-        toggleMediaMenu(); // Đóng menu dấu cộng
+        if (typeof toggleMediaMenu === 'function') toggleMediaMenu();
 
-        // Bắt đầu đếm giờ
         mediaRecorder.start();
         startTime = Date.now();
         recordingInterval = setInterval(updateRecordingTimer, 1000);
 
     } catch (err) {
-        alert("❌ Henry ơi, bạn cần cấp quyền truy cập Micro để dùng tính năng này nhé!");
+        alert("❌ Henry ơi, bạn cần cấp quyền truy cập Micro nhé!");
     }
 }
-
+    
 // --- 2. CẬP NHẬT ĐỒNG HỒ ---
 function updateRecordingTimer() {
     const diff = Math.floor((Date.now() - startTime) / 1000);
@@ -16442,20 +16453,25 @@ function updateRecordingTimer() {
     document.getElementById('recording-time').innerText = `${m}:${s}`;
 }
 
-// --- 3. HỦY THU ÂM (THÙNG RÁC) ---
+// --- 3. SỬA LẠI HÀM HỦY (THÙNG RÁC) ---
 function cancelRecording() {
+    isDiscarded = true; // Đóng chốt chặn: "Đừng gửi tin này!"
+    
     if (mediaRecorder && mediaRecorder.state !== 'inactive') {
         mediaRecorder.stop();
     }
+    
     resetChatBar();
     audioChunks = [];
     addNotification("🗑️ HỆ THỐNG", "Đã hủy đoạn thu âm.");
 }
 
-// --- 4. DỪNG VÀ GỬI ---
+// --- 4. HÀM GỬI (GIỮ NGUYÊN HOẶC CẬP NHẬT ĐỂ CHẮC CHẮN) ---
 function stopAndSendVoice() {
+    isDiscarded = false; // Mở chốt chặn: "Gửi tin này đi!"
+    
     if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-        mediaRecorder.stop(); // Kích hoạt sự kiện onstop để upload
+        mediaRecorder.stop();
         resetChatBar();
     }
 }
