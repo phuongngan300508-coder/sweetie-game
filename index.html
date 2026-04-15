@@ -16611,60 +16611,65 @@ let callData = null; // Lưu thông tin cuộc gọi hiện tại
 
 // --- 1. KHỞI TẠO PEER (Cần chạy sau khi có currentUser) ---
 function initPeer() {
-    // 1. Kiểm tra an toàn: Nếu chưa có UID thì không khởi tạo, tránh lỗi treo
-    if (!currentUser) {
-        console.warn("⏳ Đang đợi thông tin tài khoản để khởi tạo hệ thống Call...");
+    // 1. Lấy ra cái ID thực sự (chuỗi String)
+    // Nếu currentUser là object từ Firebase, ta lấy .uid. Nếu Henry đã gán nó là chuỗi rồi thì giữ nguyên.
+    const myID = (typeof currentUser === 'object' && currentUser !== null) ? currentUser.uid : currentUser;
+
+    if (!myID) {
+        console.warn("⏳ Đang đợi UID để khởi tạo hệ thống Call...");
         return; 
     }
 
-    // Nếu đã tồn tại Peer cũ mà chưa bị hủy, thì hủy để làm mới (tránh trùng ID)
-    if (myPeer) myPeer.destroy();
+    if (myPeer) {
+        console.log("Đang làm mới kết nối Peer...");
+        myPeer.destroy();
+    }
 
-    // 2. Khởi tạo kết nối
-    myPeer = new Peer(currentUser, {
+    // 2. Khởi tạo kết nối với chuỗi ID chuẩn
+    myPeer = new Peer(myID, { // Phải truyền String vào đây
         host: '0.peerjs.com',
         port: 443,
         secure: true,
-        debug: 1 // Chỉ hiện lỗi quan trọng trong Console
+        debug: 1 
     });
 
-   myPeer.on('open', (id) => {
-    console.log('✅ Hệ thống Call: Đã sẵn sàng với ID:', id);
-    
-    // Henry thêm dòng này để "nhắc bài" cho mình
-    const myStatus = document.getElementById('chat-target-status');
-    if (myStatus) {
-        myStatus.innerHTML = `<i class="fas fa-circle" style="color: #2ecc71;"></i> Hệ thống đã thông suốt`;
-    }
-});
+    myPeer.on('open', (id) => {
+        console.log('✅ Hệ thống Call: Đã sẵn sàng với ID:', id);
+        
+        const myStatus = document.getElementById('chat-target-status');
+        if (myStatus) {
+            myStatus.innerHTML = `<i class="fas fa-circle" style="color: #2ecc71;"></i> Hệ thống đã thông suốt`;
+        }
+    });
 
-    // --- PHẦN BỔ SUNG: Bắt lỗi hệ thống ---
+    // 3. Xử lý lỗi
     myPeer.on('error', (err) => {
         console.error('❌ Lỗi PeerJS:', err.type);
         const statusEl = document.getElementById('chat-target-status');
         
         if (err.type === 'peer-unavailable') {
-            alert("Đối phương hiện không trực tuyến hoặc đã tắt trình duyệt!");
+            alert("Đối phương hiện không trực tuyến!");
         } else if (err.type === 'unavailable-id') {
-            alert("Tài khoản này đang mở ở một tab khác. Henry hãy đóng tab kia đi nhé!");
+            // Lỗi này xảy ra khi Henry mở 2 tab cùng 1 tài khoản
+            alert("Henry ơi, tài khoản này đang mở ở tab khác rồi. Đóng bớt để gọi điện nhé!");
         } else if (err.type === 'network') {
-            if (statusEl) statusEl.innerHTML = `<i class="fas fa-circle" style="font-size: 0.8em; color: #e74c3c;"></i> Lỗi mạng`;
+            if (statusEl) statusEl.innerHTML = `<i class="fas fa-circle" style="color: #e74c3c;"></i> Lỗi mạng`;
         }
     });
 
-    // Tự động kết nối lại nếu bị rớt mạng
     myPeer.on('disconnected', () => {
         console.log("⚠️ Mất kết nối server Peer, đang thử kết nối lại...");
         myPeer.reconnect();
     });
 
-    // Lắng nghe cuộc gọi đến (Quan trọng để nhận được tín hiệu bắt tay)
+    // 4. Lắng nghe cuộc gọi đến (Quan trọng)
     myPeer.on('call', (incomingCall) => {
-        console.log("☎️ Nhận được luồng dữ liệu cuộc gọi...");
+        console.log("☎️ PeerJS: Có luồng gọi đến từ máy bên kia!");
         currentCall = incomingCall;
-        
-        // Nếu người nhận đang bấm 'Chấp nhận' (answerCall), 
-        // nó sẽ dùng cái currentCall này để trả lời.
+
+        // Henry lưu ý: PeerJS kích hoạt 'call' khi máy bên kia bấm gọi. 
+        // Nhưng UI Popup lại hiện lên nhờ Firebase. 
+        // Khi người dùng bấm "Bắt máy", hàm answerCall() sẽ dùng biến currentCall này.
     });
 }
     
@@ -16689,78 +16694,96 @@ async function getMediaStream(type) {
     
 // --- 2. BẮT ĐẦU GỌI (Người gọi) ---
 async function startCall(type) {
-    if (!currentChatFriend) return;
+    // 1. Kiểm tra ID người bạn (Phải là String UID)
+    if (!currentChatFriend) {
+        console.error("Lỗi: Không xác định được ID người nhận.");
+        return;
+    }
 
-    // --- PHẦN BỔ SUNG: Kiểm tra kết nối PeerJS TRƯỚC khi xin quyền Camera ---
-    // Giúp tránh việc xin quyền xong rồi mới báo lỗi hệ thống chưa sẵn sàng
-    if (!myPeer || !myPeer.open) {
-        alert("⏳ Hệ thống Call đang khởi động, bạn vui lòng đợi vài giây cho đến khi hiện thông báo 'Sẵn sàng' rồi bấm lại nhé!");
+    // 2. Kiểm tra hệ thống PeerJS (Cực kỳ quan trọng)
+    if (!myPeer || myPeer.destroyed) {
+        alert("Hệ thống Call chưa khởi tạo. Vui lòng tải lại trang!");
+        return;
+    }
+    
+    if (!myPeer.open) {
+        alert("⏳ Đang kết nối máy chủ truyền tải, Henry đợi vài giây nhé...");
         return;
     }
 
     try {
-        // --- PHẦN GIỮ NGUYÊN: Giải phóng thiết bị ---
-        if (window.localStream) {
-            window.localStream.getTracks().forEach(track => track.stop());
+        // 3. Giải phóng các stream cũ để tránh xung đột thiết bị
+        if (localStream) {
+            localStream.getTracks().forEach(track => track.stop());
         }
 
-        // --- PHẦN GIỮ NGUYÊN: Cấu hình constraints ---
+        // 4. Thiết lập cấu hình Media
         const constraints = {
             audio: true,
             video: type === 'video' ? {
+                width: { ideal: 1280 },
+                height: { ideal: 720 },
                 facingMode: "user"
             } : false
         };
 
-        // Lấy stream từ Camera/Mic
+        // 5. Xin quyền và lấy Stream
         const stream = await navigator.mediaDevices.getUserMedia(constraints);
-        
         localStream = stream;
-        window.localStream = stream;
+        window.localStream = stream; // Backup cho hệ thống
 
-        // Hiển thị màn hình gọi
+        // 6. Hiển thị UI ngay lập tức để người dùng thấy mình
         showCallScreen(type);
         const localVid = document.getElementById('local-video');
         if (localVid) {
             localVid.srcObject = localStream;
-            // Dùng play() có thêm bắt lỗi để chắc chắn video khởi động được
-            localVid.play().catch(e => console.log("Auto-play blocked"));
+            localVid.muted = true; // Luôn mute video của chính mình để tránh vọng tiếng
+            localVid.play().catch(() => console.log("Video preview chờ người dùng tương tác"));
         }
 
-        // --- PHẦN GIỮ NGUYÊN: Bắn tín hiệu lên Firebase ---
+        // 7. Gửi tín hiệu lên Firebase (Báo cho đối phương biết có người gọi)
+        // Đảm bảo currentUser ở đây là UID (String)
+        const callerID = (typeof currentUser === 'object') ? currentUser.uid : currentUser;
+        
         db.ref('calls/' + currentChatFriend).set({
-            caller: currentUser,
+            caller: callerID,
             type: type,
             time: Date.now(),
             status: 'calling'
         });
 
-        // --- PHẦN BỔ SUNG: Tự động tính cuộc gọi nhỡ sau 30 giây ---
+        // 8. TỰ ĐỘNG KẾT THÚC NẾU KHÔNG AI BẮT MÁY (30 giây)
         if (window.callTimer) clearTimeout(window.callTimer);
         window.callTimer = setTimeout(() => {
             db.ref('calls/' + currentChatFriend).once('value', (snap) => {
                 const data = snap.val();
                 if (data && data.status === 'calling') {
-                    endCall('missed'); // Tự kết thúc và lưu vào chat là cuộc gọi nhỡ
+                    console.log("Hết thời gian chờ, tự động hủy cuộc gọi...");
+                    endCall('missed'); 
                 }
             });
         }, 30000); 
 
-        // --- THỰC HIỆN CALL QUA PEERJS (GIỮ NGUYÊN NỘI DUNG CŨ) ---
+        // 9. THỰC HIỆN CUỘC GỌI PEERJS (Cầu nối WebRTC)
+        // Lưu ý quan trọng: currentChatFriend phải là UID String mà máy bên kia dùng để init Peer
         const call = myPeer.call(currentChatFriend, localStream);
+        
+        if (!call) {
+            throw new Error("Không thể tạo kết nối PeerJS.");
+        }
+
         handleCallEvents(call);
 
     } catch (err) {
-        console.error("Lỗi Media Chi Tiết:", err);
-        if (err.name === 'NotAllowedError') {
-            alert("❌ Bạn chưa cấp quyền Camera/Micro. Hãy nhấn vào icon ổ khóa trên thanh địa chỉ để bật lại!");
-        } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
-            alert("❌ Máy tính không có Camera hoặc Micro!");
-        } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
-            alert("❌ Camera đang bị ứng dụng khác (Zalo, Zoom, tab khác) sử dụng!");
-        } else {
-            alert("❌ Lỗi: " + err.message);
-        }
+        console.error("Lỗi khởi tạo cuộc gọi:", err);
+        
+        // Xử lý thông báo thân thiện theo phong cách Henry
+        let msg = "Đã xảy ra lỗi khi kết nối.";
+        if (err.name === 'NotAllowedError') msg = "❌ Bạn chưa cấp quyền Camera/Micro rồi!";
+        if (err.name === 'NotReadableError') msg = "❌ Camera đang bị ứng dụng khác chiếm dụng!";
+        
+        alert(msg);
+        closeAllCallUI(); // Đóng UI nếu lỗi
     }
 }
 
