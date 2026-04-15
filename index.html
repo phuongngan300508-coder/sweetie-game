@@ -13150,20 +13150,29 @@ function renderSingleMessage(msgId, msg, position = 'bottom', targetContainer = 
 
     let bodyContentHtml = `<div class="text-content">${finalMsgText}</div>`;
     
-    // --- PHẦN MỚI: XỬ LÝ Ô TIN NHẮN CUỘC GỌI (MESSENGER STYLE) ---
+    // --- PHẦN SỬA ĐỔI: XỬ LÝ Ô TIN NHẮN CUỘC GỌI (MESSENGER STYLE) ---
     if (msg.type === 'call_system') {
-        const isMissed = msg.text.toLowerCase().includes('nhỡ') || msg.text.toLowerCase().includes('từ chối');
+        const textLower = msg.text.toLowerCase();
+        // Xác định rõ 3 trạng thái để đổi màu/nội dung phụ
+        const isDeclined = textLower.includes('từ chối');
+        const isMissed = textLower.includes('nhỡ');
+        const isEnded = textLower.includes('kết thúc');
+
         const callIcon = msg.text.includes('video') ? 'fas fa-video' : 'fas fa-phone';
         const themeColor = isMe ? '#ffffff' : (area.style.getPropertyValue('--theme-main-color') || '#ff69b4');
         
+        // Nếu nhỡ hoặc từ chối thì icon màu đỏ, nếu kết thúc thành công thì theo màu theme (hoặc xanh)
+        const iconColor = (isMissed || isDeclined) ? '#ff4d4d' : themeColor;
+        const subText = (isMissed || isDeclined) ? 'Nhấn để gọi lại' : 'Cuộc gọi đã hoàn tất';
+
         bodyContentHtml = `
             <div class="call-msg-bubble" style="display: flex; align-items: center; gap: 12px; padding: 5px 10px; min-width: 180px;">
                 <div style="width: 35px; height: 35px; border-radius: 50%; background: ${isMe ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.05)'}; display: flex; align-items: center; justify-content: center;">
-                    <i class="${callIcon}" style="font-size: 1.1em; color: ${isMissed ? '#ff4d4d' : themeColor};"></i>
+                    <i class="${callIcon}" style="font-size: 1.1em; color: ${iconColor};"></i>
                 </div>
                 <div style="display: flex; flex-direction: column;">
                     <span style="font-size: 0.9em; font-weight: bold; color: ${isMe ? '#fff' : '#333'}">${msg.text}</span>
-                    <span style="font-size: 0.75em; opacity: 0.8; color: ${isMe ? '#fff' : '#666'}">Nhấn để gọi lại</span>
+                    <span style="font-size: 0.75em; opacity: 0.8; color: ${isMe ? '#fff' : '#666'}">${subText}</span>
                 </div>
             </div>`;
     } 
@@ -16900,21 +16909,29 @@ function endCallUI() {
 
     // --- MỚI: ẨN LỚP PHỦ OVERLAY VÀ DỪNG NHẠC CHUÔNG ---
     const overlay = document.getElementById('call-overlay');
+    
+    // Kiểm tra trạng thái popup TRƯỚC khi ẩn overlay đi
+    const isIncomingShowing = (overlay && overlay.style.display === 'flex') || 
+                               (document.getElementById('incoming-call-popup').style.display === 'block');
+
     if (overlay) overlay.style.display = 'none';
     
     if (typeof stopRingtone === 'function') {
         stopRingtone();
     }
 
-    // --- GIỮ NGUYÊN LOGIC GỬI TIN NHẮN THÔNG BÁO ---
+    // --- LOGIC GỬI TIN NHẮN THÔNG BÁO (ĐÃ CẬP NHẬT 3 TRẠNG THÁI) ---
     const timerEl = document.getElementById('call-timer');
     const duration = timerEl ? timerEl.innerText : "00:00";
     const callType = window.currentCallType || 'audio'; 
     
-    let status = 'ended';
+    let status = 'ended'; // Mặc định là đã bắt máy và nói chuyện xong
+
     if (duration === "00:00") {
-        const isIncoming = document.getElementById('incoming-call-popup').style.display === 'block';
-        status = isIncoming ? 'declined' : 'missed';
+        // Nếu chưa bắt máy (00:00), ta phân biệt Từ chối và Nhỡ:
+        // Nếu popup đang hiện mà bị tắt -> Người nhận chủ động bấm "Từ chối"
+        // Nếu không có popup (máy người gọi) mà tắt -> "Cuộc gọi nhỡ"
+        status = isIncomingShowing ? 'declined' : 'missed';
     }
     
     if (typeof sendCallSystemMessage === 'function') {
