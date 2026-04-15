@@ -16620,9 +16620,10 @@ function playVoice(btn, url) {
     };
 }
 
-    let peer;
+let peer;
 let currentCall;
 let localStream;
+let callTimeoutTimer; // Biến quản lý bộ đếm 60s
 
 // --- 1. KHỞI TẠO PEER (KẾT NỐI TRUNG GIAN) ---
 function initCallSystem() {
@@ -16686,6 +16687,14 @@ async function makeCall(type) { // type: 'audio' hoặc 'video'
         // Hiện giao diện đang gọi (Henry có thể tùy biến CSS sau)
         showCallScreen(currentChatFriend, type, true);
 
+        // --- MỚI: TỰ ĐỘNG NGẮT SAU 60 GIÂY NẾU KHÔNG AI TRẢ LỜI ---
+        // Biến callTimeoutTimer nên được khai báo toàn cục (ở đầu file js của Henry)
+        if (window.callTimeoutTimer) clearTimeout(window.callTimeoutTimer); 
+        window.callTimeoutTimer = setTimeout(() => {
+            console.log("⏰ Đã quá 1 phút, tự động chuyển thành cuộc gọi nhỡ.");
+            endCall(); // Gọi hàm endCall để xóa nhánh Firebase và đóng UI
+        }, 60000); 
+
         // --- PHẦN LOGIC FIREBASE ---
         const callRef = db.ref(`calls/${currentChatFriend}`);
         
@@ -16727,6 +16736,7 @@ async function makeCall(type) { // type: 'audio' hoặc 'video'
         console.error(err);
     }
 }
+    
 // --- 3. CHẤP NHẬN CUỘC GỌI ---
 async function acceptCall() {
     // --- MỚI: Dừng nhạc chuông ngay khi bấm nghe ---
@@ -16764,6 +16774,12 @@ function endCall() {
     // --- MỚI: Dừng nhạc chuông nếu đang reo mà bấm từ chối ---
     if (typeof stopRingtone === 'function') stopRingtone();
 
+    // --- MỚI: Dọn dẹp bộ đếm chờ 1 phút (nếu có) để tránh tự ngắt sai lúc ---
+    if (window.callTimeoutTimer) {
+        clearTimeout(window.callTimeoutTimer);
+        window.callTimeoutTimer = null;
+    }
+
     // 1. Dừng tất cả các luồng âm thanh/hình ảnh cục bộ
     if (localStream) {
         localStream.getTracks().forEach(track => track.stop());
@@ -16786,11 +16802,19 @@ function endCall() {
     // 4. Cập nhật giao diện (ẩn màn hình gọi, hiện lại khung chat)
     endCallUI();
 }
+    
 // --- 5. XỬ LÝ SỰ KIỆN LUỒNG DỮ LIỆU ---
 function handleCallEvents(call, type) {
     currentCall = call;
 
     call.on('stream', (remoteStream) => {
+        // --- MỚI: HỦY BỘ ĐẾM CHỜ 1 PHÚT NGAY KHI KẾT NỐI THÀNH CÔNG ---
+        if (window.callTimeoutTimer) {
+            clearTimeout(window.callTimeoutTimer);
+            window.callTimeoutTimer = null;
+            console.log("🌸 Đã bắt máy, hủy bộ đếm chờ.");
+        }
+
         const remoteVideo = document.getElementById('remote-video');
         const localVideo = document.getElementById('local-video');
 
@@ -16821,6 +16845,7 @@ function handleCallEvents(call, type) {
         endCallUI();
     });
 }
+    
     function showIncomingCallPopup(from, type) {
     // 1. Gán tên người gọi vào giao diện
     document.getElementById('call-caller-name').innerText = from;
@@ -16904,6 +16929,7 @@ function endCallUI() {
     const incomingPopup = document.getElementById('incoming-call-popup');
     
     // Lưu lại trạng thái hiển thị vào biến trước khi dọn dẹp UI
+    // Nếu Popup hoặc Overlay đang hiện => Nghĩa là người dùng đang thấy cuộc gọi đến
     const isIncomingShowing = (overlay && overlay.style.display === 'flex') || 
                                (incomingPopup && incomingPopup.style.display === 'block');
 
@@ -16912,8 +16938,8 @@ function endCallUI() {
     if (incomingPopup) incomingPopup.style.display = 'none'; // Ẩn sau khi đã kiểm tra
     const remoteVideo = document.getElementById('remote-video');
     const localVideo = document.getElementById('local-video');
-    remoteVideo.srcObject = null;
-    localVideo.srcObject = null;
+    if (remoteVideo) remoteVideo.srcObject = null;
+    if (localVideo) localVideo.srcObject = null;
 
     // --- ẨN LỚP PHỦ OVERLAY VÀ DỪNG NHẠC CHUÔNG ---
     if (overlay) overlay.style.display = 'none';
@@ -16929,8 +16955,11 @@ function endCallUI() {
     
     let status = 'ended'; 
 
+    // PHÂN LOẠI CHÍNH XÁC:
     if (duration === "00:00") {
-        // Bây giờ isIncomingShowing đã có giá trị chính xác vì được lưu từ đầu hàm
+        // Nếu duration là 0, ta xét tiếp:
+        // 1. Nếu đang hiện popup gọi đến mà tắt -> 'declined' (Từ chối)
+        // 2. Nếu không hiện popup (người gọi chủ động tắt hoặc hết 1 phút) -> 'missed' (Nhỡ)
         status = isIncomingShowing ? 'declined' : 'missed';
     }
     
@@ -16942,6 +16971,12 @@ function endCallUI() {
     if (typeof stopCallTimer === 'function') {
         stopCallTimer();
         console.log(`🌸 Trạng thái: ${status}. Đã đóng giao diện và reset đồng hồ.`);
+    }
+
+    // Đảm bảo dọn dẹp bộ đếm 1 phút nếu nó vẫn còn đang chạy
+    if (window.callTimeoutTimer) {
+        clearTimeout(window.callTimeoutTimer);
+        window.callTimeoutTimer = null;
     }
 }
     
