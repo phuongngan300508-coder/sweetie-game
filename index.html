@@ -16406,14 +16406,26 @@ let voiceStream = null;   // Để tắt hẳn Micro sau khi thu xong
 // --- 1. BẮT ĐẦU THU ÂM ---
 async function startVoiceRecording() {
     try {
+        // Henry kiểm tra xem thiết bị có hỗ trợ MediaRecorder không
+        if (!window.MediaRecorder) {
+            alert("❌ Trình duyệt của bạn không hỗ trợ thu âm!");
+            return;
+        }
+
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         voiceStream = stream; // Lưu lại để tắt micro sau này
-        mediaRecorder = new MediaRecorder(stream);
+        
+        // Henry thêm phần kiểm tra định dạng để mượt hơn trên mọi thiết bị
+        const mimeType = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4';
+        mediaRecorder = new MediaRecorder(stream, { mimeType });
+        
         audioChunks = [];
         isCancelling = false; // Reset trạng thái mỗi khi bắt đầu mới
 
         mediaRecorder.ondataavailable = (event) => {
-            audioChunks.push(event.data);
+            if (event.data.size > 0) {
+                audioChunks.push(event.data);
+            }
         };
 
         mediaRecorder.onstop = async () => {
@@ -16424,7 +16436,8 @@ async function startVoiceRecording() {
 
             // NẾU KHÔNG PHẢI ĐANG HỦY THÌ MỚI GỬI
             if (!isCancelling) {
-                const audioBlob = new Blob(audioChunks, { type: 'audio/mpeg' });
+                // Sử dụng blob với type chuẩn mà trình duyệt vừa dùng
+                const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType });
                 if (audioBlob.size > 1000) {
                     uploadVoiceToCloudinary(audioBlob);
                 }
@@ -16433,22 +16446,26 @@ async function startVoiceRecording() {
             }
         };
 
-        // Chuyển giao diện
+        // Chuyển giao diện (Giữ nguyên logic của Henry)
         document.getElementById('chat-input').style.display = 'none';
         document.getElementById('voice-recording-bar').style.display = 'flex';
         
-        // Ẩn luôn nút gửi text mặc định của Henry (nếu có)
         const sendBtn = document.querySelector('.input-container button');
         if (sendBtn) sendBtn.style.display = 'none';
 
         if (typeof toggleMediaMenu === 'function') toggleMediaMenu();
 
-        mediaRecorder.start();
+        // HENRY LƯU Ý: Thêm số 100 vào start để thu âm ổn định hơn
+        mediaRecorder.start(100); 
+        
         startTime = Date.now();
+        // Xóa interval cũ nếu có để tránh chạy đè
+        if (recordingInterval) clearInterval(recordingInterval);
         recordingInterval = setInterval(updateRecordingTimer, 1000);
 
     } catch (err) {
-        alert("❌ Henry ơi, bạn cần cấp quyền Micro để dùng tính năng này!");
+        console.error("Lỗi Micro:", err);
+        alert("❌ Henry ơi, bạn hãy kiểm tra xem Micro có đang bị app khác dùng không hoặc chạy web trên HTTPS nhé!");
     }
 }
 
