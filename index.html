@@ -7645,29 +7645,30 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
     </div>
 </div>
 
-  <div id="call-overlay" 
-     style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 1000000; align-items: center; justify-content: center; backdrop-filter: blur(2px);">
-    
-    <div id="incoming-call-popup" 
-         style="width: 90%; max-width: 320px; background: white; border-radius: 30px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); padding: 25px; border: 2px solid #ffc0cb; text-align: center; position: relative;" 
-         class="animate__animated animate__zoomIn">
+ <div id="call-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 1000000; align-items: center; justify-content: center; backdrop-filter: blur(2px);">
+    <div id="incoming-call-popup" style="width: 90%; max-width: 320px; background: white; border-radius: 30px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); padding: 25px; border: 2px solid #ffc0cb; text-align: center; position: relative;" class="animate__animated animate__zoomIn">
         
-       <div id="call-caller-avatar-container" style="width: 90px; height: 90px; background: #fff0f5; border-radius: 50%; margin: 0 auto 15px; display: flex; align-items: center; justify-content: center; color: #ff1493; font-size: 2.2em; border: 3px solid #ffc0cb; overflow: hidden;">
-    <img id="call-caller-photo" src="" style="width: 100%; height: 100%; object-fit: cover; display: none;">
-    <i id="call-caller-icon" class="fas fa-user"></i>
-</div>
+        <div id="call-caller-avatar-container" style="width: 90px; height: 90px; background: #fff0f5; border-radius: 50%; margin: 0 auto 15px; display: flex; align-items: center; justify-content: center; color: #ff1493; font-size: 2.2em; border: 3px solid #ffc0cb; overflow: hidden;">
+            <img id="call-caller-photo" src="" style="width: 100%; height: 100%; object-fit: cover; display: none;">
+            <i id="call-caller-icon" class="fas fa-user"></i>
+        </div>
         
         <b id="call-caller-name" style="color: #d63384; display: block; font-size: 1.3em; margin-bottom: 5px;">Cư dân...</b>
-        <span style="font-size: 0.95em; color: #888; display: block; margin-bottom: 25px;">Đang gọi cho bạn ❤️</span>
+        
+        <span id="call-incoming-status-text" style="font-size: 0.95em; color: #888; display: block; margin-bottom: 25px;">Đang gọi cho bạn ❤️</span>
 
         <div style="display: flex; justify-content: center; gap: 30px;">
             <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
-                <button onclick="acceptCall()" style="background: #28a745; color: white; border: none; width: 60px; height: 60px; border-radius: 50%; cursor: pointer; font-size: 1.3em; box-shadow: 0 8px 20px rgba(40,167,69,0.3); transition: 0.2s;"><i class="fas fa-phone"></i></button>
-                <span style="font-size: 0.7em; color: #28a745; font-weight: bold;">CHẤP NHẬN</span>
+                <button onclick="acceptCall()" style="background: #28a745; color: white; border: none; width: 60px; height: 60px; border-radius: 50%; cursor: pointer; font-size: 1.3em; box-shadow: 0 8px 20px rgba(40,167,69,0.3); transition: 0.2s;">
+                    <i class="fas fa-phone"></i>
+                </button>
+                <span id="call-accept-label" style="font-size: 0.7em; color: #28a745; font-weight: bold;">CHẤP NHẬN</span>
             </div>
 
             <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
-                <button onclick="endCall()" style="background: #dc3545; color: white; border: none; width: 60px; height: 60px; border-radius: 50%; cursor: pointer; font-size: 1.3em; box-shadow: 0 8px 20px rgba(220,53,69,0.3); transition: 0.2s;"><i class="fas fa-times"></i></button>
+                <button onclick="endCall()" style="background: #dc3545; color: white; border: none; width: 60px; height: 60px; border-radius: 50%; cursor: pointer; font-size: 1.3em; box-shadow: 0 8px 20px rgba(220,53,69,0.3); transition: 0.2s;">
+                    <i class="fas fa-times"></i>
+                </button>
                 <span style="font-size: 0.7em; color: #dc3545; font-weight: bold;">TỪ CHỐI</span>
             </div>
         </div>
@@ -16872,36 +16873,29 @@ function handleCallEvents(call, type) {
     const nameEl = document.getElementById('call-caller-name');
     if (nameEl) nameEl.innerText = from;
 
-    // --- MỚI: XỬ LÝ HIỂN THỊ AVATAR (TRUY XUẤT ĐÚNG CẤU TRÚC HỒ SƠ) ---
+    // --- MỚI: XỬ LÝ HIỂN THỊ AVATAR (GIỮ NGUYÊN 100% CỦA HENRY) ---
     const photoEl = document.getElementById('call-caller-photo');
     const iconEl = document.getElementById('call-caller-icon');
 
     try {
         console.log("🔍 Đang tìm hồ sơ người chơi:", from);
-        
         const userSnap = await db.ref(`users/${from}`).once('value');
         const userData = userSnap.val();
         
-        // SỬA TẠI ĐÂY: Truy cập vào userData.profile.customAvatar để khớp với hàm toggleModal
         if (userData && userData.profile && userData.profile.customAvatar && photoEl && iconEl) {
             photoEl.src = userData.profile.customAvatar;
-            
             photoEl.onload = () => {
                 photoEl.style.display = 'block';
                 iconEl.style.display = 'none';
                 console.log("🌸 Đã cập nhật avatar từ hồ sơ (customAvatar) thành công!");
             };
-            
             photoEl.onerror = () => {
                 photoEl.style.display = 'none';
                 iconEl.style.display = 'block';
             };
         } else if (photoEl && iconEl) {
-            // Nếu không có ảnh custom, ta dùng icon dựa trên giới tính giống như trong hồ sơ
             photoEl.style.display = 'none';
             iconEl.style.display = 'block';
-            
-            // Logic icon giới tính đồng bộ với hồ sơ của Henry
             if (userData && userData.profile && userData.profile.gender === 'Nữ') {
                 iconEl.className = 'fas fa-user-graduate';
             } else {
@@ -16915,6 +16909,18 @@ function handleCallEvents(call, type) {
             photoEl.style.display = 'none';
             iconEl.style.display = 'block';
         }
+    }
+
+    // --- PHẦN SỬA ĐỔI: PHÂN LOẠI AUDIO / VIDEO (Cập nhật UI Popup) ---
+    const statusTextEl = document.getElementById('call-incoming-status-text');
+    const acceptBtnIcon = document.querySelector('#incoming-call-popup button[onclick="acceptCall()"] i');
+
+    if (type === 'video') {
+        if (statusTextEl) statusTextEl.innerText = "Đang gọi video cho bạn ❤️";
+        if (acceptBtnIcon) acceptBtnIcon.className = "fas fa-video"; // Đổi sang icon Camera
+    } else {
+        if (statusTextEl) statusTextEl.innerText = "Đang gọi cho bạn ❤️";
+        if (acceptBtnIcon) acceptBtnIcon.className = "fas fa-phone"; // Giữ icon Điện thoại
     }
     
     // 2. Hiện lớp phủ Overlay với Flexbox để căn giữa tuyệt đối
@@ -16931,6 +16937,7 @@ function handleCallEvents(call, type) {
 
     console.log(`📞 Đang hiển thị cuộc gọi đến từ: ${from} (${type})`);
 }
+    
     // Biến toàn cục để quản lý âm thanh
 let callAudioContext;
 let callRingtoneInterval;
