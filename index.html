@@ -16653,26 +16653,34 @@ function initCallSystem() {
 
     // Lắng nghe lệnh kết thúc/từ chối từ đối phương (Real-time Firebase)
     db.ref(`calls/${currentUser}`).on('value', (snap) => {
-        // --- SỬA LẠI ĐIỀU KIỆN KIỂM TRA POPUP ---
-        // Kiểm tra xem Overlay (lớp bao ngoài) có đang hiện hay không
+        // --- 1. KIỂM TRA TRẠNG THÁI HIỆN TẠI CỦA UI ---
         const overlay = document.getElementById('call-overlay');
-        const isPopupVisible = overlay && overlay.style.display !== 'none';
-        
-        // CHỈ xử lý khi: Dữ liệu bị xóa VÀ (Đang có cuộc gọi PeerJS HOẶC Popup đang hiện trên màn hình)
-        if (!snap.exists() && (currentCall || isPopupVisible)) {
-            console.log("🌸 Cuộc gọi đã được bên kia xử lý (kết thúc hoặc từ chối).");
-            
+        const isPopupVisible = overlay && (overlay.style.display === 'flex' || overlay.style.display === 'block');
+        const callScreen = document.getElementById('call-screen');
+        const isInCall = callScreen && callScreen.style.display === 'flex';
+
+        // --- 2. XỬ LÝ KHI DỮ LIỆU BỊ XÓA (ĐỐI PHƯƠNG NGẮT) ---
+        if (!snap.exists() && (currentCall || isPopupVisible || isInCall)) {
+            console.log("🌸 Đối phương đã xử lý cuộc gọi (Hủy/Từ chối/Kết thúc).");
+
+            // Dừng luồng dữ liệu PeerJS
             if (currentCall) {
-                if (localStream) localStream.getTracks().forEach(track => track.stop());
+                if (localStream) {
+                    localStream.getTracks().forEach(track => track.stop());
+                    localStream = null;
+                }
                 currentCall.close();
-                currentCall = null; // Giải phóng biến
+                currentCall = null;
             }
-            
+
+            // --- 3. GỌI UI VỚI LOGIC THÔNG MINH ---
+            // Nếu popup đang hiện mà data mất -> Họ đã hủy cuộc gọi (missed)
+            // Nếu màn hình đang gọi (đã bắt máy) mà data mất -> Cuộc gọi kết thúc (ended)
+            // endCallUI() sẽ tự động check timer để ghi log phù hợp.
             endCallUI();
         }
     });
 }
-
 // --- 2. HÀM THỰC HIỆN CUỘC GỌI ---
 async function makeCall(type) { // type: 'audio' hoặc 'video'
     window.currentCallType = type; // Gán loại cuộc gọi để hệ thống ghi nhớ
@@ -16996,61 +17004,56 @@ function showCallScreen(name, type, isOutgoing) {
 
 // Thêm tham số explicitReason để nhận biết các trường hợp đặc biệt như 'timeout'
 function endCallUI(explicitReason = null) {
-    // --- MỚI: KIỂM TRA TRẠNG THÁI TRƯỚC KHI ẨN (Để phân biệt Từ chối/Nhỡ) ---
+    // --- BƯỚC 1: KIỂM TRA TRẠNG THÁI TRƯỚC KHI DỌN DẸP (Rất quan trọng) ---
     const overlay = document.getElementById('call-overlay');
     const incomingPopup = document.getElementById('incoming-call-popup');
-    
-    // Lưu lại trạng thái hiển thị vào biến trước khi dọn dẹp UI
+    const callScreen = document.getElementById('call-screen');
+    const timerEl = document.getElementById('call-timer');
+
+    // Kiểm tra xem Popup gọi đến có ĐANG HIỆN hay không
     const isIncomingShowing = (overlay && overlay.style.display === 'flex') || 
                                (incomingPopup && incomingPopup.style.display === 'block');
+    
+    // Kiểm tra xem cuộc gọi đã thực sự bắt đầu nói chuyện chưa (timer đã chạy chưa)
+    const duration = timerEl ? timerEl.innerText : "00:00";
+    const isConnected = duration !== "00:00";
 
-    // --- GIỮ NGUYÊN NỘI DUNG CŨ 100% ---
-    document.getElementById('call-screen').style.display = 'none';
+    // --- BƯỚC 2: DỌN DẸP UI (Giữ nguyên logic của Henry) ---
+    if (callScreen) callScreen.style.display = 'none';
     if (incomingPopup) incomingPopup.style.display = 'none'; 
+    if (overlay) overlay.style.display = 'none';
+
     const remoteVideo = document.getElementById('remote-video');
     const localVideo = document.getElementById('local-video');
     if (remoteVideo) remoteVideo.srcObject = null;
     if (localVideo) localVideo.srcObject = null;
 
-    // --- ẨN LỚP PHỦ OVERLAY VÀ DỪNG NHẠC CHUÔNG ---
-    if (overlay) overlay.style.display = 'none';
-    
-    if (typeof stopRingtone === 'function') {
-        stopRingtone();
-    }
+    if (typeof stopRingtone === 'function') stopRingtone();
 
-    // --- LOGIC GỬI TIN NHẮN THÔNG BÁO ---
-    const timerEl = document.getElementById('call-timer');
-    const duration = timerEl ? timerEl.innerText : "00:00";
-    const callType = window.currentCallType || 'audio'; 
-    
+    // --- BƯỚC 3: PHÂN LOẠI TRẠNG THÁI ---
     let status = 'ended'; 
+    const callType = window.currentCallType || 'audio'; 
 
-    // PHÂN LOẠI CHÍNH XÁC DỰA TRÊN THỜI LƯỢNG VÀ LÝ DO:
-    if (duration === "00:00") {
+    if (!isConnected) {
         if (explicitReason === 'timeout') {
-            // Trường hợp 1: Hết 1 phút không ai nghe máy
-            status = 'missed';
+            status = 'missed'; // Hết 60s
         } else if (isIncomingShowing) {
-            // Trường hợp 2: Đang hiện popup mà bị tắt (người dùng bấm Từ chối)
-            status = 'declined';
+            status = 'declined'; // Người dùng chủ động bấm nút Từ chối khi đang hiện popup
         } else {
-            // Trường hợp 3: Người gọi chủ động tắt khi bên kia chưa kịp hiện popup hoặc các lỗi khác
-            status = 'missed';
+            status = 'missed'; // Người gọi chủ động tắt máy khi người kia chưa kịp nghe
         }
     }
-    
+
+    // --- BƯỚC 4: GỬI THÔNG BÁO VÀ RESET ---
     if (typeof sendCallSystemMessage === 'function') {
         sendCallSystemMessage(callType, status);
     }
 
-    // --- GIỮ NGUYÊN LOGIC DỪNG ĐỒNG HỒ ---
     if (typeof stopCallTimer === 'function') {
         stopCallTimer();
         console.log(`🌸 Trạng thái: ${status}. Đã đóng giao diện và reset đồng hồ.`);
     }
 
-    // Đảm bảo dọn dẹp bộ đếm 1 phút nếu nó vẫn còn đang chạy
     if (window.callTimeoutTimer) {
         clearTimeout(window.callTimeoutTimer);
         window.callTimeoutTimer = null;
@@ -17155,6 +17158,14 @@ function sendCallSystemMessage(type, status) {
         });
     });
 }
+
+    window.addEventListener('beforeunload', () => {
+    if (currentUser) {
+        db.ref(`calls/${currentUser}`).remove();
+        // Nếu biết đang gọi cho ai, xóa luôn nhánh của họ
+        if (currentChatFriend) db.ref(`calls/${currentChatFriend}`).remove();
+    }
+});
 </script>
 </body>
 </html>
