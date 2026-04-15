@@ -16851,27 +16851,52 @@ function handleCallEvents(call, type) {
     
     async function showIncomingCallPopup(from, type) {
     // 1. Gán tên người gọi vào giao diện
-    document.getElementById('call-caller-name').innerText = from;
+    const nameEl = document.getElementById('call-caller-name');
+    if (nameEl) nameEl.innerText = from;
 
-    // --- MỚI: XỬ LÝ HIỂN THỊ AVATAR ---
+    // --- MỚI: XỬ LÝ HIỂN THỊ AVATAR (TRUY XUẤT ĐÚNG CẤU TRÚC HỒ SƠ) ---
+    const photoEl = document.getElementById('call-caller-photo');
+    const iconEl = document.getElementById('call-caller-icon');
+
     try {
-        // Henry lấy dữ liệu user từ nhánh users (giả sử key là tên/ID người gọi)
+        console.log("🔍 Đang tìm hồ sơ người chơi:", from);
+        
         const userSnap = await db.ref(`users/${from}`).once('value');
         const userData = userSnap.val();
         
-        const photoEl = document.getElementById('call-caller-photo');
-        const iconEl = document.getElementById('call-caller-icon');
-        
-        if (userData && userData.avatar && photoEl && iconEl) {
-            photoEl.src = userData.avatar;
-            photoEl.style.display = 'block';
-            iconEl.style.display = 'none';
+        // SỬA TẠI ĐÂY: Truy cập vào userData.profile.customAvatar để khớp với hàm toggleModal
+        if (userData && userData.profile && userData.profile.customAvatar && photoEl && iconEl) {
+            photoEl.src = userData.profile.customAvatar;
+            
+            photoEl.onload = () => {
+                photoEl.style.display = 'block';
+                iconEl.style.display = 'none';
+                console.log("🌸 Đã cập nhật avatar từ hồ sơ (customAvatar) thành công!");
+            };
+            
+            photoEl.onerror = () => {
+                photoEl.style.display = 'none';
+                iconEl.style.display = 'block';
+            };
         } else if (photoEl && iconEl) {
+            // Nếu không có ảnh custom, ta dùng icon dựa trên giới tính giống như trong hồ sơ
+            photoEl.style.display = 'none';
+            iconEl.style.display = 'block';
+            
+            // Logic icon giới tính đồng bộ với hồ sơ của Henry
+            if (userData && userData.profile && userData.profile.gender === 'Nữ') {
+                iconEl.className = 'fas fa-user-graduate';
+            } else {
+                iconEl.className = 'fas fa-user-tie';
+            }
+            console.log("⚠️ Dùng icon mặc định theo giới tính từ hồ sơ.");
+        }
+    } catch (err) {
+        console.log("🌸 Lỗi khi truy cập Firebase lấy hồ sơ:", err);
+        if (photoEl && iconEl) {
             photoEl.style.display = 'none';
             iconEl.style.display = 'block';
         }
-    } catch (err) {
-        console.log("🌸 Chưa lấy được avatar đối phương, dùng mặc định.");
     }
     
     // 2. Hiện lớp phủ Overlay với Flexbox để căn giữa tuyệt đối
@@ -16879,12 +16904,12 @@ function handleCallEvents(call, type) {
     if (overlay) {
         overlay.style.display = 'flex';
     } else {
-        // Nếu Henry chưa bọc overlay thì dùng lệnh cũ nhưng hiện block
-        document.getElementById('incoming-call-popup').style.display = 'block';
+        const popup = document.getElementById('incoming-call-popup');
+        if (popup) popup.style.display = 'block';
     }
 
     // 3. (Tùy chọn) Thêm âm thanh reo cho xịn
-    playRingtone(); 
+    if (typeof playRingtone === 'function') playRingtone(); 
 
     console.log(`📞 Đang hiển thị cuộc gọi đến từ: ${from} (${type})`);
 }
