@@ -16611,6 +16611,7 @@ function initPeer() {
 
     myPeer.on('open', (id) => {
         console.log('✅ Hệ thống Call: Đã sẵn sàng với ID:', id);
+        // Khi nhận được ID, thuộc tính myPeer.open sẽ tự động thành true
     });
 
     // --- PHẦN BỔ SUNG: Bắt lỗi hệ thống để không bị đứng code ---
@@ -16619,10 +16620,16 @@ function initPeer() {
         if (err.type === 'peer-unavailable') {
             alert("Đối phương hiện không trực tuyến hoặc đã tắt trình duyệt!");
         } else if (err.type === 'unavailable-id') {
-            alert("ID này đang được sử dụng ở một tab khác!");
+            alert("Tài khoản này đang được mở ở một tab khác, hãy đóng tab cũ để gọi điện nhé!");
         } else if (err.type === 'network') {
             console.warn("Lỗi mạng, đang thử kết nối lại...");
         }
+    });
+
+    // --- MỚI: Tự động kết nối lại nếu bị rớt mạng ---
+    myPeer.on('disconnected', () => {
+        console.log("⚠️ Mất kết nối server Peer, đang thử kết nối lại...");
+        myPeer.reconnect();
     });
 
     // Lắng nghe cuộc gọi đến
@@ -16634,7 +16641,7 @@ function initPeer() {
         console.log("☎️ Có cuộc gọi đến từ PeerJS...");
     });
 }
-
+    
     // Thêm một hàm kiểm tra và lấy stream riêng để dùng chung cho gọn
 async function getMediaStream(type) {
     // Nếu đã có stream cũ đang chạy, tắt nó đi trước
@@ -16657,6 +16664,13 @@ async function getMediaStream(type) {
 // --- 2. BẮT ĐẦU GỌI (Người gọi) ---
 async function startCall(type) {
     if (!currentChatFriend) return;
+
+    // --- PHẦN BỔ SUNG: Kiểm tra kết nối PeerJS TRƯỚC khi xin quyền Camera ---
+    // Giúp tránh việc xin quyền xong rồi mới báo lỗi hệ thống chưa sẵn sàng
+    if (!myPeer || !myPeer.open) {
+        alert("⏳ Hệ thống Call đang khởi động, bạn vui lòng đợi vài giây cho đến khi hiện thông báo 'Sẵn sàng' rồi bấm lại nhé!");
+        return;
+    }
 
     try {
         // --- PHẦN GIỮ NGUYÊN: Giải phóng thiết bị ---
@@ -16706,14 +16720,9 @@ async function startCall(type) {
             });
         }, 30000); 
 
-        // Thực hiện call qua PeerJS (GIỮ NGUYÊN NỘI DUNG CŨ)
-        // Lưu ý: Đảm bảo myPeer đã sẵn sàng trước khi gọi
-        if (myPeer && myPeer.open) {
-            const call = myPeer.call(currentChatFriend, localStream);
-            handleCallEvents(call);
-        } else {
-            throw new Error("Hệ thống kết nối chưa sẵn sàng, hãy thử lại sau vài giây!");
-        }
+        // --- THỰC HIỆN CALL QUA PEERJS (GIỮ NGUYÊN NỘI DUNG CŨ) ---
+        const call = myPeer.call(currentChatFriend, localStream);
+        handleCallEvents(call);
 
     } catch (err) {
         console.error("Lỗi Media Chi Tiết:", err);
