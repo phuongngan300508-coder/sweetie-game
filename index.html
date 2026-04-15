@@ -7293,30 +7293,45 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
         <i class="fas fa-times-circle" style="color: #ffb6c1; cursor: pointer; font-size: 1.1em; margin-left: 10px;" onclick="cancelReply()"></i>
     </div>
 
-  <div class="messenger-footer">
+ <div class="messenger-footer">
     <div class="input-container">
         <i class="fas fa-plus-circle" onclick="toggleMediaMenu()" style="cursor:pointer; color:#ff1493; font-size:1.4em; flex-shrink: 0;"></i>
         
-       <input type="text" 
-       id="chat-input" 
-       placeholder="Gửi lời ngọt ngào..." 
-       onkeypress="if(event.key === 'Enter') sendMessage()"
-       oninput="handleTypingStatus()">
+        <input type="text" 
+        id="chat-input" 
+        placeholder="Gửi lời ngọt ngào..." 
+        onkeypress="if(event.key === 'Enter') sendMessage()"
+        oninput="handleTypingStatus()">
+
+        <div id="voice-recording-bar" style="display: none; align-items: center; flex: 1; background: #fff5f8; padding: 0 10px; border-radius: 20px; height: 35px; border: 1px solid #ffc0cb; margin: 0 5px;">
+            <i class="fas fa-trash-alt" onclick="cancelRecording()" style="color: #ff4d4d; cursor: pointer; padding: 5px;"></i>
+            
+            <div style="flex: 1; display: flex; align-items: center; justify-content: center; color: #ff1493; font-weight: bold; font-size: 0.8em;">
+                <span class="animate__animated animate__pulse animate__infinite" style="color: red;">● REC</span>
+                <span id="recording-time" style="margin-left: 10px; font-family: monospace;">00:00</span>
+            </div>
+
+            <i class="fas fa-paper-plane" onclick="stopAndSendVoice()" style="color: #28a745; cursor: pointer; padding: 5px; font-size: 1.1em;"></i>
+        </div>
         
         <button onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
 
         <div id="media-menu" style="display:none; position:absolute; bottom:60px; left:0; background:white; border-radius:15px; box-shadow:0 5px 20px rgba(0,0,0,0.1); padding:10px; z-index:100; min-width: 140px;">
-    <div onclick="triggerFile('image/*')" style="padding:10px; cursor:pointer; color:#ff1493; font-weight:800; font-size:0.8em; white-space: nowrap;">
-        <i class="fas fa-image"></i> HÌNH ẢNH
-    </div>
-    <div onclick="triggerFile('video/*')" style="padding:10px; cursor:pointer; color:#ff1493; font-weight:800; font-size:0.8em; white-space: nowrap;">
-        <i class="fas fa-video"></i> VIDEO
-    </div>
-    
-    <div onclick="openStickerPopup()" style="padding:10px; cursor:pointer; color:#ff1493; font-weight:800; font-size:0.8em; white-space: nowrap; border-top: 1px dashed #ffc0cb;">
-        <i class="fas fa-sticky-note"></i> NHÃN DÁN
-    </div>
-</div>
+            <div onclick="triggerFile('image/*')" style="padding:10px; cursor:pointer; color:#ff1493; font-weight:800; font-size:0.8em; white-space: nowrap;">
+                <i class="fas fa-image"></i> HÌNH ẢNH
+            </div>
+            <div onclick="triggerFile('video/*')" style="padding:10px; cursor:pointer; color:#ff1493; font-weight:800; font-size:0.8em; white-space: nowrap;">
+                <i class="fas fa-video"></i> VIDEO
+            </div>
+            
+            <div onclick="startVoiceRecording()" style="padding:10px; cursor:pointer; color:#ff1493; font-weight:800; font-size:0.8em; white-space: nowrap;">
+                <i class="fas fa-microphone"></i> TIN NHẮN THOẠI
+            </div>
+
+            <div onclick="openStickerPopup()" style="padding:10px; cursor:pointer; color:#ff1493; font-weight:800; font-size:0.8em; white-space: nowrap; border-top: 1px dashed #ffc0cb;">
+                <i class="fas fa-sticky-note"></i> NHÃN DÁN
+            </div>
+        </div>
     </div>
 </div>
 
@@ -13066,7 +13081,7 @@ function renderSingleMessage(msgId, msg, position = 'bottom', targetContainer = 
         }
     }
 
-    // --- 4. LOGIC MEDIA, STICKER & HIGHLIGHT (GIỮ NGUYÊN 100%) ---
+    // --- 4. LOGIC MEDIA, STICKER, VOICE & HIGHLIGHT ---
     let finalMsgText = msg.text || "";
     if (typeof currentSearchKeyword !== 'undefined' && currentSearchKeyword && msg.text) {
         const regex = new RegExp(`(${currentSearchKeyword})`, 'gi');
@@ -13078,6 +13093,24 @@ function renderSingleMessage(msgId, msg, position = 'bottom', targetContainer = 
     if (msg.type === 'sticker') {
         bodyContentHtml = `<img src="${msg.mediaUrl}" class="animate__animated animate__zoomIn" style="width: 150px; height: auto; display: block; cursor: pointer;">`;
     } 
+    // --- PHẦN MỚI: XỬ LÝ VOICE MESSAGE ---
+    else if (msg.mediaType === 'voice') {
+        const themeColor = area.style.getPropertyValue('--theme-main-color') || '#ff69b4';
+        bodyContentHtml = `
+            <div class="voice-msg-container" style="display: flex; align-items: center; gap: 12px; padding: 5px; min-width: 120px;">
+                <i class="fas fa-play-circle" onclick="playVoice(this, '${msg.mediaUrl}')" 
+                   style="font-size: 2.2em; color: ${isMe ? '#ffffff' : themeColor}; cursor: pointer; transition: transform 0.2s;"></i>
+                <div style="display: flex; flex-direction: column;">
+                    <span style="font-size: 0.75em; font-weight: bold; opacity: 0.9;">Tin nhắn thoại</span>
+                    <div class="voice-wave" style="display: flex; gap: 2px; margin-top: 3px;">
+                        <span style="width:2px; height:8px; background: ${isMe ? '#ffffff' : themeColor}; opacity: 0.5;"></span>
+                        <span style="width:2px; height:12px; background: ${isMe ? '#ffffff' : themeColor};"></span>
+                        <span style="width:2px; height:8px; background: ${isMe ? '#ffffff' : themeColor}; opacity: 0.5;"></span>
+                    </div>
+                </div>
+            </div>`;
+    }
+    // --- KẾT THÚC PHẦN VOICE ---
     else if (msg.mediaUrl) {
         if (msg.mediaType === 'image') {
             bodyContentHtml = `<img src="${msg.mediaUrl}" onclick="openFS('${msg.mediaUrl}', 'image')" style="max-width:100%; border-radius:10px; cursor:pointer; display: block; margin-bottom: 5px;">`;
@@ -13088,9 +13121,7 @@ function renderSingleMessage(msgId, msg, position = 'bottom', targetContainer = 
 
     // --- 5. TEMPLATE HTML (TÍCH HỢP GHIM VÀO CẤU TRÚC CŨ) ---
     const isSticker = msg.type === 'sticker';
-    
-   // Tìm đoạn này trong hàm renderSingleMessage của Henry:
-let pinMarkerHtml = msg.isPinned ? `<div class="pin-marker" style="font-size: 0.8em; color: #ff1493; margin-bottom: 3px;"><i class="fas fa-thumbtack"></i></div>` : "";
+    let pinMarkerHtml = msg.isPinned ? `<div class="pin-marker" style="font-size: 0.8em; color: #ff1493; margin-bottom: 3px;"><i class="fas fa-thumbtack"></i></div>` : "";
     
     const msgHtml = `
     <div class="msg-wrapper ${isMe ? 'msg-me-wrap' : 'msg-friend-wrap'}" id="msg-${msgId}"
@@ -16363,6 +16394,114 @@ function showPinActions(msgId) {
         // 4. Thông báo nếu tin chưa được load (Giữ nguyên)
         alert("📍 Tin nhắn này nằm ở khá xa, Henry hãy cuộn lên trên một chút để hệ thống tải dữ liệu cũ nhé!");
     }
+}
+
+    let mediaRecorder;
+let audioChunks = [];
+let recordingInterval;
+let startTime;
+
+// --- 1. BẮT ĐẦU THU ÂM ---
+async function startVoiceRecording() {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream);
+        audioChunks = [];
+
+        mediaRecorder.ondataavailable = (event) => {
+            audioChunks.push(event.data);
+        };
+
+        mediaRecorder.onstop = async () => {
+            const audioBlob = new Blob(audioChunks, { type: 'audio/mpeg' });
+            if (audioBlob.size > 1000) { // Tránh gửi file rỗng
+                uploadVoiceToCloudinary(audioBlob);
+            }
+        };
+
+        // Chuyển giao diện
+        document.getElementById('chat-input').style.display = 'none';
+        document.getElementById('voice-recording-bar').style.display = 'flex';
+        toggleMediaMenu(); // Đóng menu dấu cộng
+
+        // Bắt đầu đếm giờ
+        mediaRecorder.start();
+        startTime = Date.now();
+        recordingInterval = setInterval(updateRecordingTimer, 1000);
+
+    } catch (err) {
+        alert("❌ Henry ơi, bạn cần cấp quyền truy cập Micro để dùng tính năng này nhé!");
+    }
+}
+
+// --- 2. CẬP NHẬT ĐỒNG HỒ ---
+function updateRecordingTimer() {
+    const diff = Math.floor((Date.now() - startTime) / 1000);
+    const m = Math.floor(diff / 60).toString().padStart(2, '0');
+    const s = (diff % 60).toString().padStart(2, '0');
+    document.getElementById('recording-time').innerText = `${m}:${s}`;
+}
+
+// --- 3. HỦY THU ÂM (THÙNG RÁC) ---
+function cancelRecording() {
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+        mediaRecorder.stop();
+    }
+    resetChatBar();
+    audioChunks = [];
+    addNotification("🗑️ HỆ THỐNG", "Đã hủy đoạn thu âm.");
+}
+
+// --- 4. DỪNG VÀ GỬI ---
+function stopAndSendVoice() {
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+        mediaRecorder.stop(); // Kích hoạt sự kiện onstop để upload
+        resetChatBar();
+    }
+}
+
+function resetChatBar() {
+    clearInterval(recordingInterval);
+    document.getElementById('voice-recording-bar').style.display = 'none';
+    document.getElementById('chat-input').style.display = 'block';
+    document.getElementById('recording-time').innerText = "00:00";
+}
+
+// --- 5. TẢI LÊN CLOUDINARY & GỬI FIREBASE ---
+async function uploadVoiceToCloudinary(blob) {
+    const formData = new FormData();
+    formData.append('file', blob);
+    formData.append('upload_preset', UPLOAD_PRESET); // Dùng chung preset với ảnh/sticker
+
+    // Hiện loading (Henry có thể dùng cái popup tiến độ cũ)
+    addNotification("⏳ ĐANG GỬI...", "Đang xử lý tin nhắn thoại...", true);
+
+    try {
+        const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/video/upload`, {
+            method: 'POST',
+            body: formData
+        });
+        const data = await res.json();
+
+        if (data.secure_url) {
+            sendMediaMessage(data.secure_url, 'voice'); // Gọi hàm gửi Firebase
+        }
+    } catch (err) {
+        console.error("Lỗi gửi voice:", err);
+    }
+}
+
+    // Hàm bổ trợ để phát âm thanh
+function playVoice(btn, url) {
+    const audio = new Audio(url);
+    btn.className = "fas fa-spinner fa-spin"; // Hiệu ứng đang tải
+    audio.play();
+    audio.onplaying = () => btn.className = "fas fa-pause-circle";
+    audio.onended = () => btn.className = "fas fa-play-circle";
+    audio.onerror = () => {
+        btn.className = "fas fa-exclamation-circle";
+        alert("Không thể phát đoạn âm thanh này!");
+    };
 }
 </script>
 </body>
