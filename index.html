@@ -16807,6 +16807,7 @@ function endCall(reason = null) {
 }
     
 // --- 5. XỬ LÝ SỰ KIỆN LUỒNG DỮ LIỆU ---
+// --- 5. XỬ LÝ SỰ KIỆN LUỒNG DỮ LIỆU ---
 function handleCallEvents(call, type) {
     currentCall = call;
 
@@ -16827,7 +16828,6 @@ function handleCallEvents(call, type) {
             remoteVideo.play();
             localVideo.play();
         } else {
-            // Nếu là audio, chỉ cần phát tiếng
             const audio = new Audio();
             audio.srcObject = remoteStream;
             audio.play();
@@ -16841,37 +16841,55 @@ function handleCallEvents(call, type) {
     });
 
     call.on('close', () => {
-        // --- MỚI: DỪNG ĐỒNG HỒ KHI KẾT THÚC ---
+        console.log("🌸 Cuộc gọi đã đóng từ phía đối phương.");
+
+        // 1. LẤY THỜI GIAN HIỆN TẠI TRƯỚC KHI DỪNG ĐỒNG HỒ
+        const timerEl = document.getElementById('call-timer');
+        const currentDuration = timerEl ? timerEl.innerText : "00:00";
+
+        // 2. DỪNG ĐỒNG HỒ
         if (typeof stopCallTimer === 'function') {
             stopCallTimer();
         }
-        endCallUI();
+
+        // 3. CẬP NHẬT UI VÀ GỬI THÔNG BÁO
+        // Nếu lúc tắt mà duration > 0, endCallUI sẽ tự hiểu là 'ended'
+        // Chúng ta có thể truyền trực tiếp duration vào để endCallUI xử lý chính xác hơn
+        endCallUI(null, currentDuration); 
     });
 }
     
-    async function showIncomingCallPopup(from, type) {
+   async function showIncomingCallPopup(from, type) {
     // 1. Gán tên người gọi vào giao diện
-    document.getElementById('call-caller-name').innerText = from;
+    const nameEl = document.getElementById('call-caller-name');
+    if (nameEl) nameEl.innerText = from;
 
-    // --- MỚI: XỬ LÝ HIỂN THỊ AVATAR ---
+    // --- MỚI: XỬ LÝ HIỂN THỊ AVATAR (Bản sửa lỗi) ---
+    const photoEl = document.getElementById('call-caller-photo');
+    const iconEl = document.getElementById('call-caller-icon');
+
     try {
-        // Henry lấy dữ liệu user từ nhánh users (giả sử key là tên/ID người gọi)
+        // Henry lưu ý: 'from' phải khớp 100% với Key trong nhánh 'users' trên Firebase
+        // Ví dụ: db.ref('users/HenryDao')
         const userSnap = await db.ref(`users/${from}`).once('value');
         const userData = userSnap.val();
-        
-        const photoEl = document.getElementById('call-caller-photo');
-        const iconEl = document.getElementById('call-caller-icon');
         
         if (userData && userData.avatar && photoEl && iconEl) {
             photoEl.src = userData.avatar;
             photoEl.style.display = 'block';
             iconEl.style.display = 'none';
+            console.log("🌸 Đã cập nhật avatar thành công!");
         } else if (photoEl && iconEl) {
+            // Nếu không tìm thấy data hoặc không có link ảnh
             photoEl.style.display = 'none';
             iconEl.style.display = 'block';
         }
     } catch (err) {
-        console.log("🌸 Chưa lấy được avatar đối phương, dùng mặc định.");
+        console.log("🌸 Lỗi khi truy cập Firebase lấy avatar:", err);
+        if (photoEl && iconEl) {
+            photoEl.style.display = 'none';
+            iconEl.style.display = 'block';
+        }
     }
     
     // 2. Hiện lớp phủ Overlay với Flexbox để căn giữa tuyệt đối
@@ -16879,12 +16897,12 @@ function handleCallEvents(call, type) {
     if (overlay) {
         overlay.style.display = 'flex';
     } else {
-        // Nếu Henry chưa bọc overlay thì dùng lệnh cũ nhưng hiện block
-        document.getElementById('incoming-call-popup').style.display = 'block';
+        const popup = document.getElementById('incoming-call-popup');
+        if (popup) popup.style.display = 'block';
     }
 
     // 3. (Tùy chọn) Thêm âm thanh reo cho xịn
-    playRingtone(); 
+    if (typeof playRingtone === 'function') playRingtone(); 
 
     console.log(`📞 Đang hiển thị cuộc gọi đến từ: ${from} (${type})`);
 }
@@ -16971,15 +16989,38 @@ function showCallScreen(name, type, isOutgoing) {
 
 // Thêm tham số explicitReason để nhận biết các trường hợp đặc biệt như 'timeout'
 function endCallUI(explicitReason = null) {
-    // --- MỚI: KIỂM TRA TRẠNG THÁI TRƯỚC KHI ẨN (Để phân biệt Từ chối/Nhỡ) ---
+    // --- 1. LẤY DỮ LIỆU NGAY LẬP TỨC (QUAN TRỌNG NHẤT) ---
+    const timerEl = document.getElementById('call-timer');
     const overlay = document.getElementById('call-overlay');
     const incomingPopup = document.getElementById('incoming-call-popup');
+
+    // Phải lấy thời lượng TRƯỚC khi thực hiện bất kỳ lệnh ẩn giao diện nào
+    const currentDuration = timerEl ? timerEl.innerText : "00:00";
     
-    // Lưu lại trạng thái hiển thị vào biến trước khi dọn dẹp UI
+    // Kiểm tra trạng thái hiển thị TRƯỚC khi gán style.display = 'none'
     const isIncomingShowing = (overlay && overlay.style.display === 'flex') || 
                                (incomingPopup && incomingPopup.style.display === 'block');
 
-    // --- GIỮ NGUYÊN NỘI DUNG CŨ 100% ---
+    // --- 2. PHÂN LOẠI TRẠNG THÁI (Dựa trên biến vừa lưu) ---
+    const callType = window.currentCallType || 'audio'; 
+    let status = 'ended'; 
+
+    if (currentDuration === "00:00") {
+        if (explicitReason === 'timeout') {
+            status = 'missed';
+        } else if (isIncomingShowing) {
+            status = 'declined';
+        } else {
+            status = 'missed';
+        }
+    }
+
+    // Gửi tin nhắn thông báo ngay
+    if (typeof sendCallSystemMessage === 'function') {
+        sendCallSystemMessage(callType, status);
+    }
+
+    // --- 3. DỌN DẸP GIAO DIỆN (GIỮ NGUYÊN NỘI DUNG CŨ 100%) ---
     document.getElementById('call-screen').style.display = 'none';
     if (incomingPopup) incomingPopup.style.display = 'none'; 
     const remoteVideo = document.getElementById('remote-video');
@@ -16987,45 +17028,18 @@ function endCallUI(explicitReason = null) {
     if (remoteVideo) remoteVideo.srcObject = null;
     if (localVideo) localVideo.srcObject = null;
 
-    // --- ẨN LỚP PHỦ OVERLAY VÀ DỪNG NHẠC CHUÔNG ---
     if (overlay) overlay.style.display = 'none';
     
     if (typeof stopRingtone === 'function') {
         stopRingtone();
     }
 
-    // --- LOGIC GỬI TIN NHẮN THÔNG BÁO ---
-    const timerEl = document.getElementById('call-timer');
-    const duration = timerEl ? timerEl.innerText : "00:00";
-    const callType = window.currentCallType || 'audio'; 
-    
-    let status = 'ended'; 
-
-    // PHÂN LOẠI CHÍNH XÁC DỰA TRÊN THỜI LƯỢNG VÀ LÝ DO:
-    if (duration === "00:00") {
-        if (explicitReason === 'timeout') {
-            // Trường hợp 1: Hết 1 phút không ai nghe máy
-            status = 'missed';
-        } else if (isIncomingShowing) {
-            // Trường hợp 2: Đang hiện popup mà bị tắt (người dùng bấm Từ chối)
-            status = 'declined';
-        } else {
-            // Trường hợp 3: Người gọi chủ động tắt khi bên kia chưa kịp hiện popup hoặc các lỗi khác
-            status = 'missed';
-        }
-    }
-    
-    if (typeof sendCallSystemMessage === 'function') {
-        sendCallSystemMessage(callType, status);
-    }
-
-    // --- GIỮ NGUYÊN LOGIC DỪNG ĐỒNG HỒ ---
+    // --- 4. RESET ĐỒNG HỒ VÀ BỘ ĐẾM ---
     if (typeof stopCallTimer === 'function') {
         stopCallTimer();
         console.log(`🌸 Trạng thái: ${status}. Đã đóng giao diện và reset đồng hồ.`);
     }
 
-    // Đảm bảo dọn dẹp bộ đếm 1 phút nếu nó vẫn còn đang chạy
     if (window.callTimeoutTimer) {
         clearTimeout(window.callTimeoutTimer);
         window.callTimeoutTimer = null;
