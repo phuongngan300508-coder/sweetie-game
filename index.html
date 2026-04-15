@@ -17007,42 +17007,48 @@ function showCallScreen(name, type, isOutgoing) {
 
 // Thêm tham số explicitReason để nhận biết các trường hợp đặc biệt như 'timeout'
 function endCallUI(explicitReason = null) {
-    // --- 1. LẤY DỮ LIỆU NGAY LẬP TỨC ---
+    // --- 1. LẤY DỮ LIỆU "BĂNG GIÁ" NGAY LẬP TỨC ---
     const timerEl = document.getElementById('call-timer');
     const overlay = document.getElementById('call-overlay');
     const incomingPopup = document.getElementById('incoming-call-popup');
     const callScreen = document.getElementById('call-screen');
 
-    // Lấy thời lượng
+    // Lấy thời lượng TRƯỚC khi làm bất cứ việc gì khác
     const currentDuration = timerEl ? timerEl.innerText.trim() : "00:00";
     
-    // Kiểm tra xem màn hình đàm thoại có đang hiện không (Nếu hiện nghĩa là đã bắt máy)
-    const isChatting = callScreen && callScreen.style.display === 'flex';
+    // Kiểm tra xem đồng hồ đã chạy chưa (để biết đã bắt máy chưa)
+    const isStarted = currentDuration !== "00:00" && currentDuration !== "";
     
-    // Kiểm tra trạng thái popup gọi đến
+    // Kiểm tra trạng thái UI TRƯỚC khi ẩn
     const isIncomingShowing = (overlay && overlay.style.display === 'flex') || 
                                (incomingPopup && incomingPopup.style.display === 'block');
+    const isCallScreenShowing = (callScreen && callScreen.style.display === 'flex');
 
-    // --- 2. PHÂN LOẠI TRẠNG THÁI ---
+    // --- 2. PHÂN LOẠI TRẠNG THÁI CHÍNH XÁC ---
     const callType = window.currentCallType || 'audio'; 
     let status = 'ended'; 
 
-    // Nếu thời gian là 00:00, ta xét tiếp
-    if (currentDuration === "00:00") {
-        if (isChatting) {
-            // Trường hợp đặc biệt: Đã hiện màn hình nói chuyện nhưng tắt quá nhanh (< 1s)
-            // Ta vẫn tính là 'ended' (Đã kết thúc) thay vì nhỡ
-            status = 'ended';
-        } else if (explicitReason === 'timeout') {
+    if (!isStarted) {
+        // TRƯỜNG HỢP: ĐỒNG HỒ ĐANG 00:00 (CHƯA NÓI CHUYỆN)
+        if (explicitReason === 'timeout') {
             status = 'missed';
         } else if (isIncomingShowing) {
+            // Mình đang thấy popup gọi đến mà cuộc gọi kết thúc -> Mình bấm "Từ chối"
             status = 'declined';
+        } else if (isCallScreenShowing) {
+            // Mình đang chờ người ta bắt máy (màn hình gọi đi hiện) mà bị tắt 
+            // -> Đối phương bấm "Từ chối" hoặc mình chủ động "Hủy"
+            // Theo Messenger: Đây vẫn là "Cuộc gọi nhỡ" vì chưa kết nối thành công.
+            status = 'missed';
         } else {
             status = 'missed';
         }
+    } else {
+        // TRƯỜNG HỢP: ĐÃ BẮT MÁY VÀ NÓI CHUYỆN (> 00:00)
+        status = 'ended';
     }
 
-    // Gửi tin nhắn thông báo
+    // Gửi tin nhắn ngay khi đã chốt được status
     if (typeof sendCallSystemMessage === 'function') {
         sendCallSystemMessage(callType, status);
     }
@@ -17054,12 +17060,12 @@ function endCallUI(explicitReason = null) {
 
     const remoteVideo = document.getElementById('remote-video');
     const localVideo = document.getElementById('local-video');
-    if (remoteVideo) remoteVideo.srcObject = null;
-    if (localVideo) localVideo.srcObject = null;
+    if (remoteVideo) { remoteVideo.srcObject = null; }
+    if (localVideo) { localVideo.srcObject = null; }
 
     if (typeof stopRingtone === 'function') stopRingtone();
 
-    // --- 4. RESET ĐỒNG HỒ ---
+    // --- 4. RESET ĐỒNG HỒ (GỌI SAU CÙNG) ---
     if (typeof stopCallTimer === 'function') {
         stopCallTimer();
     }
@@ -17069,7 +17075,7 @@ function endCallUI(explicitReason = null) {
         window.callTimeoutTimer = null;
     }
     
-    console.log(`🌸 Chốt trạng thái: ${status}`);
+    console.log(`🌸 Trạng thái chốt hạ: ${status} (Thời gian: ${currentDuration})`);
 }
     
     let callTimerInterval;
