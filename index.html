@@ -16778,10 +16778,15 @@ function endCallUI() {
     // --- MỚI: TỰ ĐỘNG GỬI TIN NHẮN THÔNG BÁO CUỘC GỌI ---
     const timerEl = document.getElementById('call-timer');
     const duration = timerEl ? timerEl.innerText : "00:00";
-    const callType = window.currentCallType || 'audio'; // Henry nhớ gán biến này lúc bắt đầu gọi nhé
+    const callType = window.currentCallType || 'audio'; 
     
-    // Nếu duration khác 00:00 là đã nghe máy (Ended), nếu vẫn là 00:00 là cuộc gọi nhỡ (Missed)
-    const status = (duration !== "00:00") ? 'ended' : 'missed';
+    // Logic xác định trạng thái: Kết thúc, Nhỡ, hoặc Từ chối
+    let status = 'ended';
+    if (duration === "00:00") {
+        // Nếu Henry là người nhận cuộc gọi (popup đang hiện) mà bấm nút kết thúc -> status là 'declined'
+        const isIncoming = document.getElementById('incoming-call-popup').style.display === 'block';
+        status = isIncoming ? 'declined' : 'missed';
+    }
     
     if (typeof sendCallSystemMessage === 'function') {
         sendCallSystemMessage(callType, status);
@@ -16790,10 +16795,9 @@ function endCallUI() {
     // --- MỚI: DỪNG ĐỒNG HỒ VÀ RESET THỜI GIAN ---
     if (typeof stopCallTimer === 'function') {
         stopCallTimer();
-        console.log("🌸 Đã đóng giao diện, gửi thông báo và reset đồng hồ.");
+        console.log(`🌸 Trạng thái: ${status}. Đã đóng giao diện và reset đồng hồ.`);
     }
 }
-
     let callTimerInterval;
 let callStartTime;
 
@@ -16829,15 +16833,20 @@ function stopCallTimer() {
     // Hàm tự động gửi thông báo cuộc gọi vào đoạn chat
 function sendCallSystemMessage(type, status) {
     // type: 'audio' hoặc 'video'
-    // status: 'ended' (kết thúc) hoặc 'missed' (cuộc gọi nhỡ)
+    // status: 'ended' (kết thúc), 'missed' (cuộc gọi nhỡ), hoặc 'declined' (từ chối)
     
     if (!currentChatFriend) return;
 
     let msgText = "";
-    if (type === 'video') {
-        msgText = (status === 'ended') ? "🎥 Cuộc gọi video đã kết thúc" : "🎥 Cuộc gọi video nhỡ";
+    const isVideo = (type === 'video');
+
+    // --- LOGIC PHÂN LOẠI NỘI DUNG TIN NHẮN ---
+    if (status === 'ended') {
+        msgText = isVideo ? "🎥 Cuộc gọi video đã kết thúc" : "📞 Cuộc gọi thoại đã kết thúc";
+    } else if (status === 'declined') {
+        msgText = isVideo ? "🎥 Cuộc gọi video bị từ chối" : "📞 Cuộc gọi thoại bị từ chối";
     } else {
-        msgText = (status === 'ended') ? "📞 Cuộc gọi thoại đã kết thúc" : "📞 Cuộc gọi thoại nhỡ";
+        msgText = isVideo ? "🎥 Cuộc gọi video nhỡ" : "📞 Cuộc gọi thoại nhỡ";
     }
 
     const chatRoomId = [currentUser, currentChatFriend].sort().join('_');
@@ -16853,7 +16862,7 @@ function sendCallSystemMessage(type, status) {
         displayTime: displayTime
     };
 
-    // Gửi lên Firebase
+    // Gửi lên Firebase (Giữ nguyên logic cũ của Henry)
     db.ref('chats/' + chatRoomId + '/messages').push(msgData).then(() => {
         // Bắn thông báo cho đối phương
         db.ref('notifications_queue/' + currentChatFriend).push({
