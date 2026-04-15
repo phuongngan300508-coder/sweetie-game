@@ -16688,11 +16688,11 @@ async function makeCall(type) { // type: 'audio' hoặc 'video'
         showCallScreen(currentChatFriend, type, true);
 
         // --- MỚI: TỰ ĐỘNG NGẮT SAU 60 GIÂY NẾU KHÔNG AI TRẢ LỜI ---
-        // Biến callTimeoutTimer nên được khai báo toàn cục (ở đầu file js của Henry)
         if (window.callTimeoutTimer) clearTimeout(window.callTimeoutTimer); 
         window.callTimeoutTimer = setTimeout(() => {
             console.log("⏰ Đã quá 1 phút, tự động chuyển thành cuộc gọi nhỡ.");
-            endCall(); // Gọi hàm endCall để xóa nhánh Firebase và đóng UI
+            // SỬA TẠI ĐÂY: Truyền 'timeout' để endCall biết đây là cuộc gọi nhỡ
+            endCall('timeout'); 
         }, 60000); 
 
         // --- PHẦN LOGIC FIREBASE ---
@@ -16770,7 +16770,8 @@ async function acceptCall() {
 }
 
 // --- 4. KẾT THÚC CUỘC GỌI ---
-function endCall() {
+// Thêm tham số reason (mặc định là null) để phân biệt lý do tắt máy
+function endCall(reason = null) {
     // --- MỚI: Dừng nhạc chuông nếu đang reo mà bấm từ chối ---
     if (typeof stopRingtone === 'function') stopRingtone();
 
@@ -16789,7 +16790,6 @@ function endCall() {
     if (currentCall) currentCall.close();
     
     // 3. XÓA TÍN HIỆU TRÊN FIREBASE
-    // Việc xóa nhánh này sẽ kích hoạt sự kiện .on('value') ở máy bên kia để họ tự tắt giao diện
     const target = currentChatFriend || (currentCall ? currentCall.peer : null);
     if (target) {
         // --- MỚI: Gỡ bộ lắng nghe trước khi xóa để tránh lặp logic xử lý ---
@@ -16799,8 +16799,9 @@ function endCall() {
         db.ref(`calls/${currentUser}`).remove();
     }
     
-    // 4. Cập nhật giao diện (ẩn màn hình gọi, hiện lại khung chat)
-    endCallUI();
+    // 4. Cập nhật giao diện và gửi thông báo
+    // Truyền 'reason' vào đây để endCallUI phân tích được là "Nhỡ", "Từ chối" hay "Kết thúc"
+    endCallUI(reason);
 }
     
 // --- 5. XỬ LÝ SỰ KIỆN LUỒNG DỮ LIỆU ---
@@ -16923,19 +16924,19 @@ function showCallScreen(name, type, isOutgoing) {
     document.getElementById('local-video').style.display = type === 'video' ? 'block' : 'none';
 }
 
-function endCallUI() {
+// Thêm tham số explicitReason để nhận biết các trường hợp đặc biệt như 'timeout'
+function endCallUI(explicitReason = null) {
     // --- MỚI: KIỂM TRA TRẠNG THÁI TRƯỚC KHI ẨN (Để phân biệt Từ chối/Nhỡ) ---
     const overlay = document.getElementById('call-overlay');
     const incomingPopup = document.getElementById('incoming-call-popup');
     
     // Lưu lại trạng thái hiển thị vào biến trước khi dọn dẹp UI
-    // Nếu Popup hoặc Overlay đang hiện => Nghĩa là người dùng đang thấy cuộc gọi đến
     const isIncomingShowing = (overlay && overlay.style.display === 'flex') || 
                                (incomingPopup && incomingPopup.style.display === 'block');
 
     // --- GIỮ NGUYÊN NỘI DUNG CŨ 100% ---
     document.getElementById('call-screen').style.display = 'none';
-    if (incomingPopup) incomingPopup.style.display = 'none'; // Ẩn sau khi đã kiểm tra
+    if (incomingPopup) incomingPopup.style.display = 'none'; 
     const remoteVideo = document.getElementById('remote-video');
     const localVideo = document.getElementById('local-video');
     if (remoteVideo) remoteVideo.srcObject = null;
@@ -16955,12 +16956,18 @@ function endCallUI() {
     
     let status = 'ended'; 
 
-    // PHÂN LOẠI CHÍNH XÁC:
+    // PHÂN LOẠI CHÍNH XÁC DỰA TRÊN THỜI LƯỢNG VÀ LÝ DO:
     if (duration === "00:00") {
-        // Nếu duration là 0, ta xét tiếp:
-        // 1. Nếu đang hiện popup gọi đến mà tắt -> 'declined' (Từ chối)
-        // 2. Nếu không hiện popup (người gọi chủ động tắt hoặc hết 1 phút) -> 'missed' (Nhỡ)
-        status = isIncomingShowing ? 'declined' : 'missed';
+        if (explicitReason === 'timeout') {
+            // Trường hợp 1: Hết 1 phút không ai nghe máy
+            status = 'missed';
+        } else if (isIncomingShowing) {
+            // Trường hợp 2: Đang hiện popup mà bị tắt (người dùng bấm Từ chối)
+            status = 'declined';
+        } else {
+            // Trường hợp 3: Người gọi chủ động tắt khi bên kia chưa kịp hiện popup hoặc các lỗi khác
+            status = 'missed';
+        }
     }
     
     if (typeof sendCallSystemMessage === 'function') {
