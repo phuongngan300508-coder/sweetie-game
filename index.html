@@ -16780,48 +16780,34 @@ async function acceptCall() {
 
 // --- 4. KẾT THÚC CUỘC GỌI ---
 function endCall(reason = null) {
-    console.log("🌸 Lệnh kết thúc cuộc gọi được kích hoạt. Lý do:", reason || "Chủ động tắt");
-
-    // --- MỚI: Dừng nhạc chuông ngay lập tức ---
     if (typeof stopRingtone === 'function') stopRingtone();
 
-    // --- MỚI: Dọn dẹp bộ đếm 60 giây để không bị nhảy thông báo "Nhỡ" sai lúc ---
     if (window.callTimeoutTimer) {
         clearTimeout(window.callTimeoutTimer);
         window.callTimeoutTimer = null;
     }
 
-    // 1. Dừng tất cả các luồng âm thanh/hình ảnh cục bộ (Camera/Micro)
     if (localStream) {
         localStream.getTracks().forEach(track => track.stop());
-        localStream = null; // Giải phóng bộ nhớ
+        localStream = null;
     }
     
-    // 2. Đóng kết nối PeerJS
     if (currentCall) {
         currentCall.close();
-        // Không gán null ngay để logic dưới còn lấy được currentCall.peer nếu cần
     }
     
-    // 3. XỬ LÝ FIREBASE TRIỆT ĐỂ
     const target = currentChatFriend || (currentCall ? currentCall.peer : null);
-    
     if (target) {
-        // QUAN TRỌNG: Gỡ tất cả bộ lắng nghe trước khi xóa để tránh sự kiện 'value' bị kích hoạt ngược lại gây lặp tin nhắn
+        // Gỡ bỏ lắng nghe để khi xóa data, hàm on('value') không bị chạy lặp lại
         db.ref(`calls/${target}`).off();
         db.ref(`calls/${currentUser}`).off();
         
-        // Xóa dữ liệu cuộc gọi trên cả 2 phía để dọn dẹp database
         db.ref(`calls/${target}`).remove();
         db.ref(`calls/${currentUser}`).remove();
     }
     
-    // 4. CẬP NHẬT GIAO DIỆN VÀ GỬI THÔNG BÁO
-    // Truyền 'reason' (ví dụ: 'timeout') vào endCallUI
-    // Tại endCallUI, nó sẽ check: Nếu đồng hồ đang hiện -> ENDED, nếu không mới xét 'reason'
+    // Gọi UI xử lý theo logic 3 loại
     endCallUI(reason);
-
-    // 5. Giải phóng biến sau khi đã xử lý xong UI
     currentCall = null;
 }
     
@@ -17015,50 +17001,44 @@ function showCallScreen(name, type, isOutgoing) {
 
 // Thêm tham số explicitReason để nhận biết các trường hợp đặc biệt như 'timeout'
 function endCallUI(explicitReason = null) {
-    // --- BƯỚC 1: KIỂM TRA TRẠNG THÁI TRƯỚC KHI DỌN DẸP ---
     const overlay = document.getElementById('call-overlay');
     const incomingPopup = document.getElementById('incoming-call-popup');
     const callScreen = document.getElementById('call-screen');
     const timerEl = document.getElementById('call-timer');
 
-    // 1. Kiểm tra Popup gọi đến có ĐANG HIỆN hay không
+    // Kiểm tra trạng thái UI trước khi ẩn
     const isIncomingShowing = (overlay && (overlay.style.display === 'flex' || overlay.style.display === 'block')) || 
                                (incomingPopup && incomingPopup.style.display === 'block');
     
-    // 2. CHỐT CHẶN: Chỉ cần timerEl đang hiển thị (block) -> Đã bắt đầu cuộc gọi thành công
+    // LOẠI 1: ENDED - Kiểm tra bộ đếm giờ (isConnected)
+    // Chỉ cần đồng hồ đã hiện (display block) thì mặc định là đã kết nối
     const isConnected = timerEl && timerEl.style.display !== 'none';
 
-    // --- BƯỚC 2: DỌN DẸP UI (Giữ nguyên 100% nội dung của Henry) ---
+    // Dọn dẹp giao diện (Giữ nguyên logic Henry)
     if (callScreen) callScreen.style.display = 'none';
     if (incomingPopup) incomingPopup.style.display = 'none'; 
     if (overlay) overlay.style.display = 'none';
-
-    const remoteVideo = document.getElementById('remote-video');
-    const localVideo = document.getElementById('local-video');
-    if (remoteVideo) remoteVideo.srcObject = null;
-    if (localVideo) localVideo.srcObject = null;
-
     if (typeof stopRingtone === 'function') stopRingtone();
 
-    // --- BƯỚC 3: PHÂN LOẠI TRẠNG THÁI (Sửa triệt để tại đây) ---
-    let status = 'ended'; 
+    // --- PHÂN LOẠI TRẠNG THÁI THEO YÊU CẦU CỦA HENRY ---
+    let status = ''; 
     const callType = window.currentCallType || 'audio'; 
 
     if (isConnected) {
-        // NẾU ĐÃ HIỆN BỘ ĐẾM GIỜ -> LUÔN LUÔN LÀ ENDED
+        // LOẠI 1: Bất kể ai tắt, hễ đếm giờ rồi là ENDED
         status = 'ended';
+    } else if (explicitReason === 'timeout') {
+        // LOẠI 2: Chỉ khi bộ đếm 1 phút tự ngắt mới là MISSED
+        status = 'missed';
+    } else if (isIncomingShowing) {
+        // LOẠI 3: Người nhận chủ động bấm Tắt/Từ chối khi chưa kết nối
+        status = 'declined';
     } else {
-        // Chỉ khi CHƯA hiện bộ đếm giờ mới xét các trường hợp dưới đây
-        if (explicitReason === 'timeout') {
-            status = 'missed';
-        } else if (isIncomingShowing) {
-            status = 'declined';
-        } else {
-            status = 'missed';
-        }
+        // TRƯỜNG HỢP CÒN LẠI: Người gọi chủ động tắt khi chưa kết nối -> MISSED
+        status = 'missed';
     }
 
-    // --- BƯỚC 4: GỬI THÔNG BÁO & CHỐNG LẶP ---
+    // Chống lặp tin nhắn
     if (window.isEndingCall) return; 
     window.isEndingCall = true;
 
@@ -17068,7 +17048,7 @@ function endCallUI(explicitReason = null) {
 
     if (typeof stopCallTimer === 'function') {
         stopCallTimer();
-        console.log(`🌸 Kết thúc triệt để. Trạng thái: ${status}`);
+        console.log(`🌸 Trạng thái xác định: ${status.toUpperCase()}`);
     }
 
     if (window.callTimeoutTimer) {
@@ -17076,7 +17056,6 @@ function endCallUI(explicitReason = null) {
         window.callTimeoutTimer = null;
     }
 
-    // Reset cờ sau 1 giây để tránh lặp từ các sự kiện Firebase/PeerJS chạy song song
     setTimeout(() => { window.isEndingCall = false; }, 1000);
 }
     
