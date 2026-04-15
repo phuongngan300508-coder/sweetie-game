@@ -13089,28 +13089,6 @@ function renderSingleMessage(msgId, msg, position = 'bottom', targetContainer = 
     const area = document.getElementById('chat-messages-area');
     const isMe = msg.sender === currentUser;
 
-    // --- PHẦN MỚI: RENDER TIN NHẮN HỆ THỐNG CUỘC GỌI ---
-    if (msg.type === 'call_system') {
-        const isMissed = msg.text.toLowerCase().includes('nhỡ');
-        const systemHtml = `
-            <div class="msg-wrapper system-call-msg" id="msg-${msgId}" 
-                 style="width: 100%; text-align: center; margin: 15px 0; clear: both; display: flex; flex-direction: column; align-items: center;">
-                <div style="background: rgba(0, 0, 0, 0.05); color: #666; font-size: 0.7em; padding: 6px 15px; border-radius: 20px; display: inline-flex; align-items: center; gap: 8px; font-weight: 500;">
-                    <i class="${msg.text.includes('video') ? 'fas fa-video' : 'fas fa-phone'} ${isMissed ? 'animate__animated animate__shakeX' : ''}" 
-                       style="color: ${isMissed ? '#ff4d4d' : '#888'};"></i>
-                    <span>${msg.text}</span>
-                    <span style="opacity: 0.6; font-weight: normal;">• ${msg.displayTime || ''}</span>
-                </div>
-            </div>`;
-
-        if (targetContainer) {
-            targetContainer.innerHTML = systemHtml;
-        } else {
-            area.insertAdjacentHTML(position === 'bottom' ? 'beforeend' : 'afterbegin', systemHtml);
-        }
-        return; // Thoát hàm sớm vì tin nhắn hệ thống không cần các logic reply/reaction bên dưới
-    }
-
     // --- 1. LOGIC REPLY (GIỮ NGUYÊN 100%) ---
     let replyHtml = "";
     if (msg.replyData && msg.replyData.sender) {
@@ -13150,7 +13128,7 @@ function renderSingleMessage(msgId, msg, position = 'bottom', targetContainer = 
         }
     }
 
-    // --- 4. LOGIC MEDIA, STICKER, VOICE & HIGHLIGHT ---
+    // --- 4. LOGIC MEDIA, STICKER, VOICE & CALL ---
     let finalMsgText = msg.text || "";
     if (typeof currentSearchKeyword !== 'undefined' && currentSearchKeyword && msg.text) {
         const regex = new RegExp(`(${currentSearchKeyword})`, 'gi');
@@ -13159,10 +13137,26 @@ function renderSingleMessage(msgId, msg, position = 'bottom', targetContainer = 
 
     let bodyContentHtml = `<div class="text-content">${finalMsgText}</div>`;
     
-    if (msg.type === 'sticker') {
+    // --- PHẦN MỚI: XỬ LÝ Ô TIN NHẮN CUỘC GỌI (MESSENGER STYLE) ---
+    if (msg.type === 'call_system') {
+        const isMissed = msg.text.toLowerCase().includes('nhỡ') || msg.text.toLowerCase().includes('từ chối');
+        const callIcon = msg.text.includes('video') ? 'fas fa-video' : 'fas fa-phone';
+        const themeColor = isMe ? '#ffffff' : (area.style.getPropertyValue('--theme-main-color') || '#ff69b4');
+        
+        bodyContentHtml = `
+            <div class="call-msg-bubble" style="display: flex; align-items: center; gap: 12px; padding: 5px 10px; min-width: 180px;">
+                <div style="width: 35px; height: 35px; border-radius: 50%; background: ${isMe ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.05)'}; display: flex; align-items: center; justify-content: center;">
+                    <i class="${callIcon}" style="font-size: 1.1em; color: ${isMissed ? '#ff4d4d' : themeColor};"></i>
+                </div>
+                <div style="display: flex; flex-direction: column;">
+                    <span style="font-size: 0.9em; font-weight: bold; color: ${isMe ? '#fff' : '#333'}">${msg.text}</span>
+                    <span style="font-size: 0.75em; opacity: 0.8; color: ${isMe ? '#fff' : '#666'}">Nhấn để gọi lại</span>
+                </div>
+            </div>`;
+    } 
+    else if (msg.type === 'sticker') {
         bodyContentHtml = `<img src="${msg.mediaUrl}" class="animate__animated animate__zoomIn" style="width: 150px; height: auto; display: block; cursor: pointer;">`;
     } 
-    // --- PHẦN MỚI: XỬ LÝ VOICE MESSAGE ---
     else if (msg.mediaType === 'voice') {
         const themeColor = area.style.getPropertyValue('--theme-main-color') || '#ff69b4';
         bodyContentHtml = `
@@ -13179,7 +13173,6 @@ function renderSingleMessage(msgId, msg, position = 'bottom', targetContainer = 
                 </div>
             </div>`;
     }
-    // --- KẾT THÚC PHẦN VOICE ---
     else if (msg.mediaUrl) {
         if (msg.mediaType === 'image') {
             bodyContentHtml = `<img src="${msg.mediaUrl}" onclick="openFS('${msg.mediaUrl}', 'image')" style="max-width:100%; border-radius:10px; cursor:pointer; display: block; margin-bottom: 5px;">`;
@@ -13188,7 +13181,7 @@ function renderSingleMessage(msgId, msg, position = 'bottom', targetContainer = 
         }
     }
 
-    // --- 5. TEMPLATE HTML (TÍCH HỢP GHIM VÀO CẤU TRÚC CŨ) ---
+    // --- 5. TEMPLATE HTML (GIỮ NGUYÊN CẤU TRÚC GỐC) ---
     const isSticker = msg.type === 'sticker';
     let pinMarkerHtml = msg.isPinned ? `<div class="pin-marker" style="font-size: 0.8em; color: #ff1493; margin-bottom: 3px;"><i class="fas fa-thumbtack"></i></div>` : "";
     
@@ -13218,7 +13211,8 @@ function renderSingleMessage(msgId, msg, position = 'bottom', targetContainer = 
                  style="display: flex; flex-direction: column; position: relative; ${isSticker ? 'background: transparent; box-shadow: none; border: none; padding: 0;' : ''}"
                  ondblclick="sendReaction('${msgId}', '❤️')" 
                  ontouchstart="handleTouchStart(event, '${msgId}')" 
-                 ontouchend="handleTouchEnd()">
+                 ontouchend="handleTouchEnd()"
+                 ${msg.type === 'call_system' ? `onclick="makeCall('${msg.text.includes('video') ? 'video' : 'audio'}')"` : ''}>
                 ${replyHtml}
                 ${bodyContentHtml}
                 ${reactionDisplayHtml}
@@ -13239,11 +13233,6 @@ function renderSingleMessage(msgId, msg, position = 'bottom', targetContainer = 
         <div id="status-${msgId}" class="msg-external-status" 
              style="display: none; font-size: 0.6em; opacity: 0.7; margin-top: 2px; width: fit-content; ${isMe ? 'margin-right: 5px; text-align: right;' : 'margin-left: 5px; text-align: left;'}">
             ${timeDisplay} • <span class="status-text-val">Đã gửi</span>
-        </div>
-
-        <div id="seen-${msgId}" class="seen-avatar-wrap" 
-             style="display: none; margin-top: 2px; width: fit-content; ${isMe ? 'margin-right: 5px;' : 'margin-left: 5px;'}">
-            <img class="seen-avatar-img" src="" style="width: 12px; height: 12px; border-radius: 50%; border: 1px solid white; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
         </div>
     </div>`;
 
