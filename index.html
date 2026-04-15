@@ -7674,26 +7674,28 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
     </div>
 </div>
     
-<div id="call-screen" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:999999; flex-direction:column; align-items:center; backdrop-filter:blur(15px); padding: 50px 0;">
+<div id="call-screen" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:999999; flex-direction:column; align-items:center; backdrop-filter:blur(20px);">
     <video id="remote-video" style="width:100%; height:100%; object-fit:cover; position:absolute; top:0; left:0;"></video>
     
-    <video id="local-video" muted style="width:110px; height:160px; object-fit:cover; position:absolute; top:30px; right:20px; border-radius:15px; border:2px solid rgba(255,255,255,0.5); z-index:10; background:#222; box-shadow: 0 8px 20px rgba(0,0,0,0.3);"></video>
+    <video id="local-video" muted style="width:100px; height:150px; object-fit:cover; position:absolute; top:20px; right:20px; border-radius:12px; border:1.5px solid rgba(255,255,255,0.6); z-index:10; background:#111; box-shadow: 0 4px 15px rgba(0,0,0,0.5);"></video>
     
-    <div style="position:relative; z-index:5; text-align:center; margin-top: 40px;">
-        <div id="call-target-avatar-large" style="width:100px; height:100px; border-radius:50%; border:3px solid #ff69b4; margin: 0 auto 15px; background:white; overflow:hidden; display:none; box-shadow: 0 0 20px rgba(255,105,180,0.3);"></div>
-        <h2 id="call-target-display-name" style="color:white; text-shadow:0 2px 10px rgba(0,0,0,0.8); font-size:1.6em; margin-bottom:5px;">Tên đối phương</h2>
-        <div id="call-status" style="color:#ffc0cb; text-shadow:0 1px 5px rgba(0,0,0,0.5); margin-bottom:10px; font-size:1em; font-weight:lighter;">Đang kết nối...</div>
-        <div id="call-timer" style="color:white; text-shadow:0 1px 5px rgba(0,0,0,0.5); margin-bottom:30px; font-weight:bold; font-size:1.2em; letter-spacing:2px; font-family:monospace; display:none;">00:00</div>
+    <div style="position:relative; z-index:5; text-align:center; margin-top: 15vh;"> 
+        <div id="call-target-avatar-large" style="width:90px; height:90px; border-radius:50%; border:2px solid #ff69b4; margin: 0 auto 15px; background:white; overflow:hidden; display:none;"></div>
+        <h2 id="call-target-display-name" style="color:white; text-shadow:0 2px 8px rgba(0,0,0,0.8); font-size:1.4em; margin-bottom:5px; font-weight: 500;">Tên đối phương</h2>
+        <div id="call-status" style="color:#ffc0cb; text-shadow:0 1px 4px rgba(0,0,0,0.6); font-size:0.95em;">Đang kết nối...</div>
+        <div id="call-timer" style="color:white; text-shadow:0 1px 4px rgba(0,0,0,0.6); font-weight:bold; font-size:1.1em; letter-spacing:1.5px; font-family:monospace; display:none; margin-top:5px;">00:00</div>
     </div>
 
-    <div style="position:absolute; bottom:50px; z-index:5; width:100%; display:flex; justify-content:center; align-items:center; gap: 30px;">
-        <button onclick="endCall()" style="background:#ff4d4d; color:white; border:none; width:70px; height:70px; border-radius:50%; font-size:2em; cursor:pointer; box-shadow:0 5px 25px rgba(255,77,77,0.4); transition:0.3s; display:flex; align-items:center; justify-content:center;" 
-                onmouseover="this.style.transform='scale(1.1) rotate(135deg)'" 
-                onmouseout="this.style.transform='scale(1) rotate(0deg)'">
-            <i class="fas fa-phone-slash" style="transform: rotate(0deg);"></i>
-        </button>
-
+    <div style="position:absolute; bottom: 12%; z-index:5; width:100%; display:flex; justify-content:center; align-items:center;">
+        <div style="display:flex; flex-direction:column; align-items:center; gap:15px;">
+            <button onclick="endCall()" style="background:#ff4d4d; color:white; border:none; width:65px; height:65px; border-radius:50%; font-size:1.6em; cursor:pointer; box-shadow:0 4px 20px rgba(255,77,77,0.5); transition:all 0.3s ease; display:flex; align-items:center; justify-content:center;" 
+                    onmouseover="this.style.backgroundColor='#ff3333'; this.style.transform='scale(1.05)'" 
+                    onmouseout="this.style.backgroundColor='#ff4d4d'; this.style.transform='scale(1)'">
+                <i class="fas fa-phone-slash"></i>
+            </button>
+            <span style="color:white; font-size:0.75em; text-transform:uppercase; letter-spacing:1px; opacity:0.8; text-shadow: 0 1px 3px rgba(0,0,0,0.5);">Kết thúc</span>
         </div>
+    </div>
 </div>
 <script>
   let replyingTo = null; // Lưu tin nhắn đang được trả lời {id, text, sender}
