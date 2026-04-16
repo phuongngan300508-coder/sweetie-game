@@ -5423,6 +5423,7 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
 }
 
     /* Lớp nền phủ toàn màn hình */
+/* Lớp nền phủ toàn màn hình */
 .popup-global-wrapper {
     position: fixed;
     top: 0;
@@ -5433,9 +5434,9 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
     z-index: 10000;
     backdrop-filter: blur(4px);
     display: none; /* Mặc định ẩn, JS switchTab sẽ hiện flex */
-    align-items: center;
-    justify-content: center;
-    padding: 15px;
+    align-items: center;    /* Căn giữa theo chiều dọc */
+    justify-content: center; /* Căn giữa theo chiều ngang */
+    padding: 0; /* Xóa padding để tránh đẩy lệch container */
 }
 
 /* Container chính */
@@ -5448,7 +5449,7 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
     box-shadow: 0 15px 35px rgba(255, 20, 147, 0.25);
     border: 2px solid #ffe4e1;
     position: relative;
-    max-width: 95vw;
+    /* Không dùng max-width ở đây để tránh xung đột */
 }
 
 /* --- DÀNH CHO MÁY TÍNH (Dạng NGANG) --- */
@@ -5462,10 +5463,11 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
 /* --- DÀNH CHO ĐIỆN THOẠI (Dạng DỌC) --- */
 @media (max-width: 768px) {
     .global-chat-container {
-        width: 100%;        /* Chiếm hết chiều ngang */
-        height: 75vh;       /* Chiều cao lớn để hiển thị dạng dọc */
+        width: 92% !important;  /* Để 92% để không dính sát 2 mép màn hình */
+        height: 75vh;           /* Chiều cao lớn để hiển thị dạng dọc */
         max-height: 650px;
-        border-radius: 35px; /* Bo góc mượt mà hơn trên mobile */
+        margin: auto !important; /* Cưỡng ép căn giữa */
+        border-radius: 35px;
     }
     
     #global-input {
@@ -10497,7 +10499,7 @@ function switchTab(tabId) {
     // 1. Ẩn tất cả các Tab Panel (Bao gồm cả tab-content nếu có)
     document.querySelectorAll('.tab-panel, .tab-content').forEach(panel => {
         panel.classList.remove('active');
-        panel.style.setProperty('display', 'none', 'important'); // Dùng !important để đảm bảo không bị CSS khác đè
+        panel.style.setProperty('display', 'none', 'important'); 
     });
     
     // 2. Bỏ trạng thái sáng (active) của tất cả các nút trên thanh Nav
@@ -10508,19 +10510,23 @@ function switchTab(tabId) {
     if (activePanel) {
         activePanel.classList.add('active');
 
-        // --- SỬA TẠI ĐÂY: Logic hiển thị riêng biệt cho Global Chat ---
+        // --- SỬA TẠI ĐÂY: Fix lỗi căn giữa trên điện thoại ---
         if (tabId === 'tab-global') {
-            // Ép kiểu hiển thị flex để popup căn giữa màn hình
+            // Ép hiển thị flex cho overlay để kích hoạt justify-content: center
             activePanel.style.setProperty('display', 'flex', 'important'); 
             
-            // Kích hoạt Chat Thế Giới (chỉ chạy khi hàm tồn tại)
+            // Đảm bảo body không bị cuộn làm lệch vị trí popup trên mobile
+            document.body.style.overflow = 'hidden'; 
+
+            // Kích hoạt Chat Thế Giới
             if (typeof initGlobalChat === 'function') {
                 initGlobalChat();
-                console.log("Hệ thống: Đã mở Kênh chat thế giới (Dạng Popup).");
+                console.log("Hệ thống: Đã mở Kênh chat thế giới (Căn giữa Mobile/PC).");
             }
         } else {
-            // Các tab thông thường hiển thị block
+            // Các tab thông thường
             activePanel.style.setProperty('display', 'block', 'important');
+            document.body.style.overflow = 'auto'; // Trả lại khả năng cuộn trang
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
     }
@@ -10529,8 +10535,6 @@ function switchTab(tabId) {
     const targetBtn = document.querySelector(`.nav-item[onclick*="'${tabId}'"]`);
     if (targetBtn) {
         targetBtn.classList.add('active');
-        
-        // ĐẶC BIỆT CHO ĐIỆN THOẠI: Tự động trượt thanh bar đến nút đang chọn
         targetBtn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
     }
 }
@@ -17566,7 +17570,9 @@ function toggleCam() {
     db.ref(`calls/${currentUser}/settings/cam`).set(isCamOn);
 }
 
-    // --- 1. LẮNG NGHE TIN NHẮN THẾ GIỚI ---
+    // Thêm biến để đánh dấu lần chạy đầu tiên
+let isFirstLoad = true;
+   
 // --- 1. LẮNG NGHE TIN NHẮN THẾ GIỚI ---
 function initGlobalChat() {
     // Ép hiển thị tab chat (Dùng flex cho Popup)
@@ -17593,41 +17599,48 @@ function initGlobalChat() {
         }
     });
 
-    // 2. MỚI: LẮNG NGHE TIN NHẮN MỚI ĐỂ ĐẨY THÔNG BÁO (NOTIFICATION & IN-GAME CHUÔNG)
-    db.ref('global_chat/messages').limitToLast(1).on('child_added', (snapshot) => {
-        const msg = snapshot.val();
-        if (!msg) return;
+db.ref('global_chat/messages').limitToLast(1).on('child_added', (snapshot) => {
+    // Bỏ qua lần load đầu tiên để không hiện thông báo cho tin nhắn cũ nhất hiện có
+    if (isFirstLoad) {
+        isFirstLoad = false;
+        return;
+    }
 
-        const isMe = msg.sender === userData.profile.uid;
-        const isChatOpen = (document.getElementById('tab-global').style.display === 'flex');
-        const isRecent = (Date.now() - msg.timestamp) < 5000;
+    const msg = snapshot.val();
+    if (!msg) return;
 
-        if (!isMe && !isChatOpen && isRecent) {
-            // --- THÔNG BÁO TRÌNH DUYỆT ---
-            if ("Notification" in window && Notification.permission === "granted") {
-                const n = new Notification(`🌸 Thế giới: ${msg.senderName}`, {
-                    body: msg.text,
-                    icon: msg.senderAvatar || "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
-                    tag: "global-chat-msg"
-                });
-                n.onclick = () => { window.focus(); switchTab('tab-global'); n.close(); };
-            }
-
-            // --- THÔNG BÁO CHUÔNG TRONG GAME ---
-            if (typeof addNotification === 'function') {
-                addNotification(
-                    "💬 TIN NHẮN THẾ GIỚI", 
-                    `<b>${msg.senderName}:</b> ${msg.text.substring(0, 40)}${msg.text.length > 40 ? '...' : ''}`,
-                    "linear-gradient(135deg, #ff69b4, #ff1493)" // Màu hồng cho tone-sur-tone
-                );
-            }
+    const isMe = msg.sender === userData.profile.uid;
+    // Kiểm tra xem tab chat có đang ẩn không (chỉ báo khi người dùng không nhìn thấy chat)
+    const isChatOpen = (document.getElementById('tab-global').style.display === 'flex');
+    
+    if (!isMe && !isChatOpen) {
+        // --- THÔNG BÁO TRÌNH DUYỆT ---
+        // Chú ý: Trình duyệt yêu cầu HTTPS và người dùng phải cho phép (granted)
+        if ("Notification" in window && Notification.permission === "granted") {
+            const n = new Notification(`🌸 ${msg.senderName}`, {
+                body: msg.text,
+                icon: msg.senderAvatar || "URL_ANH_MAC_DINH",
+                tag: "global-chat-msg", // Tag giúp ghi đè các thông báo cũ, không làm rác thanh thông báo
+                silent: false // Có thể để false để trình duyệt tự phát tiếng ting mặc định
+            });
             
-            // Âm thanh báo hiệu (Tùy chọn nếu Henry muốn thêm tiếng Ting)
-            // let audio = new Audio('https://www.soundjay.com/buttons/sounds/button-30.mp3');
-            // audio.play().catch(e => {});
+            n.onclick = () => { 
+                window.focus(); 
+                switchTab('tab-global'); 
+                n.close(); 
+            };
         }
-    });
 
+        // --- THÔNG BÁO TRONG GAME ---
+        if (typeof addNotification === 'function') {
+            addNotification(
+                "💬 TIN NHẮN THẾ GIỚI", 
+                `<b>${msg.senderName}:</b> ${msg.text}`,
+                "linear-gradient(135deg, #ff69b4, #ff1493)"
+            );
+        }
+    }
+});
     // Lắng nghe số người đang online
     db.ref('status').on('value', (snap) => {
         const data = snap.val() || {};
