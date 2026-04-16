@@ -18441,12 +18441,105 @@ function finishCreateGroup() {
         openChatWith(groupId);
     });
 }
-// Hàm đổi tên nhóm (Dành cho bất kỳ ai)
-function changeGroupName(newId, newName) {
-    db.ref(`groups/${newId}`).update({ groupName: newName });
-    sendSystemMessage(newId, `${currentUser.name} đã đổi tên nhóm thành ${newName}`);
+// --- 1. HÀM MỞ POPUP TẢI ẢNH NHÓM (Bước 3 cập nhật) ---
+function openGroupAvatarPopup(groupId) {
+    // Tạo một input file ẩn để chọn ảnh
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Kiểm tra dung lượng 10MB
+        if (file.size > 10 * 1024 * 1024) {
+            alert("Ảnh quá lớn! Vui lòng chọn ảnh dưới 10MB.");
+            return;
+        }
+
+        // Hiện loader (nếu bạn có)
+        if(typeof showLoading === 'function') showLoading();
+
+        // Giả sử bạn dùng Cloudinary hoặc Firebase Storage để upload
+        // Ở đây tôi dùng FileReader để demo việc cập nhật nhanh hoặc bạn thay bằng hàm upload của mình
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            const base64Data = event.target.result;
+            // Cập nhật lên Firebase
+            db.ref(`groups/${groupId}`).update({
+                groupAvatar: base64Data
+            }).then(() => {
+                sendSystemMessage(groupId, `${currentUser} đã thay đổi ảnh đại diện nhóm.`);
+                if(typeof hideLoading === 'function') hideLoading();
+            });
+        };
+        reader.readAsDataURL(file);
+    };
+    input.click();
 }
 
+// --- 2. HÀM GỬI TIN NHẮN HỆ THỐNG (Thông báo người rời nhóm, đổi tên...) ---
+function sendSystemMessage(groupId, text) {
+    const msgId = db.ref(`groups/${groupId}/messages`).push().key;
+    db.ref(`groups/${groupId}/messages/${msgId}`).set({
+        sender: "system",
+        text: text,
+        timestamp: Date.now(),
+        type: "notification"
+    });
+}
+
+// --- 3. HÀM XEM THÀNH VIÊN (Popup lớp trên cùng) ---
+function openGroupMembersModal() {
+    const groupId = currentChatFriend;
+    if (!groupId || !groupId.startsWith('group_')) return;
+
+    // Tạo HTML cho Modal Thành viên
+    const modalHtml = `
+        <div id="modal-group-members" class="group-popup-overlay" style="display:flex;">
+            <div class="group-popup-content">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                    <h3 style="margin:0; color:#ff1493;">Thành viên nhóm</h3>
+                    <span onclick="closeGroupMembersModal()" style="cursor:pointer; font-size:1.5em;">&times;</span>
+                </div>
+                <div id="group-members-list" style="max-height:400px; overflow-y:auto;">
+                    </div>
+            </div>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+    // Lắng nghe danh sách thành viên Real-time
+    db.ref(`groups/${groupId}/members`).on('value', (snapshot) => {
+        const members = snapshot.val();
+        const listDiv = document.getElementById('group-members-list');
+        if (!listDiv || !members) return;
+
+        let html = `<p style="font-size:0.8em; color:#888;">Tổng số: ${Object.keys(members).length} thành viên</p>`;
+        
+        for (let mId in members) {
+            const member = members[mId];
+            html += `
+                <div style="display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid #f9f9f9;">
+                    <div style="width:40px; height:40px; border-radius:50%; background:#eee; display:flex; align-items:center; justify-content:center;">
+                        <i class="fas fa-user" style="color:#ccc;"></i>
+                    </div>
+                    <div style="flex:1;">
+                        <div style="font-weight:bold; font-size:0.9em;">${member.nickname || mId}</div>
+                        <div style="font-size:0.7em; color:#999;">ID: ${mId} • Thêm bởi ${member.addedBy}</div>
+                    </div>
+                </div>
+            `;
+        }
+        listDiv.innerHTML = html;
+    });
+}
+
+function closeGroupMembersModal() {
+    const modal = document.getElementById('modal-group-members');
+    if (modal) modal.remove();
+}
+    
     function leaveGroup(groupId) {
     if(confirm("Bạn có chắc chắn muốn rời nhóm?")) {
         db.ref(`groups/${groupId}/members/${currentUser.id}`).remove();
