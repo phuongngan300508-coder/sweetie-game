@@ -17576,9 +17576,10 @@ let isFirstLoad = true;
 const sessionStartTime = Date.now(); // Lưu mốc thời gian bắt đầu phiên làm việc
 
 function initGlobalChat() {
-    // Ép hiển thị tab chat (Dùng flex cho Popup)
+    // --- KHẮC PHỤC LỖI TỰ MỞ POPUP ---
+    // Xóa bỏ dòng ép hiển thị 'flex' ở đây. 
+    // Popup chỉ nên mở khi người dùng click vào nút Chat (hàm switchTab sẽ lo việc đó).
     const chatTab = document.getElementById('tab-global');
-    if (chatTab) chatTab.style.display = 'flex';
 
     const globalArea = document.getElementById('global-messages-area');
     if (!globalArea) return;
@@ -17606,13 +17607,15 @@ function initGlobalChat() {
         if (!msg || msg.timestamp <= sessionStartTime) return;
 
         const isMe = msg.sender === userData.profile.uid;
-        // Kiểm tra xem người dùng có đang thực sự nhìn vào màn hình chat không
-        const isChatOpen = (document.getElementById('tab-global').style.display === 'flex');
+        
+        // Kiểm tra trạng thái hiển thị của tab chat và trình duyệt
+        const chatTabEl = document.getElementById('tab-global');
+        const isChatOpen = chatTabEl && (chatTabEl.style.display === 'flex' || chatTabEl.style.display === 'block');
         const isTabHidden = document.hidden || document.visibilityState === 'hidden';
         
         if (!isMe) {
-            // --- THÔNG BÁO TRONG GAME: Luôn hiện nếu không đang mở tab chat ---
-            // (Giúp xác nhận kết nối Firebase vẫn sống trên điện thoại)
+            // --- THÔNG BÁO TRONG GAME ---
+            // Trên điện thoại, addNotification luôn hoạt động tốt hơn Notification hệ thống khi đang mở app
             if (!isChatOpen && typeof addNotification === 'function') {
                 addNotification(
                     "💬 TIN NHẮN THẾ GIỚI", 
@@ -17621,14 +17624,15 @@ function initGlobalChat() {
                 );
             }
 
-            // --- THÔNG BÁO HỆ THỐNG: Hiện khi tắt màn hình hoặc sang tab khác ---
+            // --- THÔNG BÁO HỆ THỐNG ---
+            // Chỉ hiện khi người dùng thoát ra ngoài hoặc sang tab khác
             if (isTabHidden) {
                 if ("Notification" in window && Notification.permission === "granted") {
                     const n = new Notification(`🌸 ${msg.senderName}`, {
                         body: msg.text,
                         icon: msg.senderAvatar || "URL_ANH_MAC_DINH",
                         tag: "global-chat-msg",
-                        renotify: true, // Ép điện thoại rung/chuông lại
+                        renotify: true, // Ép điện thoại rung/chuông lại cho tin nhắn mới
                         silent: false 
                     });
                     
