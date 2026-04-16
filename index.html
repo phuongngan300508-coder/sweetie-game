@@ -5998,6 +5998,26 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
     </div>
 </div>
 
+     <div id="tab-global" class="tab-content" style="display:none;">
+    <div class="global-chat-container" style="display: flex; flex-direction: column; height: 100vh; background: #fffafb;">
+        <div style="padding: 15px; background: linear-gradient(135deg, #ff69b4, #ff1493); color: white; text-align: center; font-weight: 800; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            <i class="fas fa-users"></i> KÊNH CHAT THẾ GIỚI
+            <div id="global-online-count" style="font-size: 0.6em; font-weight: 400; opacity: 0.9;">Đang kết nối...</div>
+        </div>
+
+        <div id="global-messages-area" style="flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px;">
+            </div>
+
+        <div style="padding: 10px; background: white; border-top: 1px solid #ffe4e1; display: flex; gap: 8px; align-items: center;">
+            <input type="text" id="global-input" placeholder="Nhắn gì đó với thế giới..." 
+                   style="flex: 1; padding: 12px; border-radius: 25px; border: 1px solid #ffc0cb; outline: none; font-size: 0.9em;">
+            <button onclick="sendGlobalMessage()" style="background: #ff1493; color: white; border: none; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; box-shadow: 0 4px 10px rgba(255, 20, 147, 0.3);">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </div>
+    </div>
+</div>
+    
   <section id="tab-chinh" class="tab-panel">
     <h2 id="section-chinh"><i class="fas fa-trophy"></i> MINIGAME CHÍNH <i class="fas fa-trophy"></i></h2>
     <div class="minigame-section">        
@@ -7730,26 +7750,6 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
                 <i class="fas fa-video"></i>
             </button>
             <span style="color:white; font-size:0.65em; text-transform:uppercase; opacity:0.8;">Video</span>
-        </div>
-    </div>
-</div>
-
-    <div id="tab-global" class="tab-content" style="display:none;">
-    <div class="global-chat-container" style="display: flex; flex-direction: column; height: 100vh; background: #fffafb;">
-        <div style="padding: 15px; background: linear-gradient(135deg, #ff69b4, #ff1493); color: white; text-align: center; font-weight: 800; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-            <i class="fas fa-users"></i> KÊNH CHAT THẾ GIỚI
-            <div id="global-online-count" style="font-size: 0.6em; font-weight: 400; opacity: 0.9;">Đang kết nối...</div>
-        </div>
-
-        <div id="global-messages-area" style="flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px;">
-            </div>
-
-        <div style="padding: 10px; background: white; border-top: 1px solid #ffe4e1; display: flex; gap: 8px; align-items: center;">
-            <input type="text" id="global-input" placeholder="Nhắn gì đó với thế giới..." 
-                   style="flex: 1; padding: 12px; border-radius: 25px; border: 1px solid #ffc0cb; outline: none; font-size: 0.9em;">
-            <button onclick="sendGlobalMessage()" style="background: #ff1493; color: white; border: none; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; box-shadow: 0 4px 10px rgba(255, 20, 147, 0.3);">
-                <i class="fas fa-paper-plane"></i>
-            </button>
         </div>
     </div>
 </div>
