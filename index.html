@@ -18299,28 +18299,148 @@ function closeMediaLibrary() {
     }
 }
     
-    let currentGroupStep = 1;
-let selectedFriends = [];
+    // --- BIẾN TOÀN CỤC CHO QUY TRÌNH TẠO NHÓM ---
+let groupWizardStep = 1;
+let selectedMembers = [];
+let tempGroupData = { name: "", avatar: "" };
 
-function openCreateGroupModal() {
-    currentGroupStep = 1;
-    selectedFriends = [];
-    document.getElementById('modal-create-group').style.display = 'flex';
-    renderGroupStep();
+// 1. Khởi động quy trình
+function startCreateGroupProcess() {
+    groupWizardStep = 1;
+    selectedMembers = [];
+    tempGroupData = { name: "", avatar: "" };
+    
+    // Hiển thị Modal (Bạn cần đảm bảo đã thêm HTML modal ở bước trước)
+    const modal = document.getElementById('modal-group-wizard');
+    if(modal) modal.style.display = 'flex';
+    
+    renderWizardStep();
 }
 
-function renderGroupStep() {
-    const content = document.getElementById('group-step-content');
-    if (currentGroupStep === 1) {
-        // Render danh sách bạn bè kèm checkbox
-        content.innerHTML = `<h4>Chọn tối thiểu 2 người</h4><div id="friend-selector">...</div>`;
-    } else if (currentGroupStep === 2) {
-        content.innerHTML = `<input type="text" id="group-name-input" placeholder="Tên nhóm (để trống nếu mặc định)">`;
-    } else if (currentGroupStep === 3) {
-        content.innerHTML = `<h4>Chọn ảnh đại diện</h4><input type="file" id="group-avatar-input" accept="image/*">`;
+// 2. Render nội dung theo từng bước
+function renderWizardStep() {
+    const title = document.getElementById('wizard-title');
+    const body = document.getElementById('wizard-body');
+    const btnNext = document.getElementById('btn-wizard-next');
+    const btnPrev = document.getElementById('btn-wizard-prev');
+
+    btnPrev.style.display = groupWizardStep === 1 ? 'none' : 'block';
+    btnNext.innerText = groupWizardStep === 4 ? 'Hoàn tất' : 'Tiếp theo';
+
+    if (groupWizardStep === 1) {
+        title.innerText = "Bước 1: Chọn bạn bè";
+        // Lấy danh sách bạn bè từ database (giả sử bạn có list friends toàn cục hoặc lấy từ Firebase)
+        db.ref('users/' + currentUser + '/friends').once('value', (snap) => {
+            let html = '<div style="max-height:300px; overflow-y:auto;">';
+            const friends = snap.val() || {};
+            if (Object.keys(friends).length < 2) {
+                html += '<p style="text-align:center; color:red;">Bạn cần tối thiểu 2 người bạn để tạo nhóm!</p>';
+                btnNext.disabled = true;
+            } else {
+                for (let fId in friends) {
+                    html += `
+                        <label class="friend-item-select" style="display:flex; align-items:center; padding:10px; border-bottom:1px solid #eee;">
+                            <input type="checkbox" value="${fId}" onchange="toggleMember('${fId}')" ${selectedMembers.includes(fId) ? 'checked' : ''}>
+                            <span style="margin-left:10px;">${fId}</span>
+                        </label>`;
+                }
+                btnNext.disabled = false;
+            }
+            html += '</div>';
+            body.innerHTML = html;
+        });
+    } 
+    else if (groupWizardStep === 2) {
+        title.innerText = "Bước 2: Đặt tên nhóm";
+        body.innerHTML = `
+            <input type="text" id="input-group-name" placeholder="Tên nhóm (Không bắt buộc)..." 
+                   style="width:100%; padding:12px; border-radius:10px; border:1px solid #ddd;">
+            <p style="font-size:0.8em; color:#888; margin-top:10px;">Nếu trống, tên sẽ được đặt tự động.</p>
+        `;
+    } 
+    else if (groupWizardStep === 3) {
+        title.innerText = "Bước 3: Ảnh đại diện";
+        body.innerHTML = `
+            <div style="text-align:center;">
+                <div id="group-avatar-preview" style="width:80px; height:80px; border-radius:50%; background:#fff0f5; margin:0 auto 15px; display:flex; align-items:center; justify-content:center; border:2px solid #ff69b4;">
+                    <i class="fas fa-heart" style="color:#ff69b4; font-size:2em;"></i>
+                </div>
+                <input type="file" id="input-group-avatar" accept="image/*" onchange="previewGroupAvatar(this)" style="font-size:0.8em;">
+                <p style="font-size:0.7em; color:#888; margin-top:5px;">Tối đa 10MB. Mặc định là hình trái tim.</p>
+            </div>
+        `;
+    }
+    else if (groupWizardStep === 4) {
+        title.innerText = "Bước cuối: Xác nhận";
+        body.innerHTML = `
+            <div style="text-align:center;">
+                <p>Bạn sắp tạo nhóm với <b>${selectedMembers.length}</b> thành viên.</p>
+                <p style="font-size:0.9em; color:#666;">Mọi người sẽ nhận được thông báo ngay khi bạn nhấn Hoàn tất.</p>
+            </div>
+        `;
     }
 }
 
+// 3. Xử lý chuyển bước
+function handleWizardNext() {
+    if (groupWizardStep === 1 && selectedMembers.length < 2) {
+        alert("Vui lòng chọn ít nhất 2 người bạn!");
+        return;
+    }
+    if (groupWizardStep === 2) {
+        tempGroupData.name = document.getElementById('input-group-name').value;
+    }
+    if (groupWizardStep < 4) {
+        groupWizardStep++;
+        renderWizardStep();
+    } else {
+        finishCreateGroup();
+    }
+}
+
+function handleWizardBack() {
+    if (groupWizardStep > 1) {
+        groupWizardStep--;
+        renderWizardStep();
+    }
+}
+
+function toggleMember(id) {
+    const idx = selectedMembers.indexOf(id);
+    if (idx > -1) selectedMembers.splice(idx, 1);
+    else selectedMembers.push(id);
+}
+
+// 4. Hoàn tất và ghi dữ liệu lên Firebase
+function finishCreateGroup() {
+    const groupId = 'group_' + Date.now();
+    const finalName = tempGroupData.name || (selectedMembers[0] + ", " + selectedMembers[1] + " và những người khác");
+    
+    const newGroup = {
+        groupName: finalName,
+        groupAvatar: tempGroupData.avatar || "heart_default",
+        admin: currentUser,
+        requireApproval: false,
+        members: {
+            [currentUser]: { nickname: currentUser, addedBy: "system", role: "admin" }
+        },
+        timestamp: Date.now()
+    };
+
+    // Thêm các thành viên được chọn
+    selectedMembers.forEach(mId => {
+        newGroup.members[mId] = { nickname: mId, addedBy: currentUser, role: "member" };
+    });
+
+    db.ref('groups/' + groupId).set(newGroup).then(() => {
+        document.getElementById('modal-group-wizard').style.display = 'none';
+        if(typeof addNotification === 'function') {
+            addNotification("NHÓM MỚI", "Đã tạo nhóm " + finalName + " thành công!", "success");
+        }
+        // Mở luôn chat nhóm vừa tạo
+        openChatWith(groupId);
+    });
+}
 // Hàm đổi tên nhóm (Dành cho bất kỳ ai)
 function changeGroupName(newId, newName) {
     db.ref(`groups/${newId}`).update({ groupName: newName });
