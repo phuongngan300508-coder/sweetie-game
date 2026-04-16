@@ -6203,6 +6203,12 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
         </button>
     </div>
 
+      <div style="margin-bottom: 20px; display: flex; gap: 10px;">
+    <button onclick="openArchiveModal()" style="flex: 1; padding: 12px; border-radius: 15px; border: 1px solid #ddd; background: #f8f9fa; color: #666; font-weight: 700; cursor: pointer;">
+        <i class="fas fa-archive"></i> KHO LƯU TRỮ
+    </button>
+</div>
+
     <div id="message-request-section" style="display: none; margin-bottom: 25px;">
     <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px; padding: 0 5px;">
         <span style="background: #ff1493; color: #fff; padding: 2px 10px; border-radius: 50px; font-size: 0.75em; font-weight: 800;">📩 TIN NHẮN CHỜ</span>
@@ -8017,6 +8023,17 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
         <a id="gallery-fs-download" href="#" download style="background: rgba(255,20,147,0.8); color: white; padding: 10px 25px; border-radius: 50px; text-decoration: none; font-weight: bold; font-size: 0.8em; border: 2px solid #fff;">
             <i class="fas fa-download"></i> TẢI XUỐNG
         </a>
+    </div>
+</div>
+
+    <div id="archive-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+    <div style="background:white; width:90%; max-width:400px; border-radius:20px; padding:20px; max-height:80vh; display:flex; flex-direction:column;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <h3 style="margin:0; color:#d63384;"><i class="fas fa-archive"></i> Kho lưu trữ</h3>
+            <button onclick="closeArchiveModal()" style="border:none; background:none; font-size:1.5em; cursor:pointer;">&times;</button>
+        </div>
+        <div id="archive-list-container" style="overflow-y:auto; flex:1;">
+            </div>
     </div>
 </div>
 <script>
@@ -14396,8 +14413,9 @@ async function renderFriendsList() {
 
     if (!window.statusListeners) window.statusListeners = {};
 
-    // Lấy danh sách ghim từ máy cá nhân (chỉ mình thấy)
+    // Lấy danh sách ghim và danh sách lưu trữ từ máy cá nhân
     let pinnedFriends = JSON.parse(localStorage.getItem(`pinned_${currentUser}`)) || [];
+    let archivedFriends = JSON.parse(localStorage.getItem(`archived_${currentUser}`)) || [];
 
     // 1. Lắng nghe danh sách bạn bè
     db.ref('users/' + currentUser + '/friends').on('value', async (snapshot) => {
@@ -14408,6 +14426,17 @@ async function renderFriendsList() {
         db.ref('unread_counts/' + currentUser).on('value', async (unreadSnap) => {
             const allUnreads = unreadSnap.val() || {};
             const unreadNames = Object.keys(allUnreads);
+
+            // TỰ ĐỘNG BỎ LƯU TRỮ: Nếu có tin nhắn mới từ người trong kho lưu trữ
+            let hasChange = false;
+            archivedFriends = archivedFriends.filter(fName => {
+                if (allUnreads[fName] > 0) {
+                    hasChange = true;
+                    return false; // Loại khỏi danh sách lưu trữ
+                }
+                return true;
+            });
+            if (hasChange) localStorage.setItem(`archived_${currentUser}`, JSON.stringify(archivedFriends));
 
             const strangerNames = unreadNames.filter(name => !friends.hasOwnProperty(name));
             
@@ -14461,7 +14490,7 @@ async function renderFriendsList() {
                 requestSection.style.display = 'none';
             }
 
-            // --- PHẦN 2: XỬ LÝ DANH SÁCH BẠN BÈ (CẬP NHẬT GHIM & 3 CHẤM) ---
+            // --- PHẦN 2: XỬ LÝ DANH SÁCH BẠN BÈ ---
             if (friendNames.length === 0) {
                 container.innerHTML = `<div id="empty-msg" style="text-align: center; padding: 40px;">Chưa có bạn bè</div>`;
                 return;
@@ -14478,8 +14507,8 @@ async function renderFriendsList() {
                     const displayName = nickSnap.val() || uData.profile.name;
                     const isVip5 = getVipLevel(uData.totalSpent || 0) === 5;
                     
-                    // Kiểm tra trạng thái ghim
                     const isPinned = pinnedFriends.includes(fName);
+                    const isArchived = archivedFriends.includes(fName);
 
                     const avatar = uData.profile.customAvatar 
                         ? `<img src="${uData.profile.customAvatar}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`
@@ -14488,10 +14517,7 @@ async function renderFriendsList() {
                     setupStatusListener(fName);
                     const unreadCount = allUnreads[fName] || 0;
 
-                    return {
-                        name: displayName, 
-                        isPinned: isPinned,
-                        html: `
+                    const htmlContent = `
                         <div class="friend-card-row animate__animated animate__fadeInUp" style="display: flex; align-items: center; justify-content: space-between; background: white; padding: 15px; border-radius: 20px; margin-bottom: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.03); border-left: 5px solid ${isPinned ? '#ff1493' : (isVip5 ? '#ff1493' : '#ffc0cb')}; position: relative;">
                             <div style="display: flex; align-items: center; gap: 12px; cursor: pointer;" onclick="searchFriendByID('${uData.profile.uid}')">
                                 <div style="position: relative; width: 50px; height: 50px;">
@@ -14503,7 +14529,7 @@ async function renderFriendsList() {
                                 </div>
                                 <div style="text-align: left;">
                                     <b style="color: #d63384; font-size: 1em;">${displayName} ${isPinned ? '📌' : ''}</b>
-                                    <div style="font-size: 0.7em; color: #888;">ID: ${uData.profile.uid}</div>
+                                    <div style="font-size: 0.7em; color: #888;">ID: ${uData.profile.uid} ${isArchived ? '• <i class="fas fa-archive"></i> Đã lưu trữ' : ''}</div>
                                 </div>
                             </div>
                             <div style="display: flex; gap: 10px; position: relative;">
@@ -14522,19 +14548,30 @@ async function renderFriendsList() {
                                     <div onclick="togglePinFriend('${fName}')" style="padding: 10px 15px; font-size: 0.85em; cursor: pointer; color: #555; display: flex; align-items: center; gap: 10px;">
                                         <i class="fas fa-thumbtack"></i> ${isPinned ? 'Bỏ ghim' : 'Ghim đoạn chat'}
                                     </div>
+                                    <div onclick="toggleArchiveFriend('${fName}')" style="padding: 10px 15px; font-size: 0.85em; cursor: pointer; color: #555; display: flex; align-items: center; gap: 10px;">
+                                        <i class="fas fa-archive"></i> ${isArchived ? 'Bỏ lưu trữ' : 'Lưu trữ'}
+                                    </div>
                                     <div onclick="unfriendConfirm('${fName}')" style="padding: 10px 15px; font-size: 0.85em; cursor: pointer; color: #ff4d4d; display: flex; align-items: center; gap: 10px; border-top: 1px solid #eee;">
                                         <i class="fas fa-user-minus"></i> Xóa bạn bè
                                     </div>
                                 </div>
                             </div>
-                        </div>`
+                        </div>`;
+
+                    return {
+                        name: displayName, 
+                        isPinned: isPinned,
+                        isArchived: isArchived,
+                        html: htmlContent
                     };
                 } catch (e) { return null; }
             }));
 
+            // LỌC: Chỉ hiện những người KHÔNG nằm trong kho lưu trữ ra danh sách chính
+            const visibleFriends = friendItems.filter(i => i && !i.isArchived);
+
             // SẮP XẾP: Ghim lên đầu -> Sau đó Alphabet
-            const finalHtml = friendItems
-                .filter(i => i)
+            const finalHtml = visibleFriends
                 .sort((a, b) => {
                     if (a.isPinned && !b.isPinned) return -1;
                     if (!a.isPinned && b.isPinned) return 1;
@@ -14543,11 +14580,20 @@ async function renderFriendsList() {
                 .map(item => item.html)
                 .join("");
 
-            container.innerHTML = finalHtml || "Chưa có dữ liệu";
+            container.innerHTML = finalHtml || `<div style="text-align: center; padding: 40px; color: #ccc;">Chưa có bạn bè</div>`;
+
+            // CẬP NHẬT KHO LƯU TRỮ (Popup)
+            const archiveContainer = document.getElementById('archive-list-container');
+            if (archiveContainer) {
+                const archivedHtml = friendItems
+                    .filter(i => i && i.isArchived)
+                    .map(item => item.html)
+                    .join("");
+                archiveContainer.innerHTML = archivedHtml || `<div style="text-align: center; padding: 40px; color: #ccc;">Kho lưu trữ trống</div>`;
+            }
         }); 
     });
 }
-
     // Hàm đóng/mở menu 3 chấm
 function toggleFriendMenu(event, fName) {
     event.stopPropagation();
@@ -14583,6 +14629,7 @@ function toggleFriendMenu(event, fName) {
 // Hàm ghim/bỏ ghim
 function togglePinFriend(fName) {
     let pinnedFriends = JSON.parse(localStorage.getItem(`pinned_${currentUser}`)) || [];
+    let archivedFriends = JSON.parse(localStorage.getItem(`archived_${currentUser}`)) || [];
     
     if (pinnedFriends.includes(fName)) {
         // Bỏ ghim
@@ -14594,6 +14641,12 @@ function togglePinFriend(fName) {
             return;
         }
         pinnedFriends.unshift(fName); // Thêm vào đầu danh sách ghim
+
+        // BỔ SUNG: Nếu người này đang bị lưu trữ, tự động bỏ lưu trữ khi ghim
+        if (archivedFriends.includes(fName)) {
+            archivedFriends = archivedFriends.filter(id => id !== fName);
+            localStorage.setItem(`archived_${currentUser}`, JSON.stringify(archivedFriends));
+        }
     }
     
     localStorage.setItem(`pinned_${currentUser}`, JSON.stringify(pinnedFriends));
@@ -14603,6 +14656,33 @@ function togglePinFriend(fName) {
     document.querySelectorAll('.friend-card-row').forEach(row => row.style.zIndex = "1");
 
     // Load lại danh sách để thấy thay đổi
+    renderFriendsList();
+}
+
+    // Đóng/Mở Modal
+function openArchiveModal() { document.getElementById('archive-modal').style.display = 'flex'; }
+function closeArchiveModal() { document.getElementById('archive-modal').style.display = 'none'; }
+
+// Xử lý Lưu trữ / Bỏ lưu trữ
+function toggleArchiveFriend(fName) {
+    let archivedFriends = JSON.parse(localStorage.getItem(`archived_${currentUser}`)) || [];
+    
+    if (archivedFriends.includes(fName)) {
+        // Nếu đang lưu trữ thì bỏ ra
+        archivedFriends = archivedFriends.filter(id => id !== fName);
+    } else {
+        // Nếu chưa thì thêm vào
+        archivedFriends.push(fName);
+        // Khi lưu trữ thì nên bỏ ghim luôn cho hợp lý
+        togglePinFriend(fName, true); 
+    }
+    
+    localStorage.setItem(`archived_${currentUser}`, JSON.stringify(archivedFriends));
+    // Close menu if open
+    const menu = document.getElementById(`menu-${fName}`);
+    if(menu) menu.style.display = 'none';
+    
+    // Gọi lại hàm render để cập nhật giao diện ngay lập tức
     renderFriendsList();
 }
     
