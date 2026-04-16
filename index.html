@@ -17494,7 +17494,8 @@ function sendGlobalMessage() {
     if (!text || !currentUser) return;
 
     const msgData = {
-        sender: currentUser,
+        // SỬA TẠI ĐÂY: Dùng UID (SGW...) thay vì tên để khi ấn avatar có thể tìm đúng profile
+        sender: userData.profile.uid, 
         senderName: userData.profile.name,
         senderAvatar: userData.profile.customAvatar || "",
         senderGender: userData.profile.gender,
@@ -17508,7 +17509,9 @@ function sendGlobalMessage() {
         input.focus();
         // Cuộn xuống sau khi gửi
         const globalArea = document.getElementById('global-messages-area');
-        globalArea.scrollTop = globalArea.scrollHeight;
+        if (globalArea) {
+            globalArea.scrollTop = globalArea.scrollHeight;
+        }
     });
 }
 
@@ -17517,7 +17520,9 @@ function renderGlobalMessage(id, msg) {
     const area = document.getElementById('global-messages-area');
     if (!area) return;
 
-    const isMe = msg.sender === currentUser;
+    // SỬA TẠI ĐÂY: So sánh UID của người gửi với UID của chính Henry để biết tin nhắn nào bên trái/phải
+    const isMe = msg.sender === userData.profile.uid; 
+    
     const vipColors = ["#888", "#28a745", "#007bff", "#6a0dad", "#ff8c00", "#ff1493"];
     const myVipColor = vipColors[msg.vip] || "#888";
 
