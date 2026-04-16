@@ -12821,6 +12821,17 @@ async function sendMessage() {
     const msgRef = db.ref('chats/' + chatRoomId + '/messages').push(); 
     msgRef.set(messageData).then(() => {
         
+        // --- MỚI: TỰ ĐỘNG CUỘN XUỐNG DƯỚI CÙNG ---
+        setTimeout(() => {
+            const chatBox = document.getElementById('chat-messages-area');
+            if (chatBox) {
+                chatBox.scrollTo({
+                    top: chatBox.scrollHeight,
+                    behavior: 'smooth'
+                });
+            }
+        }, 100);
+
         // 3. BẮN THÔNG BÁO THEO PHÂN LOẠI (Trong App)
         db.ref('notifications_queue/' + currentChatFriend).push({
             from: currentUser,
