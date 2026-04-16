@@ -5573,6 +5573,56 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
     background: #ffc0cb;
     border-radius: 10px;
 }
+
+   /* Icon ghim nhỏ xinh ở góc trái trên avatar */
+.pin-badge {
+    position: absolute;
+    top: -5px;
+    left: -5px;
+    background: #ff1493;
+    color: white;
+    font-size: 8px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid white;
+    z-index: 11;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+/* Menu 3 chấm nhỏ gọn */
+.friend-options-menu {
+    position: absolute;
+    right: 0;
+    top: 45px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    z-index: 100;
+    width: 150px;
+    overflow: hidden;
+    border: 1px solid #ffe4e1;
+    display: none; /* Mặc định ẩn */
+}
+
+.friend-options-menu div {
+    padding: 10px 15px;
+    font-size: 0.85em;
+    cursor: pointer;
+    transition: 0.2s;
+    color: #555;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.friend-options-menu div:hover {
+    background: #fff0f5;
+    color: #ff1493;
+} 
 </style>
 </head>
 <body>
@@ -14322,6 +14372,9 @@ async function renderFriendsList() {
 
     if (!window.statusListeners) window.statusListeners = {};
 
+    // Lấy danh sách ghim từ máy cá nhân (chỉ mình thấy)
+    let pinnedFriends = JSON.parse(localStorage.getItem(`pinned_${currentUser}`)) || [];
+
     // 1. Lắng nghe danh sách bạn bè
     db.ref('users/' + currentUser + '/friends').on('value', async (snapshot) => {
         const friends = snapshot.val() || {};
@@ -14334,7 +14387,7 @@ async function renderFriendsList() {
 
             const strangerNames = unreadNames.filter(name => !friends.hasOwnProperty(name));
             
-            // --- PHẦN 1: XỬ LÝ TIN NHẮN CHỜ (NGƯỜI LẠ) ---
+            // --- PHẦN 1: XỬ LÝ TIN NHẮN CHỜ (NGƯỜI LẠ) - GIỮ NGUYÊN ---
             if (strangerNames.length > 0 && requestContainer) {
                 const requestItems = await Promise.all(strangerNames.map(async (sName) => {
                     const uSnap = await db.ref('users/' + sName).once('value');
@@ -14351,8 +14404,6 @@ async function renderFriendsList() {
                         : `<i class="fas ${uData.profile.gender === 'Nam' ? 'fa-user-tie' : 'fa-user-graduate'}"></i>`;
 
                     setupStatusListener(sName);
-
-                    // --- LẤY SỐ TIN NHẮN CHƯA ĐỌC CỦA NGƯỜI LẠ ---
                     const unreadCount = allUnreads[sName] || 0;
 
                     return `
@@ -14386,7 +14437,7 @@ async function renderFriendsList() {
                 requestSection.style.display = 'none';
             }
 
-            // --- PHẦN 2: XỬ LÝ DANH SÁCH BẠN BÈ ---
+            // --- PHẦN 2: XỬ LÝ DANH SÁCH BẠN BÈ (CẬP NHẬT GHIM & 3 CHẤM) ---
             if (friendNames.length === 0) {
                 container.innerHTML = `<div id="empty-msg" style="text-align: center; padding: 40px;">Chưa có bạn bè</div>`;
                 return;
@@ -14402,54 +14453,115 @@ async function renderFriendsList() {
                     const nickSnap = await db.ref(`chats/${chatRoomId}/nicknames/${fName}`).once('value');
                     const displayName = nickSnap.val() || uData.profile.name;
                     const isVip5 = getVipLevel(uData.totalSpent || 0) === 5;
+                    
+                    // Kiểm tra trạng thái ghim
+                    const isPinned = pinnedFriends.includes(fName);
 
                     const avatar = uData.profile.customAvatar 
                         ? `<img src="${uData.profile.customAvatar}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`
                         : `<i class="fas ${uData.profile.gender === 'Nam' ? 'fa-user-tie' : 'fa-user-graduate'}"></i>`;
 
                     setupStatusListener(fName);
-
-                    // --- LẤY SỐ TIN NHẮN CHƯA ĐỌC CỦA BẠN BÈ ---
                     const unreadCount = allUnreads[fName] || 0;
 
                     return {
                         name: displayName, 
+                        isPinned: isPinned,
                         html: `
-                        <div class="friend-card-row animate__animated animate__fadeInUp" style="display: flex; align-items: center; justify-content: space-between; background: white; padding: 15px; border-radius: 20px; margin-bottom: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.03); border-left: 5px solid ${isVip5 ? '#ff1493' : '#ffc0cb'};">
+                        <div class="friend-card-row animate__animated animate__fadeInUp" style="display: flex; align-items: center; justify-content: space-between; background: white; padding: 15px; border-radius: 20px; margin-bottom: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.03); border-left: 5px solid ${isPinned ? '#ff1493' : (isVip5 ? '#ff1493' : '#ffc0cb')}; position: relative;">
                             <div style="display: flex; align-items: center; gap: 12px; cursor: pointer;" onclick="searchFriendByID('${uData.profile.uid}')">
                                 <div style="position: relative; width: 50px; height: 50px;">
+                                    ${isPinned ? '<div class="pin-badge" style="position: absolute; top: -5px; left: -5px; background: #ff1493; color: white; font-size: 8px; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid white; z-index: 11;"><i class="fas fa-thumbtack"></i></div>' : ''}
                                     <div style="width: 100%; height: 100%; background: #fff0f5; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #ff1493; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(255,20,147,0.2); overflow: hidden;">
                                         ${avatar}
                                     </div>
                                     <div class="dot-status-${fName}" style="position: absolute; bottom: -2px; right: -2px; width: 14px; height: 14px; border-radius: 50%; border: 3px solid #fff; background: #ccc; z-index: 10;"></div>
                                 </div>
                                 <div style="text-align: left;">
-                                    <b style="color: #d63384; font-size: 1em;">${displayName}</b>
+                                    <b style="color: #d63384; font-size: 1em;">${displayName} ${isPinned ? '📌' : ''}</b>
                                     <div style="font-size: 0.7em; color: #888;">ID: ${uData.profile.uid}</div>
                                 </div>
                             </div>
-                            <div style="display: flex; gap: 10px;">
+                            <div style="display: flex; gap: 10px; position: relative;">
                                 <div style="position: relative;">
                                     <button onclick="openChatWith('${fName}')" style="background: #ff1493; color: white; border: none; width: 40px; height: 40px; border-radius: 12px; cursor: pointer;">
                                         <i class="fab fa-facebook-messenger"></i>
                                     </button>
                                     ${unreadCount > 0 ? `<span style="position: absolute; top: -5px; right: -5px; background: red; color: white; font-size: 10px; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid white; font-weight: bold; animation: pulse 1.5s infinite;">${unreadCount > 99 ? '99+' : unreadCount}</span>` : ''}
                                 </div>
-                                <button onclick="unfriendConfirm('${fName}')" style="background: #f8f9fa; color: #ccc; border: none; width: 40px; height: 40px; border-radius: 12px; cursor: pointer;">
-                                    <i class="fas fa-user-minus"></i>
+                                
+                                <button onclick="toggleFriendMenu(event, '${fName}')" style="background: #f8f9fa; color: #888; border: none; width: 40px; height: 40px; border-radius: 12px; cursor: pointer;">
+                                    <i class="fas fa-ellipsis-v"></i>
                                 </button>
+
+                                <div id="menu-${fName}" class="friend-options-menu" style="display: none; position: absolute; right: 0; top: 45px; background: white; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); z-index: 100; width: 150px; border: 1px solid #ffe4e1; overflow: hidden;">
+                                    <div onclick="togglePinFriend('${fName}')" style="padding: 10px 15px; font-size: 0.85em; cursor: pointer; color: #555; display: flex; align-items: center; gap: 10px;">
+                                        <i class="fas fa-thumbtack"></i> ${isPinned ? 'Bỏ ghim' : 'Ghim đoạn chat'}
+                                    </div>
+                                    <div onclick="unfriendConfirm('${fName}')" style="padding: 10px 15px; font-size: 0.85em; cursor: pointer; color: #ff4d4d; display: flex; align-items: center; gap: 10px; border-top: 1px solid #eee;">
+                                        <i class="fas fa-user-minus"></i> Xóa bạn bè
+                                    </div>
+                                </div>
                             </div>
                         </div>`
                     };
                 } catch (e) { return null; }
             }));
 
-            const finalHtml = friendItems.filter(i => i).sort((a, b) => a.name.localeCompare(b.name)).map(item => item.html).join("");
+            // SẮP XẾP: Ghim lên đầu -> Sau đó Alphabet
+            const finalHtml = friendItems
+                .filter(i => i)
+                .sort((a, b) => {
+                    if (a.isPinned && !b.isPinned) return -1;
+                    if (!a.isPinned && b.isPinned) return 1;
+                    return a.name.localeCompare(b.name);
+                })
+                .map(item => item.html)
+                .join("");
+
             container.innerHTML = finalHtml || "Chưa có dữ liệu";
         }); 
     });
 }
 
+    // Hàm đóng/mở menu 3 chấm
+function toggleFriendMenu(event, fName) {
+    event.stopPropagation();
+    // Đóng các menu khác đang mở
+    document.querySelectorAll('.friend-options-menu').forEach(m => {
+        if(m.id !== `menu-${fName}`) m.style.display = 'none';
+    });
+    
+    const menu = document.getElementById(`menu-${fName}`);
+    menu.style.display = (menu.style.display === 'block') ? 'none' : 'block';
+    
+    // Đóng menu khi bấm ra ngoài
+    window.onclick = () => {
+        document.querySelectorAll('.friend-options-menu').forEach(m => m.style.display = 'none');
+    };
+}
+
+// Hàm ghim/bỏ ghim
+function togglePinFriend(fName) {
+    let pinnedFriends = JSON.parse(localStorage.getItem(`pinned_${currentUser}`)) || [];
+    
+    if (pinnedFriends.includes(fName)) {
+        // Bỏ ghim
+        pinnedFriends = pinnedFriends.filter(id => id !== fName);
+    } else {
+        // Kiểm tra giới hạn 5 người
+        if (pinnedFriends.length >= 5) {
+            alert("Bạn ơi, mình chỉ ghim được tối đa 5 người thôi nè! ❤️");
+            return;
+        }
+        pinnedFriends.unshift(fName); // Thêm vào đầu danh sách ghim
+    }
+    
+    localStorage.setItem(`pinned_${currentUser}`, JSON.stringify(pinnedFriends));
+    // Load lại danh sách để thấy thay đổi
+    renderFriendsList();
+}
+    
 // Henry hãy thêm hàm hỗ trợ này ra ngoài để code render nhìn gọn hơn và fix lỗi "ngoại tuyến"
 function setupStatusListener(fName) {
     // 1. Dọn dẹp listener cũ nếu đã tồn tại để tránh rò rỉ bộ nhớ (Giữ nguyên)
