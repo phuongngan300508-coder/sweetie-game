@@ -17574,82 +17574,93 @@ function toggleCam() {
 let isFirstLoad = true;
    
 // --- 1. LẮNG NGHE TIN NHẮN THẾ GIỚI ---
+// 1. Khai báo biến kiểm soát bên ngoài hàm để giữ trạng thái bền vững
+let isGlobalChatInitialized = false; 
+let isFirstLoad = true; 
+
 function initGlobalChat() {
-    // Ép hiển thị tab chat (Dùng flex cho Popup)
+    // --- PHẦN 1: HIỂN THỊ GIAO DIỆN (Luôn chạy mỗi khi mở tab) ---
     const chatTab = document.getElementById('tab-global');
     if (chatTab) chatTab.style.display = 'flex';
 
     const globalArea = document.getElementById('global-messages-area');
     if (!globalArea) return;
 
-    // Reset nội dung cũ để tránh lặp khi gọi lại hàm
-    globalArea.innerHTML = '<div style="text-align:center; font-size:0.7em; color:#ccc; padding:10px;">Đang tải tin nhắn thế giới...</div>';
+    // --- PHẦN 2: KHỞI TẠO LẮNG NGHE (Chỉ chạy DUY NHẤT một lần) ---
+    if (!isGlobalChatInitialized) {
+        
+        // Hiển thị trạng thái đang tải lần đầu
+        globalArea.innerHTML = '<div style="text-align:center; font-size:0.7em; color:#ccc; padding:10px;">Đang kết nối thế giới...</div>';
 
-    // 1. LẤY 50 TIN NHẮN CŨ ĐỂ HIỂN THỊ
-    db.ref('global_chat/messages').limitToLast(50).on('value', (snapshot) => {
-        globalArea.innerHTML = ''; 
-        const data = snapshot.val();
-        if (data) {
-            Object.keys(data).forEach(key => {
-                renderGlobalMessage(key, data[key]);
-            });
-            globalArea.scrollTop = globalArea.scrollHeight;
-        } else {
-            globalArea.innerHTML = '<div style="text-align:center; font-size:0.7em; color:#ccc; padding:20px;">Chưa có tin nhắn nào. Hãy là người đầu tiên lên sóng!</div>';
-        }
-    });
+        // A. LẤY TIN NHẮN CŨ & CẬP NHẬT DANH SÁCH
+        db.ref('global_chat/messages').limitToLast(50).on('value', (snapshot) => {
+            globalArea.innerHTML = ''; 
+            const data = snapshot.val();
+            if (data) {
+                Object.keys(data).forEach(key => {
+                    renderGlobalMessage(key, data[key]);
+                });
+                globalArea.scrollTop = globalArea.scrollHeight;
+            } else {
+                globalArea.innerHTML = '<div style="text-align:center; font-size:0.7em; color:#ccc; padding:20px;">Chưa có tin nhắn nào. Hãy là người đầu tiên lên sóng!</div>';
+            }
+        });
 
-db.ref('global_chat/messages').limitToLast(1).on('child_added', (snapshot) => {
-    // Bỏ qua lần load đầu tiên để không hiện thông báo cho tin nhắn cũ nhất hiện có
-    if (isFirstLoad) {
-        isFirstLoad = false;
-        return;
-    }
+        // B. LẮNG NGHE TIN NHẮN MỚI ĐỂ BẮN THÔNG BÁO
+        db.ref('global_chat/messages').limitToLast(1).on('child_added', (snapshot) => {
+            if (isFirstLoad) {
+                isFirstLoad = false;
+                return;
+            }
 
-    const msg = snapshot.val();
-    if (!msg) return;
+            const msg = snapshot.val();
+            if (!msg) return;
 
-    const isMe = msg.sender === userData.profile.uid;
-    // Kiểm tra xem tab chat có đang ẩn không (chỉ báo khi người dùng không nhìn thấy chat)
-    const isChatOpen = (document.getElementById('tab-global').style.display === 'flex');
-    
-    if (!isMe && !isChatOpen) {
-        // --- THÔNG BÁO TRÌNH DUYỆT ---
-        // Chú ý: Trình duyệt yêu cầu HTTPS và người dùng phải cho phép (granted)
-        if ("Notification" in window && Notification.permission === "granted") {
-            const n = new Notification(`🌸 ${msg.senderName}`, {
-                body: msg.text,
-                icon: msg.senderAvatar || "URL_ANH_MAC_DINH",
-                tag: "global-chat-msg", // Tag giúp ghi đè các thông báo cũ, không làm rác thanh thông báo
-                silent: false // Có thể để false để trình duyệt tự phát tiếng ting mặc định
-            });
+            // Kiểm tra điều kiện thông báo
+            const isMe = msg.sender === userData.profile.uid;
+            const currentDisplay = document.getElementById('tab-global').style.display;
+            const isChatOpen = (currentDisplay === 'flex' || currentDisplay === 'block');
             
-            n.onclick = () => { 
-                window.focus(); 
-                switchTab('tab-global'); 
-                n.close(); 
-            };
-        }
+            if (!isMe && !isChatOpen) {
+                // --- THÔNG BÁO TRÌNH DUYỆT ---
+                if ("Notification" in window && Notification.permission === "granted") {
+                    const n = new Notification(`🌸 ${msg.senderName}`, {
+                        body: msg.text,
+                        icon: msg.senderAvatar || "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+                        tag: "global-chat-msg"
+                    });
+                    
+                    n.onclick = () => { 
+                        window.focus(); 
+                        switchTab('tab-global'); 
+                        n.close(); 
+                    };
+                }
 
-        // --- THÔNG BÁO TRONG GAME ---
-        if (typeof addNotification === 'function') {
-            addNotification(
-                "💬 TIN NHẮN THẾ GIỚI", 
-                `<b>${msg.senderName}:</b> ${msg.text}`,
-                "linear-gradient(135deg, #ff69b4, #ff1493)"
-            );
-        }
+                // --- THÔNG BÁO CHUÔNG TRONG GAME ---
+                if (typeof addNotification === 'function') {
+                    addNotification(
+                        "💬 TIN NHẮN THẾ GIỚI", 
+                        `<b>${msg.senderName}:</b> ${msg.text}`,
+                        "linear-gradient(135deg, #ff69b4, #ff1493)"
+                    );
+                }
+            }
+        });
+
+        // C. LẮNG NGHE SỐ NGƯỜI ONLINE
+        db.ref('status').on('value', (snap) => {
+            const data = snap.val() || {};
+            const onlineCount = Object.values(data).filter(s => s.state === 'online').length;
+            const countEl = document.getElementById('global-online-count');
+            if (countEl) countEl.innerText = `🌍 ${onlineCount} cư dân đang hoạt động`;
+        });
+
+        // Đánh dấu đã khởi tạo xong để không chạy lại các listener Firebase bên trên
+        isGlobalChatInitialized = true;
     }
-});
-    // Lắng nghe số người đang online
-    db.ref('status').on('value', (snap) => {
-        const data = snap.val() || {};
-        const onlineCount = Object.values(data).filter(s => s.state === 'online').length;
-        const countEl = document.getElementById('global-online-count');
-        if (countEl) countEl.innerText = `🌍 ${onlineCount} cư dân đang hoạt động`;
-    });
 
-    // Henry thêm đoạn này để nhấn Enter là gửi luôn cho tiện:
+    // --- PHẦN 3: XỬ LÝ INPUT (Luôn kiểm tra listener) ---
     const inputField = document.getElementById('global-input');
     if (inputField && !inputField.dataset.listener) {
         inputField.addEventListener('keypress', (e) => {
