@@ -5647,21 +5647,6 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
 .friend-options-menu div:active {
     background-color: #ffe4e1;
 }
-
-    .group-popup-overlay {
-        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(0,0,0,0.6); display: none; justify-content: center;
-        align-items: center; z-index: 10000; backdrop-filter: blur(5px);
-    }
-    .group-popup-content {
-        background: white; width: 90%; max-width: 400px; border-radius: 25px;
-        padding: 20px; position: relative; max-height: 80vh; overflow-y: auto;
-    }
-    .friend-item-select {
-        display: flex; align-items: center; padding: 10px;
-        border-bottom: 1px solid #f0f0f0; cursor: pointer;
-    }
-    .friend-item-select input { margin-right: 15px; transform: scale(1.3); }
 </style>
 </head>
 <body>
@@ -6212,31 +6197,25 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
         </p>
     </div>
 
-    <div style="margin-bottom: 10px; display: flex; gap: 10px;">
+    <div style="margin-bottom: 20px; display: flex; gap: 10px;">
         <button onclick="openScanChoiceModal()" style="flex: 1; padding: 12px; border-radius: 15px; border: 2px dashed #ff1493; background: #fff; color: #ff1493; font-weight: 800; cursor: pointer; transition: 0.3s;">
             <i class="fas fa-qrcode"></i> QUÉT MÃ KẾT BẠN
         </button>
     </div>
 
-    <div style="margin-bottom: 20px; display: flex; gap: 10px;">
-        <button onclick="startCreateGroupProcess()" style="flex: 1; padding: 12px; border-radius: 15px; border: 2px solid #ff69b4; background: linear-gradient(135deg, #fff0f5, #ffffff); color: #ff69b4; font-weight: 800; cursor: pointer; transition: 0.3s; box-shadow: 0 4px 10px rgba(255, 105, 180, 0.15);">
-            <i class="fas fa-users"></i> TẠO NHÓM CHAT
-        </button>
-    </div>
-
-    <div style="margin-bottom: 20px; display: flex; gap: 10px;">
-        <button onclick="openArchiveModal()" style="flex: 1; padding: 12px; border-radius: 15px; border: 1px solid #ddd; background: #f8f9fa; color: #666; font-weight: 700; cursor: pointer;">
-            <i class="fas fa-archive"></i> KHO LƯU TRỮ
-        </button>
-    </div>
+      <div style="margin-bottom: 20px; display: flex; gap: 10px;">
+    <button onclick="openArchiveModal()" style="flex: 1; padding: 12px; border-radius: 15px; border: 1px solid #ddd; background: #f8f9fa; color: #666; font-weight: 700; cursor: pointer;">
+        <i class="fas fa-archive"></i> KHO LƯU TRỮ
+    </button>
+</div>
 
     <div id="message-request-section" style="display: none; margin-bottom: 25px;">
-        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px; padding: 0 5px;">
-            <span style="background: #ff1493; color: #fff; padding: 2px 10px; border-radius: 50px; font-size: 0.75em; font-weight: 800;">📩 TIN NHẮN CHỜ</span>
-            <div style="flex: 1; height: 1px; background: linear-gradient(to right, #ffc0cb, transparent);"></div>
-        </div>
-        <div id="request-list-container"></div> 
+    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px; padding: 0 5px;">
+        <span style="background: #ff1493; color: #fff; padding: 2px 10px; border-radius: 50px; font-size: 0.75em; font-weight: 800;">📩 TIN NHẮN CHỜ</span>
+        <div style="flex: 1; height: 1px; background: linear-gradient(to right, #ffc0cb, transparent);"></div>
     </div>
+    <div id="request-list-container"></div> 
+</div>
 
     <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px; padding: 0 5px;">
         <span style="color: #d63384; font-size: 0.75em; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">BẠN BÈ</span>
@@ -6250,7 +6229,7 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
         </div>
     </div>
 </div>
-    
+
     <div id="tab-global" class="tab-content popup-global-wrapper" style="display:none;">
     <div class="global-chat-container animate__animated animate__zoomIn">
         <button onclick="switchTab('tab-home')" class="close-popup-btn">
@@ -8055,17 +8034,6 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
         </div>
         <div id="archive-list-container" style="overflow-y:auto; flex:1;">
             </div>
-    </div>
-</div>
-
-    <div id="modal-group-wizard" class="group-popup-overlay">
-    <div class="group-popup-content animate__animated animate__zoomIn">
-        <h3 id="wizard-title" style="color: #ff1493; text-align: center;">Tạo Nhóm Mới</h3>
-        <div id="wizard-body" style="margin-top: 15px;"></div>
-        <div id="wizard-footer" style="display: flex; gap: 10px; margin-top: 20px;">
-            <button id="btn-wizard-prev" onclick="handleWizardBack()" style="flex:1; padding: 10px; border-radius: 10px; display:none;">Quay lại</button>
-            <button id="btn-wizard-next" onclick="handleWizardNext()" style="flex:1; padding: 10px; border-radius: 10px; background: #ff1493; color: #fff; border: none; font-weight: bold;">Tiếp theo</button>
-        </div>
     </div>
 </div>
 <script>
@@ -12928,9 +12896,6 @@ function initChatSystem() {
 
 // --- 1. SỬA HÀM MỞ CHAT (Bỏ dòng gán display flex trực tiếp để tránh xung đột) ---
 function openChatWith(friendName) {
-    // Xác định xem đây là chat nhóm hay chat 1v1
-    const isGroup = friendName.startsWith('group_');
-
     // --- 1. HIỆN KHUNG CHAT NGAY LẬP TỨC (Tối ưu cảm giác mượt mà) ---
     const chatBox = document.getElementById('messenger-box');
     if (chatBox && chatBox.style.display !== 'flex') {
@@ -12946,10 +12911,8 @@ function openChatWith(friendName) {
 
     currentChatFriend = friendName; 
 
-    // --- 3. LẤY DỮ LIỆU (Tách biệt logic Nhóm và Cá nhân) ---
-    const dbPath = isGroup ? 'groups/' + friendName : 'users/' + friendName;
-    
-    db.ref(dbPath).once('value', (snapshot) => {
+    // --- 3. LẤY DỮ LIỆU NGƯỜI DÙNG ---
+    db.ref('users/' + friendName).once('value', (snapshot) => {
         const data = snapshot.val();
         if (!data) return;
 
@@ -12960,17 +12923,8 @@ function openChatWith(friendName) {
 
         if (bubble) {
             bubble.style.display = 'flex';
-            
-            // Logic lấy avatar: Nếu là nhóm dùng groupAvatar, nếu cá nhân dùng customAvatar
-            let avatarUrl = isGroup ? data.groupAvatar : (data.profile ? data.profile.customAvatar : null);
-            
-            // Xử lý ảnh mặc định trái tim cho nhóm nếu không có ảnh
-            if (isGroup && (!avatarUrl || avatarUrl === 'heart_default')) {
-                avatarUrl = "https://i.postimg.cc/7Z9pM9pL/heart-default.png"; // Thay bằng link ảnh trái tim của bạn
-            }
-
-            if (avatarUrl) {
-                bImg.src = avatarUrl;
+            if (data.profile && data.profile.customAvatar) {
+                bImg.src = data.profile.customAvatar;
                 bImg.style.display = 'block';
                 bIcon.style.display = 'none';
             } else {
@@ -12984,30 +12938,14 @@ function openChatWith(friendName) {
             }; 
         }
 
-        // --- 5. CẬP NHẬT THÔNG TIN TRÊN ĐẦU KHUNG CHAT ---
-        const targetNameEl = document.getElementById('chat-target-name');
+        // --- 5. CẬP NHẬT THÔNG TIN NGƯỜI ĐANG CHAT ---
+        document.getElementById('chat-target-name').innerText = data.profile.name;
         const avatarDiv = document.getElementById('chat-target-avatar');
         
-        if (isGroup) {
-            // Hiển thị thông tin nhóm
-            targetNameEl.innerText = data.groupName;
-            let groupImg = data.groupAvatar || "https://i.postimg.cc/7Z9pM9pL/heart-default.png";
-            avatarDiv.innerHTML = `<img src="${groupImg}" alt="avatar" style="cursor:pointer" onclick="openGroupAvatarPopup('${friendName}')">`;
-            
-            // Ẩn nút block, hiện nút rời nhóm (Logic thêm ngoài hàm này hoặc xử lý UI tại đây)
-            if(document.getElementById('btn-block')) document.getElementById('btn-block').style.display = 'none';
-            if(document.getElementById('btn-leave-group')) document.getElementById('btn-leave-group').style.display = 'block';
+        if (data.profile.customAvatar) {
+            avatarDiv.innerHTML = `<img src="${data.profile.customAvatar}" alt="avatar">`;
         } else {
-            // Hiển thị thông tin cá nhân (Giữ nguyên logic cũ)
-            targetNameEl.innerText = data.profile.name;
-            if (data.profile.customAvatar) {
-                avatarDiv.innerHTML = `<img src="${data.profile.customAvatar}" alt="avatar">`;
-            } else {
-                avatarDiv.innerHTML = `<i class="fas ${data.profile.gender === 'Nam' ? 'fa-user-tie' : 'fa-user-graduate'}"></i>`;
-            }
-            
-            if(document.getElementById('btn-block')) document.getElementById('btn-block').style.display = 'block';
-            if(document.getElementById('btn-leave-group')) document.getElementById('btn-leave-group').style.display = 'none';
+            avatarDiv.innerHTML = `<i class="fas ${data.profile.gender === 'Nam' ? 'fa-user-tie' : 'fa-user-graduate'}"></i>`;
         }
 
         // --- 6. BẮT ĐẦU LẮNG NGHE TIN NHẮN REALTIME ---
@@ -13021,42 +12959,43 @@ function openChatWith(friendName) {
 
         // --- 7. ĐỒNG BỘ KẾT NỐI: XÓA THÔNG BÁO CHƯA ĐỌC & CẬP NHẬT ĐÃ XEM ---
         if (currentUser && friendName) {
+            // Henry thêm: Cập nhật UI ngay lập tức (Xóa chấm đỏ trong cache nội bộ nếu cần)
+            // Nếu renderFriendsList dùng 'on', Firebase sẽ tự động cập nhật lại UI khi remove() thành công.
+            
+            // Xóa số lượng chưa đọc trên Firebase
             db.ref('unread_counts/' + currentUser + '/' + friendName).remove()
-                .then(() => { console.log(`Hệ thống: Đã xóa số tin nhắn chưa đọc từ ${friendName}`); })
-                .catch((err) => { console.error("Lỗi xóa unread_counts:", err); });
+                .then(() => {
+                    console.log(`Hệ thống: Đã xóa số tin nhắn chưa đọc từ ${friendName}`);
+                })
+                .catch((err) => {
+                    console.error("Lỗi xóa unread_counts:", err);
+                });
 
+            // Cập nhật mốc thời gian đã xem lên Firebase
             if (typeof updateReadReceipt === 'function') {
                 updateReadReceipt(friendName);
             }
         }
 
-        // --- 8. LẮNG NGHE TRẠNG THÁI ONLINE (Chỉ áp dụng cho chat 1v1) ---
+        // --- 8. LẮNG NGHE TRẠNG THÁI ONLINE/OFFLINE REAL-TIME ---
         const statusEl = document.getElementById('chat-target-status');
+        
         if (window.lastStatusRef) window.lastStatusRef.off();
 
-        if (isGroup) {
-            // Nếu là nhóm: Hiển thị số lượng thành viên thay vì trạng thái Online
-            const memberCount = data.members ? Object.keys(data.members).length : 0;
-            statusEl.style.color = "#ff1493";
-            statusEl.innerHTML = `<i class="fas fa-users"></i> ${memberCount} thành viên`;
-        } else {
-            // Nếu là cá nhân: Giữ nguyên logic Online/Offline cũ
-            window.lastStatusRef = db.ref('/status/' + friendName);
-            window.lastStatusRef.on('value', (statusSnap) => {
-                const statusData = statusSnap.val();
-                if (statusData && statusData.state === 'online') {
-                    statusEl.style.color = "#28a745";
-                    statusEl.innerHTML = `<i class="fas fa-circle" style="font-size: 0.8em;"></i> Đang hoạt động`;
-                } else {
-                    statusEl.style.color = "#888";
-                    const timeStr = statusData ? formatLastSeen(statusData.last_changed) : "Ngoại tuyến";
-                    statusEl.innerHTML = `<i class="fas fa-circle" style="font-size: 0.8em; opacity: 0.5;"></i> ${timeStr}`;
-                }
-            });
-        }
+        window.lastStatusRef = db.ref('/status/' + friendName);
+        window.lastStatusRef.on('value', (statusSnap) => {
+            const statusData = statusSnap.val();
+            if (statusData && statusData.state === 'online') {
+                statusEl.style.color = "#28a745";
+                statusEl.innerHTML = `<i class="fas fa-circle" style="font-size: 0.8em;"></i> Đang hoạt động`;
+            } else {
+                statusEl.style.color = "#888";
+                const timeStr = statusData ? formatLastSeen(statusData.last_changed) : "Ngoại tuyến";
+                statusEl.innerHTML = `<i class="fas fa-circle" style="font-size: 0.8em; opacity: 0.5;"></i> ${timeStr}`;
+            }
+        });
     });
 }
-    
     // Hàm này Henry để bên ngoài nhé
 function listenUserStatus(friendName) {
     const statusEl = document.getElementById('chat-target-status');
@@ -18174,24 +18113,18 @@ function openMediaLibrary() {
     const modal = document.getElementById('modal-media-library');
     modal.style.display = 'flex';
     
-    // --- THAY ĐỔI: Xác định đường dẫn dựa trên loại chat ---
-    const isGroup = currentChatFriend.startsWith('group_');
-    const dbPath = isGroup 
-        ? `groups/${currentChatFriend}/messages` 
-        : `chats/${[currentUser, currentChatFriend].sort().join('_')}/messages`;
-    
+    const chatRoomId = [currentUser, currentChatFriend].sort().join('_');
     const contentArea = document.getElementById('media-library-content');
     const loader = document.getElementById('media-library-loader');
 
     loader.style.display = 'block';
     contentArea.innerHTML = "";
 
-    // Gỡ listener cũ nếu có (Lưu ý: mediaLibraryListener cần được khai báo toàn cục)
-    if (window.mediaLibraryPath) db.ref(window.mediaLibraryPath).off('value', mediaLibraryListener);
-    window.mediaLibraryPath = dbPath; // Lưu lại path để gỡ đúng chỗ khi đóng
+    // Gỡ listener cũ nếu có
+    if (mediaLibraryListener) db.ref(`chats/${chatRoomId}/messages`).off('value', mediaLibraryListener);
 
     // Lắng nghe toàn bộ tin nhắn để lọc Media
-    mediaLibraryListener = db.ref(dbPath).on('value', (snapshot) => {
+    mediaLibraryListener = db.ref(`chats/${chatRoomId}/messages`).on('value', (snapshot) => {
         loader.style.display = 'none';
         const data = snapshot.val();
         if (!data) {
@@ -18235,6 +18168,7 @@ function renderMediaGroups(mediaList) {
 
         groups[monthTitle].forEach(media => {
             const isVideo = media.mediaType === 'video';
+            // CHỖ THAY ĐỔI: Đổi openFS thành openGalleryFS để mở full chuyên dụng cho thư viện
             groupHtml += `
                 <div class="media-item-box" onclick="openGalleryFS('${media.mediaUrl}', '${media.mediaType}')" 
                      style="aspect-ratio: 1/1; background: #eee; border-radius: 8px; overflow: hidden; position: relative; cursor: pointer;">
@@ -18253,7 +18187,7 @@ function renderMediaGroups(mediaList) {
     }
 }
 
-// --- 2. HÀM MỞ XEM FULL CHUYÊN DỤNG CHO THƯ VIỆN ---
+    // --- 2. HÀM MỞ XEM FULL CHUYÊN DỤNG CHO THƯ VIỆN ---
 function openGalleryFS(url, type) {
     const overlay = document.getElementById('gallery-fs-overlay');
     const content = document.getElementById('gallery-fs-content');
@@ -18261,10 +18195,12 @@ function openGalleryFS(url, type) {
 
     overlay.style.display = 'flex';
     
+    // Cấu hình nút tải về
     const downloadUrl = url.replace('/upload/', '/upload/fl_attachment/');
     dl.href = downloadUrl;
     dl.setAttribute('download', `Sweetie_Media_${Date.now()}`);
 
+    // Hiển thị nội dung
     if (type === 'image') {
         content.innerHTML = `
             <img src="${url}" 
@@ -18286,276 +18222,16 @@ function closeGalleryFS() {
     const content = document.getElementById('gallery-fs-content');
     
     overlay.style.display = 'none';
-    content.innerHTML = ""; 
+    content.innerHTML = ""; // Xóa nội dung để dừng video/giải phóng bộ nhớ
 }
 
 // --- 3. ĐÓNG THƯ VIỆN ---
 function closeMediaLibrary() {
     document.getElementById('modal-media-library').style.display = 'none';
-    // --- THAY ĐỔI: Ngắt listener dựa trên path đã lưu để chính xác tuyệt đối ---
-    if (mediaLibraryListener && window.mediaLibraryPath) {
-        db.ref(window.mediaLibraryPath).off('value', mediaLibraryListener);
-        window.mediaLibraryPath = null;
-    }
-}
-    
-    // --- BIẾN TOÀN CỤC CHO QUY TRÌNH TẠO NHÓM ---
-let groupWizardStep = 1;
-let selectedMembers = [];
-let tempGroupData = { name: "", avatar: "" };
-
-// 1. Khởi động quy trình
-function startCreateGroupProcess() {
-    groupWizardStep = 1;
-    selectedMembers = [];
-    tempGroupData = { name: "", avatar: "" };
-    
-    // Hiển thị Modal (Bạn cần đảm bảo đã thêm HTML modal ở bước trước)
-    const modal = document.getElementById('modal-group-wizard');
-    if(modal) modal.style.display = 'flex';
-    
-    renderWizardStep();
-}
-
-// 2. Render nội dung theo từng bước
-function renderWizardStep() {
-    const title = document.getElementById('wizard-title');
-    const body = document.getElementById('wizard-body');
-    const btnNext = document.getElementById('btn-wizard-next');
-    const btnPrev = document.getElementById('btn-wizard-prev');
-
-    btnPrev.style.display = groupWizardStep === 1 ? 'none' : 'block';
-    btnNext.innerText = groupWizardStep === 4 ? 'Hoàn tất' : 'Tiếp theo';
-
-    if (groupWizardStep === 1) {
-        title.innerText = "Bước 1: Chọn bạn bè";
-        // Lấy danh sách bạn bè từ database (giả sử bạn có list friends toàn cục hoặc lấy từ Firebase)
-        db.ref('users/' + currentUser + '/friends').once('value', (snap) => {
-            let html = '<div style="max-height:300px; overflow-y:auto;">';
-            const friends = snap.val() || {};
-            if (Object.keys(friends).length < 2) {
-                html += '<p style="text-align:center; color:red;">Bạn cần tối thiểu 2 người bạn để tạo nhóm!</p>';
-                btnNext.disabled = true;
-            } else {
-                for (let fId in friends) {
-                    html += `
-                        <label class="friend-item-select" style="display:flex; align-items:center; padding:10px; border-bottom:1px solid #eee;">
-                            <input type="checkbox" value="${fId}" onchange="toggleMember('${fId}')" ${selectedMembers.includes(fId) ? 'checked' : ''}>
-                            <span style="margin-left:10px;">${fId}</span>
-                        </label>`;
-                }
-                btnNext.disabled = false;
-            }
-            html += '</div>';
-            body.innerHTML = html;
-        });
-    } 
-    else if (groupWizardStep === 2) {
-        title.innerText = "Bước 2: Đặt tên nhóm";
-        body.innerHTML = `
-            <input type="text" id="input-group-name" placeholder="Tên nhóm (Không bắt buộc)..." 
-                   style="width:100%; padding:12px; border-radius:10px; border:1px solid #ddd;">
-            <p style="font-size:0.8em; color:#888; margin-top:10px;">Nếu trống, tên sẽ được đặt tự động.</p>
-        `;
-    } 
-    else if (groupWizardStep === 3) {
-        title.innerText = "Bước 3: Ảnh đại diện";
-        body.innerHTML = `
-            <div style="text-align:center;">
-                <div id="group-avatar-preview" style="width:80px; height:80px; border-radius:50%; background:#fff0f5; margin:0 auto 15px; display:flex; align-items:center; justify-content:center; border:2px solid #ff69b4;">
-                    <i class="fas fa-heart" style="color:#ff69b4; font-size:2em;"></i>
-                </div>
-                <input type="file" id="input-group-avatar" accept="image/*" onchange="previewGroupAvatar(this)" style="font-size:0.8em;">
-                <p style="font-size:0.7em; color:#888; margin-top:5px;">Tối đa 10MB. Mặc định là hình trái tim.</p>
-            </div>
-        `;
-    }
-    else if (groupWizardStep === 4) {
-        title.innerText = "Bước cuối: Xác nhận";
-        body.innerHTML = `
-            <div style="text-align:center;">
-                <p>Bạn sắp tạo nhóm với <b>${selectedMembers.length}</b> thành viên.</p>
-                <p style="font-size:0.9em; color:#666;">Mọi người sẽ nhận được thông báo ngay khi bạn nhấn Hoàn tất.</p>
-            </div>
-        `;
-    }
-}
-
-// 3. Xử lý chuyển bước
-function handleWizardNext() {
-    if (groupWizardStep === 1 && selectedMembers.length < 2) {
-        alert("Vui lòng chọn ít nhất 2 người bạn!");
-        return;
-    }
-    if (groupWizardStep === 2) {
-        tempGroupData.name = document.getElementById('input-group-name').value;
-    }
-    if (groupWizardStep < 4) {
-        groupWizardStep++;
-        renderWizardStep();
-    } else {
-        finishCreateGroup();
-    }
-}
-
-function handleWizardBack() {
-    if (groupWizardStep > 1) {
-        groupWizardStep--;
-        renderWizardStep();
-    }
-}
-
-function toggleMember(id) {
-    const idx = selectedMembers.indexOf(id);
-    if (idx > -1) selectedMembers.splice(idx, 1);
-    else selectedMembers.push(id);
-}
-
-// 4. Hoàn tất và ghi dữ liệu lên Firebase
-function finishCreateGroup() {
-    const groupId = 'group_' + Date.now();
-    const finalName = tempGroupData.name || (selectedMembers[0] + ", " + selectedMembers[1] + " và những người khác");
-    
-    const newGroup = {
-        groupName: finalName,
-        groupAvatar: tempGroupData.avatar || "heart_default",
-        admin: currentUser,
-        requireApproval: false,
-        members: {
-            [currentUser]: { nickname: currentUser, addedBy: "system", role: "admin" }
-        },
-        timestamp: Date.now()
-    };
-
-    // Thêm các thành viên được chọn
-    selectedMembers.forEach(mId => {
-        newGroup.members[mId] = { nickname: mId, addedBy: currentUser, role: "member" };
-    });
-
-    db.ref('groups/' + groupId).set(newGroup).then(() => {
-        document.getElementById('modal-group-wizard').style.display = 'none';
-        if(typeof addNotification === 'function') {
-            addNotification("NHÓM MỚI", "Đã tạo nhóm " + finalName + " thành công!", "success");
-        }
-        // Mở luôn chat nhóm vừa tạo
-        openChatWith(groupId);
-    });
-}
-// --- 1. HÀM MỞ POPUP TẢI ẢNH NHÓM (Bước 3 cập nhật) ---
-function openGroupAvatarPopup(groupId) {
-    // Tạo một input file ẩn để chọn ảnh
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.onchange = (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        // Kiểm tra dung lượng 10MB
-        if (file.size > 10 * 1024 * 1024) {
-            alert("Ảnh quá lớn! Vui lòng chọn ảnh dưới 10MB.");
-            return;
-        }
-
-        // Hiện loader (nếu bạn có)
-        if(typeof showLoading === 'function') showLoading();
-
-        // Giả sử bạn dùng Cloudinary hoặc Firebase Storage để upload
-        // Ở đây tôi dùng FileReader để demo việc cập nhật nhanh hoặc bạn thay bằng hàm upload của mình
-        const reader = new FileReader();
-        reader.onload = function(event) {
-            const base64Data = event.target.result;
-            // Cập nhật lên Firebase
-            db.ref(`groups/${groupId}`).update({
-                groupAvatar: base64Data
-            }).then(() => {
-                sendSystemMessage(groupId, `${currentUser} đã thay đổi ảnh đại diện nhóm.`);
-                if(typeof hideLoading === 'function') hideLoading();
-            });
-        };
-        reader.readAsDataURL(file);
-    };
-    input.click();
-}
-
-// --- 2. HÀM GỬI TIN NHẮN HỆ THỐNG (Thông báo người rời nhóm, đổi tên...) ---
-function sendSystemMessage(groupId, text) {
-    const msgId = db.ref(`groups/${groupId}/messages`).push().key;
-    db.ref(`groups/${groupId}/messages/${msgId}`).set({
-        sender: "system",
-        text: text,
-        timestamp: Date.now(),
-        type: "notification"
-    });
-}
-
-// --- 3. HÀM XEM THÀNH VIÊN (Popup lớp trên cùng) ---
-function openGroupMembersModal() {
-    const groupId = currentChatFriend;
-    if (!groupId || !groupId.startsWith('group_')) return;
-
-    // Tạo HTML cho Modal Thành viên
-    const modalHtml = `
-        <div id="modal-group-members" class="group-popup-overlay" style="display:flex;">
-            <div class="group-popup-content">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                    <h3 style="margin:0; color:#ff1493;">Thành viên nhóm</h3>
-                    <span onclick="closeGroupMembersModal()" style="cursor:pointer; font-size:1.5em;">&times;</span>
-                </div>
-                <div id="group-members-list" style="max-height:400px; overflow-y:auto;">
-                    </div>
-            </div>
-        </div>
-    `;
-    document.body.insertAdjacentHTML('beforeend', modalHtml);
-
-    // Lắng nghe danh sách thành viên Real-time
-    db.ref(`groups/${groupId}/members`).on('value', (snapshot) => {
-        const members = snapshot.val();
-        const listDiv = document.getElementById('group-members-list');
-        if (!listDiv || !members) return;
-
-        let html = `<p style="font-size:0.8em; color:#888;">Tổng số: ${Object.keys(members).length} thành viên</p>`;
-        
-        for (let mId in members) {
-            const member = members[mId];
-            html += `
-                <div style="display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid #f9f9f9;">
-                    <div style="width:40px; height:40px; border-radius:50%; background:#eee; display:flex; align-items:center; justify-content:center;">
-                        <i class="fas fa-user" style="color:#ccc;"></i>
-                    </div>
-                    <div style="flex:1;">
-                        <div style="font-weight:bold; font-size:0.9em;">${member.nickname || mId}</div>
-                        <div style="font-size:0.7em; color:#999;">ID: ${mId} • Thêm bởi ${member.addedBy}</div>
-                    </div>
-                </div>
-            `;
-        }
-        listDiv.innerHTML = html;
-    });
-}
-
-function closeGroupMembersModal() {
-    const modal = document.getElementById('modal-group-members');
-    if (modal) modal.remove();
-}
-    
-    function leaveGroup(groupId) {
-    if(confirm("Bạn có chắc chắn muốn rời nhóm?")) {
-        db.ref(`groups/${groupId}/members/${currentUser.id}`).remove();
-        sendSystemMessage(groupId, `${currentUser.name} đã rời khỏi nhóm`);
-        // Chuyển màn hình về danh sách chat
-        closeChat();
-    }
-}
-
-    function updateNickname(groupId, targetUserId, newNickname) {
-    // Kiểm tra quyền: Admin được đổi tất cả, Member chỉ được đổi bản thân
-    const isAdmin = checkIsAdmin(groupId, currentUser.id);
-    if (isAdmin || targetUserId === currentUser.id) {
-        db.ref(`groups/${groupId}/members/${targetUserId}/nickname`).set(newNickname);
-    } else {
-        alert("Bạn không có quyền đổi biệt danh người khác!");
+    // Ngắt listener khi đóng để tiết kiệm tài nguyên
+    if (mediaLibraryListener && currentChatFriend) {
+        const chatRoomId = [currentUser, currentChatFriend].sort().join('_');
+        db.ref(`chats/${chatRoomId}/messages`).off('value', mediaLibraryListener);
     }
 }
 </script>
