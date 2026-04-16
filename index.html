@@ -12540,7 +12540,7 @@ function scanFriendQR() {
     });
 }
 
-   const firebaseConfig = {
+  const firebaseConfig = {
     apiKey: "AIzaSyDV8KseaFVPPcpEU0-jrqqxnGG6xLyJGfE",
     authDomain: "sweetie-game-world.firebaseapp.com",
     databaseURL: "https://sweetie-game-world-default-rtdb.asia-southeast1.firebasedatabase.app/", 
@@ -12556,25 +12556,21 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const messaging = firebase.messaging();
 
-// Đăng ký Service Worker để lấy lại nút "Tải xuống App"
+// Đăng ký Service Worker
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', function() {
-        // --- SỬA TẠI ĐÂY: Thêm './' để đảm bảo GitHub Pages tìm đúng file ở thư mục gốc ---
         navigator.serviceWorker.register('./firebase-messaging-sw.js')
         .then(function(registration) {
             console.log('✅ PWA: App đã sẵn sàng!');
             
-            // --- MỚI: Kích hoạt hệ thống Call ngay khi PWA/Web đã sẵn sàng ---
             if (typeof currentUser !== 'undefined' && currentUser) {
                 if (typeof initCallSystem === 'function') {
                     initCallSystem();
                 }
             }
 
-            // Ép Service Worker cập nhật bản mới nhất từ server
             registration.update(); 
 
-            // Lấy Token thông báo (Dùng registration hiện tại)
             return messaging.getToken({
                 serviceWorkerRegistration: registration,
                 vapidKey: 'BPFnrd9ax1LeRDNoYkAnCyOW1qxfNCXKBKGGrB383i-gJkV4ltLOqVBUG3EgXfmE_vLZdrNE_yBChJPR_sdlMEs'
@@ -12594,15 +12590,49 @@ if ('serviceWorker' in navigator) {
     });
 }
 
+// --- PHẦN THÊM MỚI: LẮNG NGHE THÔNG BÁO KÊNH CHAT KHI ĐANG MỞ WEB ---
+messaging.onMessage((payload) => {
+    console.log('📩 Nhận thông báo mới:', payload);
+    
+    // Chỉ hiện thông báo nếu người dùng KHÔNG đang mở tab chat
+    const chatTab = document.getElementById('tab-global');
+    const isChatOpen = chatTab && chatTab.style.display === 'flex';
+
+    if (!isChatOpen) {
+        const notificationTitle = payload.notification.title;
+        const notificationOptions = {
+            body: payload.notification.body,
+            icon: payload.notification.icon || "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+        };
+
+        // 1. Hiển thị thông báo trình duyệt
+        if ("Notification" in window && Notification.permission === "granted") {
+            const n = new Notification(notificationTitle, notificationOptions);
+            n.onclick = () => {
+                window.focus();
+                if (typeof switchTab === 'function') switchTab('tab-global');
+                n.close();
+            };
+        }
+
+        // 2. Hiển thị thông báo trong Game (Nếu bạn có hàm addNotification)
+        if (typeof addNotification === 'function') {
+            addNotification(
+                "💬 " + notificationTitle.toUpperCase(),
+                notificationOptions.body,
+                "linear-gradient(135deg, #ff69b4, #ff1493)"
+            );
+        }
+    }
+});
+// ------------------------------------------------------------------
+
 let deferredPrompt;
 
 window.addEventListener('beforeinstallprompt', (e) => {
-  // Ngăn bảng hỏi mặc định
   e.preventDefault();
-  // Lưu sự kiện lại
   deferredPrompt = e;
 });
-
 // Thay vì dùng setTimeout, mình dùng sự kiện click vào màn hình
 window.addEventListener('click', () => {
   if (deferredPrompt) {
