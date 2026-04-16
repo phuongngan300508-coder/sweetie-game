@@ -5542,6 +5542,46 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
     align-items: center;
     justify-content: center;
 }
+
+    .gallery-month-group {
+    margin-bottom: 20px;
+}
+.gallery-month-title {
+    font-size: 0.75em;
+    font-weight: 800;
+    color: #ff1493;
+    padding: 10px 5px;
+    background: #fff5f8;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    display: block;
+}
+.gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+}
+.gallery-item {
+    aspect-ratio: 1/1;
+    background: #eee;
+    border-radius: 4px;
+    overflow: hidden;
+    cursor: pointer;
+    position: relative;
+}
+.gallery-item img, .gallery-item video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.gallery-video-icon {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    color: white;
+    font-size: 0.8em;
+    text-shadow: 0 0 3px rgba(0,0,0,0.5);
+}
 </style>
 </head>
 <body>
@@ -7876,6 +7916,18 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
             </button>
             <span style="color:white; font-size:0.65em; text-transform:uppercase; opacity:0.8;">Video</span>
         </div>
+    </div>
+</div>
+
+    <div id="modal-media-gallery" class="modal-full" style="display:none;">
+    <div class="modal-content-full animate__animated animate__fadeInRight">
+        <div class="gallery-header" style="background: linear-gradient(135deg, #ff69b4, #ff1493); color: white; padding: 15px; display: flex; align-items: center; gap: 15px; position: sticky; top: 0; z-index: 10;">
+            <i class="fas fa-chevron-left" onclick="toggleModal('modal-media-gallery')" style="cursor: pointer; font-size: 1.2em;"></i>
+            <b style="font-size: 0.9em;">THƯ VIỆN PHƯƠNG TIỆN</b>
+        </div>
+        
+        <div id="gallery-container" style="padding: 10px; height: calc(100vh - 60px); overflow-y: auto; background: #fff;">
+            </div>
     </div>
 </div>
 <script>
@@ -13186,6 +13238,9 @@ function listenMessages(friendName) {
                     <div onclick="openThemeModal()" style="color:#ff1493; padding:12px; font-weight:bold; font-size:0.7em; cursor:pointer; white-space: nowrap; border-bottom: 1px solid #eee;">
                         <i class="fas fa-palette"></i> Đổi giao diện
                     </div>
+                    <div onclick="openMediaGallery()" style="color:#ff1493; padding:12px; font-weight:bold; font-size:0.7em; cursor:pointer; border-bottom: 1px solid #eee;">
+                <i class="fas fa-images"></i> Thư viện hình ảnh
+            </div>
                     <div onclick="openPinnedMessages()" style="color:#ff1493; padding:12px; font-weight:bold; font-size:0.7em; cursor:pointer; border-bottom: 1px solid #eee;">
                         <i class="fas fa-thumbtack"></i> Tin nhắn đã ghim
                     </div>
@@ -17772,6 +17827,76 @@ function renderGlobalMessage(id, msg) {
 
     area.insertAdjacentHTML('beforeend', html);
     area.scrollTop = area.scrollHeight; // Luôn cuộn xuống khi có tin mới
+}
+
+    function openMediaGallery() {
+    if (!currentChatFriend) return;
+    const chatRoomId = [currentUser, currentChatFriend].sort().join('_');
+    const container = document.getElementById('gallery-container');
+    
+    // 1. Đóng menu 3 chấm và mở Modal
+    if (typeof toggleChatMoreMenu === 'function') toggleChatMoreMenu();
+    toggleModal('modal-media-gallery');
+    
+    container.innerHTML = '<p style="text-align:center; padding:20px; color:#ff69b4; font-size:0.8em;">Đang phân loại ảnh & video...</p>';
+
+    // 2. Lắng nghe Real-time nhánh messages
+    db.ref(`chats/${chatRoomId}/messages`).on('value', (snapshot) => {
+        const messages = snapshot.val();
+        if (!messages) {
+            container.innerHTML = '<p style="text-align:center; color:#999; margin-top:50px;">Chưa có kỷ niệm nào được lưu giữ ❤️</p>';
+            return;
+        }
+
+        // Lọc lấy các tin nhắn là Ảnh hoặc Video
+        const mediaList = [];
+        const hiddenMsgs = JSON.parse(localStorage.getItem('hidden_messages') || "[]");
+
+        Object.keys(messages).forEach(id => {
+            const m = messages[id];
+            // Chỉ lấy ảnh/video và không nằm trong danh sách ẩn cá nhân
+            if (m.mediaUrl && (m.mediaType === 'image' || m.mediaType === 'video') && !hiddenMsgs.includes(id)) {
+                mediaList.push({ id, ...m });
+            }
+        });
+
+        if (mediaList.length === 0) {
+            container.innerHTML = '<p style="text-align:center; color:#999; margin-top:50px;">Kho ảnh đang trống.</p>';
+            return;
+        }
+
+        // 3. Sắp xếp mới nhất lên đầu
+        mediaList.sort((a, b) => b.timestamp - a.timestamp);
+
+        // 4. Nhóm theo Tháng/Năm
+        const groups = {};
+        mediaList.forEach(item => {
+            const date = new Date(item.timestamp);
+            const key = `Tháng ${date.getMonth() + 1}, ${date.getFullYear()}`;
+            if (!groups[key]) groups[key] = [];
+            groups[key].push(item);
+        });
+
+        // 5. Render giao diện
+        let html = "";
+        for (let month in groups) {
+            html += `
+                <div class="gallery-month-group">
+                    <span class="gallery-month-title">${month.toUpperCase()}</span>
+                    <div class="gallery-grid">
+                        ${groups[month].map(m => `
+                            <div class="gallery-item" onclick="openFS('${m.mediaUrl}', '${m.mediaType}')">
+                                ${m.mediaType === 'image' 
+                                    ? `<img src="${m.mediaUrl}" loading="lazy">` 
+                                    : `<video src="${m.mediaUrl}"></video><i class="fas fa-play-circle gallery-video-icon"></i>`}
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+        container.innerHTML = html;
+    });
 }
 </script>
 </body>
