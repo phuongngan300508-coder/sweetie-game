@@ -17569,9 +17569,6 @@ function toggleCam() {
     // Lưu trạng thái lên Firebase
     db.ref(`calls/${currentUser}/settings/cam`).set(isCamOn);
 }
-
-    // Thêm biến để đánh dấu lần chạy đầu tiên
-let isFirstLoad = true;
    
 // --- 1. LẮNG NGHE TIN NHẮN THẾ GIỚI ---
 // 1. Khai báo biến kiểm soát bên ngoài hàm để giữ trạng thái bền vững
