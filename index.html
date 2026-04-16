@@ -12416,12 +12416,12 @@ const messaging = firebase.messaging();
 // Đăng ký Service Worker để lấy lại nút "Tải xuống App"
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', function() {
-        navigator.serviceWorker.register('firebase-messaging-sw.js')
+        // --- SỬA TẠI ĐÂY: Thêm './' để đảm bảo GitHub Pages tìm đúng file ở thư mục gốc ---
+        navigator.serviceWorker.register('./firebase-messaging-sw.js')
         .then(function(registration) {
             console.log('✅ PWA: App đã sẵn sàng!');
             
             // --- MỚI: Kích hoạt hệ thống Call ngay khi PWA/Web đã sẵn sàng ---
-            // Henry kiểm tra nếu đã có currentUser (đã login trước đó và reload trang)
             if (typeof currentUser !== 'undefined' && currentUser) {
                 if (typeof initCallSystem === 'function') {
                     initCallSystem();
