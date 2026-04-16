@@ -13138,6 +13138,17 @@ async function sendMessage() {
     // Kiểm tra nội dung và người nhận
     if (!text || !currentChatFriend) return;
 
+    // --- PHẦN LOGIC TỰ ĐỘNG BỎ LƯU TRỮ KHI MÌNH NHẮN TIN (MỚI) ---
+    let archivedFriends = JSON.parse(localStorage.getItem(`archived_${currentUser}`)) || [];
+    if (archivedFriends.includes(currentChatFriend)) {
+        archivedFriends = archivedFriends.filter(id => id !== currentChatFriend);
+        localStorage.setItem(`archived_${currentUser}`, JSON.stringify(archivedFriends));
+        
+        // Cập nhật lại giao diện danh sách bạn bè ngay lập tức
+        if (typeof renderFriendsList === "function") renderFriendsList();
+    }
+    // ------------------------------------------------------------
+
     // --- PHẦN LOGIC KIỂM TRA CHẶN (MỚI THÊM) ---
     const amIBlocked = await isBlockedBy(currentChatFriend);
     if (amIBlocked) {
@@ -14642,7 +14653,8 @@ function togglePinFriend(fName) {
         }
         pinnedFriends.unshift(fName); // Thêm vào đầu danh sách ghim
 
-        // BỔ SUNG: Nếu người này đang bị lưu trữ, tự động bỏ lưu trữ khi ghim
+        // --- PHẦN XỬ LÝ LƯU TRỮ (GIỮ THEO Ý BẠN) ---
+        // Nếu người này đang bị lưu trữ, tự động bỏ lưu trữ khi ghim
         if (archivedFriends.includes(fName)) {
             archivedFriends = archivedFriends.filter(id => id !== fName);
             localStorage.setItem(`archived_${currentUser}`, JSON.stringify(archivedFriends));
@@ -14664,21 +14676,30 @@ function openArchiveModal() { document.getElementById('archive-modal').style.dis
 function closeArchiveModal() { document.getElementById('archive-modal').style.display = 'none'; }
 
 // Xử lý Lưu trữ / Bỏ lưu trữ
+// Xử lý Lưu trữ / Bỏ lưu trữ
 function toggleArchiveFriend(fName) {
     let archivedFriends = JSON.parse(localStorage.getItem(`archived_${currentUser}`)) || [];
+    let pinnedFriends = JSON.parse(localStorage.getItem(`pinned_${currentUser}`)) || [];
     
     if (archivedFriends.includes(fName)) {
-        // Nếu đang lưu trữ thì bỏ ra
+        // --- BỎ LƯU TRỮ ---
         archivedFriends = archivedFriends.filter(id => id !== fName);
+        // Lưu ý: Không can thiệp vào pinnedFriends, người này sẽ hiện lại ở danh sách thường
     } else {
-        // Nếu chưa thì thêm vào
+        // --- CHO VÀO LƯU TRỮ ---
         archivedFriends.push(fName);
-        // Khi lưu trữ thì nên bỏ ghim luôn cho hợp lý
-        togglePinFriend(fName, true); 
+        
+        // Tự động bỏ ghim vĩnh viễn người này nếu họ đang được ghim
+        if (pinnedFriends.includes(fName)) {
+            pinnedFriends = pinnedFriends.filter(id => id !== fName);
+            localStorage.setItem(`pinned_${currentUser}`, JSON.stringify(pinnedFriends));
+        }
     }
     
+    // Cập nhật danh sách lưu trữ
     localStorage.setItem(`archived_${currentUser}`, JSON.stringify(archivedFriends));
-    // Close menu if open
+    
+    // Đóng menu nếu đang mở
     const menu = document.getElementById(`menu-${fName}`);
     if(menu) menu.style.display = 'none';
     
