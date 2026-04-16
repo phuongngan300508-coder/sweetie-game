@@ -10371,8 +10371,11 @@ function handleZonePayment(zoneId) {
     // Hàm chuyển đổi Tab
 // --- HÀM CHUYỂN ĐỔI TAB (ĐÃ FIX LỖI LỆCH THANH BAR) ---
 function switchTab(tabId) {
-    // 1. Ẩn tất cả các Tab Panel
-    document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
+    // 1. Ẩn tất cả các Tab Panel (Bao gồm cả tab-content nếu có)
+    document.querySelectorAll('.tab-panel, .tab-content').forEach(panel => {
+        panel.classList.remove('active');
+        panel.style.display = 'none'; // Đảm bảo ẩn triệt để
+    });
     
     // 2. Bỏ trạng thái sáng (active) của tất cả các nút trên thanh Nav
     document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
@@ -10381,17 +10384,24 @@ function switchTab(tabId) {
     const activePanel = document.getElementById(tabId);
     if (activePanel) {
         activePanel.classList.add('active');
+        activePanel.style.display = 'block'; // Hiện bảng điều khiển được chọn
         window.scrollTo({ top: 0, behavior: 'smooth' });
+
+        // --- MỚI: Kích hoạt Chat Thế Giới khi nhấn vào tab tương ứng ---
+        if (tabId === 'tab-global') {
+            if (typeof initGlobalChat === 'function') {
+                initGlobalChat();
+                console.log("Hệ thống: Đã mở Kênh chat thế giới.");
+            }
+        }
     }
 
     // 4. TÌM VÀ LÀM SÁNG NÚT TƯƠNG ỨNG (FIX LỖI INDEX)
-    // Thay vì đếm 0, 1, 2... ta tìm nút nào có thuộc tính onclick chứa tabId này
     const targetBtn = document.querySelector(`.nav-item[onclick*="'${tabId}'"]`);
     if (targetBtn) {
         targetBtn.classList.add('active');
         
         // ĐẶC BIỆT CHO ĐIỆN THOẠI: Tự động trượt thanh bar đến nút đang chọn
-        // để nút không bị khuất bên phải màn hình
         targetBtn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
     }
 }
@@ -17428,25 +17438,49 @@ function toggleCam() {
 }
 
     // --- 1. LẮNG NGHE TIN NHẮN THẾ GIỚI ---
+// --- 1. LẮNG NGHE TIN NHẮN THẾ GIỚI ---
 function initGlobalChat() {
+    // Ép hiển thị tab chat (Xử lý lỗi display:none bạn gặp lúc nãy)
+    const chatTab = document.getElementById('tab-global');
+    if (chatTab) chatTab.style.display = 'block';
+
     const globalArea = document.getElementById('global-messages-area');
-    
-    // Chỉ lấy 50 tin nhắn mới nhất để tránh lag máy người dùng
-    db.ref('global_chat/messages').limitToLast(50).on('child_added', (snapshot) => {
-        const msg = snapshot.val();
-        const msgId = snapshot.key;
-        renderGlobalMessage(msgId, msg);
-        
-        // Tự động cuộn xuống cuối
-        globalArea.scrollTop = globalArea.scrollHeight;
+    if (!globalArea) return;
+
+    // Reset nội dung cũ để tránh lặp khi gọi lại hàm
+    globalArea.innerHTML = '<div style="text-align:center; font-size:0.7em; color:#ccc; padding:10px;">Đang tải tin nhắn thế giới...</div>';
+
+    // Chỉ lấy 50 tin nhắn mới nhất
+    db.ref('global_chat/messages').limitToLast(50).on('value', (snapshot) => {
+        globalArea.innerHTML = ''; // Xóa chữ "Đang tải"
+        const data = snapshot.val();
+        if (data) {
+            Object.keys(data).forEach(key => {
+                renderGlobalMessage(key, data[key]);
+            });
+            // Tự động cuộn xuống cuối sau khi load xong tất cả
+            globalArea.scrollTop = globalArea.scrollHeight;
+        } else {
+            globalArea.innerHTML = '<div style="text-align:center; font-size:0.7em; color:#ccc; padding:20px;">Chưa có tin nhắn nào. Hãy là người đầu tiên lên sóng!</div>';
+        }
     });
 
-    // Lắng nghe số người đang online (Dựa vào nhánh status của Henry)
+    // Lắng nghe số người đang online
     db.ref('status').on('value', (snap) => {
         const data = snap.val() || {};
         const onlineCount = Object.values(data).filter(s => s.state === 'online').length;
-        document.getElementById('global-online-count').innerText = `🌍 ${onlineCount} cư dân đang hoạt động`;
+        const countEl = document.getElementById('global-online-count');
+        if (countEl) countEl.innerText = `🌍 ${onlineCount} cư dân đang hoạt động`;
     });
+
+    // Henry thêm đoạn này để nhấn Enter là gửi luôn cho tiện:
+    const inputField = document.getElementById('global-input');
+    if (inputField && !inputField.dataset.listener) {
+        inputField.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendGlobalMessage();
+        });
+        inputField.dataset.listener = "true"; // Gắn cờ để không bị add trùng listener
+    }
 }
 
 // --- 2. GỬI TIN NHẮN LÊN TOÀN CẦU ---
@@ -17462,38 +17496,41 @@ function sendGlobalMessage() {
         senderGender: userData.profile.gender,
         text: text,
         timestamp: firebase.database.ServerValue.TIMESTAMP,
-        vip: getVipLevel(userData.totalSpent || 0) // Hiện cấp VIP cho oai
+        vip: typeof getVipLevel === 'function' ? getVipLevel(userData.totalSpent || 0) : 0 
     };
 
     db.ref('global_chat/messages').push(msgData).then(() => {
-        input.value = ""; // Xóa ô nhập
+        input.value = ""; 
         input.focus();
+        // Cuộn xuống sau khi gửi
+        const globalArea = document.getElementById('global-messages-area');
+        globalArea.scrollTop = globalArea.scrollHeight;
     });
 }
 
 // --- 3. HIỂN THỊ TIN NHẮN (Style giống thế giới Liên Quân) ---
 function renderGlobalMessage(id, msg) {
     const area = document.getElementById('global-messages-area');
+    if (!area) return;
+
     const isMe = msg.sender === currentUser;
-    
-    // Màu sắc theo cấp VIP
     const vipColors = ["#888", "#28a745", "#007bff", "#6a0dad", "#ff8c00", "#ff1493"];
     const myVipColor = vipColors[msg.vip] || "#888";
 
     const avatarHtml = msg.senderAvatar 
-        ? `<img src="${msg.senderAvatar}" style="width:35px; height:35px; border-radius:50%; object-fit:cover; border: 2px solid white;">`
-        : `<div style="width:35px; height:35px; border-radius:50%; background:#ffe4e1; display:flex; align-items:center; justify-content:center; color:#ff69b4;">
+        ? `<img src="${msg.senderAvatar}" style="width:35px; height:35px; border-radius:50%; object-fit:cover; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">`
+        : `<div style="width:35px; height:35px; border-radius:50%; background:#ffe4e1; display:flex; align-items:center; justify-content:center; color:#ff69b4; border: 2px solid white;">
              <i class="fas ${msg.senderGender === 'Nam' ? 'fa-user-tie' : 'fa-user-graduate'}" style="font-size:0.8em;"></i>
            </div>`;
 
     const html = `
-        <div class="animate__animated animate__fadeInUp" style="display: flex; gap: 10px; ${isMe ? 'flex-direction: row-reverse;' : 'flex-direction: row;'} align-items: flex-start; margin-bottom: 5px;">
+        <div class="animate__animated animate__fadeInUp" style="display: flex; gap: 8px; ${isMe ? 'flex-direction: row-reverse;' : 'flex-direction: row;'} align-items: flex-start; margin-bottom: 8px;">
             <div onclick="searchFriendByID('${msg.sender}')" style="cursor:pointer; flex-shrink: 0;">
                 ${avatarHtml}
             </div>
             <div style="max-width: 75%; ${isMe ? 'text-align: right;' : 'text-align: left;'}">
-                <div style="font-size: 0.65em; font-weight: 800; color: ${myVipColor}; margin-bottom: 2px;">
-                    ${msg.vip > 0 ? `<span style="background:${myVipColor}; color:white; padding:1px 4px; border-radius:4px; margin-right:4px;">VIP ${msg.vip}</span>` : ''}
+                <div style="font-size: 0.65em; font-weight: 800; color: ${myVipColor}; margin-bottom: 2px; padding: 0 5px;">
+                    ${msg.vip > 0 ? `<span style="background:${myVipColor}; color:white; padding:1px 4px; border-radius:4px; margin-right:4px; font-size: 0.8em;">VIP ${msg.vip}</span>` : ''}
                     ${msg.senderName}
                 </div>
                 <div style="display: inline-block; padding: 10px 14px; border-radius: 18px; font-size: 0.85em; 
@@ -17501,7 +17538,8 @@ function renderGlobalMessage(id, msg) {
                             color: ${isMe ? 'white' : '#333'};
                             box-shadow: 0 2px 5px rgba(0,0,0,0.05);
                             border: ${isMe ? 'none' : '1px solid #ffe4e1'};
-                            ${isMe ? 'border-top-right-radius: 2px;' : 'border-top-left-radius: 2px;'}">
+                            ${isMe ? 'border-top-right-radius: 2px;' : 'border-top-left-radius: 2px;'}
+                            word-break: break-word;">
                     ${msg.text}
                 </div>
             </div>
@@ -17509,6 +17547,7 @@ function renderGlobalMessage(id, msg) {
     `;
 
     area.insertAdjacentHTML('beforeend', html);
+    area.scrollTop = area.scrollHeight; // Luôn cuộn xuống khi có tin mới
 }
 </script>
 </body>
