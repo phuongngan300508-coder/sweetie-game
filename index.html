@@ -5998,11 +5998,10 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
     </div>
 </div>
 
-     <div id="tab-global" class="tab-content" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.4); z-index: 10000; backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; padding: 20px;">
+     <div id="tab-global" class="tab-content" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.4); z-index: 10000; backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 20px;">
     
-    <div class="global-chat-container animate__animated animate__zoomIn" 
-         style="display: flex; flex-direction: column; width: 95%; max-width: 800px; height: 85vh; background: #fffafb; border-radius: 40px; overflow: hidden; box-shadow: 0 15px 35px rgba(255, 20, 147, 0.25); border: 2px solid #ffe4e1; position: relative;">
-        
+    <div class="global-chat-container animate__animated animate__fadeInUp animate__faster" 
+         style="display: flex; flex-direction: column; width: 95%; max-width: 800px; height: 85vh; background: #fffafb; border-radius: 40px; overflow: hidden; box-shadow: 0 15px 40px rgba(255, 20, 147, 0.2); border: 2px solid #ffe4e1; position: relative;">        
         <button onclick="switchTab('tab-home')" style="position: absolute; top: 15px; right: 20px; background: rgba(255,255,255,0.4); border: none; width: 35px; height: 35px; border-radius: 50%; color: #ff1493; cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center;">
             <i class="fas fa-times"></i>
         </button>
@@ -10384,33 +10383,44 @@ function switchTab(tabId) {
     // 1. Ẩn tất cả các Tab Panel (Bao gồm cả tab-content nếu có)
     document.querySelectorAll('.tab-panel, .tab-content').forEach(panel => {
         panel.classList.remove('active');
-        panel.style.display = 'none'; // Đảm bảo ẩn triệt để
+        // Thay vì ẩn ngay lập tức, ta bỏ class animate để reset hiệu ứng
+        panel.style.display = 'none'; 
     });
     
     // 2. Bỏ trạng thái sáng (active) của tất cả các nút trên thanh Nav
     document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
 
-    // 3. Hiển thị Panel được chọn và cuộn lên đầu trang
+    // 3. Hiển thị Panel được chọn
     const activePanel = document.getElementById(tabId);
     if (activePanel) {
         activePanel.classList.add('active');
 
-        // --- SỬA TẠI ĐÂY: Nếu là tab-global thì dùng flex để căn giữa Popup, còn lại dùng block ---
+        // Thêm hiệu ứng xuất hiện nhẹ nhàng bằng cách thêm class animate
+        // Henry dùng fadeIn (hiện dần) sẽ rất mượt và sang
+        activePanel.classList.add('animate__animated', 'animate__fadeIn');
+
+        // --- SỬA TẠI ĐÂY: Nếu là tab-global thì dùng flex để căn giữa Popup ---
         if (tabId === 'tab-global') {
             activePanel.style.display = 'flex'; 
             
             // Kích hoạt Chat Thế Giới
             if (typeof initGlobalChat === 'function') {
                 initGlobalChat();
-                console.log("Hệ thống: Đã mở Kênh chat thế giới (Dạng Popup).");
+                console.log("Hệ thống: Đã mở Kênh chat thế giới (Dạng Popup mượt mà).");
             }
         } else {
             activePanel.style.display = 'block';
+            // Cuộn lên đầu trang nhẹ nhàng
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
+        
+        // Sau 1 giây có thể xóa class animate để không bị lặp khi không cần thiết
+        setTimeout(() => {
+            activePanel.classList.remove('animate__fadeIn');
+        }, 1000);
     }
 
-    // 4. TÌM VÀ LÀM SÁNG NÚT TƯƠNG ỨNG (FIX LỖI INDEX)
+    // 4. TÌM VÀ LÀM SÁNG NÚT TƯƠNG ỨNG
     const targetBtn = document.querySelector(`.nav-item[onclick*="'${tabId}'"]`);
     if (targetBtn) {
         targetBtn.classList.add('active');
@@ -10419,6 +10429,7 @@ function switchTab(tabId) {
         targetBtn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
     }
 }
+    
 // --- HÀM CUỘN ĐẾN GAME (ĐỒNG BỘ VỚI HỆ THỐNG TAB MỚI) ---
 function scrollToGame(gameId) {
     const gameElement = document.getElementById(gameId);
