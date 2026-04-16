@@ -16689,8 +16689,12 @@ function initCallSystem() {
         }
     });
 
+    // --- SỬA TẠI ĐÂY: Dọn dẹp listener cũ trước khi tạo cái mới để tránh xung đột giữa các lần gọi ---
+    const callRef = db.ref(`calls/${currentUser}`);
+    callRef.off(); 
+
     // Lắng nghe lệnh kết thúc/từ chối từ đối phương (Real-time Firebase)
-    db.ref(`calls/${currentUser}`).on('value', (snap) => {
+    callRef.on('value', (snap) => {
         // --- 1. KIỂM TRA TRẠNG THÁI HIỆN TẠI CỦA UI ---
         const overlay = document.getElementById('call-overlay');
         const isPopupVisible = overlay && (overlay.style.display === 'flex' || overlay.style.display === 'block');
@@ -16698,7 +16702,6 @@ function initCallSystem() {
         const isInCall = callScreen && callScreen.style.display === 'flex';
 
         // --- 2. XỬ LÝ KHI DỮ LIỆU BỊ XÓA (ĐỐI PHƯƠNG NGẮT) ---
-        // Thêm điều kiện: CHỈ chạy khi UI vẫn còn đang mở (tránh lặp tin nhắn nếu mình đã tắt trước)
         if (!snap.exists() && (isPopupVisible || isInCall)) {
             console.log("🌸 Đối phương đã ngắt kết nối (Hủy/Từ chối/Kết thúc).");
 
@@ -16713,11 +16716,11 @@ function initCallSystem() {
             }
 
             // --- 3. GỌI UI DỌN DẸP ---
-            // Gọi endCallUI để nó tự check cờ window.isEndingCall và timerEl.style.display
             endCallUI();
         }
     });
 }
+    
 // --- 2. HÀM THỰC HIỆN CUỘC GỌI ---
 async function makeCall(type) { // type: 'audio' hoặc 'video'
     window.currentCallType = type; // Gán loại cuộc gọi để hệ thống ghi nhớ
@@ -17126,11 +17129,16 @@ function endCallUI() {
         stopCallTimer();
     }
 
-    // Reset cờ
+    // --- SỬA TẠI ĐÂY: Dọn dẹp triệt để trạng thái để sẵn sàng cho cuộc gọi tiếp theo ---
+    currentCall = null;           // Reset đối tượng call về null
+    window.isCallConnected = false; // Đảm bảo cờ kết nối được gỡ bỏ
+
+    // Reset cờ (Giảm xuống 500ms để hệ thống nhạy hơn khi nhận call mới ngay lập tức)
     setTimeout(() => { 
         window.isEndingCall = false; 
         window.isCaller = false; 
-    }, 1000);
+        console.log("🌸 Giao diện và trạng thái đã reset xong.");
+    }, 500);
 }
     
     let callTimerInterval;
