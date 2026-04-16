@@ -17602,8 +17602,13 @@ function toggleCam() {
    
 // --- 1. LẮNG NGHE TIN NHẮN THẾ GIỚI ---
 
+let isFirstLoad = true; 
+const sessionStartTime = Date.now(); // Lưu mốc thời gian bắt đầu phiên làm việc
+
 function initGlobalChat() {
     // --- KHẮC PHỤC LỖI TỰ MỞ POPUP ---
+    // Xóa bỏ dòng ép hiển thị 'flex' ở đây. 
+    // Popup chỉ nên mở khi người dùng click vào nút Chat (hàm switchTab sẽ lo việc đó).
     const chatTab = document.getElementById('tab-global');
 
     const globalArea = document.getElementById('global-messages-area');
@@ -17626,21 +17631,22 @@ function initGlobalChat() {
         }
     });
 
-    // 2. LẮNG NGHE TIN NHẮN MỚI ĐỂ THÔNG BÁO (Đã sửa để hiện đủ mọi tin nhắn)
+    // 2. LẮNG NGHE TIN NHẮN MỚI ĐỂ THÔNG BÁO (Đã sửa để nhạy hơn trên điện thoại)
     db.ref('global_chat/messages').limitToLast(1).on('child_added', (snapshot) => {
         const msg = snapshot.val();
         if (!msg || msg.timestamp <= sessionStartTime) return;
 
         const isMe = msg.sender === userData.profile.uid;
         
-        // Kiểm tra trạng thái hiển thị của tab chat
+        // Kiểm tra trạng thái hiển thị của tab chat và trình duyệt
         const chatTabEl = document.getElementById('tab-global');
         const isChatOpen = chatTabEl && (chatTabEl.style.display === 'flex' || chatTabEl.style.display === 'block');
         const isTabHidden = document.hidden || document.visibilityState === 'hidden';
         
-        if (!isMe && !isChatOpen) {
+        if (!isMe) {
             // --- THÔNG BÁO TRONG GAME ---
-            if (typeof addNotification === 'function') {
+            // Trên điện thoại, addNotification luôn hoạt động tốt hơn Notification hệ thống khi đang mở app
+            if (!isChatOpen && typeof addNotification === 'function') {
                 addNotification(
                     "💬 TIN NHẮN THẾ GIỚI", 
                     `<b>${msg.senderName}:</b> ${msg.text}`,
@@ -17649,18 +17655,14 @@ function initGlobalChat() {
             }
 
             // --- THÔNG BÁO HỆ THỐNG ---
-            // Chỉ hiện khi tab bị ẩn hoặc người dùng không ở trong khung chat
-            if (isTabHidden || !isChatOpen) {
+            // Chỉ hiện khi người dùng thoát ra ngoài hoặc sang tab khác
+            if (isTabHidden) {
                 if ("Notification" in window && Notification.permission === "granted") {
-                    // SỬA TẠI ĐÂY: Dùng snapshot.key làm tag để mỗi tin nhắn là 1 thông báo riêng biệt
-                    // Nếu dùng tag cố định, tin nhắn sau sẽ đè mất tin nhắn trước.
-                    const uniqueTag = `chat-msg-${snapshot.key}`;
-
                     const n = new Notification(`🌸 ${msg.senderName}`, {
                         body: msg.text,
                         icon: msg.senderAvatar || "URL_ANH_MAC_DINH",
-                        tag: uniqueTag, 
-                        renotify: true, 
+                        tag: "global-chat-msg",
+                        renotify: true, // Ép điện thoại rung/chuông lại cho tin nhắn mới
                         silent: false 
                     });
                     
