@@ -17496,9 +17496,9 @@ function toggleCam() {
     // --- 1. LẮNG NGHE TIN NHẮN THẾ GIỚI ---
 // --- 1. LẮNG NGHE TIN NHẮN THẾ GIỚI ---
 function initGlobalChat() {
-    // Ép hiển thị tab chat (Xử lý lỗi display:none bạn gặp lúc nãy)
+    // Ép hiển thị tab chat (Dùng flex cho Popup)
     const chatTab = document.getElementById('tab-global');
-    if (chatTab) chatTab.style.display = 'block';
+    if (chatTab) chatTab.style.display = 'flex';
 
     const globalArea = document.getElementById('global-messages-area');
     if (!globalArea) return;
@@ -17506,18 +17506,52 @@ function initGlobalChat() {
     // Reset nội dung cũ để tránh lặp khi gọi lại hàm
     globalArea.innerHTML = '<div style="text-align:center; font-size:0.7em; color:#ccc; padding:10px;">Đang tải tin nhắn thế giới...</div>';
 
-    // Chỉ lấy 50 tin nhắn mới nhất
+    // 1. LẤY 50 TIN NHẮN CŨ ĐỂ HIỂN THỊ
     db.ref('global_chat/messages').limitToLast(50).on('value', (snapshot) => {
-        globalArea.innerHTML = ''; // Xóa chữ "Đang tải"
+        globalArea.innerHTML = ''; 
         const data = snapshot.val();
         if (data) {
             Object.keys(data).forEach(key => {
                 renderGlobalMessage(key, data[key]);
             });
-            // Tự động cuộn xuống cuối sau khi load xong tất cả
             globalArea.scrollTop = globalArea.scrollHeight;
         } else {
             globalArea.innerHTML = '<div style="text-align:center; font-size:0.7em; color:#ccc; padding:20px;">Chưa có tin nhắn nào. Hãy là người đầu tiên lên sóng!</div>';
+        }
+    });
+
+    // 2. MỚI: LẮNG NGHE TIN NHẮN MỚI ĐỂ ĐẨY THÔNG BÁO (NOTIFICATION & IN-GAME CHUÔNG)
+    db.ref('global_chat/messages').limitToLast(1).on('child_added', (snapshot) => {
+        const msg = snapshot.val();
+        if (!msg) return;
+
+        const isMe = msg.sender === userData.profile.uid;
+        const isChatOpen = (document.getElementById('tab-global').style.display === 'flex');
+        const isRecent = (Date.now() - msg.timestamp) < 5000;
+
+        if (!isMe && !isChatOpen && isRecent) {
+            // --- THÔNG BÁO TRÌNH DUYỆT ---
+            if ("Notification" in window && Notification.permission === "granted") {
+                const n = new Notification(`🌸 Thế giới: ${msg.senderName}`, {
+                    body: msg.text,
+                    icon: msg.senderAvatar || "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
+                    tag: "global-chat-msg"
+                });
+                n.onclick = () => { window.focus(); switchTab('tab-global'); n.close(); };
+            }
+
+            // --- THÔNG BÁO CHUÔNG TRONG GAME ---
+            if (typeof addNotification === 'function') {
+                addNotification(
+                    "💬 TIN NHẮN THẾ GIỚI", 
+                    `<b>${msg.senderName}:</b> ${msg.text.substring(0, 40)}${msg.text.length > 40 ? '...' : ''}`,
+                    "linear-gradient(135deg, #ff69b4, #ff1493)" // Màu hồng cho tone-sur-tone
+                );
+            }
+            
+            // Âm thanh báo hiệu (Tùy chọn nếu Henry muốn thêm tiếng Ting)
+            // let audio = new Audio('https://www.soundjay.com/buttons/sounds/button-30.mp3');
+            // audio.play().catch(e => {});
         }
     });
 
@@ -17535,7 +17569,7 @@ function initGlobalChat() {
         inputField.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') sendGlobalMessage();
         });
-        inputField.dataset.listener = "true"; // Gắn cờ để không bị add trùng listener
+        inputField.dataset.listener = "true"; 
     }
 }
 
