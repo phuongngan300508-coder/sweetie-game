@@ -5421,6 +5421,51 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
     from { opacity: 0; transform: scale(0.5); }
     to { opacity: 1; transform: scale(1); }
 }
+
+    /* --- Cấu trúc chung cho Container --- */
+.global-chat-container {
+    display: flex;
+    flex-direction: column;
+    background: #fffafb;
+    border-radius: 30px;
+    overflow: hidden;
+    box-shadow: 0 15px 35px rgba(255, 20, 147, 0.25);
+    border: 2px solid #ffe4e1;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+/* --- Dành cho MÁY TÍNH (Màn hình lớn) --- */
+@media (min-width: 769px) {
+    .global-chat-container {
+        width: 450px;       /* Cố định chiều rộng */
+        height: 80vh;       /* Chiều cao vừa phải */
+        max-height: 700px;  /* Không quá cao trên màn hình lớn */
+    }
+}
+
+/* --- Dành cho ĐIỆN THOẠI (Màn hình nhỏ) --- */
+@media (max-width: 768px) {
+    .popup-global-wrapper {
+        padding: 10px;      /* Giảm padding ngoài để tăng diện tích chat */
+    }
+    .global-chat-container {
+        width: 100%;        /* Chiếm hết chiều rộng mobile */
+        height: 90vh;       /* Cao gần hết màn hình */
+        border-radius: 25px;/* Bo góc nhẹ hơn mobile */
+    }
+    #global-input {
+        font-size: 16px !important; /* Tránh lỗi tự động zoom trên iPhone khi gõ */
+    }
+}
+
+/* CSS bổ trợ để mã sạch hơn */
+.chat-header { padding: 20px; background: linear-gradient(135deg, #ff69b4, #ff1493); color: white; text-align: center; font-weight: 800; border-radius: 0 0 30px 30px; }
+#global-messages-area { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; background-image: radial-gradient(#ffe4e1 0.5px, transparent 0.5px); background-size: 15px 15px; }
+.chat-input-area { padding: 15px; background: white; border-top: 1px solid #ffe4e1; display: flex; gap: 10px; align-items: center; }
+#global-input { width: 100%; padding: 12px 18px; border-radius: 25px; border: 1.5px solid #ffc0cb; outline: none; }
+.send-btn { background: linear-gradient(135deg, #ff69b4, #ff1493); color: white; border: none; width: 48px; height: 48px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.close-popup-btn { position: absolute; top: 15px; right: 15px; background: rgba(255,255,255,0.4); border: none; width: 32px; height: 32px; border-radius: 50%; color: #ff1493; cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center; }
 </style>
 </head>
 <body>
@@ -5998,31 +6043,26 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
     </div>
 </div>
 
-     <div id="tab-global" class="tab-content" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.4); z-index: 10000; backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 20px;">
+     <div id="tab-global" class="tab-content popup-global-wrapper" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.4); z-index: 10000; backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 20px;">
     
-    <div class="global-chat-container animate__animated animate__zoomIn" 
-         style="display: flex; flex-direction: column; width: 100%; max-width: 450px; height: 80vh; background: #fffafb; border-radius: 40px; overflow: hidden; box-shadow: 0 15px 35px rgba(255, 20, 147, 0.25); border: 2px solid #ffe4e1; position: relative;">
-        
-        <button onclick="switchTab('tab-home')" style="position: absolute; top: 15px; right: 15px; background: rgba(255,255,255,0.4); border: none; width: 32px; height: 32px; border-radius: 50%; color: #ff1493; cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center;">
+    <div class="global-chat-container animate__animated animate__zoomIn">
+        <button onclick="switchTab('tab-home')" class="close-popup-btn">
             <i class="fas fa-times"></i>
         </button>
 
-        <div style="padding: 20px; background: linear-gradient(135deg, #ff69b4, #ff1493); color: white; text-align: center; font-weight: 800; border-radius: 0 0 30px 30px; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+        <div class="chat-header">
             <i class="fas fa-users"></i> KÊNH CHAT THẾ GIỚI
-            <div id="global-online-count" style="font-size: 0.65em; font-weight: 400; opacity: 0.9; margin-top: 4px;">Đang kết nối...</div>
+            <div id="global-online-count">Đang kết nối...</div>
         </div>
 
-        <div id="global-messages-area" style="flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; scroll-behavior: smooth; background-image: radial-gradient(#ffe4e1 0.5px, transparent 0.5px); background-size: 15px 15px;">
-        </div>
+        <div id="global-messages-area"></div>
 
-        <div style="padding: 15px; background: white; border-top: 1px solid #ffe4e1; display: flex; gap: 10px; align-items: center; box-shadow: 0 -2px 10px rgba(0,0,0,0.02);">
+        <div class="chat-input-area">
             <div style="flex: 1; position: relative; display: flex; align-items: center;">
-                <input type="text" id="global-input" placeholder="Nhắn gì đó với thế giới..." 
-                       style="width: 100%; padding: 12px 18px; border-radius: 25px; border: 1.5px solid #ffc0cb; outline: none; font-size: 14px; transition: 0.3s; background: #fffafb;">
+                <input type="text" id="global-input" placeholder="Nhắn gì đó với thế giới...">
             </div>
-            
-            <button onclick="sendGlobalMessage()" style="background: linear-gradient(135deg, #ff69b4, #ff1493); color: white; border: none; width: 48px; height: 48px; border-radius: 50%; cursor: pointer; box-shadow: 0 4px 12px rgba(255, 20, 147, 0.3); display: flex; align-items: center; justify-content: center; transition: 0.2s active;">
-                <i class="fas fa-paper-plane" style="font-size: 1.1em;"></i>
+            <button onclick="sendGlobalMessage()" class="send-btn">
+                <i class="fas fa-paper-plane"></i>
             </button>
         </div>
     </div>
