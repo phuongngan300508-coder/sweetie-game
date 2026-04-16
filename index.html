@@ -5623,6 +5623,30 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
     background: #fff0f5;
     color: #ff1493;
 } 
+
+    /* Menu 3 chấm */
+.friend-options-menu {
+    position: absolute;
+    right: 10px;
+    top: 45px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15); /* Đổ bóng đậm hơn cho nổi */
+    z-index: 9999; /* Đảm bảo nằm trên cùng */
+    width: 160px;
+    border: 1px solid #ffe4e1;
+    overflow: hidden;
+    display: none;
+}
+
+/* Quan trọng: Khi hàng bạn bè chứa menu đang mở, nó phải có z-index cao hơn các hàng khác */
+.friend-card-row.menu-opening {
+    z-index: 100 !important;
+}
+
+.friend-options-menu div:active {
+    background-color: #ffe4e1;
+}
 </style>
 </head>
 <body>
@@ -14527,20 +14551,35 @@ async function renderFriendsList() {
     // Hàm đóng/mở menu 3 chấm
 function toggleFriendMenu(event, fName) {
     event.stopPropagation();
-    // Đóng các menu khác đang mở
-    document.querySelectorAll('.friend-options-menu').forEach(m => {
-        if(m.id !== `menu-${fName}`) m.style.display = 'none';
-    });
-    
+
+    // 1. Tìm menu và hàng (row) hiện tại
     const menu = document.getElementById(`menu-${fName}`);
-    menu.style.display = (menu.style.display === 'block') ? 'none' : 'block';
-    
-    // Đóng menu khi bấm ra ngoài
+    const currentRow = menu.closest('.friend-card-row');
+    const isOpening = menu.style.display === 'block';
+
+    // 2. Đóng tất cả menu khác và trả z-index của các hàng khác về bình thường
+    document.querySelectorAll('.friend-options-menu').forEach(m => m.style.display = 'none');
+    document.querySelectorAll('.friend-card-row').forEach(row => {
+        row.style.zIndex = "1"; // Trả về lớp cơ bản
+        row.style.position = "relative"; // Đảm bảo z-index có tác dụng
+    });
+
+    // 3. Nếu menu đang đóng thì mở ra và nhấc hàng này lên lớp cao nhất (z-index: 100)
+    if (!isOpening) {
+        menu.style.display = 'block';
+        if (currentRow) {
+            currentRow.style.zIndex = "100";
+        }
+    }
+
+    // 4. Đóng menu khi bấm ra ngoài và reset z-index
     window.onclick = () => {
         document.querySelectorAll('.friend-options-menu').forEach(m => m.style.display = 'none');
+        document.querySelectorAll('.friend-card-row').forEach(row => {
+            row.style.zIndex = "1";
+        });
     };
 }
-
 // Hàm ghim/bỏ ghim
 function togglePinFriend(fName) {
     let pinnedFriends = JSON.parse(localStorage.getItem(`pinned_${currentUser}`)) || [];
@@ -14551,13 +14590,18 @@ function togglePinFriend(fName) {
     } else {
         // Kiểm tra giới hạn 5 người
         if (pinnedFriends.length >= 5) {
-            alert("Bạn ơi, mình chỉ ghim được tối đa 5 người thôi nè! ❤️");
+            alert("Henry ơi, mình chỉ ghim được tối đa 5 người thôi nè! ❤️");
             return;
         }
         pinnedFriends.unshift(fName); // Thêm vào đầu danh sách ghim
     }
     
     localStorage.setItem(`pinned_${currentUser}`, JSON.stringify(pinnedFriends));
+
+    // BỔ SUNG: Đóng tất cả menu và reset z-index trước khi render lại
+    document.querySelectorAll('.friend-options-menu').forEach(m => m.style.display = 'none');
+    document.querySelectorAll('.friend-card-row').forEach(row => row.style.zIndex = "1");
+
     // Load lại danh sách để thấy thay đổi
     renderFriendsList();
 }
