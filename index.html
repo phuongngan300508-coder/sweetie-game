@@ -17600,57 +17600,58 @@ function initGlobalChat() {
         }
     });
 
-    // 2. LẮNG NGHE TIN NHẮN MỚI ĐỂ THÔNG BÁO (Logic chống lặp & gửi cho mọi ID)
+    // 2. LẮNG NGHE TIN NHẮN MỚI ĐỂ THÔNG BÁO (Đã sửa để nhạy hơn trên điện thoại)
     db.ref('global_chat/messages').limitToLast(1).on('child_added', (snapshot) => {
         const msg = snapshot.val();
-        if (!msg) return;
-
-        // CHỈ THÔNG BÁO: Nếu tin nhắn mới hơn thời điểm mở web
-        if (msg.timestamp <= sessionStartTime) return;
+        if (!msg || msg.timestamp <= sessionStartTime) return;
 
         const isMe = msg.sender === userData.profile.uid;
+        // Kiểm tra xem người dùng có đang thực sự nhìn vào màn hình chat không
         const isChatOpen = (document.getElementById('tab-global').style.display === 'flex');
+        const isTabHidden = document.hidden || document.visibilityState === 'hidden';
         
-        if (!isMe && !isChatOpen) {
-            // --- THÔNG BÁO TRÌNH DUYỆT ---
-            if ("Notification" in window && Notification.permission === "granted") {
-                const n = new Notification(`🌸 ${msg.senderName}`, {
-                    body: msg.text,
-                    icon: msg.senderAvatar || "URL_ANH_MAC_DINH",
-                    tag: "global-chat-msg", 
-                    silent: false 
-                });
-                
-                n.onclick = () => { 
-                    window.focus(); 
-                    if (typeof switchTab === 'function') switchTab('tab-global'); 
-                    n.close(); 
-                };
-            }
-
-            // --- THÔNG BÁO TRONG GAME ---
-            if (typeof addNotification === 'function') {
+        if (!isMe) {
+            // --- THÔNG BÁO TRONG GAME: Luôn hiện nếu không đang mở tab chat ---
+            // (Giúp xác nhận kết nối Firebase vẫn sống trên điện thoại)
+            if (!isChatOpen && typeof addNotification === 'function') {
                 addNotification(
                     "💬 TIN NHẮN THẾ GIỚI", 
                     `<b>${msg.senderName}:</b> ${msg.text}`,
                     "linear-gradient(135deg, #ff69b4, #ff1493)"
                 );
             }
+
+            // --- THÔNG BÁO HỆ THỐNG: Hiện khi tắt màn hình hoặc sang tab khác ---
+            if (isTabHidden) {
+                if ("Notification" in window && Notification.permission === "granted") {
+                    const n = new Notification(`🌸 ${msg.senderName}`, {
+                        body: msg.text,
+                        icon: msg.senderAvatar || "URL_ANH_MAC_DINH",
+                        tag: "global-chat-msg",
+                        renotify: true, // Ép điện thoại rung/chuông lại
+                        silent: false 
+                    });
+                    
+                    n.onclick = () => { 
+                        window.focus(); 
+                        if (typeof switchTab === 'function') switchTab('tab-global'); 
+                        n.close(); 
+                    };
+                }
+            }
         }
     });
 
-    // 3. LẮNG NGHE SỐ NGƯỜI ĐANG ONLINE (Sửa kích thước nhỏ hơn)
+    // 3. LẮNG NGHE SỐ NGƯỜI ĐANG ONLINE (Giữ nguyên style nhỏ hơn)
     db.ref('status').on('value', (snap) => {
         const data = snap.val() || {};
         const onlineCount = Object.values(data).filter(s => s.state === 'online').length;
         const countEl = document.getElementById('global-online-count');
         if (countEl) {
             countEl.innerText = `🌍 ${onlineCount} cư dân đang hoạt động`;
-            
-            // Tùy chỉnh nhỏ hơn tiêu đề
-            countEl.style.fontSize = "0.7em";      // Nhỏ lại
-            countEl.style.fontWeight = "400";     // Chữ mảnh hơn
-            countEl.style.opacity = "0.8";        // Hơi mờ để phân cấp với tiêu đề chính
+            countEl.style.fontSize = "0.7em";      
+            countEl.style.fontWeight = "400";     
+            countEl.style.opacity = "0.8";        
             countEl.style.display = "block";
             countEl.style.marginTop = "2px";
         }
