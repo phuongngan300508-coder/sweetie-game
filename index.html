@@ -12597,7 +12597,10 @@ function openChatWith(friendName) {
 
         // --- 7. ĐỒNG BỘ KẾT NỐI: XÓA THÔNG BÁO CHƯA ĐỌC & CẬP NHẬT ĐÃ XEM ---
         if (currentUser && friendName) {
-            // Xóa số lượng chưa đọc
+            // Henry thêm: Cập nhật UI ngay lập tức (Xóa chấm đỏ trong cache nội bộ nếu cần)
+            // Nếu renderFriendsList dùng 'on', Firebase sẽ tự động cập nhật lại UI khi remove() thành công.
+            
+            // Xóa số lượng chưa đọc trên Firebase
             db.ref('unread_counts/' + currentUser + '/' + friendName).remove()
                 .then(() => {
                     console.log(`Hệ thống: Đã xóa số tin nhắn chưa đọc từ ${friendName}`);
@@ -14073,10 +14076,11 @@ async function renderFriendsList() {
                         ? `<img src="${uData.profile.customAvatar}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`
                         : `<i class="fas ${uData.profile.gender === 'Nam' ? 'fa-user-tie' : 'fa-user-graduate'}"></i>`;
 
-                    // FIX: Lắng nghe trạng thái người lạ ngay lập tức
                     setupStatusListener(sName);
 
-                    // --- SỬA TẠI ĐÂY: Đổi id thành class cho chấm xanh người lạ ---
+                    // --- LẤY SỐ TIN NHẮN CHƯA ĐỌC CỦA NGƯỜI LẠ ---
+                    const unreadCount = allUnreads[sName] || 0;
+
                     return `
                         <div class="friend-card-row animate__animated animate__fadeIn" style="display: flex; align-items: center; justify-content: space-between; background: #fff5f8; padding: 15px; border-radius: 20px; margin-bottom: 10px; border-left: 5px solid #ff1493; border: 1px dashed #ffc0cb;">
                             <div style="display: flex; align-items: center; gap: 12px;">
@@ -14092,10 +14096,12 @@ async function renderFriendsList() {
                                 </div>
                             </div>
                             <div style="display: flex; align-items: center; gap: 10px;">
-                                <span style="background:#ff1493; color:white; font-size:0.7em; padding:2px 8px; border-radius:10px; font-weight:900;">${allUnreads[sName]}</span>
-                                <button onclick="openChatWith('${sName}')" style="background: #ff1493; color: white; border: none; width: 40px; height: 40px; border-radius: 12px; cursor: pointer;">
-                                    <i class="fab fa-facebook-messenger"></i>
-                                </button>
+                                <div style="position: relative;">
+                                    <button onclick="openChatWith('${sName}')" style="background: #ff1493; color: white; border: none; width: 40px; height: 40px; border-radius: 12px; cursor: pointer;">
+                                        <i class="fab fa-facebook-messenger"></i>
+                                    </button>
+                                    ${unreadCount > 0 ? `<span style="position: absolute; top: -5px; right: -5px; background: red; color: white; font-size: 10px; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid white; font-weight: bold; animation: pulse 1.5s infinite;">${unreadCount > 99 ? '99+' : unreadCount}</span>` : ''}
+                                </div>
                             </div>
                         </div>`;
                 }));
@@ -14127,10 +14133,11 @@ async function renderFriendsList() {
                         ? `<img src="${uData.profile.customAvatar}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`
                         : `<i class="fas ${uData.profile.gender === 'Nam' ? 'fa-user-tie' : 'fa-user-graduate'}"></i>`;
 
-                    // FIX: Thiết lập lắng nghe trạng thái cho bạn bè
                     setupStatusListener(fName);
 
-                    // --- SỬA TẠI ĐÂY: Đổi id thành class cho chấm xanh bạn bè ---
+                    // --- LẤY SỐ TIN NHẮN CHƯA ĐỌC CỦA BẠN BÈ ---
+                    const unreadCount = allUnreads[fName] || 0;
+
                     return {
                         name: displayName, 
                         html: `
@@ -14148,9 +14155,12 @@ async function renderFriendsList() {
                                 </div>
                             </div>
                             <div style="display: flex; gap: 10px;">
-                                <button onclick="openChatWith('${fName}')" style="background: #ff1493; color: white; border: none; width: 40px; height: 40px; border-radius: 12px; cursor: pointer;">
-                                    <i class="fab fa-facebook-messenger"></i>
-                                </button>
+                                <div style="position: relative;">
+                                    <button onclick="openChatWith('${fName}')" style="background: #ff1493; color: white; border: none; width: 40px; height: 40px; border-radius: 12px; cursor: pointer;">
+                                        <i class="fab fa-facebook-messenger"></i>
+                                    </button>
+                                    ${unreadCount > 0 ? `<span style="position: absolute; top: -5px; right: -5px; background: red; color: white; font-size: 10px; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid white; font-weight: bold; animation: pulse 1.5s infinite;">${unreadCount > 99 ? '99+' : unreadCount}</span>` : ''}
+                                </div>
                                 <button onclick="unfriendConfirm('${fName}')" style="background: #f8f9fa; color: #ccc; border: none; width: 40px; height: 40px; border-radius: 12px; cursor: pointer;">
                                     <i class="fas fa-user-minus"></i>
                                 </button>
