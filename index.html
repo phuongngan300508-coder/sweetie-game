@@ -16696,6 +16696,12 @@ let callTimeoutTimer; // Biến quản lý bộ đếm 60s
 function initCallSystem() {
     if (!currentUser) return;
 
+    // --- MỚI: Dọn dẹp Peer cũ nếu đã tồn tại trước khi tạo mới ---
+    if (peer) {
+        peer.destroy();
+        peer = null;
+    }
+
     // Khởi tạo Peer với ID là tên tài khoản Henry
     peer = new Peer(currentUser);
 
@@ -16705,8 +16711,15 @@ function initCallSystem() {
 
     // LẮNG NGHE CUỘC GỌI ĐẾN
     peer.on('call', async (call) => {
-        // MỚI: Dọn dẹp xác cuộc gọi cũ nếu có để tránh xung đột
-        if (currentCall) currentCall.close();
+        // MỚI: Dọn dẹp xác cuộc gọi cũ và các luồng media cũ để tránh kẹt logic
+        if (currentCall) {
+            currentCall.close();
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+                localStream = null;
+            }
+        }
+        
         currentCall = call;
         
         const callSnap = await db.ref(`calls/${currentUser}`).once('value');
@@ -16714,52 +16727,58 @@ function initCallSystem() {
 
         if (callData) {
             window.currentCallType = callData.type; 
+            // Quan trọng: Phải reset flag isEndingCall để Popup có thể hiện lại lần sau
+            window.isEndingCall = false; 
             showIncomingCallPopup(callData.from, callData.type);
         }
     });
 
-    // --- SỬA TẠI ĐÂY: Tạo một hàm lắng nghe có thể dọn dẹp và tái sử dụng ---
+    // --- SỬA TẠI ĐÂY: Hàm lắng nghe trạng thái Firebase ---
     const startListeningStatus = () => {
         const callRef = db.ref(`calls/${currentUser}`);
-        callRef.off(); // Dọn dẹp listener cũ trước khi tạo cái mới 
+        callRef.off(); // Dọn dẹp listener cũ tránh trùng lặp
 
         callRef.on('value', (snap) => {
-            // --- 1. KIỂM TRA TRẠNG THÁI HIỆN TẠI CỦA UI ---
+            // Kiểm tra trạng thái UI
             const overlay = document.getElementById('call-overlay');
             const isPopupVisible = overlay && (overlay.style.display === 'flex' || overlay.style.display === 'block');
             const callScreen = document.getElementById('call-screen');
             const isInCall = callScreen && callScreen.style.display === 'flex';
 
-            // --- 2. XỬ LÝ KHI DỮ LIỆU BỊ XÓA (ĐỐI PHƯƠNG NGẮT) ---
+            // XỬ LÝ KHI DỮ LIỆU BỊ XÓA (ĐỐI PHƯƠNG NGẮT)
             if (!snap.exists() && (isPopupVisible || isInCall)) {
-                console.log("🌸 Đối phương đã ngắt kết nối (Hủy/Từ chối/Kết thúc).");
+                console.log("🌸 Đối phương đã ngắt kết nối hoặc hủy cuộc gọi.");
 
-                // Dừng luồng dữ liệu PeerJS
+                // Dọn dẹp PeerJS
                 if (currentCall) {
-                    if (localStream) {
-                        localStream.getTracks().forEach(track => track.stop());
-                        localStream = null;
-                    }
                     currentCall.close();
                     currentCall = null;
                 }
+                
+                // Dừng camera/mic ngay lập tức
+                if (localStream) {
+                    localStream.getTracks().forEach(track => track.stop());
+                    localStream = null;
+                }
 
-                // --- 3. GỌI UI DỌN DẸP ---
+                // Gọi UI dọn dẹp và reset toàn bộ biến toàn cục
                 endCallUI();
                 
-                // MỚI: Sau khi dọn dẹp UI xong, phải đảm bảo listener vẫn sẵn sàng cho cuộc gọi tới
-                // (Thường endCallUI sẽ ẩn mọi thứ, snap.exists() sẽ vẫn là false cho đến khi có call mới)
+                // Sau khi dọn dẹp, đảm bảo hệ thống sẵn sàng cho lần gọi sau bằng cách
+                // xóa cờ đang kết thúc sau một khoảng nghỉ ngắn
+                setTimeout(() => { window.isEndingCall = false; }, 1000);
             }
         });
     };
 
-    // Kích hoạt lắng nghe lần đầu
+    // Kích hoạt lắng nghe
     startListeningStatus();
 }
     
 // --- 2. HÀM THỰC HIỆN CUỘC GỌI ---
 async function makeCall(type) { // type: 'audio' hoặc 'video'
     window.currentCallType = type; // Gán loại cuộc gọi để hệ thống ghi nhớ
+    window.isEndingCall = false; // Mở khóa để có thể gửi thông báo cho cuộc gọi mới
     
     // --- QUAN TRỌNG: Đánh dấu bạn là người gọi để endCallUI phân biệt logic ---
     window.isCaller = true; 
@@ -17149,17 +17168,16 @@ function endCallUI() {
     const incomingPopup = document.getElementById('incoming-call-popup');
     const callScreen = document.getElementById('call-screen');
 
-    // --- SỬA ĐOẠN NÀY: DỌN DẸP GIAO DIỆN MẠNH MẼ HƠN ---
+    // --- 1. DỌN DẸP GIAO DIỆN (GIỮ NGUYÊN LOGIC CỦA HENRY) ---
     if (callScreen) {
         callScreen.style.display = 'none';
-        callScreen.style.removeProperty('display'); // Xóa bỏ để reset hoàn toàn
+        callScreen.style.removeProperty('display');
         callScreen.style.display = 'none';
     }
     if (incomingPopup) {
         incomingPopup.style.display = 'none';
     } 
     if (overlay) {
-        // Ép ẩn overlay mờ và đảm bảo không bị kẹt bởi các thuộc tính khác
         overlay.style.setProperty('display', 'none', 'important');
     }
 
@@ -17170,7 +17188,13 @@ function endCallUI() {
 
     if (typeof stopRingtone === 'function') stopRingtone();
 
-    // --- GỬI THÔNG BÁO HỆ THỐNG DUY NHẤT: ENDED (Giữ nguyên) ---
+    // --- 2. GỠ BỎ LISTENERS FIREBASE ĐỂ RESET TRẠNG THÁI MỚI ---
+    // Điều này cực kỳ quan trọng để Popup lần sau có thể hiện lên
+    if (currentUser) db.ref(`calls/${currentUser}`).off();
+    if (currentChatFriend) db.ref(`calls/${currentChatFriend}`).off();
+    if (currentCall) db.ref(`calls/${currentCall.peer}/settings`).off();
+
+    // --- 3. GỬI THÔNG BÁO HỆ THỐNG ---
     if (window.isEndingCall) return; 
     window.isEndingCall = true;
 
@@ -17184,15 +17208,32 @@ function endCallUI() {
         stopCallTimer();
     }
 
-    // --- Dọn dẹp triệt để trạng thái để sẵn sàng cho cuộc gọi tiếp theo (Giữ nguyên) ---
+    // --- 4. RESET BIẾN TRẠNG THÁI ---
     currentCall = null;           
     window.isCallConnected = false; 
 
-    // Reset cờ (Giữ nguyên)
+    isMicOn = true;
+    isCamOn = true;
+    const btnMic = document.getElementById('btn-toggle-mic');
+    const btnCam = document.getElementById('btn-toggle-cam');
+    
+    if (btnMic) {
+        btnMic.style.background = "rgba(255,255,255,0.2)";
+        btnMic.style.color = "white";
+        btnMic.innerHTML = '<i class="fas fa-microphone"></i>';
+    }
+    if (btnCam) {
+        btnCam.style.background = "rgba(255,255,255,0.2)";
+        btnCam.style.color = "white";
+        btnCam.innerHTML = '<i class="fas fa-video"></i>';
+    }
+
+    // Reset cờ chờ Firebase ổn định
     setTimeout(() => { 
         window.isEndingCall = false; 
         window.isCaller = false; 
-        console.log("🌸 Giao diện và trạng thái đã reset xong.");
+        window.currentCallType = null;
+        console.log("🌸 Giao diện và trạng thái đã reset xong. Sẵn sàng nhận cuộc gọi mới!");
     }, 500);
 }
     
