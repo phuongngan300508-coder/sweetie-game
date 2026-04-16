@@ -15750,6 +15750,9 @@ function sendMediaMessage(url, type) {
     };
 
     db.ref('chats/' + chatRoomId + '/messages').push(msgData).then(() => {
+        // --- BỔ SUNG: KÍCH HOẠT THÔNG BÁO CHẤM ĐỎ (UNREAD BADGE) ---
+        db.ref(`unread_counts/${currentChatFriend}/${currentUser}`).transaction(c => (c || 0) + 1);
+
         // Thông báo cho đối phương với thông tin đã phân loại
         db.ref('notifications_queue/' + currentChatFriend).push({
             from: currentUser,
@@ -16405,6 +16408,9 @@ function sendStickerMessage(url) {
     };
 
     db.ref(`chats/${chatRoomId}/messages`).push(msgData).then(() => {
+        // --- BỔ SUNG: KÍCH HOẠT THÔNG BÁO CHẤM ĐỎ (UNREAD BADGE) ---
+        db.ref(`unread_counts/${currentChatFriend}/${currentUser}`).transaction(c => (c || 0) + 1);
+
         toggleStickerModal();
         // Bắn thông báo cho bạn
         db.ref('notifications_queue/' + currentChatFriend).push({
@@ -17281,6 +17287,9 @@ function sendCallSystemMessage(type, status) {
     };
 
     db.ref('chats/' + chatRoomId + '/messages').push(msgData).then(() => {
+        // --- BỔ SUNG: KÍCH HOẠT THÔNG BÁO CHẤM ĐỎ (UNREAD BADGE) ---
+        db.ref(`unread_counts/${currentChatFriend}/${currentUser}`).transaction(c => (c || 0) + 1);
+
         db.ref('notifications_queue/' + currentChatFriend).push({
             from: currentUser,
             title: "📞 THÔNG BÁO CUỘC GỌI",
@@ -17290,7 +17299,7 @@ function sendCallSystemMessage(type, status) {
         });
     });
 }
-
+    
     window.addEventListener('beforeunload', () => {
     if (currentUser) {
         db.ref(`calls/${currentUser}`).remove();
