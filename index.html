@@ -14170,9 +14170,9 @@ function setupStatusListener(fName) {
         const sData = sSnap.val();
         const isOnline = sData && sData.state === 'online';
         
-        // --- CHỈ SỬA ĐOẠN NÀY: Dùng Class để tìm cho chính xác ---
-        // Henry hãy đảm bảo trong HTML của chấm xanh có: class="dot-status-${fName}"
-        const dots = document.querySelectorAll(`.dot-status-${fName}`);
+        // --- CHỈ SỬA ĐOẠN NÀY: Dùng CSS.escape để xử lý Nickname có dấu/khoảng cách ---
+        const safeClassName = CSS.escape(`dot-status-${fName}`);
+        const dots = document.querySelectorAll(`.${safeClassName}`);
         
         dots.forEach(dot => {
             if (dot) {
