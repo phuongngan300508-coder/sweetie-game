@@ -5909,6 +5909,28 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
     0% { box-shadow: 0 0 0 0px rgba(255, 105, 180, 0.4); }
     100% { box-shadow: 0 0 0 15px rgba(255, 105, 180, 0); }
 }
+
+    /* Style cho nhãn nhập liệu */
+.input-group-sweetie {
+    text-align: left; /* Căn lề trái cho nhãn */
+    width: 100%;
+}
+
+.input-label {
+    display: block;
+    font-size: 0.85rem;
+    color: #ff69b4; /* Màu hồng đặc trưng của Henry */
+    font-weight: bold;
+    margin-bottom: 5px;
+    margin-left: 5px;
+}
+
+/* Tinh chỉnh lại ô input date để đồng bộ */
+input[type="date"].sweetie-input-style {
+    font-family: 'Segoe UI', sans-serif;
+    color: #666;
+    cursor: pointer;
+}
 </style>
 </head>
 <body>
@@ -18660,18 +18682,26 @@ function renderStartMenu() {
             <input id="step_name" class="sweetie-input-style" placeholder="Ví dụ: Nguyễn Văn A" autocomplete="off">
             <button onclick="saveStep(1)" class="btn-sweetie-next">Tiếp theo <i class="fas fa-arrow-right"></i></button>
         `;
-    } else if (step === 2) {
+    } else if (step === 2) { // Bước 2: Ngày sinh & Giới tính
         html = `
             ${header}
             <h3 class="step-title">Thông tin cá nhân</h3>
-            <div class="input-row">
-                <input type="date" id="step_dob" class="sweetie-input-style">
+            <p class="step-desc">Thông tin này dùng để xác minh khi bạn quên mật khẩu thẻ</p>
+            
+            <div class="input-group-sweetie">
+                <label class="input-label"><i class="fas fa-birthday-cake"></i> Ngày tháng năm sinh:</label>
+                <input type="date" id="step_dob" class="sweetie-input-style" title="Chọn ngày sinh của bạn">
+            </div>
+
+            <div class="input-group-sweetie" style="margin-top: 15px;">
+                <label class="input-label"><i class="fas fa-venus-mars"></i> Giới tính:</label>
                 <select id="step_gender" class="sweetie-input-style">
                     <option value="Nam">Nam</option>
                     <option value="Nữ">Nữ</option>
                     <option value="Khác">Khác</option>
                 </select>
             </div>
+
             <button onclick="saveStep(2)" class="btn-sweetie-next">Tiếp theo <i class="fas fa-arrow-right"></i></button>
         `;
     } else if (step === 3) {
@@ -18772,31 +18802,97 @@ function saveStep(step) {
     }
 }
 
-    async function handleCardTransaction(type) {
-    const cardId = await db.ref(`users/${currentUsername}/linkedCard`).once('value').then(s => s.val());
-    const amount = parseInt(prompt("Nhập số tiền:"));
-    if (isNaN(amount) || amount <= 0) return;
-
-    const userBalRef = db.ref(`users/${currentUsername}/balance`);
-    const cardBalRef = db.ref(`sweetie_cards/${cardId}/balance`);
-
-    if (type === 'deposit') { // Từ Ví vào Thẻ
-        const currentBal = await userBalRef.once('value').then(s => s.val() || 0);
-        if (currentBal < amount) return alert("Ví của bạn không đủ tiền!");
-
-        await userBalRef.transaction(val => (val || 0) - amount);
-        await cardBalRef.transaction(val => (val || 0) + amount);
-    } else { // Từ Thẻ ra Ví
-        const pass = prompt("Nhập mật khẩu thẻ:");
-        const cardData = await db.ref(`sweetie_cards/${cardId}`).once('value').then(s => s.val());
-        
-        if (pass !== cardData.password) return alert("Sai mật khẩu thẻ!");
-        if (cardData.balance < amount) return alert("Số dư thẻ không đủ!");
-
-        await cardBalRef.transaction(val => (val || 0) - amount);
-        await userBalRef.transaction(val => (val || 0) + amount);
+   async function handleCardTransaction(type) {
+    // 1. Kiểm tra đăng nhập bằng biến currentUser của Henry
+    if (typeof currentUser === 'undefined' || !currentUser) {
+        alert("🌸 Henry ơi, bạn cần đăng nhập trước nhé!");
+        return;
     }
-    alert("Giao dịch thành công!");
+
+    try {
+        // 2. Lấy ID thẻ từ Firebase của người dùng hiện tại
+        const cardIdSnap = await db.ref(`users/${currentUser}/linkedCard`).once('value');
+        const cardId = cardIdSnap.val();
+        
+        if (!cardId) {
+            alert("Không tìm thấy thẻ liên kết với tài khoản này!");
+            return;
+        }
+
+        // 3. Hỏi số tiền và kiểm tra tính hợp lệ
+        const promptMsg = type === 'deposit' ? "Nhập số tiền muốn NẠP vào thẻ:" : "Nhập số tiền muốn RÚT về ví:";
+        const amountInput = prompt(promptMsg);
+        const amount = parseInt(amountInput);
+
+        if (isNaN(amount) || amount <= 0) {
+            alert("Số tiền không hợp lệ, Henry vui lòng nhập lại nhé!");
+            return;
+        }
+
+        // 4. Thiết lập đường dẫn đến số dư
+        const userBalRef = db.ref(`users/${currentUser}/balance`);
+        const cardRef = db.ref(`sweetie_cards/${cardId}`);
+
+        if (type === 'deposit') { 
+            // --- LOGIC NẠP TIỀN (VÍ -> THẺ) ---
+            const walletSnap = await userBalRef.once('value');
+            const currentWalletBal = walletSnap.val() || 0;
+
+            if (currentWalletBal < amount) {
+                alert("Số dư ví không đủ để thực hiện giao dịch này!");
+                return;
+            }
+
+            // Chạy transaction để trừ ví và cộng thẻ song song
+            await Promise.all([
+                userBalRef.transaction(val => (val || 0) - amount),
+                cardRef.child('balance').transaction(val => (val || 0) + amount)
+            ]);
+
+            // Cập nhật LocalStorage của Henry để ví chính thay đổi ngay
+            if (typeof userData !== 'undefined') {
+                userData.balance -= amount;
+                saveData(); // Hàm lưu local của Henry
+            }
+
+        } else { 
+            // --- LOGIC RÚT TIỀN (THẺ -> VÍ) ---
+            const pass = prompt("Nhập mật khẩu thẻ Sweetie để xác nhận:");
+            const cardSnap = await cardRef.once('value');
+            const cardData = cardSnap.val();
+
+            if (!cardData || pass !== cardData.password) {
+                alert("Mật khẩu thẻ không chính xác!");
+                return;
+            }
+
+            if ((cardData.balance || 0) < amount) {
+                alert("Số dư trong thẻ không đủ để rút!");
+                return;
+            }
+
+            // Chạy transaction để trừ thẻ và cộng ví song song
+            await Promise.all([
+                cardRef.child('balance').transaction(val => (val || 0) - amount),
+                userBalRef.transaction(val => (val || 0) + amount)
+            ]);
+
+            // Cập nhật LocalStorage của Henry
+            if (typeof userData !== 'undefined') {
+                userData.balance += amount;
+                saveData();
+            }
+        }
+
+        alert("🌸 Giao dịch thành công! Số dư đã được cập nhật.");
+        
+        // Cập nhật lại giao diện ví chính nếu Henry có hàm này
+        if (typeof updateUI === 'function') updateUI();
+
+    } catch (error) {
+        console.error("Lỗi giao dịch thẻ:", error);
+        alert("Đã có lỗi xảy ra. Henry hãy kiểm tra lại kết nối mạng!");
+    }
 }
 
     // Hàm hiển thị giao diện nhập thẻ cũ
