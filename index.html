@@ -18994,6 +18994,7 @@ function handleCardTransaction(type) {
         }
 
         alert("🌸 Giao dịch thành công! Số dư đã được cập nhật.");
+        recordCardHistory(cardId, type, amount);
         
         // SỬA LỖI TẠI ĐÂY: Dùng ?. để an toàn hoặc kiểm tra tồn tại
         const transUI = document.getElementById('transaction-ui');
@@ -19124,6 +19125,9 @@ function closeSweetieModal() {
                     <button onclick="handleCardTransaction('withdraw')" class="btn-sweetie btn-primary">
                         Rút về ví <i class="fas fa-arrow-up"></i>
                     </button>
+                    <button onclick="showCardHistory('${cardId}')" class="btn-sweetie" style="margin-top: 10px; background: #9c27b0; color: white; width: 100%; border-radius: 15px; border: none; padding: 10px; font-weight: bold; cursor: pointer;">
+    <i class="fas fa-history"></i> LỊCH SỬ GIAO DỊCH
+</button>
                 </div>
                 
                 <button onclick="unlinkCard()" style="margin-top: 15px; background: none; border: none; color: #bbb; cursor: pointer; font-size: 0.8rem; text-decoration: underline;">
@@ -19143,6 +19147,81 @@ async function unlinkCard() {
             saveData();
         }
         renderStartMenu();
+    }
+}
+
+    function recordCardHistory(cardId, type, amount) {
+    const historyRef = db.ref(`card_history/${cardId}`).push();
+    historyRef.set({
+        type: type, // 'deposit' hoặc 'withdraw'
+        amount: amount,
+        user: currentUser, // Tên người thực hiện giao dịch
+        time: firebase.database.ServerValue.TIMESTAMP
+    });
+}
+
+    async function showCardHistory(cardId) {
+    const dashboard = document.querySelector('.card-dashboard-container');
+    if (!dashboard) return;
+
+    // Tạo lớp phủ đè lên trên Dashboard
+    const overlay = document.createElement('div');
+    overlay.id = 'history-overlay';
+    overlay.className = 'sweetie-transaction-overlay'; // Sử dụng lại class overlay đã có
+    overlay.style.display = 'flex';
+    overlay.style.flexDirection = 'column';
+    overlay.style.background = '#fff5f7'; // Màu nền hồng nhạt
+    overlay.style.borderRadius = '25px';
+
+    overlay.innerHTML = `
+        <div style="width: 100%; height: 100%; display: flex; flex-direction: column; padding: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 2px solid #ffb6c1; padding-bottom: 10px;">
+                <h3 style="color: #d81b60; margin: 0; font-size: 1.1rem;">📜 LỊCH SỬ THẺ</h3>
+                <span onclick="this.parentElement.parentElement.parentElement.remove()" style="cursor:pointer; font-size: 24px; color: #ff69b4; font-weight: bold;">&times;</span>
+            </div>
+            
+            <div id="history-list" style="flex-grow: 1; overflow-y: auto; padding-right: 5px;">
+                <p style="text-align: center; color: #888; margin-top: 50px;">Đang tải dữ liệu...</p>
+            </div>
+            
+            <button onclick="this.parentElement.parentElement.remove()" class="btn-sweetie btn-secondary" style="margin-top: 10px; width: 100%; border-radius: 12px;">ĐÓNG</button>
+        </div>
+    `;
+    dashboard.appendChild(overlay);
+
+    try {
+        // Lấy 20 giao dịch mới nhất từ Firebase
+        const snap = await db.ref(`card_history/${cardId}`).orderByChild('time').limitToLast(20).once('value');
+        const listDiv = document.getElementById('history-list');
+        listDiv.innerHTML = "";
+
+        if (!snap.exists()) {
+            listDiv.innerHTML = `<div style="text-align:center; margin-top:50px; color:#bbb;">Thẻ chưa có giao dịch nào ✨</div>`;
+            return;
+        }
+
+        let logs = [];
+        snap.forEach(child => { logs.unshift(child.val()); }); // Đảo ngược để cái mới nhất lên đầu
+
+        logs.forEach(item => {
+            const isPlus = item.type === 'deposit';
+            const timeStr = new Date(item.time).toLocaleString('vi-VN', {hour: '2-digit', minute:'2-digit', day:'2-digit', month:'2-digit'});
+            
+            listDiv.innerHTML += `
+                <div style="background: white; border-radius: 15px; padding: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 8px rgba(255,182,193,0.2); border-left: 5px solid ${isPlus ? '#4caf50' : '#f44336'};">
+                    <div style="text-align: left;">
+                        <div style="font-weight: bold; color: #444; font-size: 0.85rem;">${isPlus ? 'Nạp vào thẻ' : 'Rút về ví'}</div>
+                        <div style="font-size: 0.7rem; color: #999;">${timeStr} • ${item.user}</div>
+                    </div>
+                    <div style="font-weight: 800; color: ${isPlus ? '#4caf50' : '#f44336'};">
+                        ${isPlus ? '+' : '-'}${item.amount.toLocaleString()}
+                    </div>
+                </div>
+            `;
+        });
+    } catch (e) {
+        console.error(e);
+        document.getElementById('history-list').innerHTML = "Lỗi tải lịch sử giao dịch!";
     }
 }
 </script>
