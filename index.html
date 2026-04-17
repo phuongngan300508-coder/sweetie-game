@@ -5804,6 +5804,69 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
     color: #bbb;
     font-style: italic;
 }
+
+    /* Container nội dung */
+.link-existing-container {
+    width: 100%;
+    animation: fadeIn 0.4s ease;
+}
+
+.step-title { color: #d81b60; margin-bottom: 5px; font-weight: 700; }
+.step-subtitle { font-size: 0.85rem; color: #888; margin-bottom: 20px; }
+
+/* Group nút nằm ngang */
+.btn-group-horizontal {
+    display: flex;
+    gap: 12px;
+    margin-top: 20px;
+    width: 100%;
+}
+
+/* Style nút bấm chung */
+.btn-sweetie {
+    flex: 1;
+    padding: 12px 15px;
+    border: none;
+    border-radius: 15px;
+    font-weight: bold;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+/* Nút xác nhận (Hồng đậm) */
+.btn-primary {
+    background: linear-gradient(135deg, #ff69b4, #ff1493);
+    color: white;
+    box-shadow: 0 4px 15px rgba(255, 20, 147, 0.3);
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(255, 20, 147, 0.4);
+}
+
+/* Nút quay lại (Xám hồng nhạt) */
+.btn-secondary {
+    background: #f0f0f0;
+    color: #666;
+    border: 1px solid #ddd;
+}
+
+.btn-secondary:hover {
+    background: #e8e8e8;
+    color: #333;
+}
+
+/* Hiệu ứng fadeIn */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
 </style>
 </head>
 <body>
@@ -18660,15 +18723,26 @@ function saveStep(step) {
 function showLinkExisting() {
     const flow = document.getElementById('card-app-flow');
     flow.innerHTML = `
-        <h3 style="color: #d81b60;"><i class="fas fa-link"></i> Thêm thẻ đã sở hữu</h3>
-        <p style="font-size: 0.9rem; color: #666;">Nhập thông tin thẻ Sweetie Card bạn đã có</p>
-        
-        <input type="number" id="link_card_id" class="sweetie-input-style" placeholder="Nhập 8 số ID thẻ...">
-        <input type="password" id="link_card_pass" class="sweetie-input-style" placeholder="Nhập mật khẩu thẻ...">
-        
-        <div style="display: flex; gap: 10px; width: 100%; margin-top: 15px;">
-            <button onclick="renderStartMenu()" class="sweetie-btn-main" style="background: #ccc;">Quay lại</button>
-            <button onclick="handleLinkCardSubmit()" class="sweetie-btn-main">XÁC NHẬN</button>
+        <div class="link-existing-container">
+            <h3 class="step-title"><i class="fas fa-link"></i> Kết nối thẻ cũ</h3>
+            <p class="step-subtitle">Nhập chính xác ID và Mật khẩu để khôi phục ví vĩnh viễn</p>
+            
+            <div class="input-group">
+                <input type="number" id="link_card_id" class="sweetie-input-style" 
+                       placeholder="Nhập 8 số ID thẻ..." autocomplete="off">
+                
+                <input type="password" id="link_card_pass" class="sweetie-input-style" 
+                       placeholder="Nhập mật khẩu thẻ..." autocomplete="new-password">
+            </div>
+
+            <div class="btn-group-horizontal">
+                <button onclick="renderStartMenu()" class="btn-sweetie btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Quay lại
+                </button>
+                <button onclick="handleLinkCardSubmit()" class="btn-sweetie btn-primary">
+                    XÁC NHẬN <i class="fas fa-check-circle"></i>
+                </button>
+            </div>
         </div>
     `;
 }
