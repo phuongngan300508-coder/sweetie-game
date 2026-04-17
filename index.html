@@ -5655,34 +5655,53 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
     z-index: 99999;
     left: 0;
     top: 0;
-    width: 100%;
-    height: 100%;
+    width: 100vw; /* Sử dụng vw/vh để chiếm trọn khung hình trình duyệt */
+    height: 100vh;
     background: rgba(0, 0, 0, 0.5);
     backdrop-filter: blur(5px);
-    justify-content: center;
-    align-items: center;
-    padding: 10px; /* Tránh popup dính sát mép màn hình điện thoại */
+    
+    /* CĂN GIỮ TUYỆT ĐỐI */
+    justify-content: center; /* Căn giữa ngang */
+    align-items: center;     /* Căn giữa dọc */
+    
+    padding: 15px; 
+    box-sizing: border-box;
 }
 
 /* Khung Popup nội dung */
 .sweetie-popup-content {
     background: #fff5f7; 
     border-radius: 30px;
-    padding: 20px; /* Giảm padding một chút trên mobile cho thoáng */
+    padding: 25px;
     
-    /* FIX SÁT LỀ TẠI ĐÂY */
-    width: calc(100% - 30px); /* Luôn cách 2 lề mỗi bên 15px */
+    /* CO GIÃN LINH HOẠT */
+    width: 100%; 
     max-width: 420px; 
-    box-sizing: border-box; /* Đảm bảo padding không làm nở khung */
+    box-sizing: border-box; 
     
     border: 4px solid #ffb6c1; 
     position: relative;
     animation: zoomIn 0.3s ease;
-    max-height: 90vh;
-    overflow-y: auto;
     
-    /* Căn giữa trong môi trường Flex của cha */
-    margin: auto; 
+    /* KHÔNG DÙNG MARGIN: AUTO NỮA */
+    margin: 0; 
+    
+    max-height: 85vh; /* Giới hạn chiều cao để không bị lấp nút đóng */
+    overflow-y: auto;
+    overflow-x: hidden;
+    
+    /* Làm mượt thanh cuộn cho tinh tế */
+    scrollbar-width: thin;
+    scrollbar-color: #ffb6c1 transparent;
+}
+
+/* Ẩn thanh cuộn trên Chrome/Safari cho đẹp */
+.sweetie-popup-content::-webkit-scrollbar {
+    width: 6px;
+}
+.sweetie-popup-content::-webkit-scrollbar-thumb {
+    background-color: #ffb6c1;
+    border-radius: 10px;
 }
 
 /* --- CHIA CỘT TRÊN MÁY TÍNH (Màn hình từ 800px trở lên) --- */
@@ -6166,6 +6185,112 @@ input[type="date"].sweetie-input-style {
 .btn-history-soft:hover {
     background: #fff5f7;
     border-color: #ff69b4;
+}
+
+    /* Tổng thể mặt thẻ */
+.sweetie-card-design.bank-style {
+    background: linear-gradient(135deg, #ff8da1 0%, #ff69b4 50%, #d81b60 100%);
+    border-radius: 18px;
+    padding: 25px;
+    color: white;
+    height: 220px;
+    width: 100%;
+    position: relative;
+    overflow: hidden; /* Để cắt watermark */
+    box-shadow: 0 15px 35px rgba(216, 27, 96, 0.4);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-sizing: border-box;
+}
+
+/* Chữ SWEETIE CARD mờ tinh tế */
+.card-watermark {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-25deg);
+    font-size: 3rem;
+    font-weight: 900;
+    color: rgba(255, 255, 255, 0.07); /* Rất mờ */
+    white-space: nowrap;
+    pointer-events: none;
+    user-select: none;
+    z-index: 1;
+}
+
+/* Dòng đầu thẻ */
+.card-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 2;
+}
+
+.bank-logo {
+    font-size: 1rem;
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+
+.card-contactless {
+    transform: rotate(90deg);
+    opacity: 0.8;
+}
+
+/* Chip EMV thiết kế thật */
+.emv-chip {
+    width: 45px;
+    height: 35px;
+    background: linear-gradient(135deg, #ffd700, #ffae00, #e6b800);
+    border-radius: 6px;
+    position: relative;
+    margin-top: 10px;
+    z-index: 2;
+    box-shadow: inset 1px 1px 2px rgba(0,0,0,0.3);
+    overflow: hidden;
+}
+
+.chip-line {
+    position: absolute;
+    border: 0.5px solid rgba(0, 0, 0, 0.2);
+}
+
+.chip-line:nth-child(1) { width: 100%; top: 50%; }
+.chip-line:nth-child(2) { height: 100%; left: 33%; }
+.chip-line:nth-child(3) { height: 100%; right: 33%; }
+.chip-line:nth-child(4) { width: 100%; top: 25%; bottom: 25%; border-top: 0.5px solid rgba(0,0,0,0.2); }
+
+/* Số thẻ cách điệu ngân hàng */
+.card-id-view {
+    font-family: 'OCR A Std', 'Courier New', monospace; /* Font giống thẻ ngân hàng */
+    font-size: 1.4rem;
+    letter-spacing: 3px;
+    margin: 20px 0;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    z-index: 2;
+}
+
+/* Thông tin chân thẻ */
+.card-footer-info {
+    display: flex;
+    justify-content: space-between;
+    z-index: 2;
+}
+
+.label {
+    display: block;
+    font-size: 0.55rem;
+    opacity: 0.8;
+    margin-bottom: 2px;
+}
+
+.card-holder-name, .expiry {
+    font-size: 0.85rem;
+    font-weight: 500;
+    letter-spacing: 1px;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
 }
 </style>
 </head>
@@ -8562,9 +8687,8 @@ input[type="date"].sweetie-input-style {
 
  <div id="modal-sweetie" class="sweetie-popup">
     <div class="sweetie-popup-content">
-        <span class="close-btn" onclick="closeSweetieModal()" style="position: absolute; right: 20px; top: 15px; font-size: 28px; font-weight: bold; color: #ff69b4; cursor: pointer; z-index: 10;">&times;</span>
-        
-        <div id="card-app-flow" style="min-height: 250px; width: 100%;">
+        <span class="close-btn" onclick="closeSweetieModal()">&times;</span>
+        <div id="card-app-flow">
             </div>
     </div>
 </div>
@@ -19309,14 +19433,38 @@ function renderCardDashboard(cardId) {
             <div class="card-dashboard-container" style="animation: fadeIn 0.5s">
                 <h3 style="color: #d81b60; margin-bottom: 15px; font-weight: 800;">Thẻ của bạn</h3>
                 
-                <div class="sweetie-card-design">
-                    <div style="width: 45px; height: 35px; background: linear-gradient(135deg, #ffd700, #ffae00); border-radius: 5px; box-shadow: inset 1px 1px 2px rgba(0,0,0,0.2);"></div>
-                    <div class="card-id-view">${cardId}</div>
-                    <div style="display: flex; justify-content: space-between; align-items: flex-end;">
-                        <span style="font-weight: bold; text-transform: uppercase; font-size: 0.9rem;">${card.ownerName || card.owner}</span>
-                        <span style="font-size: 0.7rem; font-style: italic; opacity: 0.8;">SWEETIE WORLD</span>
-                    </div>
-                </div>
+               <div class="sweetie-card-design bank-style">
+    <div class="card-watermark">SWEETIE CARD SWEETIE CARD SWEETIE CARD</div>
+    
+    <div class="card-header-row">
+        <div class="bank-logo">
+            <i class="fas fa-heart"></i> Sweetie Bank
+        </div>
+        <div class="card-contactless">
+            <i class="fas fa-wifi"></i>
+        </div>
+    </div>
+
+    <div class="emv-chip">
+        <div class="chip-line"></div>
+        <div class="chip-line"></div>
+        <div class="chip-line"></div>
+        <div class="chip-line"></div>
+    </div>
+
+    <div class="card-id-view">${cardId.match(/.{1,4}/g).join(' ')}</div>
+
+    <div class="card-footer-info">
+        <div class="footer-left">
+            <span class="label">CARD HOLDER</span>
+            <div class="card-holder-name">${(card.ownerName || card.owner).toUpperCase()}</div>
+        </div>
+        <div class="footer-right">
+            <span class="label">VALID THRU</span>
+            <div class="expiry">12/29</div>
+        </div>
+    </div>
+</div>
 
                 <div class="card-balance-box" style="margin: 20px 0; padding: 15px; background: #fff; border-radius: 20px; border: 2px dashed #ffb6c1;">
                     <span style="color: #888; font-size: 0.85rem;">Số dư khả dụng</span>
