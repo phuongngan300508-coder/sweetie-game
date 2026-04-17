@@ -18872,14 +18872,31 @@ function openMediaLibrary() {
     mediaLibraryListener = db.ref(`chats/${chatRoomId}/messages`).on('value', (snapshot) => {
         loader.style.display = 'none';
         const data = snapshot.val();
+
+        // TRƯỜNG HỢP 1: Phòng chat hoàn toàn chưa có tin nhắn nào
         if (!data) {
-            contentArea.innerHTML = `<div style="text-align:center; padding:50px; color:#888; font-size:0.8em;">Chưa có hình ảnh hoặc video nào được gửi ❤️</div>`;
+            contentArea.innerHTML = `
+                <div style="text-align:center; padding:60px 20px; color:#ff69b4;">
+                    <i class="fas fa-folder-open" style="font-size:2.5em; opacity:0.3; margin-bottom:10px;"></i>
+                    <p style="font-size:0.8em; font-weight:bold; margin:0;">Chưa có phương tiện nào ❤️</p>
+                </div>`;
             return;
         }
 
         // Lọc lấy những tin nhắn có mediaUrl và không bị xóa
         const mediaMsgs = Object.values(data).filter(m => m.mediaUrl && (m.mediaType === 'image' || m.mediaType === 'video'));
         
+        // TRƯỜNG HỢP 2: Có tin nhắn nhưng không có cái nào là Hình ảnh/Video
+        if (mediaMsgs.length === 0) {
+            contentArea.innerHTML = `
+                <div style="text-align:center; padding:60px 20px; color:#ff69b4;">
+                    <i class="fas fa-images" style="font-size:2.5em; opacity:0.3; margin-bottom:10px;"></i>
+                    <p style="font-size:0.8em; font-weight:bold; margin:0;">Kho phương tiện trống</p>
+                    <p style="font-size:0.7em; color:#aaa; margin-top:5px;">Gửi ảnh hoặc video để lưu giữ kỷ niệm nhé!</p>
+                </div>`;
+            return;
+        }
+
         // Sắp xếp mới nhất lên đầu
         mediaMsgs.sort((a, b) => b.timestamp - a.timestamp);
 
