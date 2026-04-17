@@ -18715,6 +18715,19 @@ async function handleLinkCardSubmit() {
         alert("Lỗi kết nối hệ thống!");
     }
 }
+
+    // Hàm đóng Modal Sweetie Card
+function closeSweetieModal() {
+    const modal = document.getElementById('modal-sweetie');
+    if (modal) {
+        // Thêm hiệu ứng mờ dần trước khi đóng (nếu muốn)
+        modal.style.opacity = '0';
+        setTimeout(() => {
+            modal.style.display = 'none';
+            modal.style.opacity = '1'; // Reset lại opacity cho lần mở sau
+        }, 200); // Đợi 0.2s cho hiệu ứng mượt
+    }
+}
 </script>
 </body>
 </html>
