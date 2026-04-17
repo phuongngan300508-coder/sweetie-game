@@ -6002,6 +6002,35 @@ input[type="date"].sweetie-input-style {
     from { opacity: 0; transform: scale(0.95); }
     to { opacity: 1; transform: scale(1); }
 }
+
+    /* Từng dòng lịch sử mini */
+.history-item-mini {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 8px 12px;
+    margin-bottom: 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid rgba(255, 182, 193, 0.1);
+    transition: transform 0.2s;
+}
+
+.history-item-mini:hover {
+    transform: translateX(3px);
+    border-color: #ffb6c1;
+}
+
+/* Hiệu ứng trượt từ dưới lên */
+@keyframes slideUpIn {
+    from { transform: translateY(10px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+/* Ẩn thanh cuộn của history-list */
+#history-list::-webkit-scrollbar {
+    display: none;
+}
 </style>
 </head>
 <body>
@@ -19168,70 +19197,89 @@ async function unlinkCard() {
 }
 
     async function showCardHistory(cardId) {
-    // Xóa overlay cũ nếu lỡ còn sót lại
+    // 1. Xóa overlay cũ nếu lỡ còn sót lại
     const oldOverlay = document.getElementById('history-overlay');
     if (oldOverlay) oldOverlay.remove();
 
     const dashboard = document.querySelector('.card-dashboard-container');
+    if (!dashboard) return;
 
-    // Tạo lớp phủ đè lên trên Dashboard
+    // 2. Tạo lớp phủ với Style tinh tế hơn
     const overlay = document.createElement('div');
     overlay.id = 'history-overlay';
-    overlay.className = 'sweetie-transaction-overlay'; // Sử dụng lại class overlay đã có
-    overlay.style.display = 'flex';
-    overlay.style.flexDirection = 'column';
-    overlay.style.background = '#fff5f7'; // Màu nền hồng nhạt
-    overlay.style.borderRadius = '25px';
+    overlay.className = 'sweetie-transaction-overlay'; 
+    overlay.style.cssText = `
+        display: flex;
+        flex-direction: column;
+        background: #fffafa;
+        border-radius: 25px;
+        padding: 15px;
+        box-shadow: inset 0 0 10px rgba(255,182,193,0.1);
+    `;
 
     overlay.innerHTML = `
-        <div style="width: 100%; height: 100%; display: flex; flex-direction: column; padding: 10px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 2px solid #ffb6c1; padding-bottom: 10px;">
-                <h3 style="color: #d81b60; margin: 0; font-size: 1.1rem;">📜 LỊCH SỬ THẺ</h3>
-                <span onclick="this.parentElement.parentElement.parentElement.remove()" style="cursor:pointer; font-size: 24px; color: #ff69b4; font-weight: bold;">&times;</span>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding: 0 5px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <div style="width: 4px; height: 18px; background: #ff69b4; border-radius: 10px;"></div>
+                <h3 style="color: #d81b60; margin: 0; font-size: 1rem; letter-spacing: 0.5px;">Lịch sử giao dịch</h3>
             </div>
-            
-            <div id="history-list" style="flex-grow: 1; overflow-y: auto; padding-right: 5px;">
-                <p style="text-align: center; color: #888; margin-top: 50px;">Đang tải dữ liệu...</p>
-            </div>
-            
-            <button onclick="this.parentElement.parentElement.remove()" class="btn-sweetie btn-secondary" style="margin-top: 10px; width: 100%; border-radius: 12px;">ĐÓNG</button>
+            <i class="fas fa-times" onclick="this.parentElement.parentElement.remove()" 
+               style="cursor:pointer; color: #ffb6c1; font-size: 1.1rem; transition: 0.3s;" 
+               onmouseover="this.style.color='#ff69b4'" onmouseout="this.style.color='#ffb6c1'"></i>
+        </div>
+        
+        <div id="history-list" style="flex-grow: 1; overflow-y: auto; padding: 5px; scrollbar-width: none;">
+            <p style="text-align: center; color: #ffb6c1; margin-top: 50px; font-size: 0.8rem; font-style: italic;">Đang đồng bộ dữ liệu...</p>
+        </div>
+        
+        <div style="text-align: center; margin-top: 10px;">
+            <button onclick="this.parentElement.parentElement.remove()" 
+                style="background: #fff; border: 1px solid #ffb6c1; color: #ff69b4; padding: 5px 20px; border-radius: 20px; font-size: 0.7rem; font-weight: bold; cursor: pointer; transition: 0.3s; box-shadow: 0 2px 5px rgba(255,182,193,0.1);">
+                Đóng lại
+            </button>
         </div>
     `;
     dashboard.appendChild(overlay);
 
     try {
-        // Lấy 20 giao dịch mới nhất từ Firebase
+        // --- GIỮ NGUYÊN LOGIC FIREBASE CỦA HENRY ---
         const snap = await db.ref(`card_history/${cardId}`).orderByChild('time').limitToLast(20).once('value');
         const listDiv = document.getElementById('history-list');
         listDiv.innerHTML = "";
 
         if (!snap.exists()) {
-            listDiv.innerHTML = `<div style="text-align:center; margin-top:50px; color:#bbb;">Thẻ chưa có giao dịch nào ✨</div>`;
+            listDiv.innerHTML = `<div style="text-align:center; margin-top:50px; color:#ddd; font-size: 0.8rem;">Chưa có dữ liệu giao dịch ✨</div>`;
             return;
         }
 
         let logs = [];
-        snap.forEach(child => { logs.unshift(child.val()); }); // Đảo ngược để cái mới nhất lên đầu
+        snap.forEach(child => { logs.unshift(child.val()); });
 
-        logs.forEach(item => {
+        logs.forEach((item, index) => {
             const isPlus = item.type === 'deposit';
             const timeStr = new Date(item.time).toLocaleString('vi-VN', {hour: '2-digit', minute:'2-digit', day:'2-digit', month:'2-digit'});
             
+            // Thiết kế lại từng dòng (Item) cho tinh tế hơn
             listDiv.innerHTML += `
-                <div style="background: white; border-radius: 15px; padding: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 8px rgba(255,182,193,0.2); border-left: 5px solid ${isPlus ? '#4caf50' : '#f44336'};">
-                    <div style="text-align: left;">
-                        <div style="font-weight: bold; color: #444; font-size: 0.85rem;">${isPlus ? 'Nạp vào thẻ' : 'Rút về ví'}</div>
-                        <div style="font-size: 0.7rem; color: #999;">${timeStr} • ${item.user}</div>
+                <div class="history-item-mini" style="animation: slideUpIn 0.3s ease forwards; animation-delay: ${index * 0.05}s; opacity: 0;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div style="width: 32px; height: 32px; background: ${isPlus ? '#f0fdf4' : '#fef2f2'}; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas ${isPlus ? 'fa-arrow-down' : 'fa-arrow-up'}" style="color: ${isPlus ? '#22c55e' : '#ef4444'}; font-size: 0.75rem;"></i>
+                        </div>
+                        <div style="text-align: left;">
+                            <div style="font-weight: 600; color: #444; font-size: 0.75rem;">${isPlus ? 'Nạp tiền' : 'Rút tiền'}</div>
+                            <div style="font-size: 0.6rem; color: #aaa;">${timeStr} • ${item.user}</div>
+                        </div>
                     </div>
-                    <div style="font-weight: 800; color: ${isPlus ? '#4caf50' : '#f44336'};">
-                        ${isPlus ? '+' : '-'}${item.amount.toLocaleString()}
+                    <div style="font-weight: 700; color: #444; font-size: 0.8rem;">
+                        ${isPlus ? '<span style="color:#22c55e">+</span>' : '<span style="color:#ef4444">-</span>'} ${item.amount.toLocaleString()}
                     </div>
                 </div>
             `;
         });
     } catch (e) {
         console.error(e);
-        document.getElementById('history-list').innerHTML = "Lỗi tải lịch sử giao dịch!";
+        document.getElementById('history-list').innerHTML = "Lỗi kết nối!";
     }
 }
 </script>
