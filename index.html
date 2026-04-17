@@ -5803,10 +5803,18 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
     to { transform: scale(1); opacity: 1; }
 }
 
-    /* Container chính */
+   /* Container chính - Xử lý căn giữa tổng thể */
 .sweetie-menu-container {
     padding: 10px;
     width: 100%;
+    box-sizing: border-box;
+    
+    /* CĂN GIỮ NỘI DUNG VÀO GIỮA POPUP */
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Căn giữa theo chiều ngang */
+    justify-content: center; /* Căn giữa theo chiều dọc nếu có chiều cao */
+    text-align: center; 
 }
 
 .menu-title {
@@ -5822,14 +5830,16 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
     margin-bottom: 25px;
 }
 
-/* Grid chứa các lựa chọn */
+/* Grid chứa các lựa chọn - Phải rộng 100% để không bị co lại */
 .menu-options-grid {
     display: flex;
     flex-direction: column;
     gap: 15px;
+    width: 100%; 
+    max-width: 350px; /* Giới hạn độ rộng để các ô không quá dài trên PC */
 }
 
-/* Từng ô lựa chọn */
+/* Từng ô lựa chọn - Giữ nguyên thiết kế của Henry */
 .menu-card-option {
     background: white;
     border: 2px solid #fff0f5;
@@ -5840,6 +5850,9 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     box-shadow: 0 4px 10px rgba(255, 182, 193, 0.1);
+    
+    /* Đảm bảo text bên trong vẫn căn trái cho dễ đọc */
+    text-align: left; 
 }
 
 .menu-card-option:hover {
@@ -5849,7 +5862,7 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
     background: #fffafa;
 }
 
-/* Icon tròn bên trái */
+/* Icon tròn bên trái - Giữ nguyên */
 .option-icon {
     width: 50px;
     height: 50px;
@@ -5859,14 +5872,14 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
     justify-content: center;
     font-size: 1.5rem;
     margin-right: 15px;
+    flex-shrink: 0; /* Không cho icon bị bóp méo */
 }
 
 .create-card .option-icon { background: #ffe4e1; color: #ff69b4; }
 .link-card .option-icon { background: #fff9c4; color: #fbc02d; }
 
-/* Thông tin text */
+/* Thông tin text - Giữ nguyên */
 .option-info {
-    text-align: left;
     flex-grow: 1;
 }
 
@@ -19003,36 +19016,44 @@ async function openSweetieCardModal() {
 }
     
 function renderStartMenu() {
-    document.getElementById('card-app-flow').innerHTML = `
+    // Đảm bảo card-app-flow cũng có flex để hỗ trợ căn giữa nếu cần
+    const flow = document.getElementById('card-app-flow');
+    flow.style.display = 'flex';
+    flow.style.flexDirection = 'column';
+    flow.style.justifyContent = 'center';
+
+    flow.innerHTML = `
         <div class="sweetie-menu-container">
             <h2 class="menu-title">Sweetie Card</h2>
             <p class="menu-subtitle">Chọn phương thức để bắt đầu</p>
             
             <div class="menu-options-grid">
                 <div class="menu-card-option create-card" onclick="showCreateStep(1)">
-                    <div class="option-icon">
+                    <div class="option-icon" style="color: #ff69b4; font-size: 1.5rem;">
                         <i class="fas fa-plus-circle"></i>
                     </div>
-                    <div class="option-info">
+                    <div class="option-info" style="flex-grow: 1;">
                         <strong>Tạo thẻ mới</strong>
                         <span>Đăng ký thẻ độc quyền</span>
                     </div>
-                    <i class="fas fa-chevron-right arrow-icon"></i>
+                    <i class="fas fa-chevron-right arrow-icon" style="color: #ffb6c1;"></i>
                 </div>
 
                 <div class="menu-card-option link-card" onclick="showLinkExisting()">
-                    <div class="option-icon">
+                    <div class="option-icon" style="color: #ff69b4; font-size: 1.5rem;">
                         <i class="fas fa-id-card"></i>
                     </div>
-                    <div class="option-info">
+                    <div class="option-info" style="flex-grow: 1;">
                         <strong>Thẻ đã sở hữu</strong>
                         <span>Nhập ID và Mật khẩu</span>
                     </div>
-                    <i class="fas fa-chevron-right arrow-icon"></i>
+                    <i class="fas fa-chevron-right arrow-icon" style="color: #ffb6c1;"></i>
                 </div>
             </div>
             
-            <p class="menu-footer">Tiền trong thẻ được bảo mật vĩnh viễn ✨</p>
+            <p class="menu-footer" style="margin-top: 25px; font-size: 0.75rem; color: #ffb6c1;">
+                Tiền trong thẻ được bảo mật vĩnh viễn ✨
+            </p>
         </div>`;
 }
 
@@ -19455,7 +19476,7 @@ function renderCardDashboard(cardId) {
     
     <div class="card-header-row">
         <div class="bank-logo">
-            <i class="fas fa-heart"></i> Sweetie Bank
+            <i class="fas fa-heart"></i> SWEETIE 
         </div>
         <div class="card-contactless">
             <i class="fas fa-wifi"></i>
