@@ -19151,18 +19151,28 @@ async function unlinkCard() {
 }
 
     function recordCardHistory(cardId, type, amount) {
+    if (!cardId || !currentUser) return; // Bảo vệ nếu thiếu dữ liệu
+
     const historyRef = db.ref(`card_history/${cardId}`).push();
     historyRef.set({
-        type: type, // 'deposit' hoặc 'withdraw'
+        type: type,
         amount: amount,
-        user: currentUser, // Tên người thực hiện giao dịch
-        time: firebase.database.ServerValue.TIMESTAMP
+        user: currentUser,
+        // Dùng ServerValue để thời gian chính xác theo máy chủ, không phụ thuộc máy khách
+        time: firebase.database.ServerValue.TIMESTAMP 
+    }).then(() => {
+        console.log(`🌸 Đã ghi log ${type}: ${amount}`);
+    }).catch(err => {
+        console.error("Lỗi ghi lịch sử:", err);
     });
 }
 
     async function showCardHistory(cardId) {
+    // Xóa overlay cũ nếu lỡ còn sót lại
+    const oldOverlay = document.getElementById('history-overlay');
+    if (oldOverlay) oldOverlay.remove();
+
     const dashboard = document.querySelector('.card-dashboard-container');
-    if (!dashboard) return;
 
     // Tạo lớp phủ đè lên trên Dashboard
     const overlay = document.createElement('div');
