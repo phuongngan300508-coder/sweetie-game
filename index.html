@@ -19440,16 +19440,20 @@ async function handleLinkCardSubmit() {
             return;
         }
 
-        // 3. Nếu đúng, liên kết vào tài khoản hiện tại của Henry
+        // 3. Nếu đúng, liên kết vào tài khoản hiện tại của Henry trên Firebase
         await db.ref(`users/${currentUser}/linkedCard`).set(inputId);
         
-        // 4. Cập nhật LocalStorage cho đồng bộ nick cũ
+        // 4. Cập nhật LocalStorage cho đồng bộ dữ liệu người dùng
         if (typeof userData !== 'undefined') {
             userData.linkedCard = inputId;
-            saveData();
+            saveData(); // Hàm lưu vào localStorage của bạn
         }
 
         alert("🌸 Tuyệt vời! Bạn đã kết nối thành công thẻ " + inputId);
+
+        // --- PHẦN BỔ SUNG: TỰ ĐỘNG CHUYỂN GIAO DIỆN ---
+        // Gọi hàm render dashboard ngay lập tức với ID thẻ vừa kết nối
+        renderCardDashboard(inputId);
 
     } catch (error) {
         console.error(error);
@@ -19493,7 +19497,7 @@ function renderCardDashboard(cardId) {
     
     <div class="card-header-row">
         <div class="bank-logo">
-            <i class="fas fa-heart"></i> SWEETIE 
+            <i class="fas fa-heart"></i> SWEETIE BANK
         </div>
         <div class="card-contactless">
             <i class="fas fa-wifi"></i>
