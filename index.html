@@ -19000,6 +19000,7 @@ function handleCardTransaction(type) {
     if (!transUI) {
         const uiDiv = document.createElement('div');
         uiDiv.id = 'transaction-ui';
+        // Class này sẽ được định nghĩa trong CSS để đè lên trên
         uiDiv.className = 'sweetie-transaction-overlay';
         dashboard.appendChild(uiDiv);
         transUI = uiDiv;
@@ -19027,14 +19028,39 @@ function handleCardTransaction(type) {
             ` : ''}
 
             <div class="btn-group-horizontal" style="margin-top: 25px; display: flex; gap: 10px;">
-                <button onclick="document.getElementById('transaction-ui').style.display='none'" class="btn-sweetie btn-secondary" style="flex: 1;">HỦY</button>
-                <button onclick="executeTransaction('${type}')" class="btn-sweetie btn-primary" style="flex: 2;">XÁC NHẬN</button>
+                <button id="btn-cancel-trans" class="btn-sweetie btn-secondary" style="flex: 1;">HỦY</button>
+                <button id="btn-confirm-trans" class="btn-sweetie btn-primary" style="flex: 2;">XÁC NHẬN</button>
             </div>
         </div>
     `;
-}
 
-    async function executeTransaction(type) {
+    // --- PHẦN SỬA QUAN TRỌNG ĐỂ HẾT BỊ LẶP 2 LẦN ---
+    // Thay vì dùng onclick trong HTML string, ta gán trực tiếp bằng JS
+    const confirmBtn = document.getElementById('btn-confirm-trans');
+    const cancelBtn = document.getElementById('btn-cancel-trans');
+
+    if (confirmBtn) {
+        confirmBtn.onclick = null; // Xóa bỏ mọi sự kiện cũ (nếu có)
+        confirmBtn.onclick = function() {
+            executeTransaction(type);
+        };
+    }
+
+    if (cancelBtn) {
+        cancelBtn.onclick = null;
+        cancelBtn.onclick = function() {
+            document.getElementById('transaction-ui').style.display = 'none';
+        };
+    }
+}
+    
+   // Thêm biến này ở ngoài hàm để chống click 2 lần liên tiếp
+let isProcessingTransaction = false;
+
+async function executeTransaction(type) {
+    // Chặn nếu đang xử lý giao dịch trước đó
+    if (isProcessingTransaction) return;
+    
     // Kiểm tra xem các ô nhập liệu có tồn tại không trước khi lấy giá trị
     const amountEl = document.getElementById('trans-amount-input');
     if (!amountEl) return;
@@ -19049,6 +19075,8 @@ function handleCardTransaction(type) {
     }
 
     try {
+        isProcessingTransaction = true; // Bắt đầu khóa
+
         const cardIdSnap = await db.ref(`users/${currentUser}/linkedCard`).once('value');
         const cardId = cardIdSnap.val();
         const userBalRef = db.ref(`users/${currentUser}/balance`);
@@ -19056,6 +19084,7 @@ function handleCardTransaction(type) {
 
         if (type === 'deposit') {
             if ((userData.balance || 0) < amount) {
+                isProcessingTransaction = false; // Mở khóa trước khi return
                 alert("Số dư ví không đủ để thực hiện giao dịch này!");
                 return;
             }
@@ -19067,11 +19096,11 @@ function handleCardTransaction(type) {
                 userData.balance -= amount;
                 saveData();
             }
-            // Ghi lịch sử nếu bạn đã thêm hàm recordCardHistory
-            if (typeof recordCardHistory === 'function') recordCardHistory(cardId, 'deposit', amount);
+            // --- BỎ LỆNH recordCardHistory Ở ĐÂY ---
 
         } else {
             if (pass === "" || pass === null) {
+                isProcessingTransaction = false; // Mở khóa
                 alert("Vui lòng nhập mật khẩu thẻ!");
                 return;
             }
@@ -19079,10 +19108,12 @@ function handleCardTransaction(type) {
             const cardData = cardSnap.val();
 
             if (!cardData || pass !== cardData.password) {
+                isProcessingTransaction = false; // Mở khóa
                 alert("Mật khẩu thẻ không chính xác!");
                 return;
             }
             if ((cardData.balance || 0) < amount) {
+                isProcessingTransaction = false; // Mở khóa
                 alert("Số dư trong thẻ không đủ để rút!");
                 return;
             }
@@ -19094,14 +19125,16 @@ function handleCardTransaction(type) {
                 userData.balance += amount;
                 saveData();
             }
-            // Ghi lịch sử nếu bạn đã thêm hàm recordCardHistory
-            if (typeof recordCardHistory === 'function') recordCardHistory(cardId, 'withdraw', amount);
+            // --- BỎ LỆNH recordCardHistory Ở ĐÂY ---
         }
 
         alert("🌸 Giao dịch thành công! Số dư đã được cập nhật.");
-        recordCardHistory(cardId, type, amount);
         
-        // SỬA LỖI TẠI ĐÂY: Dùng ?. để an toàn hoặc kiểm tra tồn tại
+        // CHỈ GỌI 1 LẦN DUY NHẤT Ở CUỐI CÙNG
+        if (typeof recordCardHistory === 'function') {
+            recordCardHistory(cardId, type, amount);
+        }
+        
         const transUI = document.getElementById('transaction-ui');
         if (transUI) transUI.style.display = 'none';
 
@@ -19110,9 +19143,11 @@ function handleCardTransaction(type) {
     } catch (error) {
         console.error("Lỗi giao dịch thẻ:", error);
         alert("Đã có lỗi xảy ra. Henry hãy kiểm tra lại kết nối mạng!");
+    } finally {
+        isProcessingTransaction = false; // Luôn mở khóa khi kết thúc (dù lỗi hay thành công)
     }
 }
-
+    
     // Hàm hiển thị giao diện nhập thẻ cũ
 function showLinkExisting() {
     const flow = document.getElementById('card-app-flow');
@@ -19196,15 +19231,18 @@ function closeSweetieModal() {
     }
 }
 
-  function renderCardDashboard(cardId) {
+function renderCardDashboard(cardId) {
     const flow = document.getElementById('card-app-flow');
-    
-    // Tắt listener cũ trước khi lắng nghe mới (giúp app mượt hơn)
     const cardRef = db.ref(`sweetie_cards/${cardId}`);
+
+    // --- BƯỚC QUAN TRỌNG: Gỡ bỏ tất cả listener cũ để không bị lặp thông báo ---
     cardRef.off(); 
 
+    // Bắt đầu lắng nghe dữ liệu một cách sạch sẽ
     cardRef.on('value', (snapshot) => {
         const card = snapshot.val();
+        
+        // Nếu thẻ bị xóa hoặc không tồn tại, thoát ra để tránh lỗi render
         if (!card) return;
 
         flow.innerHTML = `
@@ -19247,7 +19285,7 @@ function closeSweetieModal() {
         `;
     });
 }
-
+    
 // Thêm hàm gỡ thẻ nếu Henry muốn đổi thẻ khác
 async function unlinkCard() {
     if(confirm("Henry muốn gỡ liên kết thẻ này khỏi tài khoản chứ? (Tiền trong thẻ vẫn sẽ còn vĩnh viễn)")) {
