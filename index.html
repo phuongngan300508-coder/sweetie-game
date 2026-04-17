@@ -5707,6 +5707,103 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
     from { transform: scale(0.8); opacity: 0; }
     to { transform: scale(1); opacity: 1; }
 }
+
+    /* Container chính */
+.sweetie-menu-container {
+    padding: 10px;
+    width: 100%;
+}
+
+.menu-title {
+    color: #ff1493;
+    font-size: 1.8rem;
+    margin-bottom: 5px;
+    font-weight: 800;
+}
+
+.menu-subtitle {
+    color: #888;
+    font-size: 0.9rem;
+    margin-bottom: 25px;
+}
+
+/* Grid chứa các lựa chọn */
+.menu-options-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+/* Từng ô lựa chọn */
+.menu-card-option {
+    background: white;
+    border: 2px solid #fff0f5;
+    border-radius: 20px;
+    padding: 15px 20px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 4px 10px rgba(255, 182, 193, 0.1);
+}
+
+.menu-card-option:hover {
+    transform: translateY(-3px);
+    border-color: #ffb6c1;
+    box-shadow: 0 8px 20px rgba(255, 182, 193, 0.3);
+    background: #fffafa;
+}
+
+/* Icon tròn bên trái */
+.option-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    margin-right: 15px;
+}
+
+.create-card .option-icon { background: #ffe4e1; color: #ff69b4; }
+.link-card .option-icon { background: #fff9c4; color: #fbc02d; }
+
+/* Thông tin text */
+.option-info {
+    text-align: left;
+    flex-grow: 1;
+}
+
+.option-info strong {
+    display: block;
+    color: #444;
+    font-size: 1.1rem;
+}
+
+.option-info span {
+    color: #999;
+    font-size: 0.8rem;
+}
+
+/* Mũi tên bên phải */
+.arrow-icon {
+    color: #eee;
+    font-size: 0.9rem;
+    transition: 0.3s;
+}
+
+.menu-card-option:hover .arrow-icon {
+    color: #ff69b4;
+    transform: translateX(5px);
+}
+
+.menu-footer {
+    margin-top: 25px;
+    font-size: 0.75rem;
+    color: #bbb;
+    font-style: italic;
+}
 </style>
 </head>
 <body>
@@ -18403,14 +18500,35 @@ async function openSweetieCardModal() {
     
 function renderStartMenu() {
     document.getElementById('card-app-flow').innerHTML = `
-        <h2 style="color:#d81b60">Sweetie Card</h2>
-        <div style="display:flex; justify-content: space-around; padding: 20px;">
-            <div onclick="showCreateStep(1)" style="cursor:pointer">
-                <i class="fas fa-plus-circle fa-3x" style="color:#ff69b4"></i><p>Tạo thẻ mới</p>
+        <div class="sweetie-menu-container">
+            <h2 class="menu-title">Sweetie Card</h2>
+            <p class="menu-subtitle">Chọn phương thức để bắt đầu</p>
+            
+            <div class="menu-options-grid">
+                <div class="menu-card-option create-card" onclick="showCreateStep(1)">
+                    <div class="option-icon">
+                        <i class="fas fa-plus-circle"></i>
+                    </div>
+                    <div class="option-info">
+                        <strong>Tạo thẻ mới</strong>
+                        <span>Đăng ký thẻ độc quyền</span>
+                    </div>
+                    <i class="fas fa-chevron-right arrow-icon"></i>
+                </div>
+
+                <div class="menu-card-option link-card" onclick="showLinkExisting()">
+                    <div class="option-icon">
+                        <i class="fas fa-id-card"></i>
+                    </div>
+                    <div class="option-info">
+                        <strong>Thẻ đã sở hữu</strong>
+                        <span>Nhập ID và Mật khẩu</span>
+                    </div>
+                    <i class="fas fa-chevron-right arrow-icon"></i>
+                </div>
             </div>
-            <div onclick="showLinkExisting()" style="cursor:pointer">
-                <i class="fas fa-import fa-3x" style="color:#fbc02d"></i><p>Thêm thẻ cũ</p>
-            </div>
+            
+            <p class="menu-footer">Tiền trong thẻ được bảo mật vĩnh viễn ✨</p>
         </div>`;
 }
 
@@ -18536,6 +18654,66 @@ function saveStep(step) {
         await userBalRef.transaction(val => (val || 0) + amount);
     }
     alert("Giao dịch thành công!");
+}
+
+    // Hàm hiển thị giao diện nhập thẻ cũ
+function showLinkExisting() {
+    const flow = document.getElementById('card-app-flow');
+    flow.innerHTML = `
+        <h3 style="color: #d81b60;"><i class="fas fa-link"></i> Thêm thẻ đã sở hữu</h3>
+        <p style="font-size: 0.9rem; color: #666;">Nhập thông tin thẻ Sweetie Card bạn đã có</p>
+        
+        <input type="number" id="link_card_id" class="sweetie-input-style" placeholder="Nhập 8 số ID thẻ...">
+        <input type="password" id="link_card_pass" class="sweetie-input-style" placeholder="Nhập mật khẩu thẻ...">
+        
+        <div style="display: flex; gap: 10px; width: 100%; margin-top: 15px;">
+            <button onclick="renderStartMenu()" class="sweetie-btn-main" style="background: #ccc;">Quay lại</button>
+            <button onclick="handleLinkCardSubmit()" class="sweetie-btn-main">XÁC NHẬN</button>
+        </div>
+    `;
+}
+
+// Hàm xử lý kiểm tra thẻ trên Firebase và liên kết
+async function handleLinkCardSubmit() {
+    const inputId = document.getElementById('link_card_id').value;
+    const inputPass = document.getElementById('link_card_pass').value;
+
+    if (!inputId || !inputPass) return alert("Henry ơi, nhập đủ ID và Pass nhé!");
+
+    try {
+        // 1. Kiểm tra thẻ có tồn tại trên Firebase không
+        const cardRef = db.ref(`sweetie_cards/${inputId}`);
+        const snap = await cardRef.once('value');
+
+        if (!snap.exists()) {
+            alert("ID thẻ này không tồn tại trong hệ thống Sweetie!");
+            return;
+        }
+
+        const cardData = snap.val();
+
+        // 2. Kiểm tra mật khẩu thẻ
+        if (cardData.password !== inputPass) {
+            alert("Mật khẩu thẻ không chính xác!");
+            return;
+        }
+
+        // 3. Nếu đúng, liên kết vào tài khoản hiện tại của Henry
+        await db.ref(`users/${currentUser}/linkedCard`).set(inputId);
+        
+        // 4. Cập nhật LocalStorage cho đồng bộ nick cũ
+        if (typeof userData !== 'undefined') {
+            userData.linkedCard = inputId;
+            saveData();
+        }
+
+        alert("🌸 Tuyệt vời! Bạn đã kết nối thành công thẻ " + inputId);
+        renderCardDashboard(inputId);
+
+    } catch (error) {
+        console.error(error);
+        alert("Lỗi kết nối hệ thống!");
+    }
 }
 </script>
 </body>
