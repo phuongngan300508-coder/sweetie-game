@@ -5867,6 +5867,48 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
 }
+
+    /* Thanh tiến trình */
+.step-progress-container {
+    width: 100%; height: 6px; background: #eee; border-radius: 10px; margin-bottom: 10px; overflow: hidden;
+}
+.progress-bar-fill {
+    height: 100%; background: linear-gradient(to right, #ffb6c1, #ff1493); transition: width 0.4s ease;
+}
+.step-counter { font-size: 0.7rem; color: #ff69b4; font-weight: bold; margin-bottom: 20px; letter-spacing: 1px; }
+
+/* Tiêu đề và mô tả */
+.step-title { color: #d81b60; font-size: 1.4rem; margin-bottom: 5px; }
+.step-desc { font-size: 0.85rem; color: #888; margin-bottom: 15px; }
+.step-warning { font-size: 0.75rem; color: #f44336; background: #fff1f1; padding: 10px; border-radius: 10px; margin: 15px 0; }
+
+/* Nút bấm Next */
+.btn-sweetie-next {
+    background: #ff69b4; color: white; border: none; padding: 12px 25px; border-radius: 15px;
+    font-weight: bold; cursor: pointer; width: 100%; margin-top: 15px; transition: 0.3s;
+}
+.btn-sweetie-next:hover { background: #ff1493; transform: scale(1.02); }
+
+/* Highlight ID thẻ */
+.card-id-highlight {
+    background: #fff; border: 2px dashed #ffb6c1; padding: 20px; font-size: 2rem;
+    color: #ff1493; font-family: 'Courier New', monospace; border-radius: 15px; letter-spacing: 5px; margin: 20px 0;
+}
+
+/* Nút xác nhận cuối cùng */
+.btn-sweetie-confirm {
+    background: linear-gradient(135deg, #4caf50, #2e7d32); color: white; border: none;
+    padding: 15px; border-radius: 15px; font-weight: bold; width: 100%; margin-top: 20px; cursor: pointer;
+}
+
+.btn-back-link { background: none; border: none; color: #999; text-decoration: underline; margin-top: 10px; cursor: pointer; font-size: 0.8rem; }
+
+/* Hiệu ứng rung nhẹ cho nút quan trọng */
+.pulse { animation: pulse-animation 2s infinite; }
+@keyframes pulse-animation {
+    0% { box-shadow: 0 0 0 0px rgba(255, 105, 180, 0.4); }
+    100% { box-shadow: 0 0 0 15px rgba(255, 105, 180, 0); }
+}
 </style>
 </head>
 <body>
@@ -18595,42 +18637,80 @@ function renderStartMenu() {
         </div>`;
 }
 
-    function showCreateStep(step) {
+   function showCreateStep(step) {
     let html = "";
     const flow = document.getElementById('card-app-flow');
+    
+    // Tính toán % thanh tiến trình
+    const progress = (step / 5) * 100;
 
-    if (step === 1) { // Bước 1: Tên
-        html = `<h3>Bước 1: Tên chủ sở hữu</h3>
-                <input id="step_name" class="sweetie-input-style" placeholder="Nhập họ tên thật...">
-                <button onclick="saveStep(1)" class="btn-wallet">Tiếp theo</button>`;
-    } else if (step === 2) { // Bước 2: DOB & Gender
-        html = `<h3>Bước 2: Thông tin cá nhân</h3>
+    // Header của mỗi bước
+    const header = `
+        <div class="step-progress-container">
+            <div class="progress-bar-fill" style="width: ${progress}%"></div>
+        </div>
+        <p class="step-counter">BƯỚC ${step} / 5</p>
+    `;
+
+    if (step === 1) {
+        html = `
+            ${header}
+            <h3 class="step-title">Tên chủ sở hữu</h3>
+            <p class="step-desc">Vui lòng sử dụng tên thật để bảo mật thẻ tốt nhất</p>
+            <input id="step_name" class="sweetie-input-style" placeholder="Ví dụ: Nguyễn Văn A" autocomplete="off">
+            <button onclick="saveStep(1)" class="btn-sweetie-next">Tiếp theo <i class="fas fa-arrow-right"></i></button>
+        `;
+    } else if (step === 2) {
+        html = `
+            ${header}
+            <h3 class="step-title">Thông tin cá nhân</h3>
+            <div class="input-row">
                 <input type="date" id="step_dob" class="sweetie-input-style">
-                <select id="step_gender" class="sweetie-input-style"><option>Nam</option><option>Nữ</option></select>
-                <button onclick="saveStep(2)" class="btn-wallet">Tiếp theo</button>`;
-    } else if (step === 3) { // Bước 3: Password
-        html = `<h3>Bước 3: Mật khẩu thẻ</h3>
-                <input type="password" id="step_pass" class="sweetie-input-style" placeholder="Mật khẩu 6 số">
-                <input type="password" id="step_pass2" class="sweetie-input-style" placeholder="Xác nhận mật khẩu">
-                <button onclick="saveStep(3)" class="btn-wallet">Tiếp theo</button>`;
-    } else if (step === 4) { // Bước 4: ID Hệ thống cấp
+                <select id="step_gender" class="sweetie-input-style">
+                    <option value="Nam">Nam</option>
+                    <option value="Nữ">Nữ</option>
+                    <option value="Khác">Khác</option>
+                </select>
+            </div>
+            <button onclick="saveStep(2)" class="btn-sweetie-next">Tiếp theo <i class="fas fa-arrow-right"></i></button>
+        `;
+    } else if (step === 3) {
+        html = `
+            ${header}
+            <h3 class="step-title">Thiết lập mật khẩu</h3>
+            <p class="step-desc">Mật khẩu dùng để rút tiền và quản lý thẻ</p>
+            <input type="password" id="step_pass" class="sweetie-input-style" placeholder="Nhập mật khẩu mới..." autocomplete="new-password">
+            <input type="password" id="step_pass2" class="sweetie-input-style" placeholder="Xác nhận lại mật khẩu..." autocomplete="new-password">
+            <button onclick="saveStep(3)" class="btn-sweetie-next">Tiếp theo <i class="fas fa-arrow-right"></i></button>
+        `;
+    } else if (step === 4) {
         const randomId = Math.floor(10000000 + Math.random() * 90000000).toString();
         cardDraft.id = randomId;
-        html = `<h3>Bước 4: Cấp ID thẻ</h3>
-                <div class="card-id-view">${randomId}</div>
-                <p style="color:red">Vui lòng chụp màn hình để ghi nhớ!</p>
-                <button onclick="showCreateStep(5)" class="btn-wallet">Xem thẻ</button>`;
-    } else if (step === 5) { // Bước 5: Preview & Xác nhận
-        html = `<h3>Bước 5: Hoàn tất thẻ</h3>
-                <div class="sweetie-card-design">
-                    <div style="background:#ffd700; width:40px; height:30px; border-radius:5px"></div>
-                    <div class="card-id-view">${cardDraft.id}</div>
-                    <div style="margin-top:20px; font-weight:bold">${cardDraft.owner.toUpperCase()}</div>
-                    <div>${cardDraft.dob} | ${cardDraft.gender}</div>
+        html = `
+            ${header}
+            <h3 class="step-title">Cấp mã số thẻ</h3>
+            <div class="card-id-highlight">${randomId}</div>
+            <p class="step-warning"><i class="fas fa-exclamation-triangle"></i> Lưu ý: Hãy chụp màn hình hoặc ghi nhớ mã số này. Bạn sẽ cần nó để đăng nhập ở tài khoản khác!</p>
+            <button onclick="showCreateStep(5)" class="btn-sweetie-next pulse">Xem mặt thẻ <i class="fas fa-eye"></i></button>
+        `;
+    } else if (step === 5) {
+        html = `
+            ${header}
+            <h3 class="step-title">Kiểm tra thông tin</h3>
+            <div class="sweetie-card-design">
+                <div class="card-chip"></div>
+                <div class="card-id-view">${cardDraft.id}</div>
+                <div class="card-footer-info">
+                    <div class="card-holder-name">${cardDraft.owner.toUpperCase()}</div>
+                    <div class="card-extra">${cardDraft.dob} | ${cardDraft.gender}</div>
                 </div>
-                <button onclick="confirmCreateCard()" class="btn-wallet" style="width:100%; margin-top:15px">XÁC NHẬN</button>`;
+            </div>
+            <button onclick="confirmCreateCard()" class="btn-sweetie-confirm">KÍCH HOẠT THẺ NGAY</button>
+            <button onclick="showCreateStep(1)" class="btn-back-link">Chỉnh sửa lại thông tin</button>
+        `;
     }
-    flow.innerHTML = html;
+    
+    flow.innerHTML = `<div class="step-wrapper">${html}</div>`;
 }
 
 // Hàm lưu dữ liệu từng bước
@@ -18800,6 +18880,61 @@ function closeSweetieModal() {
             modal.style.display = 'none';
             modal.style.opacity = '1'; // Reset lại opacity cho lần mở sau
         }, 200); // Đợi 0.2s cho hiệu ứng mượt
+    }
+}
+
+    function renderCardDashboard(cardId) {
+    const flow = document.getElementById('card-app-flow');
+    
+    // Lắng nghe dữ liệu thẻ thời gian thực từ Firebase
+    db.ref(`sweetie_cards/${cardId}`).on('value', (snapshot) => {
+        const card = snapshot.val();
+        if (!card) return;
+
+        flow.innerHTML = `
+            <div class="card-dashboard-container" style="animation: fadeIn 0.5s">
+                <h3 style="color: #d81b60; margin-bottom: 15px;">Thẻ của bạn</h3>
+                
+                <div class="sweetie-card-design">
+                    <div style="width: 45px; height: 35px; background: linear-gradient(135deg, #ffd700, #ffae00); border-radius: 5px; box-shadow: inset 1px 1px 2px rgba(0,0,0,0.2);"></div>
+                    <div class="card-id-view">${cardId}</div>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-end;">
+                        <span style="font-weight: bold; text-transform: uppercase; font-size: 0.9rem;">${card.ownerName || card.owner}</span>
+                        <span style="font-size: 0.7rem; font-style: italic; opacity: 0.8;">SWEETIE WORLD</span>
+                    </div>
+                </div>
+
+                <div class="card-balance-box" style="margin: 20px 0; padding: 15px; background: #fff; border-radius: 15px; border: 2px dashed #ffb6c1;">
+                    <span style="color: #888; font-size: 0.9rem;">Số dư trong thẻ:</span>
+                    <h2 style="color: #ff1493; margin: 5px 0;">${(card.balance || 0).toLocaleString()} VNĐ</h2>
+                </div>
+
+                <div class="btn-group-horizontal">
+                    <button onclick="handleCardTransaction('deposit')" class="btn-sweetie btn-primary" style="background: #4caf50;">
+                        <i class="fas fa-arrow-down"></i> Nạp vào thẻ
+                    </button>
+                    <button onclick="handleCardTransaction('withdraw')" class="btn-sweetie btn-primary">
+                        Rút về ví <i class="fas fa-arrow-up"></i>
+                    </button>
+                </div>
+                
+                <button onclick="unlinkCard()" style="margin-top: 15px; background: none; border: none; color: #bbb; cursor: pointer; font-size: 0.8rem; text-decoration: underline;">
+                    Gỡ liên kết thẻ này
+                </button>
+            </div>
+        `;
+    });
+}
+
+// Thêm hàm gỡ thẻ nếu Henry muốn đổi thẻ khác
+async function unlinkCard() {
+    if(confirm("Henry muốn gỡ liên kết thẻ này khỏi tài khoản chứ? (Tiền trong thẻ vẫn sẽ còn vĩnh viễn)")) {
+        await db.ref(`users/${currentUser}/linkedCard`).remove();
+        if (typeof userData !== 'undefined') {
+            userData.linkedCard = null;
+            saveData();
+        }
+        renderStartMenu();
     }
 }
 </script>
