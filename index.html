@@ -5664,21 +5664,25 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
     padding: 10px; /* Tránh popup dính sát mép màn hình điện thoại */
 }
 
-/* --- Khung Popup nội dung (Nơi xử lý co giãn & chia cột) --- */
+/* Khung Popup nội dung */
 .sweetie-popup-content {
     background: #fff5f7; 
     border-radius: 30px;
-    padding: 25px;
-    width: 95%; /* Co giãn theo màn hình */
-    max-width: 420px; /* Mặc định cho Mobile */
+    padding: 20px; /* Giảm padding một chút trên mobile cho thoáng */
+    
+    /* FIX SÁT LỀ TẠI ĐÂY */
+    width: calc(100% - 30px); /* Luôn cách 2 lề mỗi bên 15px */
+    max-width: 420px; 
+    box-sizing: border-box; /* Đảm bảo padding không làm nở khung */
+    
     border: 4px solid #ffb6c1; 
-    box-shadow: 0 15px 35px rgba(255, 182, 193, 0.4);
     position: relative;
     animation: zoomIn 0.3s ease;
-    max-height: 95vh; /* Chống tràn màn hình dọc */
-    overflow-y: auto; /* Tự hiện thanh cuộn nếu nội dung quá dài */
-    box-sizing: border-box;
-    transition: max-width 0.4s ease;
+    max-height: 90vh;
+    overflow-y: auto;
+    
+    /* Căn giữa trong môi trường Flex của cha */
+    margin: auto; 
 }
 
 /* --- CHIA CỘT TRÊN MÁY TÍNH (Màn hình từ 800px trở lên) --- */
@@ -5712,7 +5716,7 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
     }
 }
 
-/* --- GIỮ NGUYÊN THIẾT KẾ THẺ CỦA HENRY --- */
+/* Mặt thẻ Sweetie Card - Phải co giãn theo cha */
 .sweetie-card-design {
     background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
     border-radius: 20px; 
@@ -5724,9 +5728,13 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    box-sizing: border-box;
+    
+    /* FIX TRÀN LỀ TẠI ĐÂY */
+    width: 100%; 
+    max-width: 100%; 
+    box-sizing: border-box; 
+    
     border: 2px solid rgba(255, 255, 255, 0.4);
-    width: 100%; /* Đảm bảo thẻ luôn đầy khung cột */
 }
 
 /* Số ID trên thẻ */
