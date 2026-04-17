@@ -18802,8 +18802,8 @@ function saveStep(step) {
     }
 }
 
-   async function handleCardTransaction(type) {
-    // 1. Kiểm tra đăng nhập bằng biến currentUser của Henry
+ async function handleCardTransaction(type) {
+    // 1. Kiểm tra đăng nhập bằng biến currentUser (Henry đang dùng biến này)
     if (typeof currentUser === 'undefined' || !currentUser) {
         alert("🌸 Henry ơi, bạn cần đăng nhập trước nhé!");
         return;
@@ -18819,45 +18819,48 @@ function saveStep(step) {
             return;
         }
 
-        // 3. Hỏi số tiền và kiểm tra tính hợp lệ
+        // 3. Hỏi số tiền và kiểm tra tính hợp lệ (Giữ nguyên prompt như Henry muốn)
         const promptMsg = type === 'deposit' ? "Nhập số tiền muốn NẠP vào thẻ:" : "Nhập số tiền muốn RÚT về ví:";
         const amountInput = prompt(promptMsg);
-        const amount = parseInt(amountInput);
+        
+        // Nếu nhấn Cancel (Hủy) thì dừng lại
+        if (amountInput === null) return; 
 
+        const amount = parseInt(amountInput);
         if (isNaN(amount) || amount <= 0) {
             alert("Số tiền không hợp lệ, Henry vui lòng nhập lại nhé!");
             return;
         }
 
-        // 4. Thiết lập đường dẫn đến số dư
+        // 4. Thiết lập đường dẫn Firebase
         const userBalRef = db.ref(`users/${currentUser}/balance`);
         const cardRef = db.ref(`sweetie_cards/${cardId}`);
 
         if (type === 'deposit') { 
             // --- LOGIC NẠP TIỀN (VÍ -> THẺ) ---
-            const walletSnap = await userBalRef.once('value');
-            const currentWalletBal = walletSnap.val() || 0;
-
-            if (currentWalletBal < amount) {
+            // Kiểm tra trực tiếp trên userData để giao diện đồng bộ
+            if ((userData.balance || 0) < amount) {
                 alert("Số dư ví không đủ để thực hiện giao dịch này!");
                 return;
             }
 
-            // Chạy transaction để trừ ví và cộng thẻ song song
+            // Chạy transaction song song
             await Promise.all([
                 userBalRef.transaction(val => (val || 0) - amount),
                 cardRef.child('balance').transaction(val => (val || 0) + amount)
             ]);
 
-            // Cập nhật LocalStorage của Henry để ví chính thay đổi ngay
+            // Cập nhật LocalStorage và biến userData để ví chính thay đổi ngay
             if (typeof userData !== 'undefined') {
                 userData.balance -= amount;
-                saveData(); // Hàm lưu local của Henry
+                saveData(); // Lưu local của Henry
             }
 
         } else { 
             // --- LOGIC RÚT TIỀN (THẺ -> VÍ) ---
             const pass = prompt("Nhập mật khẩu thẻ Sweetie để xác nhận:");
+            if (pass === null) return;
+
             const cardSnap = await cardRef.once('value');
             const cardData = cardSnap.val();
 
@@ -18871,13 +18874,12 @@ function saveStep(step) {
                 return;
             }
 
-            // Chạy transaction để trừ thẻ và cộng ví song song
             await Promise.all([
                 cardRef.child('balance').transaction(val => (val || 0) - amount),
                 userBalRef.transaction(val => (val || 0) + amount)
             ]);
 
-            // Cập nhật LocalStorage của Henry
+            // Cập nhật LocalStorage và biến userData
             if (typeof userData !== 'undefined') {
                 userData.balance += amount;
                 saveData();
@@ -18886,7 +18888,7 @@ function saveStep(step) {
 
         alert("🌸 Giao dịch thành công! Số dư đã được cập nhật.");
         
-        // Cập nhật lại giao diện ví chính nếu Henry có hàm này
+        // Cập nhật lại toàn bộ giao diện (Sidebar, Ví, v.v.)
         if (typeof updateUI === 'function') updateUI();
 
     } catch (error) {
