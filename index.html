@@ -18322,17 +18322,37 @@ function closeMediaLibrary() {
     let cardDraft = {}; // Lưu dữ liệu tạm khi đang tạo
 
 async function openSweetieCardModal() {
-    const snap = await db.ref(`users/${currentUsername}/linkedCard`).once('value');
-    const cardId = snap.val();
-
-    if (cardId) {
-        renderCardDashboard(cardId);
-    } else {
-        renderStartMenu();
+    // 1. Kiểm tra xem Henry đã đăng nhập chưa bằng biến currentUser của bạn
+    if (typeof currentUser === 'undefined' || !currentUser) {
+        alert("🌸 Vui lòng đăng nhập để sử dụng tính năng Sweetie Card!");
+        return;
     }
-    document.getElementById('modal-sweetie').style.display = 'block';
-}
 
+    try {
+        // 2. Lấy ID thẻ đã liên kết từ Firebase dựa trên currentUser (là tên người dùng)
+        const snap = await db.ref(`users/${currentUser}/linkedCard`).once('value');
+        const cardId = snap.val();
+
+        // 3. Kiểm tra và điều hướng giao diện
+        if (cardId) {
+            // Nếu đã có ID thẻ liên kết, hiển thị màn hình chính của thẻ
+            renderCardDashboard(cardId);
+        } else {
+            // Nếu chưa có, hiển thị menu: "Tạo thẻ mới" hoặc "Thêm thẻ đã có"
+            renderStartMenu();
+        }
+
+        // 4. Mở Popup (Henry nhớ kiểm tra ID modal trong HTML phải là 'modal-sweetie')
+        const modal = document.getElementById('modal-sweetie');
+        if (modal) {
+            modal.style.display = 'block';
+        }
+    } catch (error) {
+        console.error("Lỗi khi tải Sweetie Card:", error);
+        alert("Không thể kết nối đến hệ thống thẻ, Henry vui lòng thử lại nhé!");
+    }
+}
+    
 function renderStartMenu() {
     document.getElementById('card-app-flow').innerHTML = `
         <h2 style="color:#d81b60">Sweetie Card</h2>
@@ -18403,21 +18423,44 @@ function saveStep(step) {
     }
 }
 
-    async function confirmCreateCard() {
+   async function confirmCreateCard() {
+    // 1. Kiểm tra đăng nhập
+    if (!currentUser) return alert("Lỗi: Không tìm thấy người dùng!");
+
     const finalData = {
-        ...cardDraft,
+        id: cardDraft.id,
+        ownerName: cardDraft.owner,
+        dob: cardDraft.dob,
+        gender: cardDraft.gender,
+        password: cardDraft.password,
         balance: 0,
-        createdAt: Date.now()
+        createdAt: firebase.database.ServerValue.TIMESTAMP // Dùng thời gian server sẽ chuẩn hơn Date.now()
     };
 
-    // 1. Lưu vào node vĩnh viễn (Sử dụng cardId làm key)
-    await db.ref(`sweetie_cards/${finalData.id}`).set(finalData);
-    
-    // 2. Liên kết vào tài khoản người dùng
-    await db.ref(`users/${currentUsername}/linkedCard`).set(finalData.id);
-    
-    alert("Tạo thẻ thành công!");
-    renderCardDashboard(finalData.id);
+    try {
+        // 2. Lưu vào node vĩnh viễn trên Firebase (Dùng cardId làm key)
+        await db.ref(`sweetie_cards/${finalData.id}`).set(finalData);
+        
+        // 3. Liên kết ID thẻ vào tài khoản người dùng trên Firebase
+        // Lưu ý: Đổi currentUsername thành currentUser
+        await db.ref(`users/${currentUser}/linkedCard`).set(finalData.id);
+        
+        // 4. CẬP NHẬT LOCALSTORAGE (Để đồng bộ với logic cũ của Henry)
+        // userData là biến toàn cục Henry đang dùng trong handleLogin
+        if (typeof userData !== 'undefined') {
+            userData.linkedCard = finalData.id; 
+            saveData(); // Gọi hàm lưu của Henry để cập nhật localStorage ngay lập tức
+        }
+
+        alert("🌸 Chúc mừng Henry! Thẻ Sweetie Card của bạn đã được kích hoạt vĩnh viễn.");
+        
+        // 5. Chuyển sang giao diện quản lý thẻ
+        renderCardDashboard(finalData.id);
+
+    } catch (error) {
+        console.error("Lỗi tạo thẻ:", error);
+        alert("Đã có lỗi xảy ra khi lưu thẻ. Henry hãy kiểm tra kết nối mạng nhé!");
+    }
 }
 
     async function handleCardTransaction(type) {
