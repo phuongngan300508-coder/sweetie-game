@@ -19674,22 +19674,30 @@ async function handleCardTransaction(type) {
     
     dashboard.style.position = 'relative';
 
-    // 3. LẤY SỐ DƯ CHÍNH XÁC TỪ THẺ ĐÃ LIÊN KẾT
-    let currentBalance = 0;
+    // 3. LẤY SỐ DƯ (THẺ HOẶC VÍ TỔNG TÙY THEO LOẠI GIAO DỊCH)
+    let displayBalance = 0; // Số dư sẽ hiển thị trên UI
+    let balanceLabel = "";  // Nhãn hiển thị tương ứng
     let cardId = "";
+
     try {
-        // Bước A: Lấy ID thẻ mà Henry đang dùng
-        const linkedCardSnap = await db.ref(`users/${currentUser}/linkedCard`).once('value');
-        cardId = linkedCardSnap.val();
+        if (type === 'deposit') {
+            // NẠP TIỀN: Hiển thị số dư Ví tổng (userData)
+            displayBalance = (typeof userData !== 'undefined') ? (userData.balance || 0) : 0;
+            balanceLabel = "Số dư ví:";
+        } else {
+            // RÚT TIỀN: Hiển thị số dư trong thẻ
+            const linkedCardSnap = await db.ref(`users/${currentUser}/linkedCard`).once('value');
+            cardId = linkedCardSnap.val();
 
-        if (!cardId) {
-            alert("Lỗi: Không tìm thấy thẻ liên kết!");
-            return;
+            if (!cardId) {
+                alert("Lỗi: Không tìm thấy thẻ liên kết!");
+                return;
+            }
+
+            const cardSnap = await db.ref(`sweetie_cards/${cardId}/balance`).once('value');
+            displayBalance = cardSnap.val() || 0;
+            balanceLabel = "Số dư thẻ:";
         }
-
-        // Bước B: Lấy số dư từ đúng ID thẻ đó
-        const cardSnap = await db.ref(`sweetie_cards/${cardId}/balance`).once('value');
-        currentBalance = cardSnap.val() || 0;
     } catch (e) {
         console.error("Lỗi lấy số dư:", e);
     }
@@ -19729,7 +19737,7 @@ async function handleCardTransaction(type) {
                     <label style="font-size: 0.7rem; color: ${themeColor}; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px;">Số tiền (VNĐ)</label>
                     
                     <span style="font-size: 0.7rem; color: #888; font-weight: bold;">
-                        Số dư thẻ: <span style="color: #333;">${currentBalance.toLocaleString()}₫</span>
+                        ${balanceLabel} <span style="color: #333;">${displayBalance.toLocaleString()}₫</span>
                     </span>
                 </div>
 
@@ -19745,7 +19753,7 @@ async function handleCardTransaction(type) {
                     <button onclick="document.getElementById('trans-amount-input').value=100000" style="flex: 1; border: 1px solid #ffe4e1; background: #fff; border-radius: 12px; font-size: 0.75rem; padding: 8px 0; cursor: pointer; color: #666; font-weight: 700; transition: 0.3s;">100k</button>
                     
                     ${!isDeposit ? 
-                        `<button onclick="document.getElementById('trans-amount-input').value=${currentBalance}" style="flex: 1; border: 1px solid ${themeColor}40; background: ${themeColor}05; border-radius: 12px; font-size: 0.75rem; padding: 8px 0; cursor: pointer; color: ${themeColor}; font-weight: 700; transition: 0.3s;">Tất cả</button>` : 
+                        `<button onclick="document.getElementById('trans-amount-input').value=${displayBalance}" style="flex: 1; border: 1px solid ${themeColor}40; background: ${themeColor}05; border-radius: 12px; font-size: 0.75rem; padding: 8px 0; cursor: pointer; color: ${themeColor}; font-weight: 700; transition: 0.3s;">Tất cả</button>` : 
                         `<button onclick="document.getElementById('trans-amount-input').value=500000" style="flex: 1; border: 1px solid #ffe4e1; background: #fff; border-radius: 12px; font-size: 0.75rem; padding: 8px 0; cursor: pointer; color: #666; font-weight: 700; transition: 0.3s;">500k</button>`
                     }
                 </div>
