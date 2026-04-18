@@ -20952,7 +20952,11 @@ function setRpMode(mode) {
         </div>
 
         <div class="bank-input-box" style="margin-bottom: 15px; text-align: left;">
-            <label style="font-size: 0.65rem; color: #ff69b4; font-weight: 800; display: block; margin-bottom: 5px;">SỐ TÀI KHOẢN NHẬN</label>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                <label style="font-size: 0.65rem; color: #ff69b4; font-weight: 800;">SỐ TÀI KHOẢN NHẬN</label>
+                <i class="fas fa-address-book" onclick="openSavedAccounts()" style="color: #ff1493; cursor: pointer; font-size: 0.9rem;" title="Danh bạ thụ hưởng"></i>
+            </div>
+            
             <div style="position: relative;">
                 <input type="number" id="target-stk" class="sweetie-input-style" 
                     placeholder="Nhập 12 số tài khoản..." 
@@ -20962,6 +20966,10 @@ function setRpMode(mode) {
                 <div id="stk-loading" style="display:none; position:absolute; right:10px; top:12px;"><i class="fas fa-spinner fa-spin" style="color:#ff1493;"></i></div>
             </div>
             <div id="target-owner-display" style="color: #ff1493; font-weight: 800; font-size: 0.85rem; margin-top: 8px; height: 18px; text-transform: uppercase;"></div>
+            
+            <label style="display: flex; align-items: center; gap: 6px; font-size: 0.65rem; color: #888; margin-top: 8px; cursor: pointer; width: fit-content;">
+                <input type="checkbox" id="save-account-check" style="accent-color: #ff1493; width: 12px; height: 12px;"> Lưu tài 
+            </label>
         </div>
 
         <div class="bank-input-box" style="margin-bottom: 15px; text-align: left;">
@@ -21029,7 +21037,7 @@ function setRpMode(mode) {
 
     document.getElementById('btn-do-transfer').onclick = () => executeBankingTransfer(myCardId, myCardData);
 }
-
+    
    async function executeBankingTransfer(myCardId, myCardData) {
     // 1. LẤY CÁC PHẦN TỬ (Thêm kiểm tra để tránh lỗi null)
     const elTargetDisplay = document.getElementById('target-owner-display');
@@ -21037,6 +21045,7 @@ function setRpMode(mode) {
     const elNote = document.getElementById('transfer-note');
     const elPin = document.getElementById('transfer-pin');
     const elStk = document.getElementById('target-stk');
+    const elSaveCheck = document.getElementById('save-account-check'); // Lấy ô checkbox lưu danh bạ
 
     // Nếu thiếu bất kỳ ô nào, dừng lại để không bị lỗi "reading value"
     if (!elTargetDisplay || !elAmount || !elPin || !elStk) {
@@ -21080,6 +21089,14 @@ function setRpMode(mode) {
             recordCardHistory(targetId, 'transfer_in', amount, { fromUser: myCardData.ownerName, note: note })
         ]);
 
+        // --- BỔ SUNG: LOGIC LƯU DANH BẠ THỤ HƯỞNG ---
+        if (elSaveCheck && elSaveCheck.checked) {
+            // Chỉ lưu khi giao dịch đã thành công hoàn toàn
+            if (typeof saveBeneficiary === 'function') {
+                saveBeneficiary(targetStkNum, targetOwner);
+            }
+        }
+
         // 4. Hiển thị Bill thành công (Dùng các biến đã trích xuất an toàn)
         showBankingBill({
             amount: amount,
@@ -21095,6 +21112,17 @@ function setRpMode(mode) {
     } catch (e) {
         console.error("Lỗi nghiêm trọng:", e);
         alert("Có lỗi kết nối, Bạn vui lòng kiểm tra lại số dư thẻ nhé!");
+    }
+}
+
+// Hàm phụ để lưu vào userData (Henry đảm bảo hàm này tồn tại nhé)
+function saveBeneficiary(stk, name) {
+    if (!userData.savedAccounts) userData.savedAccounts = [];
+    // Kiểm tra trùng STK để không lưu lặp lại
+    const isExist = userData.savedAccounts.find(acc => acc.stk === stk);
+    if (!isExist) {
+        userData.savedAccounts.push({ stk: stk, name: name });
+        saveData(); // Lưu vào localStorage/Firebase
     }
 }
 
@@ -21144,6 +21172,56 @@ function showBankingBill(data) {
             <button onclick="document.getElementById('transaction-ui').style.display='none'" style="width: 100%; margin-top: 25px; padding: 15px; border: none; border-radius: 18px; background: #ff1493; color: #fff; font-weight: 800; cursor: pointer; transition: 0.3s;">XÁC NHẬN</button>
         </div>
     `;
+}
+
+    function openSavedAccounts() {
+    const dashboard = document.querySelector('.card-dashboard-container');
+    let savedUI = document.getElementById('saved-accounts-ui');
+    
+    if (!savedUI) {
+        savedUI = document.createElement('div');
+        savedUI.id = 'saved-accounts-ui';
+        savedUI.className = 'sweetie-transaction-overlay';
+        savedUI.style.zIndex = "10001"; // Nằm trên cả popup chuyển khoản
+        dashboard.appendChild(savedUI);
+    }
+
+    const accounts = userData.savedAccounts || [];
+    
+    savedUI.style.display = 'flex';
+    savedUI.innerHTML = `
+    <div style="width: 85%; max-height: 70%; background: #fff; border-radius: 20px; padding: 20px; display: flex; flex-direction: column;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h4 style="margin: 0; color: #ff1493;">DANH BẠ THỤ HƯỞNG</h4>
+            <i class="fas fa-times" onclick="document.getElementById('saved-accounts-ui').style.display='none'" style="cursor: pointer; color: #ccc;"></i>
+        </div>
+        
+        <div style="overflow-y: auto; flex: 1;">
+            ${accounts.length === 0 ? '<p style="text-align: center; color: #ccc; font-size: 0.8rem;">Chưa có tài khoản nào được lưu.</p>' : ''}
+            ${accounts.map(acc => `
+                <div onclick="selectSavedAccount('${acc.stk}', '${acc.name}')" style="padding: 12px; border-bottom: 1px solid #f9f9f9; cursor: pointer; transition: 0.3s;" onmouseover="this.style.background='#fdf2f8'" onmouseout="this.style.background='transparent'">
+                    <div style="font-weight: 800; color: #333; font-size: 0.85rem;">${acc.name.toUpperCase()}</div>
+                    <div style="color: #ff69b4; font-size: 0.75rem; font-family: monospace;">${acc.stk}</div>
+                </div>
+            `).join('')}
+        </div>
+    </div>
+    `;
+}
+
+function selectSavedAccount(stk, name) {
+    const stkInput = document.getElementById('target-stk');
+    const ownerDisplay = document.getElementById('target-owner-display');
+    
+    if (stkInput && ownerDisplay) {
+        stkInput.value = stk;
+        ownerDisplay.innerText = name.toUpperCase();
+        // Giả lập dataset targetId để hàm executeBankingTransfer chạy được
+        // Chúng ta cần tìm lại targetId từ Firebase bằng STK này
+        stkInput.dispatchEvent(new Event('input')); 
+    }
+    
+    document.getElementById('saved-accounts-ui').style.display = 'none';
 }
 </script>
 </body>
