@@ -6419,6 +6419,24 @@ input[type="date"].sweetie-input-style {
     from { transform: scale(0.8); opacity: 0; }
     to { transform: scale(1); opacity: 1; }
 }
+
+    /* Card chuyển tiền không trong suốt */
+.msg-transfer-card {
+    background: #ffffff !important; /* Buộc phải có nền trắng hoặc màu Henry chọn */
+    border: 2px solid #ffb6c1 !important; /* Viền hồng pastel */
+    padding: 0 !important; /* Để lớp màu gradient bên trong sát mép */
+    border-radius: 18px !important;
+    overflow: hidden;
+    box-shadow: 0 5px 15px rgba(255, 182, 193, 0.2) !important;
+    max-width: 230px;
+}
+
+/* Hiệu ứng khi hover vào card chuyển tiền */
+.msg-transfer-card:hover {
+    transform: translateY(-2px);
+    transition: 0.3s;
+    box-shadow: 0 8px 20px rgba(216, 27, 96, 0.15) !important;
+}
 </style>
 </head>
 <body>
@@ -14458,12 +14476,22 @@ function renderSingleMessage(msgId, msg, position = 'bottom', targetContainer = 
         }
     }
 
-    // --- 5. TEMPLATE HTML (CẬP NHẬT ĐỂ CHUYỂN KHOẢN KHÔNG CÓ BONG BÓNG) ---
+   // --- 5. TEMPLATE HTML (CHỈNH SỬA ĐỂ CARD CHUYỂN TIỀN CÓ KHỐI RIÊNG) ---
     const isSticker = msg.type === 'sticker';
-    const isTransfer = msg.type === 'bank_transfer'; // Khai báo thêm biến này
+    const isTransfer = msg.type === 'bank_transfer';
     
     let pinMarkerHtml = msg.isPinned ? `<div class="pin-marker" style="font-size: 0.8em; color: #ff1493; margin-bottom: 3px;"><i class="fas fa-thumbtack"></i></div>` : "";
     
+    // Xác định Class cho bong bóng tin nhắn
+    let bubbleClass = "";
+    if (isSticker) {
+        bubbleClass = "msg-sticker"; // Henry có thể định nghĩa CSS riêng cho Sticker
+    } else if (isTransfer) {
+        bubbleClass = "msg-transfer-card"; // Class riêng cho chuyển tiền (Không trong suốt)
+    } else {
+        bubbleClass = isMe ? "msg-me" : "msg-friend"; // Tin nhắn thường
+    }
+
     const msgHtml = `
     <div class="msg-wrapper ${isMe ? 'msg-me-wrap' : 'msg-friend-wrap'}" id="msg-${msgId}"
          style="position: relative; display: flex; flex-direction: column; width: 100%; margin-bottom: 12px; ${isMe ? 'align-items: flex-end;' : 'align-items: flex-start;'}"
@@ -14486,8 +14514,8 @@ function renderSingleMessage(msgId, msg, position = 'bottom', targetContainer = 
                 <span class="${getEmojiClass('👍')}" onclick="sendReaction('${msgId}', '👍')">👍</span>
             </div>
 
-            <div class="msg-bubble ${(isSticker || isTransfer) ? '' : (isMe ? 'msg-me' : 'msg-friend')}" 
-                 style="display: flex; flex-direction: column; position: relative; ${(isSticker || isTransfer) ? 'background: transparent; box-shadow: none; border: none; padding: 0;' : ''}"
+            <div class="msg-bubble ${bubbleClass}" 
+                 style="display: flex; flex-direction: column; position: relative; ${isSticker ? 'background: transparent; box-shadow: none; border: none; padding: 0;' : ''}"
                  ondblclick="sendReaction('${msgId}', '❤️')" 
                  ontouchstart="handleTouchStart(event, '${msgId}')" 
                  ontouchend="handleTouchEnd()"
