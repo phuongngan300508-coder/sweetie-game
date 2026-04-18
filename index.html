@@ -20964,9 +20964,28 @@ function setRpMode(mode) {
         dashboard.appendChild(transUI);
     }
 
+    // --- NÂNG CẤP: THIẾT LẬP CUỘN CHO OVERLAY ---
     transUI.style.display = 'flex';
+    transUI.style.overflowY = 'auto'; // Cho phép cuộn dọc
+    transUI.style.alignItems = 'flex-start'; // Để nội dung bắt đầu từ đỉnh khi cuộn
+    transUI.style.padding = '20px 0'; // Khoảng trống trên dưới để không dính mép
+
     transUI.innerHTML = `
-    <div class="banking-transfer-form" style="width: 100%; max-width: 400px; animation: slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); background: #fff; border-radius: 30px; overflow: hidden; box-shadow: 0 15px 40px rgba(255, 20, 147, 0.1);">
+    <style>
+        /* Ẩn thanh cuộn vật lý để giao diện sạch sẽ */
+        #transaction-ui::-webkit-scrollbar { display: none; }
+        #transaction-ui { -ms-overflow-style: none; scrollbar-width: none; }
+
+        .sweetie-input-style:focus {
+            border-color: #ff1493 !important;
+            box-shadow: 0 0 0 3px rgba(255, 20, 147, 0.05);
+        }
+        #btn-do-transfer:active {
+            transform: scale(0.98);
+        }
+    </style>
+
+    <div class="banking-transfer-form" style="width: 100%; max-width: 400px; margin: auto; animation: slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); background: #fff; border-radius: 30px; overflow: hidden; box-shadow: 0 15px 40px rgba(255, 20, 147, 0.1); flex-shrink: 0;">
         
         <div style="background: linear-gradient(135deg, #ff1493, #ff69b4); padding: 25px 20px; color: #fff; text-align: center; position: relative;">
             <h4 style="margin: 0; font-size: 1.1rem; font-weight: 800; letter-spacing: 1px;">CHUYỂN TIỀN 24/7</h4>
@@ -20999,7 +21018,7 @@ function setRpMode(mode) {
                         placeholder="Số tài khoản (12 số)" 
                         maxlength="12" 
                         autocomplete="off" 
-                        style="width: 100%; padding: 15px; border-radius: 15px; border: 1px solid #eee; outline: none; font-weight: 700; background: #fff; transition: 0.3s;">
+                        style="width: 100%; padding: 15px; border-radius: 15px; border: 1px solid #eee; outline: none; font-weight: 700; background: #fff; transition: 0.3s; box-sizing: border-box;">
                     <div id="stk-loading" style="display:none; position:absolute; right:15px; top:15px;"><i class="fas fa-spinner fa-spin" style="color:#ff1493;"></i></div>
                 </div>
                 <div id="target-owner-display" style="color: #2e7d32; font-weight: 800; font-size: 0.85rem; margin-top: 8px; height: 18px; text-transform: uppercase; letter-spacing: 0.5px;"></div>
@@ -21015,7 +21034,7 @@ function setRpMode(mode) {
                     <input type="number" id="transfer-amount" class="sweetie-input-style" 
                         placeholder="0" 
                         autocomplete="off" 
-                        style="width: 100%; padding: 15px 45px 15px 15px; border-radius: 15px; border: 1px solid #eee; font-weight: 800; color: #ff1493; font-size: 1.1rem; outline: none;">
+                        style="width: 100%; padding: 15px 45px 15px 15px; border-radius: 15px; border: 1px solid #eee; font-weight: 800; color: #ff1493; font-size: 1.1rem; outline: none; box-sizing: border-box;">
                     <span style="position: absolute; right: 15px; top: 16px; font-weight: 800; color: #ccc;">đ</span>
                 </div>
             </div>
@@ -21024,7 +21043,7 @@ function setRpMode(mode) {
                 <label style="font-size: 0.7rem; color: #ff69b4; font-weight: 800; display: block; margin-bottom: 8px;">NỘI DUNG GIAO DỊCH</label>
                 <textarea id="transfer-note" class="sweetie-input-style" 
                     placeholder="Nhập lời nhắn cho người nhận..." 
-                    style="width: 100%; padding: 12px; border-radius: 15px; border: 1px solid #eee; height: 60px; outline: none; resize: none; font-family: inherit; font-size: 0.85rem;"></textarea>
+                    style="width: 100%; padding: 12px; border-radius: 15px; border: 1px solid #eee; height: 60px; outline: none; resize: none; font-family: inherit; font-size: 0.85rem; box-sizing: border-box;"></textarea>
             </div>
 
             <div class="bank-input-box" style="margin-bottom: 25px; text-align: left;">
@@ -21033,7 +21052,7 @@ function setRpMode(mode) {
                     placeholder="••••••" 
                     maxlength="6"
                     autocomplete="new-password" 
-                    style="width: 100%; padding: 15px; border-radius: 15px; border: 1px solid #eee; letter-spacing: 8px; text-align: center; font-weight: 900; outline: none;">
+                    style="width: 100%; padding: 15px; border-radius: 15px; border: 1px solid #eee; letter-spacing: 8px; text-align: center; font-weight: 900; outline: none; box-sizing: border-box;">
             </div>
 
             <div style="display: flex; gap: 12px;">
@@ -21044,19 +21063,9 @@ function setRpMode(mode) {
             </div>
         </div>
     </div>
-    
-    <style>
-        .sweetie-input-style:focus {
-            border-color: #ff1493 !important;
-            box-shadow: 0 0 0 3px rgba(255, 20, 147, 0.05);
-        }
-        #btn-do-transfer:active {
-            transform: scale(0.98);
-        }
-    </style>
 `;
 
-    // --- LOGIC TRA CỨU Tên CHỦ TK TỰ ĐỘNG (GIỮ NGUYÊN NHƯ CŨ) ---
+    // --- LOGIC TRA CỨU Tên CHỦ TK TỰ ĐỘNG ---
     const stkInput = document.getElementById('target-stk');
     const ownerDisplay = document.getElementById('target-owner-display');
     const loadingIcon = document.getElementById('stk-loading');
