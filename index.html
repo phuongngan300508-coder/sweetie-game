@@ -9785,40 +9785,68 @@ function closeFinanceModal(id) {
     }
 }
 
-function renderHistoryV2() {
+async function renderHistoryV2() {
     const container = document.getElementById('history-v2-body');
-    const history = userData.history || [];
+    
+    // 1. Lấy lịch sử ví ngoài (có sẵn trong userData)
+    let totalHistory = [...(userData.history || [])];
 
-    if (history.length === 0) {
-        container.innerHTML = `<div style="text-align:center; padding:30px; color:#ccc;">
-            <i class="fas fa-receipt" style="font-size: 3em; margin-bottom:10px; opacity:0.3;"></i>
-            <p>Chưa có giao dịch nào được thực hiện.</p>
-        </div>`;
+    // 2. Lấy thêm lịch sử từ thẻ ngân hàng trên Firebase
+    try {
+        const myCardIdSnap = await db.ref(`users/${currentUser}/linkedCard`).once('value');
+        if (myCardIdSnap.exists()) {
+            const myCardId = myCardIdSnap.val();
+            const cardHistorySnap = await db.ref(`card_history/${myCardId}`).limitToLast(10).once('value');
+            
+            if (cardHistorySnap.exists()) {
+                cardHistorySnap.forEach(child => {
+                    const item = child.val();
+                    // Chỉ lấy những giao dịch Nạp/Rút (để tránh bị loãng bởi chuyển khoản chat)
+                    if (item.type === 'deposit' || item.type === 'withdraw') {
+                        totalHistory.push({
+                            type: item.type === 'deposit' ? 'Nạp tiền vào thẻ' : 'Rút tiền từ thẻ',
+                            amount: item.type === 'deposit' ? `-${item.amount.toLocaleString()} VNĐ` : `+${item.amount.toLocaleString()} VNĐ`,
+                            date: new Date(item.time).toLocaleString('vi-VN'),
+                            realTime: item.time // Dùng để sắp xếp
+                        });
+                    }
+                });
+            }
+        }
+    } catch (e) {
+        console.error("Lỗi lấy lịch sử thẻ:", e);
+    }
+
+    if (totalHistory.length === 0) {
+        container.innerHTML = `<div style="text-align:center; padding:30px; color:#ccc;"><p>Chưa có giao dịch nào.</p></div>`;
         return;
     }
 
-    container.innerHTML = history.slice().reverse().map(item => {
-        const isPlus = item.amount.includes('+');
-        
-        // Tự động chọn icon cho từng loại giao dịch Henry đã đặt tên
-        let icon = "fa-exchange-alt";
-        if (item.type.includes("Nạp tiền")) icon = "fa-arrow-down";
-        if (item.type.includes("Rút tiền")) icon = "fa-arrow-up";
-        if (item.type.includes("thẻ")) icon = "fa-credit-card"; // Icon riêng cho bank
+    // 3. Sắp xếp lại tất cả theo thời gian (Mới nhất lên đầu)
+    // Nếu không có realTime (dữ liệu cũ), mình dùng tạm Date để parse
+    totalHistory.sort((a, b) => {
+        const timeA = a.realTime || new Date(a.date.split(' ').reverse().join(' ')).getTime();
+        const timeB = b.realTime || new Date(b.date.split(' ').reverse().join(' ')).getTime();
+        return timeB - timeA;
+    });
 
+    // 4. Render ra màn hình
+    container.innerHTML = totalHistory.map(item => {
+        const isPlus = item.amount.includes('+');
+        let icon = item.type.includes('thẻ') ? 'fa-credit-card' : 'fa-wallet';
+        
         return `
-            <div class="history-item" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f0f0f0;">
-                <div class="history-left" style="display: flex; flex-direction: column; text-align: left;">
-                    <span class="history-type" style="font-weight: bold; color: #333;">
-                        <i class="fas ${icon}" style="margin-right: 5px; font-size: 0.8em; color: #ff69b4;"></i>
+            <div class="history-item" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f5f5f5;">
+                <div style="text-align: left;">
+                    <div style="font-weight: bold; color: #333; font-size: 0.9rem;">
+                        <i class="fas ${icon}" style="color: #ff69b4; margin-right: 5px; font-size: 0.8rem;"></i>
                         ${item.type}
-                    </span>
-                    <span class="history-date" style="font-size: 0.7em; color: #aaa; margin-top: 3px;">
+                    </div>
+                    <div style="font-size: 0.7rem; color: #aaa; margin-top: 3px;">
                         <i class="far fa-clock"></i> ${item.date}
-                    </span>
+                    </div>
                 </div>
-                <div class="history-amount ${isPlus ? 'amount-plus' : 'amount-minus'}" 
-                     style="font-weight: 800; color: ${isPlus ? '#2ecc71' : '#e74c3c'};">
+                <div style="font-weight: 800; color: ${isPlus ? '#2ecc71' : '#e74c3c'}; font-size: 0.95rem;">
                     ${item.amount}
                 </div>
             </div>
