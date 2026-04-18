@@ -15129,24 +15129,26 @@ function resetProfileFooter() {
     // Bước 0: Kiểm tra xem Henry có đang chặn người này không
     db.ref(`blocks/${currentUser}/${currentViewedUser}`).once('value', (snapBlock) => {
         if (snapBlock.exists()) {
-            // Nếu Henry đang chặn họ -> Hiện nút Gỡ Chặn duy nhất
             footer.innerHTML = `
                 <button class="btn-action-pink" onclick="unblockUser('${currentViewedUser}')" style="width: 100%; background: #6c757d; border: none;">
                     <i class="fas fa-unlock"></i> GỠ CHẶN CƯ DÂN NÀY
                 </button>`;
         } else {
-            // --- NẾU KHÔNG CHẶN, CHẠY TIẾP LOGIC CŨ CỦA HENRY 100% ---
-            
-            // Hàm tạo HTML cho nút Chặn (để dùng chung cho các bước)
-            const blockBtnHtml = `
-                <button class="btn-action-white" onclick="blockUser(currentViewedUser)" style="flex: 0.3; color: red; border-color: red;">
-                    <i class="fas fa-ban"></i>
-                </button>
-            `;
+            // Dùng Promise.all để lấy tất cả dữ liệu cùng lúc, tránh giật lag
+            const checkFriend = db.ref(`users/${currentUser}/friends/${currentViewedUser}`).once('value');
+            const checkIncoming = db.ref(`friend_requests/${currentUser}/${currentViewedUser}`).once('value');
+            const checkOutgoing = db.ref(`friend_requests/${currentViewedUser}/${currentUser}`).once('value');
 
-            // Bước 1: Kiểm tra xem đã là bạn bè vĩnh viễn chưa
-            db.ref(`users/${currentUser}/friends/${currentViewedUser}`).once('value', (snapFriend) => {
+            Promise.all([checkFriend, checkIncoming, checkOutgoing]).then(([snapFriend, snapIncoming, snapOutgoing]) => {
+                
+                const blockBtnHtml = `
+                    <button class="btn-action-white" onclick="blockUser('${currentViewedUser}')" style="flex: 0.3; color: red; border-color: red;">
+                        <i class="fas fa-ban"></i>
+                    </button>
+                `;
+
                 if (snapFriend.exists()) {
+                    // Bước 1: Bạn bè
                     footer.innerHTML = `
                         <button class="btn-action-pink" style="background: #28a745; cursor: default; flex: 1;" disabled>
                             <i class="fas fa-check-double"></i> BẠN BÈ
@@ -15155,47 +15157,39 @@ function resetProfileFooter() {
                             <i class="fab fa-facebook-messenger"></i> NHẮN TIN
                         </button>
                         ${blockBtnHtml}`;
+                } else if (snapIncoming.exists()) {
+                    // Bước 2: Có lời mời đến
+                    footer.innerHTML = `
+                        <button class="btn-action-pink" onclick="showFriendRequestProfileByTarget('${currentViewedUser}')" style="flex: 1; background: linear-gradient(135deg, #ff1493, #ff69b4);">
+                            <i class="fas fa-envelope-open-text"></i> PHẢN HỒI LỜI MỜI
+                        </button>
+                        ${blockBtnHtml}`;
+                } else if (snapOutgoing.exists()) {
+                    // Bước 3: Đã gửi lời mời
+                    footer.innerHTML = `
+                        <button class="btn-action-pink" style="background: #ccc; cursor: not-allowed; flex: 1;" disabled>
+                            <i class="fas fa-paper-plane"></i> ĐÃ GỬI LỜI MỜI
+                        </button>
+                        <button class="btn-action-white" onclick="openChatWithOther()" style="flex: 1;">
+                            <i class="fab fa-facebook-messenger"></i> NHẮN TIN
+                        </button>
+                        ${blockBtnHtml}`;
                 } else {
-                    // Bước 2: Kiểm tra xem có lời mời đến không
-                    db.ref(`friend_requests/${currentUser}/${currentViewedUser}`).once('value', (snapIncoming) => {
-                        if (snapIncoming.exists()) {
-                            footer.innerHTML = `
-                                <button class="btn-action-pink" onclick="showFriendRequestProfileByTarget('${currentViewedUser}')" style="flex: 1; background: linear-gradient(135deg, #ff1493, #ff69b4);">
-                                    <i class="fas fa-envelope-open-text"></i> PHẢN HỒI LỜI MỜI
-                                </button>
-                                ${blockBtnHtml}`;
-                        } else {
-                            // Bước 3: Kiểm tra xem Henry đã gửi lời mời chưa
-                            db.ref(`friend_requests/${currentViewedUser}/${currentUser}`).once('value', (snapOutgoing) => {
-                                if (snapOutgoing.exists()) {
-                                    footer.innerHTML = `
-                                        <button class="btn-action-pink" style="background: #ccc; cursor: not-allowed; flex: 1;" disabled>
-                                            <i class="fas fa-paper-plane"></i> ĐÃ GỬI LỜI MỜI
-                                        </button>
-                                        <button class="btn-action-white" onclick="openChatWithOther()" style="flex: 1;">
-                                            <i class="fab fa-facebook-messenger"></i> NHẮN TIN
-                                        </button>
-                                        ${blockBtnHtml}`;
-                                } else {
-                                    // Bước 4: Chưa có kết nối
-                                    footer.innerHTML = `
-                                        <button class="btn-action-pink" onclick="sendFriendRequest()" style="flex: 1;">
-                                            <i class="fas fa-user-plus"></i> KẾT BẠN
-                                        </button>
-                                        <button class="btn-action-white" onclick="openChatWithOther()" style="flex: 1;">
-                                            <i class="fab fa-facebook-messenger"></i> NHẮN TIN
-                                        </button>
-                                        ${blockBtnHtml}`;
-                                }
-                            });
-                        }
-                    });
+                    // Bước 4: Chưa có kết nối
+                    footer.innerHTML = `
+                        <button class="btn-action-pink" onclick="sendFriendRequest()" style="flex: 1;">
+                            <i class="fas fa-user-plus"></i> KẾT BẠN
+                        </button>
+                        <button class="btn-action-white" onclick="openChatWithOther()" style="flex: 1;">
+                            <i class="fab fa-facebook-messenger"></i> NHẮN TIN
+                        </button>
+                        ${blockBtnHtml}`;
                 }
             });
         }
     });
 }
-
+    
 // Hàm bổ trợ để Henry hiện bảng đồng ý khi bấm vào "Phản hồi lời mời"
 function showFriendRequestProfileByTarget(targetName) {
     db.ref('users/' + targetName).once('value', (snapshot) => {
