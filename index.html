@@ -19740,20 +19740,27 @@ async function unlinkCard() {
     }
 }
 
-    function recordCardHistory(cardId, type, amount) {
-    if (!cardId || !currentUser) return; // Bảo vệ nếu thiếu dữ liệu
+    function recordCardHistory(cardId, type, amount, extraData = {}) {
+    // 1. Bảo vệ nếu thiếu dữ liệu quan trọng
+    if (!cardId || !currentUser) return; 
 
+    // 2. Tạo một bản ghi mới trong node card_history
     const historyRef = db.ref(`card_history/${cardId}`).push();
-    historyRef.set({
+    
+    // 3. Chuẩn bị dữ liệu cơ bản
+    const historyData = {
         type: type,
         amount: amount,
         user: currentUser,
-        // Dùng ServerValue để thời gian chính xác theo máy chủ, không phụ thuộc máy khách
-        time: firebase.database.ServerValue.TIMESTAMP 
-    }).then(() => {
-        console.log(`🌸 Đã ghi log ${type}: ${amount}`);
+        // Thời gian chính xác từ Server Firebase
+        time: firebase.database.ServerValue.TIMESTAMP,
+        ...extraData // Gộp thêm toUser, fromUser hoặc bất kỳ thông tin nào khác vào đây
+    };
+
+    historyRef.set(historyData).then(() => {
+        console.log(`🌸 Sweetie Bank: Đã ghi log ${type} cho thẻ ${cardId}`);
     }).catch(err => {
-        console.error("Lỗi ghi lịch sử:", err);
+        console.error("Lỗi ghi lịch sử Sweetie Bank:", err);
     });
 }
 
@@ -19799,7 +19806,7 @@ async function unlinkCard() {
     `;
     dashboard.appendChild(overlay);
 
-    try {
+  try {
         const snap = await db.ref(`card_history/${cardId}`).orderByChild('time').limitToLast(20).once('value');
         const listDiv = document.getElementById('history-list');
         listDiv.innerHTML = "";
@@ -19813,22 +19820,48 @@ async function unlinkCard() {
         snap.forEach(child => { logs.unshift(child.val()); });
 
         logs.forEach((item, index) => {
-            const isPlus = item.type === 'deposit';
+            let config = {
+                title: "Giao dịch",
+                icon: "fa-exchange-alt",
+                color: "#666",
+                bgColor: "#f5f5f5",
+                prefix: ""
+            };
+
+            // --- PHÂN LOẠI CHI TIẾT GIAO DỊCH (BỔ SUNG REFUND) ---
+            switch(item.type) {
+                case 'deposit':
+                    config = { title: "Nạp tiền vào thẻ", icon: "fa-arrow-down", color: "#2e7d32", bgColor: "#e8f5e9", prefix: "+" };
+                    break;
+                case 'withdraw':
+                    config = { title: "Rút tiền về ví", icon: "fa-arrow-up", color: "#c62828", bgColor: "#ffebee", prefix: "-" };
+                    break;
+                case 'transfer_out':
+                    config = { title: `Chuyển đến: ${item.toUser || 'Người dùng'}`, icon: "fa-paper-plane", color: "#c62828", bgColor: "#fff0f5", prefix: "-" };
+                    break;
+                case 'transfer_in':
+                    config = { title: `Nhận từ: ${item.fromUser || 'Người dùng'}`, icon: "fa-wallet", color: "#2e7d32", bgColor: "#f0fdf4", prefix: "+" };
+                    break;
+                case 'refund': // TRƯỜNG HỢP HOÀN TIỀN
+                    config = { title: "Hoàn tiền chuyển khoản", icon: "fa-undo", color: "#d81b60", bgColor: "#fff5f8", prefix: "+" };
+                    break;
+            }
+
             const timeStr = new Date(item.time).toLocaleString('vi-VN', {hour: '2-digit', minute:'2-digit', day:'2-digit', month:'2-digit'});
             
             listDiv.innerHTML += `
-                <div class="history-item-deluxe" style="animation: slideUpIn 0.3s ease forwards; animation-delay: ${index * 0.04}s; opacity: 0;">
-                    <div style="display: flex; align-items: center; gap: 15px;">
-                        <div style="width: 42px; height: 42px; background: ${isPlus ? '#e8f5e9' : '#ffebee'}; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem;">
-                            <i class="fas ${isPlus ? 'fa-arrow-down' : 'fa-arrow-up'}" style="color: ${isPlus ? '#2e7d32' : '#c62828'};"></i>
+                <div class="history-item-deluxe" style="animation: slideUpIn 0.3s ease forwards; animation-delay: ${index * 0.04}s; opacity: 0; display: flex; align-items: center; justify-content: space-between; padding: 12px; margin-bottom: 10px; border-radius: 15px; background: #fff; border: 1px solid #f0f0f0;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="width: 40px; height: 40px; background: ${config.bgColor}; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1rem;">
+                            <i class="fas ${config.icon}" style="color: ${config.color};"></i>
                         </div>
                         <div style="text-align: left;">
-                            <div style="font-weight: bold; color: #333; font-size: 0.95rem;">${isPlus ? 'Nạp vào thẻ' : 'Rút về ví'}</div>
-                            <div style="font-size: 0.75rem; color: #999;">${timeStr} • ${item.user}</div>
+                            <div style="font-weight: bold; color: #333; font-size: 0.9rem; max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${config.title}</div>
+                            <div style="font-size: 0.7rem; color: #999;">${timeStr}</div>
                         </div>
                     </div>
-                    <div style="font-weight: 800; color: #333; font-size: 1.05rem; letter-spacing: -0.5px;">
-                        ${isPlus ? '<span style="color:#2e7d32">+</span>' : '<span style="color:#c62828">-</span>'} ${item.amount.toLocaleString()}
+                    <div style="font-weight: 800; color: ${config.color}; font-size: 0.95rem; text-align: right;">
+                        ${config.prefix}${item.amount.toLocaleString()}
                     </div>
                 </div>
             `;
@@ -19838,7 +19871,7 @@ async function unlinkCard() {
         document.getElementById('history-list').innerHTML = "Lỗi kết nối!";
     }
 }
-
+    
   async function openTransferPopup() {
     // 0. Đóng menu dấu cộng trước
     if (typeof toggleMediaMenu === 'function') toggleMediaMenu();
@@ -19945,7 +19978,7 @@ async function processTransfer(amount, pass, myCardId) {
 
         // Kiểm tra mật khẩu
         if (pass !== cardData.password) {
-            alert("Mật khẩu thẻ không đúng, Henry kiểm tra lại nhé! 🌸");
+            alert("Mật khẩu thẻ không đúng, bạn kiểm tra lại nhé! 🌸");
             return;
         }
 
@@ -19968,9 +20001,12 @@ async function processTransfer(amount, pass, myCardId) {
             return;
         }
 
-        // 4. Ghi lịch sử giao dịch (Sử dụng hàm Henry đã có)
+       // --- 4. GHI LỊCH SỬ GIAO DỊCH (PHẦN SỬA ĐỔI) ---
         if (typeof recordCardHistory === 'function') {
-            recordCardHistory(myCardId, 'withdraw', amount);
+            // Thay 'withdraw' bằng 'transfer_out' và gửi kèm tên người nhận
+            recordCardHistory(myCardId, 'transfer_out', amount, { 
+                toUser: currentChatFriend // currentChatFriend là biến lưu tên người Henry đang chat cùng
+            });
         }
 
         // 5. Chuẩn bị dữ liệu tin nhắn chuyển tiền
@@ -19994,27 +20030,28 @@ async function processTransfer(amount, pass, myCardId) {
     }
 }
 
-    async function handleTransferAction(msgId, action, amount, senderCardId) {
-    // TỰ ĐỘNG TẠO LẠI ID PHÒNG CHAT THẬT (Dựa trên người đang chat)
+   async function handleTransferAction(msgId, action, amount, senderCardId) {
+    // TỰ ĐỘNG TẠO LẠI ID PHÒNG CHAT THẬT (Giữ nguyên)
     if (!currentChatFriend) {
         alert("Lỗi: Không xác định được người bạn đang chat!");
         return;
     }
     
-    // Tạo ID phòng chat chuẩn để tìm đúng tin nhắn trên Firebase
     const realChatId = [currentUser, currentChatFriend].sort().join('_');
     const chatRef = db.ref(`chats/${realChatId}/messages/${msgId}`);
 
     // --- TRƯỜNG HỢP: TỪ CHỐI ---
     if (action === 'refuse') {
         try {
-            // Hoàn tiền thật về thẻ của người gửi trên Firebase
+            // 1. Hoàn tiền thật về thẻ của người gửi
             await db.ref(`sweetie_cards/${senderCardId}/balance`).transaction(val => (val || 0) + amount);
             
-            // Ghi log lịch sử thật cho người gửi
-            recordCardHistory(senderCardId, 'deposit', amount);
+            // 2. SỬA TẠI ĐÂY: Ghi loại là 'refund' để hiện icon Hoàn tiền trong lịch sử
+            recordCardHistory(senderCardId, 'refund', amount, { 
+                note: "Tiền bị từ chối nhận" 
+            });
             
-            // Cập nhật trạng thái tin nhắn thành "Đã từ chối" để ô chat thay đổi giao diện
+            // 3. Cập nhật trạng thái tin nhắn
             await chatRef.child('status').set('refused');
             alert("🌸 Đã hoàn tiền lại cho đối phương!");
         } catch (e) { console.error("Lỗi hoàn tiền:", e); }
@@ -20022,23 +20059,24 @@ async function processTransfer(amount, pass, myCardId) {
     }
 
     // --- TRƯỜNG HỢP: CHẤP NHẬN ---
-    // 1. Kiểm tra xem Henry (người nhận) đã có thẻ ngân hàng thật chưa
     const myCardSnap = await db.ref(`users/${currentUser}/linkedCard`).once('value');
     if (!myCardSnap.exists()) {
         alert("🌸 Bạn ơi, bạn cần có thẻ Sweetie Bank mới nhận được tiền nhé!");
-        openSweetieCardModal(); // Mở modal tạo thẻ thật
+        openSweetieCardModal(); 
         return;
     }
 
     const myCardId = myCardSnap.val();
     try {
-        // 2. Cộng tiền thật vào số dư thẻ của Henry trên Firebase
+        // 1. Cộng tiền vào thẻ người nhận
         await db.ref(`sweetie_cards/${myCardId}/balance`).transaction(val => (val || 0) + amount);
         
-        // 3. Ghi log lịch sử thật cho Henry
-        recordCardHistory(myCardId, 'deposit', amount);
+        // 2. Ghi rõ loại nhận tiền và người gửi
+        recordCardHistory(myCardId, 'transfer_in', amount, { 
+            fromUser: currentChatFriend 
+        });
         
-        // 4. Cập nhật trạng thái tin nhắn trên Firebase để đối phương cũng thấy "Đã nhận"
+        // 3. Cập nhật trạng thái tin nhắn
         await chatRef.child('status').set('accepted');
         
         alert("🌸 Bạn đã nhận tiền thành công! Kiểm tra số dư thẻ nhé.");
