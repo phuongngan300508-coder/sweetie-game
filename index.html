@@ -13969,7 +13969,7 @@ async function sendMessage(overrideText = null, transferData = null) {
     const displayTime = now.getHours().toString().padStart(2, '0') + ":" + 
                         now.getMinutes().toString().padStart(2, '0');
 
-    // --- 1. CHUẨN BỊ DỮ LIỆU TIN NHẮN (BỔ SUNG LOGIC CHUYỂN TIỀN) ---
+    // --- 1. CHUẨN BỊ DỮ LIỆU TIN NHẮN (GIỮ NGUYÊN) ---
     const messageData = {
         sender: currentUser,
         text: text,
@@ -13983,7 +13983,6 @@ async function sendMessage(overrideText = null, transferData = null) {
         messageData.amount = transferData.amount;
         messageData.status = 'pending'; // Chờ nhận
         messageData.senderCard = transferData.senderCard;
-        // DÒNG QUAN TRỌNG NHẤT: Lưu lời nhắn vào messageData
         messageData.note = transferData.note; 
     }
 
@@ -14012,16 +14011,24 @@ async function sendMessage(overrideText = null, transferData = null) {
             }
         }, 100);
 
-        // 3. BẮN THÔNG BÁO (Trong App & Push)
+        // --- 3. BẮN THÔNG BÁO (CẬP NHẬT ĐỂ TRÁNH UNDEFINED) ---
         const notificationData = {
-            from: currentUser,
-            friendName: currentUser, 
-            text: text,
+            senderName: currentUser, // Đổi từ friendName thành senderName cho khớp hàm addNotification
+            message: text,           // Đổi từ text thành message cho khớp hàm addNotification
+            title: msgTitle,
             type: msgType, 
             time: Date.now(),
             displayTime: displayTime,
-            title: msgTitle
+            from: currentUser
         };
+
+        // Nếu là chuyển khoản, gửi kèm note vào thông báo cho xịn
+        if (transferData) {
+            notificationData.extraData = { 
+                note: transferData.note,
+                amount: transferData.amount 
+            };
+        }
 
         db.ref('notifications_queue/' + currentChatFriend).push(notificationData);
 
