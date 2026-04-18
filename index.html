@@ -21159,10 +21159,27 @@ function showBankingBill(data) {
     }
 
     ui.style.display = 'flex';
+    
+    // --- NÂNG CẤP: CHO PHÉP CUỘN NHƯNG ẨN THANH CUỘN ---
+    ui.style.overflowY = 'auto'; // Cho phép cuộn để nhấn nút
+    ui.style.alignItems = 'center'; // Căn giữa bill theo chiều dọc nếu bill ngắn
+    ui.style.padding = '20px 0'; // Thêm khoảng đệm trên dưới để không sát mép màn hình
 
     // Nội dung Bill nâng cấp chuyên nghiệp - Có thêm nút Lưu ảnh
     ui.innerHTML = `
-        <div id="bill-canvas" class="banking-bill-v2" style="width: 100%; max-width: 350px; background: #fff; border-radius: 35px; padding: 0; overflow: hidden; animation: zoomIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 20px 60px rgba(255, 20, 147, 0.15); border: 1px solid #fff0f5; position: relative;">
+        <style>
+            /* Ẩn thanh cuộn cho Chrome, Safari và Opera */
+            #transaction-ui::-webkit-scrollbar {
+                display: none;
+            }
+            /* Ẩn thanh cuộn cho IE, Edge và Firefox */
+            #transaction-ui {
+                -ms-overflow-style: none;  /* IE and Edge */
+                scrollbar-width: none;  /* Firefox */
+            }
+        </style>
+
+        <div id="bill-canvas" class="banking-bill-v2" style="width: 100%; max-width: 350px; background: #fff; border-radius: 35px; padding: 0; overflow: hidden; animation: zoomIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 20px 60px rgba(255, 20, 147, 0.15); border: 1px solid #fff0f5; position: relative; flex-shrink: 0; margin: auto;">
             
             <div style="background: linear-gradient(135deg, #ff1493, #ff69b4); padding: 30px 20px; text-align: center; color: #fff;">
                 <div style="width: 60px; height: 60px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; border: 2px solid #fff;">
