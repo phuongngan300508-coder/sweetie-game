@@ -20289,51 +20289,88 @@ async function unlinkCard() {
     const existing = document.getElementById('transfer-popup-overlay');
     if (existing) existing.remove();
 
-    // 3. Tạo cấu trúc HTML (Bổ sung ô nhập Lời nhắn)
-    const transferOverlay = document.createElement('div');
-    transferOverlay.id = 'transfer-popup-overlay'; 
-    
-    transferOverlay.innerHTML = `
-        <div class="transfer-popup-content"> 
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <div style="display: flex; align-items: center; gap: 8px;">
-                    <i class="fas fa-paper-plane" style="color: #ff1493;"></i>
-                    <h3 style="color: #d81b60; margin: 0; font-size: 1.1rem; font-weight: 800; letter-spacing: 0.5px;">CHUYỂN KHOẢN</h3>
-                </div>
-                <i class="fas fa-times-circle" onclick="this.closest('#transfer-popup-overlay').remove()" 
-                   style="cursor:pointer; color: #ffb6c1; font-size: 1.4rem;"></i>
+   // 3. Tạo cấu trúc HTML (Nâng cấp giao diện Bank chuyên nghiệp)
+  const transferOverlay = document.createElement('div');
+  transferOverlay.id = 'transfer-popup-overlay'; 
+  
+  transferOverlay.innerHTML = `
+    <div class="transfer-popup-content banking-style"> 
+        <div style="text-align: center; margin-bottom: 25px;">
+            <div style="background: #fff0f5; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px;">
+                <i class="fas fa-university" style="color: #ff1493; font-size: 1.5rem;"></i>
             </div>
-
-            <div class="transfer-target-box">
-                <span style="font-size: 0.8rem; color: #888;">Người nhận:</span>
-                <div style="font-weight: 800; color: #ff1493; font-size: 1.2rem;">${targetName}</div>
-            </div>
-
-            <div class="transfer-balance-info">
-                <span>Số dư khả dụng:</span>
-                <strong>${currentBalance.toLocaleString()} VNĐ</strong>
-            </div>
-
-            <div style="text-align: left; margin-bottom: 10px;">
-                <label style="font-size: 0.8rem; color: #d81b60; font-weight: bold; margin-bottom: 5px; display: block;">Số tiền muốn chuyển:</label>
-                <input type="number" id="transfer-amount-in" class="sweetie-input-style" placeholder="Nhập số tiền..." autocomplete="off">
-            </div>
-
-            <div style="text-align: left; margin-bottom: 10px;">
-                <label style="font-size: 0.8rem; color: #d81b60; font-weight: bold; margin-bottom: 5px; display: block;">Lời nhắn (Ghi chú):</label>
-                <input type="text" id="transfer-note-in" class="sweetie-input-style" placeholder="Gửi lời yêu thương..." maxlength="50" autocomplete="off">
-            </div>
-
-            <div style="text-align: left;">
-                <label style="font-size: 0.8rem; color: #d81b60; font-weight: bold; margin-bottom: 5px; display: block;">Mật khẩu thẻ (PIN):</label>
-                <input type="password" id="transfer-pass-in" class="sweetie-input-style" placeholder="••••••" autocomplete="new-password">
-            </div>
-
-            <button id="btn-confirm-transfer" class="btn-sweetie-confirm-bank">
-                XÁC NHẬN GIAO DỊCH
-            </button>
+            <h3 style="color: #333; margin: 0; font-size: 1rem; font-weight: 800; letter-spacing: 1px;">SWEETIE BANKING</h3>
+            <p style="font-size: 0.65rem; color: #aaa; margin: 2px 0 0;">Giao dịch chuyển tiền an toàn</p>
         </div>
-    `;
+
+        <div style="background: #fdf2f8; border-radius: 20px; padding: 15px; margin-bottom: 20px; position: relative; border: 1px solid #ff149310;">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+                <div style="width: 35px; height: 22px; background: linear-gradient(135deg, #ff1493, #ff69b4); border-radius: 4px; box-shadow: 0 2px 5px rgba(255,20,147,0.3);"></div>
+                <div>
+                    <div style="font-size: 0.6rem; color: #888; text-transform: uppercase;">Từ tài khoản</div>
+                    <div style="font-size: 0.85rem; font-weight: 700; color: #333;">**** ${myCardId.slice(-4)} <span style="font-weight: 400; color: #ff1493;">(${currentBalance.toLocaleString()}đ)</span></div>
+                </div>
+            </div>
+
+            <div style="position: absolute; left: 31px; top: 37px; height: 20px; border-left: 2px dashed #ffb6c1;"></div>
+
+            <div style="display: flex; align-items: center; gap: 10px; margin-top: 15px;">
+                <div style="width: 35px; height: 35px; background: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 1px solid #ff149330;">
+                    <i class="fas fa-user-check" style="color: #ff1493; font-size: 0.9rem;"></i>
+                </div>
+                <div>
+                    <div style="font-size: 0.6rem; color: #888; text-transform: uppercase;">Đến người nhận</div>
+                    <div style="font-size: 0.9rem; font-weight: 800; color: #d81b60;">${targetName}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="banking-input-group">
+            <div class="bank-field">
+                <span class="bank-label">SỐ TIỀN CHUYỂN</span>
+                <div style="display: flex; align-items: baseline; border-bottom: 2px solid #eee; transition: 0.3s;" onfocusin="this.style.borderBottomColor='#ff1493'" onfocusout="this.style.borderBottomColor='#eee'">
+                    <input type="number" id="transfer-amount-in" placeholder="0" style="width: 100%; border: none; outline: none; padding: 10px 0; font-size: 1.5rem; font-weight: 800; color: #333; background: transparent;">
+                    <span style="font-weight: 800; color: #ff1493;">VND</span>
+                </div>
+            </div>
+
+            <div class="bank-field" style="margin-top: 15px;">
+                <span class="bank-label">NỘI DUNG</span>
+                <input type="text" id="transfer-note-in" placeholder="Gửi lời yêu thương..." maxlength="50" style="width: 100%; border: none; border-bottom: 1px solid #eee; outline: none; padding: 8px 0; font-size: 0.85rem; background: transparent;">
+            </div>
+
+            <div class="bank-field" style="margin-top: 15px;">
+                <span class="bank-label">MÃ PIN XÁC THỰC</span>
+                <input type="password" id="transfer-pass-in" placeholder="••••••" style="width: 100%; border: none; border-bottom: 1px solid #eee; outline: none; padding: 8px 0; font-size: 1.2rem; letter-spacing: 5px; background: transparent;">
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-top: 25px;">
+            <button onclick="this.closest('#transfer-popup-overlay').remove()" style="flex: 1; padding: 12px; border-radius: 15px; border: none; background: #f5f5f5; color: #888; font-weight: 700; cursor: pointer;">HỦY</button>
+            <button id="btn-confirm-transfer" style="flex: 2; padding: 12px; border-radius: 15px; border: none; background: #ff1493; color: #fff; font-weight: 800; cursor: pointer; box-shadow: 0 5px 15px rgba(255,20,147,0.3);">TIẾP TỤC</button>
+        </div>
+    </div>
+
+    <style>
+        #transfer-popup-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 182, 193, 0.2);
+            backdrop-filter: blur(8px);
+            display: flex; align-items: center; justify-content: center; z-index: 10000;
+            animation: fadeIn 0.3s ease;
+        }
+        .transfer-popup-content.banking-style {
+            background: #fff; width: 90%; max-width: 350px; border-radius: 30px;
+            padding: 30px 25px; box-shadow: 0 20px 50px rgba(0,0,0,0.1);
+            position: relative; border: 1px solid #fff;
+            animation: slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .bank-label { font-size: 0.6rem; color: #ff69b4; font-weight: 800; letter-spacing: 0.5px; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        #transfer-amount-in::-webkit-inner-spin-button { -webkit-appearance: none; }
+    </style>
+  `;
 
     document.body.appendChild(transferOverlay);
     
