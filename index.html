@@ -13820,53 +13820,52 @@ function toggleChat() {
 }
 
 // --- 2. SỬA HÀM GỬI TIN NHẮN (Giữ nguyên 100% nội dung - Fix lỗi không cần F5) ---
-async function sendMessage() {
+// Thêm tham số mặc định để dùng cho cả nhắn tin thường và chuyển tiền
+async function sendMessage(overrideText = null, transferData = null) {
     const input = document.getElementById('chat-input');
-    const text = input.value.trim();
+    // Nếu có overrideText (từ voice/media) hoặc transferData thì dùng, không thì lấy từ input
+    const text = overrideText || (transferData ? `🌸 Đã gửi ${transferData.amount.toLocaleString()} VNĐ` : input.value.trim());
     
     // Kiểm tra nội dung và người nhận
-    if (!text || !currentChatFriend) return;
+    if (!text && !transferData || !currentChatFriend) return;
 
-    // --- PHẦN LOGIC TỰ ĐỘNG BỎ LƯU TRỮ KHI MÌNH NHẮN TIN (MỚI) ---
+    // --- LOGIC TỰ ĐỘNG BỎ LƯU TRỮ & KIỂM TRA CHẶN (GIỮ NGUYÊN) ---
     let archivedFriends = JSON.parse(localStorage.getItem(`archived_${currentUser}`)) || [];
     if (archivedFriends.includes(currentChatFriend)) {
         archivedFriends = archivedFriends.filter(id => id !== currentChatFriend);
         localStorage.setItem(`archived_${currentUser}`, JSON.stringify(archivedFriends));
-        
-        // Cập nhật lại giao diện danh sách bạn bè ngay lập tức
         if (typeof renderFriendsList === "function") renderFriendsList();
     }
-    // ------------------------------------------------------------
-
-    // --- PHẦN LOGIC KIỂM TRA CHẶN (MỚI THÊM) ---
     const amIBlocked = await isBlockedBy(currentChatFriend);
     if (amIBlocked) {
         alert("🚫 Bạn không thể gửi tin nhắn cho người này vì đã bị chặn.");
         return;
     }
-    // ------------------------------------------
 
     const chatRoomId = [currentUser, currentChatFriend].sort().join('_');
-
-    // --- BỔ SUNG: TẮT TRẠNG THÁI ĐANG GÕ NGAY KHI GỬI ---
     db.ref(`chats/${chatRoomId}/typing/${currentUser}`).set(false);
 
     const timestamp = firebase.database.ServerValue.TIMESTAMP;
-    
-    // --- PHẦN TẠO THỜI GIAN HIỂN THỊ (MỚI) ---
     const now = new Date();
     const displayTime = now.getHours().toString().padStart(2, '0') + ":" + 
                         now.getMinutes().toString().padStart(2, '0');
 
-    // 1. Chuẩn bị dữ liệu tin nhắn (Có thêm nhánh replyData và displayTime)
+    // --- 1. CHUẨN BỊ DỮ LIỆU TIN NHẮN (BỔ SUNG LOGIC CHUYỂN TIỀN) ---
     const messageData = {
         sender: currentUser,
         text: text,
         timestamp: timestamp,
-        displayTime: displayTime // Lưu giờ cụ thể vào tin nhắn để hiển thị dưới bong bóng
+        displayTime: displayTime
     };
 
-    // Nếu Henry đang trong trạng thái "Trả lời", đính kèm thông tin tin nhắn gốc vào
+    // Nếu là chuyển tiền, đính kèm thông tin bank_transfer
+    if (transferData) {
+        messageData.type = 'bank_transfer';
+        messageData.amount = transferData.amount;
+        messageData.status = 'pending'; // Chờ nhận
+        messageData.senderCard = transferData.senderCard;
+    }
+
     if (replyingTo) {
         messageData.replyData = {
             id: replyingTo.id,
@@ -13875,30 +13874,25 @@ async function sendMessage() {
         };
     }
         
-    // --- LOGIC PHÂN LOẠI BẠN BÈ / NGƯỜI LẠ (GIỮ NGUYÊN 100% - ĐÃ FIX REAL-TIME) ---
     const friendSnap = await db.ref(`users/${currentUser}/friends/${currentChatFriend}`).once('value');
     const isFriend = friendSnap.exists();
-
-    const msgTitle = isFriend ? "💬 TIN NHẮN MỚI" : "📩 TIN NHẮN CHỜ MỚI";
+    const msgTitle = transferData ? "💰 GIAO DỊCH MỚI" : (isFriend ? "💬 TIN NHẮN MỚI" : "📩 TIN NHẮN CHỜ MỚI");
     const msgType = isFriend ? "chat" : "message_request";
 
     // 2. Lưu tin nhắn vào phòng chat
     const msgRef = db.ref('chats/' + chatRoomId + '/messages').push(); 
     msgRef.set(messageData).then(() => {
         
-        // --- MỚI: TỰ ĐỘNG CUỘN XUỐNG DƯỚI CÙNG ---
+        // --- TỰ ĐỘNG CUỘN XUỐNG DƯỚI CÙNG (GIỮ NGUYÊN) ---
         setTimeout(() => {
             const chatBox = document.getElementById('chat-messages-area');
             if (chatBox) {
-                chatBox.scrollTo({
-                    top: chatBox.scrollHeight,
-                    behavior: 'smooth'
-                });
+                chatBox.scrollTo({ top: chatBox.scrollHeight, behavior: 'smooth' });
             }
         }, 100);
 
-        // 3. BẮN THÔNG BÁO THEO PHÂN LOẠI (Trong App)
-        db.ref('notifications_queue/' + currentChatFriend).push({
+        // 3. BẮN THÔNG BÁO (Trong App & Push)
+        const notificationData = {
             from: currentUser,
             friendName: currentUser, 
             text: text,
@@ -13906,9 +13900,10 @@ async function sendMessage() {
             time: Date.now(),
             displayTime: displayTime,
             title: msgTitle
-        });
+        };
 
-        // --- MỚI: BẮN THÔNG BÁO RA MÁY ĐIỆN THOẠI (Push Notification) ---
+        db.ref('notifications_queue/' + currentChatFriend).push(notificationData);
+
         db.ref('push_notifications/' + currentChatFriend).push({
             title: msgTitle,
             body: `${currentUser}: ${text}`,
@@ -13920,7 +13915,7 @@ async function sendMessage() {
         // 4. Tăng badge số lượng tin chưa đọc
         db.ref(`unread_counts/${currentChatFriend}/${currentUser}`).transaction(c => (c || 0) + 1);
 
-        // 5. XOÁ TRẠNG THÁI TRẢ LỜI (Reset giao diện)
+        // 5. XOÁ TRẠNG THÁI TRẢ LỜI
         if (replyingTo) {
             replyingTo = null; 
             const replyBar = document.getElementById('chat-reply-bar');
@@ -13928,10 +13923,10 @@ async function sendMessage() {
         }
 
         input.value = ""; // Xoá ô nhập liệu
-        input.focus();    // Giữ focus để Henry nhắn tiếp cho lẹ
+        input.focus(); 
     }).catch((err) => {
         console.error("Lỗi gửi tin nhắn:", err);
-        alert("Không thể gửi tin nhắn. Vui lòng kiểm tra kết nối!");
+        alert("Không thể gửi tin nhắn!");
     });
 }
     
@@ -14271,49 +14266,51 @@ function renderSingleMessage(msgId, msg, position = 'bottom', targetContainer = 
 
     let bodyContentHtml = `<div class="text-content">${finalMsgText}</div>`;
     
-    // --- PHẦN XỬ LÝ CHUYỂN TIỀN (SWEETIE BANK STYLE) ---
+    // --- PHẦN XỬ LÝ Ô TIN NHẮN CHUYỂN TIỀN (WECHAT/ZALOPAY STYLE) ---
     if (msg.type === 'bank_transfer') {
         const amount = msg.amount || 0;
         const status = msg.status || 'pending'; // pending, accepted, refused
-        const themeColor = isMe ? '#ffffff' : '#d81b60';
         
-        // Icon và màu sắc dựa trên trạng thái
-        let statusIcon = 'fa-wallet';
-        let statusText = 'Chuyển tiền';
-        let subText = 'Nhấn để xem chi tiết';
-        let bgColor = isMe ? 'rgba(255,255,255,0.15)' : '#fff0f5';
+        // Cấu hình giao diện theo trạng thái
+        let statusLabel = "Chuyển tiền Sweetie Bank";
+        let subLabel = "Nhấn để nhận tiền ngay ✨";
+        let cardOpacity = 1;
+        let iconAnim = "animate__pulse animate__infinite";
 
         if (status === 'accepted') {
-            statusText = 'Đã nhận tiền';
-            subText = 'Giao dịch thành công ✅';
-            bgColor = isMe ? 'rgba(255,255,255,0.1)' : '#f0fdf4';
+            statusLabel = "Đã nhận tiền";
+            subLabel = "Giao dịch thành công ✅";
+            cardOpacity = 0.7; // Làm mờ đi một chút khi đã xong
+            iconAnim = "";
         } else if (status === 'refused') {
-            statusText = 'Đã hoàn tiền';
-            subText = 'Giao dịch bị từ chối ❌';
-            bgColor = isMe ? 'rgba(255,255,255,0.1)' : '#fef2f2';
+            statusLabel = "Giao dịch đã hoàn";
+            subLabel = "Đã từ chối/hoàn tiền ❌";
+            cardOpacity = 0.7;
+            iconAnim = "";
         }
 
         bodyContentHtml = `
-            <div class="bank-transfer-bubble" style="min-width: 200px; border-radius: 15px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
-                <div style="background: #ff1493; padding: 12px; color: white; display: flex; align-items: center; gap: 12px;">
-                    <div style="width: 35px; height: 35px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-                        <i class="fas ${statusIcon}" style="font-size: 1.1em;"></i>
+            <div class="transfer-message-card" style="width: 220px; border-radius: 15px; overflow: hidden; box-shadow: 0 4px 15px rgba(216, 27, 96, 0.15); opacity: ${cardOpacity};">
+                <div style="background: linear-gradient(135deg, #ff1493, #d81b60); padding: 12px; color: white; display: flex; align-items: center; gap: 12px;">
+                    <div class="animate__animated ${iconAnim}" style="width: 40px; height: 40px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-wallet" style="font-size: 1.2rem;"></i>
                     </div>
                     <div style="display: flex; flex-direction: column;">
-                        <span style="font-size: 0.9em; font-weight: bold;">${amount.toLocaleString()} VNĐ</span>
-                        <span style="font-size: 0.7em; opacity: 0.9;">${statusText}</span>
+                        <span style="font-size: 1.1rem; font-weight: 800;">${amount.toLocaleString()}</span>
+                        <span style="font-size: 0.65rem; opacity: 0.9; font-weight: bold; letter-spacing: 0.5px;">VNĐ</span>
                     </div>
                 </div>
                 
-                <div style="padding: 10px; background: ${bgColor}; display: flex; flex-direction: column; gap: 8px;">
-                    <span style="font-size: 0.75em; color: ${isMe ? '#fff' : '#666'}; font-weight: 500;">${subText}</span>
+                <div style="padding: 10px; background: ${isMe ? 'rgba(255,255,255,0.9)' : '#fffafa'};">
+                    <div style="font-size: 0.75rem; color: #d81b60; font-weight: bold; margin-bottom: 8px;">${statusLabel}</div>
+                    <div style="font-size: 0.65rem; color: #888; margin-bottom: 10px;">${subLabel}</div>
                     
                     ${(!isMe && status === 'pending') ? `
                         <div style="display: flex; gap: 8px;">
                             <button onclick="handleTransferAction('${msgId}', 'accept', ${amount}, '${msg.senderCard}')" 
-                                style="flex: 1; padding: 6px; border: none; background: #ff1493; color: white; border-radius: 8px; font-size: 0.75em; font-weight: bold; cursor: pointer;">NHẬN</button>
+                                style="flex: 2; padding: 6px; background: #ff1493; border: none; color: white; border-radius: 8px; font-size: 0.7rem; font-weight: bold; cursor: pointer;">NHẬN</button>
                             <button onclick="handleTransferAction('${msgId}', 'refuse', ${amount}, '${msg.senderCard}')" 
-                                style="flex: 1; padding: 6px; border: 1px solid #ffb6c1; background: white; color: #ff1493; border-radius: 8px; font-size: 0.75em; font-weight: bold; cursor: pointer;">TỪ CHỐI</button>
+                                style="flex: 1; padding: 6px; background: white; border: 1px solid #ffb6c1; color: #ff1493; border-radius: 8px; font-size: 0.7rem; font-weight: bold; cursor: pointer;">TỪ CHỐI</button>
                         </div>
                     ` : ''}
                 </div>
@@ -19735,63 +19732,106 @@ async function unlinkCard() {
 }
 
 async function processTransfer(amount, pass, myCardId) {
+    // 1. Kiểm tra đầu vào cơ bản
+    if (!amount || amount <= 0 || !myCardId) return;
+
     const cardRef = db.ref(`sweetie_cards/${myCardId}`);
-    const cardSnap = await cardRef.once('value');
-    const cardData = cardSnap.val();
-
-    if (pass !== cardData.password) return alert("Mật khẩu thẻ không đúng!");
-    if (cardData.balance < amount) return alert("Số dư trong thẻ không đủ!");
-
+    
     try {
-        // Trừ tiền người gửi ngay lập tức
-        await cardRef.child('balance').transaction(val => (val || 0) - amount);
+        // 2. Lấy dữ liệu thẻ mới nhất để kiểm tra mật khẩu và số dư
+        const cardSnap = await cardRef.once('value');
+        if (!cardSnap.exists()) return alert("Lỗi: Không tìm thấy thông tin thẻ!");
         
-        // Ghi lịch sử cho người gửi
-        recordCardHistory(myCardId, 'withdraw', amount); // Coi như rút tiền để chuyển
+        const cardData = cardSnap.val();
 
-        // Gửi tin nhắn đặc biệt vào đoạn chat
+        // Kiểm tra mật khẩu
+        if (pass !== cardData.password) {
+            alert("Mật khẩu thẻ không đúng, Henry kiểm tra lại nhé! 🌸");
+            return;
+        }
+
+        // Kiểm tra số dư (Check lần 1 tại máy khách)
+        if ((cardData.balance || 0) < amount) {
+            alert("Số dư trong thẻ không đủ để thực hiện chuyển khoản!");
+            return;
+        }
+
+        // 3. THỰC HIỆN GIAO DỊCH (Trừ tiền)
+        // Dùng transaction để đảm bảo tính toàn vẹn dữ liệu nếu nhiều người cùng thao tác
+        const result = await cardRef.child('balance').transaction(currentBalance => {
+            if (currentBalance === null) return 0;
+            if (currentBalance < amount) return; // Hủy transaction nếu không đủ tiền
+            return currentBalance - amount;
+        });
+
+        if (!result.committed) {
+            alert("Giao dịch thất bại: Số dư thay đổi hoặc không đủ tiền!");
+            return;
+        }
+
+        // 4. Ghi lịch sử giao dịch (Sử dụng hàm Henry đã có)
+        if (typeof recordCardHistory === 'function') {
+            recordCardHistory(myCardId, 'withdraw', amount);
+        }
+
+        // 5. Chuẩn bị dữ liệu tin nhắn chuyển tiền
         const transferData = {
             type: 'bank_transfer',
             amount: amount,
-            status: 'pending', // Trạng thái chờ nhận
+            status: 'pending', // Chờ nhận
             senderCard: myCardId,
             timestamp: firebase.database.ServerValue.TIMESTAMP
         };
-        
-        sendMessage(null, transferData); // Gửi tin nhắn loại bank_transfer
-        alert("🌸 Đã gửi yêu cầu chuyển tiền!");
+
+        // Gửi tin nhắn vào chat thông qua hàm sendMessage đã nâng cấp
+        if (typeof sendMessage === 'function') {
+            await sendMessage(null, transferData);
+            alert(`🌸 Chuyển thành công ${amount.toLocaleString()} VNĐ! Đang chờ đối phương xác nhận.`);
+        }
+
     } catch (e) {
-        alert("Lỗi giao dịch!");
+        console.error("Lỗi processTransfer:", e);
+        alert("Đã có lỗi xảy ra trong quá trình giao dịch!");
     }
 }
 
     async function handleTransferAction(msgId, action, amount, senderCardId) {
-    // 1. Nếu Từ chối: Hoàn tiền ngay cho người gửi
+    const chatRef = db.ref(`chats/${currentChatId}/messages/${msgId}`);
+
+    // --- 1. NẾU TỪ CHỐI ---
     if (action === 'refuse') {
-        await db.ref(`sweetie_cards/${senderCardId}/balance`).transaction(val => (val || 0) + amount);
-        recordCardHistory(senderCardId, 'deposit', amount); // Ghi log hoàn tiền
-        await db.ref(`chats/${currentChatId}/messages/${msgId}/status`).set('refused');
-        alert("Đã từ chối và hoàn tiền cho người gửi!");
+        if (!confirm("Bạn muốn từ chối và hoàn trả số tiền này chứ?")) return;
+        
+        try {
+            // Hoàn tiền cho người gửi
+            await db.ref(`sweetie_cards/${senderCardId}/balance`).transaction(val => (val || 0) + amount);
+            recordCardHistory(senderCardId, 'deposit', amount); // Ghi log hoàn tiền
+            
+            // Cập nhật trạng thái tin nhắn
+            await chatRef.child('status').set('refused');
+            alert("Đã từ chối và hoàn tiền về thẻ của người gửi 🌸");
+        } catch (e) { alert("Lỗi xử lý hoàn tiền!"); }
         return;
     }
 
-    // 2. Nếu Nhận: Kiểm tra thẻ người nhận
+    // --- 2. NẾU CHẤP NHẬN NHẬN TIỀN ---
+    // Kiểm tra mình (người nhận) có thẻ chưa
     const myCardSnap = await db.ref(`users/${currentUser}/linkedCard`).once('value');
     if (!myCardSnap.exists()) {
-        alert("🌸 Bạn ơi, bạn cần tạo thẻ Sweetie Bank trước khi nhận tiền nhé!");
-        openSweetieCardModal(); // Mở modal tạo thẻ của bạn
+        alert("🌸 Henry ơi, bạn cần có thẻ Sweetie Bank mới nhận được tiền chuyển khoản nhé! Đang chuyển hướng bạn đi tạo thẻ...");
+        openSweetieCardModal(); // Mở modal yêu cầu tạo thẻ
         return;
     }
 
     const myCardId = myCardSnap.val();
     try {
-        // Cộng tiền cho người nhận
+        // Cộng tiền vào thẻ của mình
         await db.ref(`sweetie_cards/${myCardId}/balance`).transaction(val => (val || 0) + amount);
         recordCardHistory(myCardId, 'deposit', amount); // Ghi log nhận tiền
         
-        // Cập nhật trạng thái tin nhắn thành "accepted"
-        await db.ref(`chats/${currentChatId}/messages/${msgId}/status`).set('accepted');
-        alert("🌸 Bạn đã nhận thành công " + amount.toLocaleString() + " VNĐ!");
+        // Cập nhật trạng thái tin nhắn
+        await chatRef.child('status').set('accepted');
+        alert("🌸 Chúc mừng! Bạn đã nhận thành công " + amount.toLocaleString() + " VNĐ vào thẻ.");
     } catch (e) {
         alert("Lỗi khi nhận tiền!");
     }
