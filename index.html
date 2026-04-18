@@ -20928,10 +20928,99 @@ function setRpMode(mode) {
     return amounts;
 }
 
-    async function executeExternalTransfer(myCardId, myCardData) {
+    async function openBankingTransfer(myCardId) {
+    const dashboard = document.querySelector('.card-dashboard-container');
+    
+    // Lấy thông tin thẻ của mình để check số dư và pass
+    const cardSnap = await db.ref(`sweetie_cards/${myCardId}`).once('value');
+    const myCardData = cardSnap.val();
+
+    let transUI = document.getElementById('transaction-ui');
+    if (!transUI) {
+        transUI = document.createElement('div');
+        transUI.id = 'transaction-ui';
+        transUI.className = 'sweetie-transaction-overlay';
+        dashboard.appendChild(transUI);
+    }
+
+    transUI.style.display = 'flex';
+    transUI.innerHTML = `
+        <div class="banking-transfer-form" style="width: 100%; animation: slideUp 0.4s ease; padding: 20px; background: #fff; border-radius: 25px;">
+            <div style="text-align: center; margin-bottom: 20px;">
+                <h4 style="color: #ff1493; font-weight: 800; margin: 0;">CHUYỂN KHOẢN 24/7</h4>
+                <p style="font-size: 0.7rem; color: #aaa;">Nguồn: **** ${myCardId.slice(-4)}</p>
+            </div>
+
+            <div class="bank-input-box" style="margin-bottom: 15px; text-align: left;">
+                <label style="font-size: 0.65rem; color: #ff69b4; font-weight: 800; display: block; margin-bottom: 5px;">SỐ TÀI KHOẢN NHẬN</label>
+                <div style="position: relative;">
+                    <input type="number" id="target-stk" class="sweetie-input-style" placeholder="Nhập 12 số tài khoản..." maxlength="12" style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #eee; outline: none;">
+                    <div id="stk-loading" style="display:none; position:absolute; right:10px; top:12px;"><i class="fas fa-spinner fa-spin" style="color:#ff1493;"></i></div>
+                </div>
+                <div id="target-owner-display" style="color: #ff1493; font-weight: 800; font-size: 0.85rem; margin-top: 8px; height: 18px; text-transform: uppercase;"></div>
+            </div>
+
+            <div class="bank-input-box" style="margin-bottom: 15px; text-align: left;">
+                <label style="font-size: 0.65rem; color: #ff69b4; font-weight: 800; display: block; margin-bottom: 5px;">SỐ TIỀN (Số dư: ${myCardData.balance.toLocaleString()}đ)</label>
+                <input type="number" id="transfer-amount" class="sweetie-input-style" placeholder="0" style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #eee;">
+            </div>
+
+            <div class="bank-input-box" style="margin-bottom: 15px; text-align: left;">
+                <label style="font-size: 0.65rem; color: #ff69b4; font-weight: 800; display: block; margin-bottom: 5px;">NỘI DUNG</label>
+                <input type="text" id="transfer-note" class="sweetie-input-style" placeholder="Nhập lời nhắn..." style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #eee;">
+            </div>
+
+            <div class="bank-input-box" style="margin-bottom: 20px; text-align: left;">
+                <label style="font-size: 0.65rem; color: #ff69b4; font-weight: 800; display: block; margin-bottom: 5px;">MÃ PIN (MẬT KHẨU THẺ)</label>
+                <input type="password" id="transfer-pin" class="sweetie-input-style" placeholder="••••••" style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #eee; letter-spacing: 5px;">
+            </div>
+
+            <div style="display: flex; gap: 10px;">
+                <button onclick="document.getElementById('transaction-ui').style.display='none'" class="btn-bank-cancel" style="flex: 1; padding: 12px; border: none; border-radius: 15px; background: #f5f5f5; color: #999; font-weight: bold; cursor: pointer;">HỦY</button>
+                <button id="btn-do-transfer" class="btn-bank-confirm" style="flex: 2; padding: 12px; border: none; border-radius: 15px; background: #ff1493; color: #fff; font-weight: 800; cursor: pointer; box-shadow: 0 4px 15px rgba(255,20,147,0.3);">XÁC NHẬN</button>
+            </div>
+        </div>
+    `;
+
+    // --- LOGIC TRA CỨU Tên CHỦ TK TỰ ĐỘNG ---
+    const stkInput = document.getElementById('target-stk');
+    const ownerDisplay = document.getElementById('target-owner-display');
+    const loadingIcon = document.getElementById('stk-loading');
+
+    stkInput.oninput = async function() {
+        const stk = this.value;
+        if (stk.length === 12) {
+            loadingIcon.style.display = 'block';
+            ownerDisplay.innerText = "Đang tìm kiếm...";
+            
+            // Tìm trong Firebase node sweetie_cards xem ai có STK (accountNo) này
+            const cardsRef = db.ref('sweetie_cards');
+            const query = await cardsRef.orderByChild('accountNo').equalTo(stk).once('value');
+            
+            loadingIcon.style.display = 'none';
+            if (query.exists()) {
+                const targetData = Object.values(query.val())[0];
+                const targetId = Object.keys(query.val())[0];
+                ownerDisplay.innerText = targetData.ownerName.toUpperCase();
+                ownerDisplay.dataset.targetId = targetId; // Lưu ID thẻ để xử lý chuyển tiền
+                ownerDisplay.style.color = "#2e7d32";
+            } else {
+                ownerDisplay.innerText = "KHÔNG TÌM THẤY TÀI KHOẢN";
+                ownerDisplay.style.color = "#c62828";
+                ownerDisplay.dataset.targetId = "";
+            }
+        } else {
+            ownerDisplay.innerText = "";
+        }
+    };
+
+    document.getElementById('btn-do-transfer').onclick = () => executeBankingTransfer(myCardId, myCardData);
+}
+
+    async function executeBankingTransfer(myCardId, myCardData) {
     const targetId = document.getElementById('target-owner-display').dataset.targetId;
     const amount = parseInt(document.getElementById('transfer-amount').value);
-    const note = document.getElementById('transfer-note').value.trim() || `${myCardData.ownerName} đã chuyển tiền`;
+    const note = document.getElementById('transfer-note').value.trim() || `${myCardData.ownerName.toUpperCase()} chuyển tiền`;
     const pin = document.getElementById('transfer-pin').value;
     const targetOwner = document.getElementById('target-owner-display').innerText;
 
@@ -20941,55 +21030,57 @@ function setRpMode(mode) {
     if (pin !== myCardData.password) return alert("Mã PIN không chính xác!");
 
     try {
-        // Thực hiện transaction
-        await db.ref(`sweetie_cards/${myCardId}/balance`).transaction(c => c - amount);
+        // 1. Thực hiện trừ tiền người gửi và cộng tiền người nhận
+        await db.ref(`sweetie_cards/${myCardId}/balance`).transaction(c => (c || 0) - amount);
         await db.ref(`sweetie_cards/${targetId}/balance`).transaction(c => (c || 0) + amount);
 
-        // Ghi lịch sử cho cả 2
+        // 2. Ghi lịch sử
         recordCardHistory(myCardId, 'transfer_out', amount, { toUser: targetOwner, note: note });
         recordCardHistory(targetId, 'transfer_in', amount, { fromUser: myCardData.ownerName, note: note });
 
-        // Hiện Bill
+        // 3. Hiển thị Bill thành công
         showBankingBill({
             amount: amount,
             sender: myCardData.ownerName,
             receiver: targetOwner,
             note: note,
             stk: document.getElementById('target-stk').value,
-            transId: "SW" + Date.now()
+            transId: "SW" + Date.now().toString().slice(-8)
         });
 
-        // Bắn thông báo cho người nhận (nếu họ đang online)
-        const targetSnap = await db.ref(`sweetie_cards/${targetId}/ownerName`).once('value');
-        // (Bạn có thể thêm logic lấy UID người dùng từ Card ID để bắn addNotification tại đây)
+        // 4. Bắn thông báo (Ting Ting) cho Henry
+        addNotification("📤 CHUYỂN KHOẢN THÀNH CÔNG", `Bạn đã chuyển ${amount.toLocaleString()} VNĐ đến STK ${document.getElementById('target-stk').value}.`);
 
     } catch (e) {
-        alert("Giao dịch thất bại!");
+        console.error(e);
+        alert("Giao dịch thất bại, vui lòng thử lại!");
     }
 }
 
 function showBankingBill(data) {
     const ui = document.getElementById('transaction-ui');
     ui.innerHTML = `
-        <div class="banking-bill" id="bill-to-save" style="width: 100%; background: #fff; border-radius: 30px; padding: 40px 20px; text-align: center; position: relative; animation: zoomIn 0.4s ease;">
-            <div style="color: #2e7d32; font-size: 3rem; margin-bottom: 15px;"><i class="fas fa-check-circle"></i></div>
-            <h2 style="margin: 0; color: #333; font-weight: 800;">Chuyển tiền thành công</h2>
-            <h1 style="color: #ff1493; margin: 10px 0 30px; font-size: 2.2rem;">${data.amount.toLocaleString()}đ</h1>
+        <div class="banking-bill" style="width: 100%; background: #fff; border-radius: 30px; padding: 30px 20px; text-align: center; animation: zoomIn 0.4s ease;">
+            <div style="color: #2e7d32; font-size: 3rem; margin-bottom: 10px;"><i class="fas fa-check-circle"></i></div>
+            <h3 style="margin: 0; color: #333; font-weight: 800;">Chuyển tiền thành công</h3>
+            <h1 style="color: #ff1493; margin: 15px 0; font-size: 2rem;">${data.amount.toLocaleString()}đ</h1>
 
-            <div style="text-align: left; background: #f9f9f9; border-radius: 20px; padding: 20px;">
-                <div class="bill-row"><span>Người thụ hưởng</span> <strong>${data.receiver}</strong></div>
-                <div class="bill-row"><span>Số tài khoản</span> <strong>${data.stk}</strong></div>
-                <div class="bill-row"><span>Nội dung</span> <strong>${data.note}</strong></div>
-                <div class="bill-row"><span>Mã giao dịch</span> <strong>${data.transId}</strong></div>
-                <div class="bill-row"><span>Thời gian</span> <strong>${new Date().toLocaleString()}</strong></div>
+            <div style="text-align: left; background: #fdf2f8; border-radius: 20px; padding: 20px; font-size: 0.8rem;">
+                <div style="display:flex; justify-content:space-between; margin-bottom:10px; border-bottom:1px dashed #ffb6c1; padding-bottom:5px;">
+                    <span style="color:#888;">Người nhận</span> <strong style="color:#333;">${data.receiver}</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:10px; border-bottom:1px dashed #ffb6c1; padding-bottom:5px;">
+                    <span style="color:#888;">Số tài khoản</span> <strong style="color:#333;">${data.stk}</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:10px; border-bottom:1px dashed #ffb6c1; padding-bottom:5px;">
+                    <span style="color:#888;">Nội dung</span> <strong style="color:#333;">${data.note}</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between;">
+                    <span style="color:#888;">Mã giao dịch</span> <strong style="color:#333;">${data.transId}</strong>
+                </div>
             </div>
 
-            <div style="margin-top: 30px; display: flex; flex-direction: column; gap: 10px;">
-                <button onclick="alert('Đã lưu bill vào thư viện!')" class="btn-save-bill">LƯU ẢNH BILL</button>
-                <button onclick="document.getElementById('transaction-ui').style.display='none'" class="btn-back-home">VỀ TRANG CHỦ</button>
-            </div>
-            
-            <div style="margin-top: 20px; font-size: 0.65rem; color: #ccc;">Sweetie Bank - Trao gửi yêu thương 🌸</div>
+            <button onclick="document.getElementById('transaction-ui').style.display='none'" style="width: 100%; margin-top: 25px; padding: 15px; border: none; border-radius: 18px; background: #ff1493; color: #fff; font-weight: 800; cursor: pointer;">XÁC NHẬN</button>
         </div>
     `;
 }
