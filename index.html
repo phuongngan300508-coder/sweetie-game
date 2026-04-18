@@ -19965,44 +19965,56 @@ async function processTransfer(amount, pass, myCardId) {
 }
 
     async function handleTransferAction(msgId, action, amount, senderCardId) {
-    const chatRef = db.ref(`chats/${currentChatId}/messages/${msgId}`);
+    // TỰ ĐỘNG TẠO LẠI ID PHÒNG CHAT THẬT (Dựa trên người đang chat)
+    if (!currentChatFriend) {
+        alert("Lỗi: Không xác định được người bạn đang chat!");
+        return;
+    }
+    
+    // Tạo ID phòng chat chuẩn để tìm đúng tin nhắn trên Firebase
+    const realChatId = [currentUser, currentChatFriend].sort().join('_');
+    const chatRef = db.ref(`chats/${realChatId}/messages/${msgId}`);
 
-    // --- 1. NẾU TỪ CHỐI ---
+    // --- TRƯỜNG HỢP: TỪ CHỐI ---
     if (action === 'refuse') {
-        if (!confirm("Bạn muốn từ chối và hoàn trả số tiền này chứ?")) return;
-        
         try {
-            // Hoàn tiền cho người gửi
+            // Hoàn tiền thật về thẻ của người gửi trên Firebase
             await db.ref(`sweetie_cards/${senderCardId}/balance`).transaction(val => (val || 0) + amount);
-            recordCardHistory(senderCardId, 'deposit', amount); // Ghi log hoàn tiền
             
-            // Cập nhật trạng thái tin nhắn
+            // Ghi log lịch sử thật cho người gửi
+            recordCardHistory(senderCardId, 'deposit', amount);
+            
+            // Cập nhật trạng thái tin nhắn thành "Đã từ chối" để ô chat thay đổi giao diện
             await chatRef.child('status').set('refused');
-            alert("Đã từ chối và hoàn tiền về thẻ của người gửi 🌸");
-        } catch (e) { alert("Lỗi xử lý hoàn tiền!"); }
+            alert("🌸 Đã hoàn tiền lại cho đối phương!");
+        } catch (e) { console.error("Lỗi hoàn tiền:", e); }
         return;
     }
 
-    // --- 2. NẾU CHẤP NHẬN NHẬN TIỀN ---
-    // Kiểm tra mình (người nhận) có thẻ chưa
+    // --- TRƯỜNG HỢP: CHẤP NHẬN ---
+    // 1. Kiểm tra xem Henry (người nhận) đã có thẻ ngân hàng thật chưa
     const myCardSnap = await db.ref(`users/${currentUser}/linkedCard`).once('value');
     if (!myCardSnap.exists()) {
-        alert("🌸 Henry ơi, bạn cần có thẻ Sweetie Bank mới nhận được tiền chuyển khoản nhé! Đang chuyển hướng bạn đi tạo thẻ...");
-        openSweetieCardModal(); // Mở modal yêu cầu tạo thẻ
+        alert("🌸 Bạn ơi, bạn cần có thẻ Sweetie Bank mới nhận được tiền nhé!");
+        openSweetieCardModal(); // Mở modal tạo thẻ thật
         return;
     }
 
     const myCardId = myCardSnap.val();
     try {
-        // Cộng tiền vào thẻ của mình
+        // 2. Cộng tiền thật vào số dư thẻ của Henry trên Firebase
         await db.ref(`sweetie_cards/${myCardId}/balance`).transaction(val => (val || 0) + amount);
-        recordCardHistory(myCardId, 'deposit', amount); // Ghi log nhận tiền
         
-        // Cập nhật trạng thái tin nhắn
+        // 3. Ghi log lịch sử thật cho Henry
+        recordCardHistory(myCardId, 'deposit', amount);
+        
+        // 4. Cập nhật trạng thái tin nhắn trên Firebase để đối phương cũng thấy "Đã nhận"
         await chatRef.child('status').set('accepted');
-        alert("🌸 Chúc mừng! Bạn đã nhận thành công " + amount.toLocaleString() + " VNĐ vào thẻ.");
+        
+        alert("🌸 Bạn đã nhận tiền thành công! Kiểm tra số dư thẻ nhé.");
     } catch (e) {
         alert("Lỗi khi nhận tiền!");
+        console.error(e);
     }
 }
 </script>
