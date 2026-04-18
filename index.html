@@ -6322,79 +6322,102 @@ input[type="date"].sweetie-input-style {
     text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
 }
 
-    /* Khung nền mờ của popup chuyển tiền */
+    /* Khung nền mờ bao phủ toàn bộ màn hình (Lớp trên cùng) */
 #transfer-popup-overlay {
-    position: absolute;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(255, 240, 245, 0.8);
-    backdrop-filter: blur(4px);
-    z-index: 1000;
+    position: fixed; /* Chuyển từ absolute sang fixed để bao trùm toàn web */
+    top: 0; 
+    left: 0; 
+    width: 100vw; 
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.5); /* Nền tối mờ nhẹ để nổi bật popup */
+    backdrop-filter: blur(5px);
+    z-index: 100000; /* Cao hơn messenger-box và các thành phần khác */
     display: flex;
     justify-content: center;
     align-items: center;
-    border-radius: 25px; /* Khớp với dashboard của bạn */
+    padding: 20px;
+    box-sizing: border-box;
 }
 
-/* Nội dung popup */
+/* Nội dung popup nằm giữa web */
 .transfer-popup-content {
     background: white;
-    width: 85%;
-    max-width: 320px;
-    padding: 25px;
-    border-radius: 20px;
-    box-shadow: 0 10px 30px rgba(216, 27, 96, 0.2);
-    border: 2px solid #ffb6c1;
+    width: 100%;
+    max-width: 360px; /* Độ rộng tối ưu cho cả PC và Mobile */
+    padding: 30px;
+    border-radius: 30px; /* Bo tròn đồng bộ với Sweetie Card */
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+    border: 4px solid #ffb6c1;
+    position: relative;
+    animation: zoomIn 0.3s ease; /* Sử dụng zoomIn cho đồng bộ với các modal khác */
 }
 
 /* Ô hiển thị thông tin người nhận & số dư */
 .transfer-target-box, .transfer-balance-info {
     background: #fff5f8;
-    padding: 12px;
-    border-radius: 12px;
+    padding: 15px;
+    border-radius: 20px;
     margin-bottom: 15px;
     text-align: center;
+    border: 1px solid #ffdae0;
 }
 
 .transfer-balance-info {
     display: flex;
     justify-content: space-between;
-    font-size: 0.8rem;
+    align-items: center;
+    font-size: 0.85rem;
     color: #666;
-    border: 1px dashed #ffb6c1;
 }
 
 .transfer-balance-info strong {
     color: #ff1493;
+    font-weight: 800;
 }
 
 /* Nút xác nhận kiểu ngân hàng */
 .btn-sweetie-confirm-bank {
     width: 100%;
-    padding: 12px;
+    padding: 15px;
     margin-top: 20px;
     border: none;
-    border-radius: 12px;
+    border-radius: 15px;
     background: linear-gradient(135deg, #ff1493, #d81b60);
     color: white;
     font-weight: 800;
-    font-size: 0.85rem;
+    font-size: 0.9rem;
     cursor: pointer;
     transition: 0.3s;
-    box-shadow: 0 4px 10px rgba(216, 27, 96, 0.3);
+    box-shadow: 0 5px 15px rgba(216, 27, 96, 0.3);
 }
 
 .btn-sweetie-confirm-bank:hover {
-    transform: translateY(-2px);
+    transform: translateY(-3px);
     filter: brightness(1.1);
+    box-shadow: 0 8px 20px rgba(216, 27, 96, 0.4);
 }
 
-/* Animation Up */
-.animate__fadeInUp {
-    animation: fadeInUp 0.4s ease;
+/* Tùy chỉnh input để tránh trình duyệt tự điền */
+.sweetie-input-style {
+    width: 100%;
+    padding: 12px;
+    margin: 10px 0;
+    border: 2px solid #fff0f5;
+    border-radius: 12px;
+    outline: none;
+    box-sizing: border-box;
+    background: #fffafa;
 }
-@keyframes fadeInUp {
-    from { transform: translateY(30px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
+
+.sweetie-input-style:focus {
+    border-color: #ffb6c1;
+    background: white;
+}
+
+/* Animation mượt mà */
+@keyframes zoomIn {
+    from { transform: scale(0.8); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
 }
 </style>
 </head>
@@ -19786,14 +19809,15 @@ async function unlinkCard() {
     }
 }
 
-   async function openTransferPopup() {
-    toggleMediaMenu(); // Đóng menu dấu cộng
+  async function openTransferPopup() {
+    // 0. Đóng menu dấu cộng trước
+    if (typeof toggleMediaMenu === 'function') toggleMediaMenu();
 
-    // 1. Kiểm tra thẻ và lấy số dư
+    // 1. Kiểm tra thẻ ngân hàng của mình
     const myCardIdSnap = await db.ref(`users/${currentUser}/linkedCard`).once('value');
     if (!myCardIdSnap.exists()) {
-        alert("🌸 Henry ơi, bạn cần tạo thẻ Sweetie Bank trước nhé!");
-        openSweetieCardModal();
+        alert("🌸 Bạn ơi, bạn cần tạo thẻ Sweetie Bank trước khi chuyển tiền nhé!");
+        if (typeof openSweetieCardModal === 'function') openSweetieCardModal();
         return;
     }
 
@@ -19803,22 +19827,28 @@ async function unlinkCard() {
     const currentBalance = cardData.balance || 0;
     const targetName = document.getElementById('chat-target-name').innerText;
 
-    // 2. Tạo giao diện Popup chuyển tiền
-    const dashboard = document.querySelector('.card-dashboard-container') || document.body;
+    // 2. Xóa popup cũ nếu lỡ còn tồn tại trên màn hình
+    const existing = document.getElementById('transfer-popup-overlay');
+    if (existing) existing.remove();
+
+    // 3. Tạo cấu trúc HTML khớp hoàn toàn với CSS của Henry
     const transferOverlay = document.createElement('div');
-    transferOverlay.id = 'transfer-popup-overlay';
-    transferOverlay.className = 'sweetie-transaction-overlay'; // Dùng lại class overlay của bạn
+    transferOverlay.id = 'transfer-popup-overlay'; // Khớp ID khung nền mờ
     
     transferOverlay.innerHTML = `
-        <div class="transfer-popup-content animate__animated animate__fadeInUp">
+        <div class="transfer-popup-content"> 
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h3 style="color: #d81b60; margin: 0; font-size: 1.1rem;">💸 CHUYỂN KHOẢN</h3>
-                <i class="fas fa-times" onclick="this.parentElement.parentElement.parentElement.remove()" style="cursor:pointer; color: #ffb6c1; font-size: 1.2rem;"></i>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-paper-plane" style="color: #ff1493;"></i>
+                    <h3 style="color: #d81b60; margin: 0; font-size: 1.1rem; font-weight: 800; letter-spacing: 0.5px;">CHUYỂN KHOẢN</h3>
+                </div>
+                <i class="fas fa-times-circle" onclick="this.closest('#transfer-popup-overlay').remove()" 
+                   style="cursor:pointer; color: #ffb6c1; font-size: 1.4rem;"></i>
             </div>
 
             <div class="transfer-target-box">
                 <span style="font-size: 0.8rem; color: #888;">Người nhận:</span>
-                <div style="font-weight: 800; color: #ff1493; font-size: 1.1rem;">${targetName}</div>
+                <div style="font-weight: 800; color: #ff1493; font-size: 1.2rem;">${targetName}</div>
             </div>
 
             <div class="transfer-balance-info">
@@ -19826,40 +19856,50 @@ async function unlinkCard() {
                 <strong>${currentBalance.toLocaleString()} VNĐ</strong>
             </div>
 
-            <div class="input-group-sweetie">
-                <label>Số tiền chuyển:</label>
-                <input type="number" id="transfer-amount-in" class="sweetie-input-style" placeholder="0">
+            <div style="text-align: left; margin-bottom: 10px;">
+                <label style="font-size: 0.8rem; color: #d81b60; font-weight: bold; margin-bottom: 5px; display: block;">Số tiền muốn chuyển:</label>
+                <input type="number" id="transfer-amount-in" class="sweetie-input-style" placeholder="Nhập số tiền..." autocomplete="off">
             </div>
 
-            <div class="input-group-sweetie" style="margin-top: 15px;">
-                <label>Mật khẩu thẻ:</label>
-                <input type="password" id="transfer-pass-in" class="sweetie-input-style" placeholder="••••••">
+            <div style="text-align: left;">
+                <label style="font-size: 0.8rem; color: #d81b60; font-weight: bold; margin-bottom: 5px; display: block;">Mật khẩu thẻ (PIN):</label>
+                <input type="password" id="transfer-pass-in" class="sweetie-input-style" placeholder="••••••" autocomplete="new-password">
             </div>
 
             <button id="btn-confirm-transfer" class="btn-sweetie-confirm-bank">
-                XÁC NHẬN CHUYỂN TIỀN
+                XÁC NHẬN GIAO DỊCH
             </button>
         </div>
     `;
 
-    dashboard.appendChild(transferOverlay);
-    transferOverlay.style.display = 'flex';
+    // 4. Chèn vào body để Fixed bám theo toàn màn hình web
+    document.body.appendChild(transferOverlay);
+    
+    // Đảm bảo nút đóng hoạt động mượt mà
+    const amountInput = document.getElementById('transfer-amount-in');
+    if (amountInput) amountInput.focus();
 
-    // 3. Xử lý sự kiện nút xác nhận
-    document.getElementById('btn-confirm-transfer').onclick = async () => {
+    // 5. Logic xử lý khi ấn nút Xác Nhận
+    document.getElementById('btn-confirm-transfer').onclick = async function() {
         const amount = parseInt(document.getElementById('transfer-amount-in').value);
         const pass = document.getElementById('transfer-pass-in').value;
 
-        if (!amount || amount <= 0) return alert("Vui lòng nhập số tiền hợp lệ!");
-        if (amount > currentBalance) return alert("Số dư không đủ rồi Henry ơi!");
+        if (!amount || amount <= 0) return alert("Henry hãy nhập số tiền hợp lệ nhé!");
+        if (amount > currentBalance) return alert("Số dư không đủ để thực hiện giao dịch này!");
         if (!pass) return alert("Vui lòng nhập mật khẩu xác nhận!");
 
-        // Gọi hàm xử lý giao dịch đã viết ở bước trước
+        // Khóa nút để tránh click 2 lần
+        this.disabled = true;
+        this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ĐANG XỬ LÝ...';
+
+        // Gọi hàm xử lý trừ tiền và gửi tin nhắn chat
         await processTransfer(amount, pass, myCardId);
-        transferOverlay.remove(); // Đóng popup sau khi xong
+        
+        // Hoàn tất thì đóng popup
+        transferOverlay.remove();
     };
 }
-
+    
 async function processTransfer(amount, pass, myCardId) {
     // 1. Kiểm tra đầu vào cơ bản
     if (!amount || amount <= 0 || !myCardId) return;
