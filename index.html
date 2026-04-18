@@ -6604,6 +6604,9 @@ input[type="date"].sweetie-input-style {
             from { transform: translateY(30px); opacity: 0; }
             to { transform: translateY(0); opacity: 1; }
         }
+
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+            .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 </style>
 </head>
 <body>
@@ -21279,15 +21282,29 @@ function showBankingBill(data) {
 }
 
    function openSavedAccounts() {
-    const dashboard = document.querySelector('.card-dashboard-container');
+    // 1. Gắn trực tiếp vào body để bung toàn màn hình giống popup chuyển tiền
     let savedUI = document.getElementById('saved-accounts-ui');
     
     if (!savedUI) {
         savedUI = document.createElement('div');
         savedUI.id = 'saved-accounts-ui';
-        savedUI.className = 'sweetie-transaction-overlay';
-        savedUI.style.zIndex = "10001";
-        dashboard.appendChild(savedUI);
+        // THIẾT LẬP LỚP PHỦ TOÀN MÀN HÌNH - ĐÈ LÊN POPUP CHUYỂN TIỀN
+        Object.assign(savedUI.style, {
+            position: 'fixed',
+            top: '0',
+            left: '0',
+            width: '100vw',
+            height: '100vh',
+            backgroundColor: 'rgba(0, 0, 0, 0.4)',
+            backdropFilter: 'blur(10px)', // Làm mờ cả popup chuyển tiền phía sau
+            webkitBackdropFilter: 'blur(10px)',
+            display: 'none',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: "100001", // CAO HƠN popup chuyển tiền (99999)
+            padding: '20px 0'
+        });
+        document.body.appendChild(savedUI);
     }
 
     const allAccounts = userData.savedAccounts || [];
@@ -21303,7 +21320,6 @@ function showBankingBill(data) {
                 <p style="color: #ccc; font-size: 0.8rem;">Không tìm thấy kết quả nào ✨</p>
             </div>
         ` : filteredAccounts.map(acc => {
-            // Logic: Nếu có biệt danh thì ưu tiên hiển thị biệt danh
             const displayName = acc.nickname || acc.name;
             const initial = displayName.charAt(0).toUpperCase();
             
@@ -21334,29 +21350,24 @@ function showBankingBill(data) {
     };
 
     savedUI.innerHTML = `
-    <div class="saved-accounts-modal" style="width: 90%; max-width: 380px; max-height: 80%; background: #fff; border-radius: 30px; overflow: hidden; display: flex; flex-direction: column; animation: slideUp 0.4s ease; box-shadow: 0 15px 50px rgba(0,0,0,0.15);">
+    <div class="saved-accounts-modal" style="width: 90%; max-width: 380px; max-height: 80vh; background: #fff; border-radius: 35px; overflow: hidden; display: flex; flex-direction: column; animation: slideUp 0.4s ease; box-shadow: 0 25px 50px rgba(0,0,0,0.2);">
         
-        <div style="background: linear-gradient(135deg, #ff1493, #ff69b4); padding: 20px; color: #fff; text-align: center; position: relative;">
+        <div style="background: linear-gradient(135deg, #ff1493, #ff69b4); padding: 25px 20px; color: #fff; text-align: center; position: relative; flex-shrink: 0;">
             <h4 style="margin: 0; font-size: 1.1rem; font-weight: 800; letter-spacing: 1px;">DANH SÁCH TÀI KHOẢN</h4>
             <p style="margin: 5px 0 0; font-size: 0.7rem; opacity: 0.8;">Chọn tài khoản để chuyển tiền nhanh</p>
             <i class="fas fa-times" onclick="document.getElementById('saved-accounts-ui').style.display='none'" 
-               style="position: absolute; right: 20px; top: 22px; cursor: pointer; font-size: 1.2rem;"></i>
+               style="position: absolute; right: 20px; top: 25px; cursor: pointer; font-size: 1.2rem;"></i>
         </div>
 
-        <div style="padding: 15px 20px; background: #fffafb;">
-            <div style="background: #fff; border: 1px solid #ff149320; border-radius: 12px; padding: 8px 15px; display: flex; align-items: center; gap: 10px;">
-                <i class="fas fa-search" style="color: #ffb6c1; font-size: 0.8rem;"></i>
-                <input type="text" id="account-search-input" placeholder="Tìm biệt danh hoặc số tài khoản..." style="border: none; outline: none; font-size: 0.8rem; width: 100%; color: #333; background: transparent;">
+        <div style="padding: 15px 20px; background: #fffafb; flex-shrink: 0;">
+            <div style="background: #fff; border: 1.5px solid #ff149320; border-radius: 15px; padding: 10px 15px; display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-search" style="color: #ffb6c1; font-size: 0.9rem;"></i>
+                <input type="text" id="account-search-input" placeholder="Tìm biệt danh hoặc số tài khoản..." style="border: none; outline: none; font-size: 0.85rem; width: 100%; color: #333; background: transparent;">
             </div>
         </div>
         
-        <div class="accounts-list-container hide-scrollbar" style="overflow-y: auto; flex: 1; padding: 0 10px 20px;">
+        <div class="accounts-list-container hide-scrollbar" style="overflow-y: auto; flex: 1; padding: 0 10px 20px; background: #fff;">
         </div>
-        
-        <style>
-            .hide-scrollbar::-webkit-scrollbar { display: none; }
-            .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        </style>
     </div>
     `;
 
@@ -21366,11 +21377,9 @@ function showBankingBill(data) {
     searchInput.oninput = function() {
         const keyword = this.value.toLowerCase().trim();
         const filtered = allAccounts.filter(acc => {
-            // Logic tìm kiếm: Nếu có biệt danh thì KHÔNG tìm theo tên gốc
             if (acc.nickname) {
                 return acc.nickname.toLowerCase().includes(keyword) || acc.stk.includes(keyword);
             }
-            // Nếu không có biệt danh thì tìm theo tên gốc
             return acc.name.toLowerCase().includes(keyword) || acc.stk.includes(keyword);
         });
         renderList(filtered);
