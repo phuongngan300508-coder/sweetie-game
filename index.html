@@ -21057,11 +21057,15 @@ function setRpMode(mode) {
                     style="width: 100%; padding: 12px; border-radius: 15px; border: 1px solid #eee; height: 60px; outline: none; resize: none; font-size: 0.85rem; box-sizing: border-box; font-family: inherit;"></textarea>
             </div>
 
-            <div class="bank-input-box" style="margin-bottom: 10px; text-align: left;">
-                <label style="font-size: 0.7rem; color: #ff69b4; font-weight: 800; display: block; margin-bottom: 8px;">XÁC THỰC MÃ PIN</label>
-                <input type="password" id="transfer-pin" placeholder="••••••" maxlength="6"
-                    style="width: 100%; padding: 15px; border-radius: 15px; border: 1px solid #eee; letter-spacing: 8px; text-align: center; font-weight: 900; outline: none; box-sizing: border-box; font-size: 1.1rem;">
-            </div>
+            <div class="bank-input-box" style="margin-bottom: 25px; text-align: left;">
+    <label style="font-size: 0.7rem; color: #ff1493; font-weight: 800; display: block; margin-bottom: 8px;">XÁC THỰC MẬT KHẨU THÈ</label>
+    <input type="password" id="transfer-pin" 
+        placeholder="Nhập mật khẩu thẻ của bạn..." 
+        readonly 
+        onfocus="this.removeAttribute('readonly');"
+        autocomplete="new-password" 
+        style="width: 100%; padding: 15px; border-radius: 18px; border: 1.5px solid #eee; outline: none; box-sizing: border-box; font-size: 1rem; text-align: center; font-weight: 600; color: #333; transition: 0.3s; background: #fff;">
+</div>
         </div>
 
         <div style="padding: 20px; background: #fff; border-top: 1px solid #f0f0f0; display: flex; gap: 12px; flex-shrink: 0;">
