@@ -19309,8 +19309,9 @@ async function renderGlobalMessage(id, msg) {
         });
 
     } else {
-        // --- PHẦN ĐÃ CẬP NHẬT: NHẬN DIỆN LỜI CẢM ƠN ---
-        const isThanks = msg.text && msg.text.startsWith('💌');
+        // --- ĐOẠN ĐÃ CẬP NHẬT: NHẬN DIỆN LỜI CẢM ƠN (💌) ---
+        // Sử dụng includes để load trang lại vẫn nhận diện được icon 💌 trong tin nhắn cũ
+        const isThanks = msg.text && msg.text.includes('💌');
 
         messageBodyHtml = `
             <div style="display: inline-block; padding: 10px 14px; border-radius: 18px; font-size: 0.85em; 
