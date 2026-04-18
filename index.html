@@ -6607,6 +6607,22 @@ input[type="date"].sweetie-input-style {
 
     .hide-scrollbar::-webkit-scrollbar { display: none; }
             .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+     /* Ẩn thanh cuộn cho Chrome, Safari và Opera */
+            #transaction-ui::-webkit-scrollbar {
+                display: none;
+            }
+            /* Ẩn thanh cuộn cho IE, Edge và Firefox */
+            #transaction-ui {
+                -ms-overflow-style: none;  /* IE and Edge */
+                scrollbar-width: none;  /* Firefox */
+            }
+
+     #new-nickname-input:focus {
+                    border-color: #ffb6c1;
+                    background: #fff;
+                    box-shadow: 0 0 15px rgba(255, 182, 193, 0.3);
+                }
 </style>
 </head>
 <body>
@@ -20982,10 +20998,10 @@ function setRpMode(mode) {
             backdropFilter: 'blur(8px)',
             webkitBackdropFilter: 'blur(8px)',
             display: 'none',
-            justifyContent: 'center',
-            alignItems: 'center',
+            justifyContent: 'center', // Căn giữa ngang
+            alignItems: 'center',     // Căn giữa dọc
             zIndex: '99999',
-            padding: '20px 0'
+            padding: '20px'           // Tạo khoảng cách an toàn với mép màn hình
         });
         document.body.appendChild(transUI);
     }
@@ -21211,23 +21227,14 @@ function showBankingBill(data) {
     ui.style.display = 'flex';
     
     // --- NÂNG CẤP: CHO PHÉP CUỘN NHƯNG ẨN THANH CUỘN (GIỮ NGUYÊN) ---
+    ui.style.display = 'flex';
+    ui.style.justifyContent = 'center'; // Căn giữa ngang
+    ui.style.alignItems = 'center';     // Căn giữa dọc
     ui.style.overflowY = 'auto'; 
-    ui.style.alignItems = 'center'; 
-    ui.style.padding = '20px 0'; 
+    ui.style.padding = '20px';
 
     // Nội dung Bill nâng cấp chuyên nghiệp - Đã bỏ mã QR
     ui.innerHTML = `
-        <style>
-            /* Ẩn thanh cuộn cho Chrome, Safari và Opera */
-            #transaction-ui::-webkit-scrollbar {
-                display: none;
-            }
-            /* Ẩn thanh cuộn cho IE, Edge và Firefox */
-            #transaction-ui {
-                -ms-overflow-style: none;  /* IE and Edge */
-                scrollbar-width: none;  /* Firefox */
-            }
-        </style>
 
         <div id="bill-canvas" class="banking-bill-v2" style="width: 100%; max-width: 350px; background: #fff; border-radius: 35px; padding: 0; overflow: hidden; animation: zoomIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 20px 60px rgba(255, 20, 147, 0.15); border: 1px solid #fff0f5; position: relative; flex-shrink: 0; margin: auto;">
             
@@ -21286,13 +21293,13 @@ function showBankingBill(data) {
 }
 
    function openSavedAccounts() {
-    // 1. Gắn trực tiếp vào body để bung toàn màn hình giống popup chuyển tiền
+    // 1. Gắn trực tiếp vào body để bung toàn màn hình
     let savedUI = document.getElementById('saved-accounts-ui');
     
     if (!savedUI) {
         savedUI = document.createElement('div');
         savedUI.id = 'saved-accounts-ui';
-        // THIẾT LẬP LỚP PHỦ TOÀN MÀN HÌNH - ĐÈ LÊN POPUP CHUYỂN TIỀN
+        // THIẾT LẬP LỚP PHỦ TOÀN MÀN HÌNH - CĂN GIỮA TUYỆT ĐỐI
         Object.assign(savedUI.style, {
             position: 'fixed',
             top: '0',
@@ -21300,13 +21307,13 @@ function showBankingBill(data) {
             width: '100vw',
             height: '100vh',
             backgroundColor: 'rgba(0, 0, 0, 0.4)',
-            backdropFilter: 'blur(10px)', // Làm mờ cả popup chuyển tiền phía sau
+            backdropFilter: 'blur(10px)', 
             webkitBackdropFilter: 'blur(10px)',
             display: 'none',
-            justifyContent: 'center',
-            alignItems: 'center',
-            zIndex: "100001", // CAO HƠN popup chuyển tiền (99999)
-            padding: '20px 0'
+            justifyContent: 'center', // Căn giữa ngang
+            alignItems: 'center',     // Căn giữa dọc
+            zIndex: "100001",         // Cao hơn popup chuyển tiền (99999)
+            padding: '20px'           // Khoảng cách an toàn với mép màn hình
         });
         document.body.appendChild(savedUI);
     }
@@ -21354,7 +21361,7 @@ function showBankingBill(data) {
     };
 
     savedUI.innerHTML = `
-    <div class="saved-accounts-modal" style="width: 90%; max-width: 380px; max-height: 80vh; background: #fff; border-radius: 35px; overflow: hidden; display: flex; flex-direction: column; animation: slideUp 0.4s ease; box-shadow: 0 25px 50px rgba(0,0,0,0.2);">
+    <div class="saved-accounts-modal" style="width: 90%; max-width: 380px; max-height: 80vh; background: #fff; border-radius: 35px; overflow: hidden; display: flex; flex-direction: column; animation: slideUp 0.4s ease; box-shadow: 0 25px 50px rgba(0,0,0,0.2); margin: 0;">
         
         <div style="background: linear-gradient(135deg, #ff1493, #ff69b4); padding: 25px 20px; color: #fff; text-align: center; position: relative; flex-shrink: 0;">
             <h4 style="margin: 0; font-size: 1.1rem; font-weight: 800; letter-spacing: 1px;">DANH SÁCH TÀI KHOẢN</h4>
@@ -21372,6 +21379,11 @@ function showBankingBill(data) {
         
         <div class="accounts-list-container hide-scrollbar" style="overflow-y: auto; flex: 1; padding: 0 10px 20px; background: #fff;">
         </div>
+        
+        <style>
+            .hide-scrollbar::-webkit-scrollbar { display: none; }
+            .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        </style>
     </div>
     `;
 
@@ -21406,6 +21418,8 @@ window.setAccountNickname = function(stk) {
     }
 
     nickPopup.style.display = 'flex';
+    nickPopup.style.justifyContent = 'center'; // Căn giữa ngang
+    nickPopup.style.alignItems = 'center';     // Căn giữa dọc
     nickPopup.innerHTML = `
         <div style="width: 80%; max-width: 320px; background: #fff; border-radius: 30px; padding: 30px 25px; text-align: center; animation: zoomIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 20px 50px rgba(255, 20, 147, 0.15);">
             <div style="width: 55px; height: 55px; background: #fff0f5; color: #ff1493; border-radius: 18px; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; font-size: 1.3rem;">
@@ -21420,14 +21434,6 @@ window.setAccountNickname = function(stk) {
                 autocomplete="off"
                 style="width: 100%; padding: 15px; border: 2px solid #fff0f5; border-radius: 15px; outline: none; text-align: center; font-weight: 800; color: #ff1493; background: #fffafa; font-size: 1rem; transition: 0.3s; box-sizing: border-box;">
             
-            <style>
-                #new-nickname-input:focus {
-                    border-color: #ffb6c1;
-                    background: #fff;
-                    box-shadow: 0 0 15px rgba(255, 182, 193, 0.3);
-                }
-            </style>
-
             <div style="display: flex; gap: 10px; margin-top: 25px;">
                 <button onclick="document.getElementById('nickname-editor-popup').style.display='none'" 
                     style="flex: 1; padding: 12px; border: none; border-radius: 15px; background: #f5f5f5; color: #aaa; font-weight: bold; cursor: pointer;">HỦY</button>
