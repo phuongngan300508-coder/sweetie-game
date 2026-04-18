@@ -21099,9 +21099,29 @@ function setRpMode(mode) {
 }
 
 function showBankingBill(data) {
-    const ui = document.getElementById('transaction-ui');
+    // 1. Tìm container chính để gắn Bill vào (đảm bảo không bị null)
+    const dashboard = document.querySelector('.card-dashboard-container');
+    let ui = document.getElementById('transaction-ui');
+
+    // 2. Nếu không tìm thấy 'transaction-ui', tự động tạo mới nó
+    if (!ui) {
+        ui = document.createElement('div');
+        ui.id = 'transaction-ui';
+        ui.className = 'sweetie-transaction-overlay';
+        // Gắn vào dashboard nếu có, không thì gắn vào body
+        if (dashboard) {
+            dashboard.appendChild(ui);
+        } else {
+            document.body.appendChild(ui);
+        }
+    }
+
+    // 3. Hiển thị lớp phủ
+    ui.style.display = 'flex';
+
+    // 4. Đổ dữ liệu Bill (Giữ nguyên 100% nội dung của Henry)
     ui.innerHTML = `
-        <div class="banking-bill" style="width: 100%; background: #fff; border-radius: 30px; padding: 30px 20px; text-align: center; animation: zoomIn 0.4s ease;">
+        <div class="banking-bill" style="width: 100%; background: #fff; border-radius: 30px; padding: 30px 20px; text-align: center; animation: zoomIn 0.4s ease; box-shadow: 0 15px 35px rgba(255, 20, 147, 0.1);">
             <div style="color: #2e7d32; font-size: 3rem; margin-bottom: 10px;"><i class="fas fa-check-circle"></i></div>
             <h3 style="margin: 0; color: #333; font-weight: 800;">Chuyển tiền thành công</h3>
             <h1 style="color: #ff1493; margin: 15px 0; font-size: 2rem;">${data.amount.toLocaleString()}đ</h1>
@@ -21121,7 +21141,7 @@ function showBankingBill(data) {
                 </div>
             </div>
 
-            <button onclick="document.getElementById('transaction-ui').style.display='none'" style="width: 100%; margin-top: 25px; padding: 15px; border: none; border-radius: 18px; background: #ff1493; color: #fff; font-weight: 800; cursor: pointer;">XÁC NHẬN</button>
+            <button onclick="document.getElementById('transaction-ui').style.display='none'" style="width: 100%; margin-top: 25px; padding: 15px; border: none; border-radius: 18px; background: #ff1493; color: #fff; font-weight: 800; cursor: pointer; transition: 0.3s;">XÁC NHẬN</button>
         </div>
     `;
 }
