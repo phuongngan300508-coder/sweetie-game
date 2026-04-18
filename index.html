@@ -38,6 +38,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Quicksand:wght@500;700&display=swap');
 
@@ -21321,6 +21322,44 @@ function selectSavedAccount(stk, name) {
     }
     
     document.getElementById('saved-accounts-ui').style.display = 'none';
+}
+
+    async function downloadBill() {
+    // 1. Tìm cái khung Bill cần chụp
+    const bill = document.getElementById('bill-canvas');
+    if (!bill) return alert("Không tìm thấy dữ liệu Bill để lưu!");
+
+    // 2. Lấy các nút bấm để tạm ẩn đi (không ai muốn cái nút dính vào ảnh cả)
+    const btnSave = document.querySelector('button[onclick="downloadBill()"]');
+    const btnDone = document.querySelector('button[onclick*="transaction-ui"]');
+
+    if (btnSave) btnSave.style.opacity = '0';
+    if (btnDone) btnDone.style.opacity = '0';
+
+    try {
+        // 3. Sử dụng thư viện html2canvas để vẽ lại cái Bill thành ảnh
+        const canvas = await html2canvas(bill, {
+            backgroundColor: "#ffffff", // Nền trắng cho sạch
+            borderRadius: 35,          // Giữ đúng bo góc 35px của Henry
+            scale: 3,                  // Tăng độ nét lên gấp 3 lần (nét căng luôn)
+            useCORS: true              // Cho phép lấy các icon/ảnh từ link ngoài
+        });
+
+        // 4. Tạo lệnh tải về máy
+        const link = document.createElement('a');
+        link.download = `SweetieBank_Bill_${Date.now()}.png`;
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+        
+        alert("🌸 Sweetie Bank: Đã lưu bill vào máy của bạn thành công!");
+    } catch (e) {
+        console.error("Lỗi chụp ảnh bill:", e);
+        alert("Có lỗi khi tạo ảnh, bạn hãy thử chụp màn hình thủ công nhé!");
+    } finally {
+        // 5. Chụp xong rồi thì hiện lại các nút cho Henry bấm tiếp
+        if (btnSave) btnSave.style.opacity = '1';
+        if (btnDone) btnDone.style.opacity = '1';
+    }
 }
 </script>
 </body>
