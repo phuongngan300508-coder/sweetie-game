@@ -6437,6 +6437,88 @@ input[type="date"].sweetie-input-style {
     transition: 0.3s;
     box-shadow: 0 8px 20px rgba(216, 27, 96, 0.15) !important;
 }
+
+    /* Lớp nền mờ phủ lên Dashboard */
+.sweetie-transaction-overlay {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(10px);
+    z-index: 100;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    border-radius: 20px;
+}
+
+/* Khung Popup trắng tinh tế */
+.trans-card-modern {
+    background: white;
+    width: 90%;
+    max-width: 350px;
+    padding: 25px;
+    border-radius: 24px;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+    border: 1px solid rgba(0,0,0,0.05);
+}
+
+.trans-header { text-align: center; margin-bottom: 25px; }
+.header-icon {
+    width: 50px; height: 50px;
+    line-height: 50px; border-radius: 15px;
+    margin: 0 auto 10px; font-size: 1.2rem;
+}
+.trans-header h3 { font-size: 1.1rem; color: #333; margin: 0; font-weight: 800; }
+.trans-header p { font-size: 0.75rem; color: #888; margin-top: 4px; }
+
+/* Input phong cách tối giản */
+.input-group-modern label {
+    display: block; font-size: 0.75rem;
+    font-weight: 700; color: #555; margin-bottom: 8px;
+    padding-left: 5px;
+}
+.input-wrapper {
+    position: relative;
+    background: #f8f9fa;
+    border-radius: 14px;
+    padding: 12px 15px;
+    display: flex; align-items: center;
+    border: 1.5px solid transparent;
+    transition: 0.3s;
+}
+.input-wrapper:focus-within {
+    border-color: #ff69b4;
+    background: white;
+    box-shadow: 0 0 0 4px rgba(255, 105, 180, 0.1);
+}
+.input-wrapper input {
+    border: none; background: transparent;
+    width: 100%; outline: none;
+    font-size: 1.1rem; font-weight: 700; color: #333;
+}
+.currency { font-weight: 800; color: #ff69b4; font-size: 0.8rem; }
+
+/* Nút chọn nhanh số tiền */
+.quick-amounts {
+    display: flex; gap: 8px; margin-top: 10px;
+}
+.quick-amounts span {
+    background: #eee; padding: 4px 10px;
+    border-radius: 8px; font-size: 0.7rem;
+    cursor: pointer; font-weight: 600; color: #666;
+    transition: 0.2s;
+}
+.quick-amounts span:hover { background: #ff69b4; color: white; }
+
+/* Nút bấm */
+.trans-footer { display: flex; gap: 12px; margin-top: 30px; }
+.btn-modern-primary, .btn-modern-secondary {
+    border: none; padding: 12px; border-radius: 14px;
+    font-weight: 700; font-size: 0.9rem; cursor: pointer; transition: 0.3s;
+}
+.btn-modern-primary { color: white; flex: 2; }
+.btn-modern-secondary { background: #f0f0f0; color: #666; flex: 1; }
+.btn-modern-primary:active { transform: scale(0.96); }
 </style>
 </head>
 <body>
@@ -19420,7 +19502,7 @@ addNotification("💳 THẺ MỚI ĐÃ KÍCH HOẠT", "Chào mừng Henry đến
 function handleCardTransaction(type) {
     // 1. Kiểm tra đăng nhập
     if (typeof currentUser === 'undefined' || !currentUser) {
-        alert("🌸 Henry ơi, bạn cần đăng nhập trước nhé!");
+        alert("🌸 Bạn ơi, bạn cần đăng nhập trước nhé!");
         return;
     }
 
@@ -19431,7 +19513,6 @@ function handleCardTransaction(type) {
         return;
     }
     
-    // Đảm bảo Dashboard có position relative để lớp phủ đè lên đúng vị trí
     dashboard.style.position = 'relative';
 
     // 3. Tìm hoặc tạo khung lớp phủ giao dịch
@@ -19439,47 +19520,68 @@ function handleCardTransaction(type) {
     if (!transUI) {
         const uiDiv = document.createElement('div');
         uiDiv.id = 'transaction-ui';
-        // Class này sẽ được định nghĩa trong CSS để đè lên trên
         uiDiv.className = 'sweetie-transaction-overlay';
         dashboard.appendChild(uiDiv);
         transUI = uiDiv;
     }
 
-    // 4. Hiển thị giao diện nhập tiền đè lên trên
+    // Biến tùy chỉnh theo loại giao dịch
+    const isDeposit = type === 'deposit';
+    const themeColor = isDeposit ? '#2ecc71' : '#ff69b4';
+    const actionText = isDeposit ? 'NẠP TIỀN VÀO THẺ' : 'RÚT TIỀN VỀ VÍ';
+    const icon = isDeposit ? 'fa-wallet' : 'fa-credit-card';
+
+    // 4. Hiển thị giao diện thiết kế tinh tế (Modern Fintech UI)
     transUI.style.display = 'flex'; 
     transUI.innerHTML = `
-        <div class="trans-content-wrapper" style="width: 100%;">
-            <h4 class="trans-title" style="margin-top:0;">${type === 'deposit' ? '🌸 NẠP TIỀN VÀO THẺ' : '🌸 RÚT TIỀN VỀ VÍ'}</h4>
+        <div class="trans-content-wrapper" style="width: 100%; max-width: 380px; background: #fff; border-radius: 24px; padding: 25px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); border: 1px solid #f0f0f0;">
             
-            <div class="input-with-label" style="text-align: left;">
-                <label style="font-size: 0.85rem; color: #ff69b4; font-weight: bold;">Số tiền muốn giao dịch:</label>
-                <div class="input-field-container" style="position: relative;">
-                    <input type="number" id="trans-amount-input" class="sweetie-input-style" placeholder="Nhập số tiền...">
-                    <span class="currency-unit" style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); font-weight: bold; color: #ff69b4; font-size: 0.8rem;">VNĐ</span>
+            <div style="text-align: center; margin-bottom: 25px;">
+                <div style="width: 54px; height: 54px; background: ${themeColor}15; color: ${themeColor}; border-radius: 18px; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; font-size: 1.4rem;">
+                    <i class="fas ${icon}"></i>
+                </div>
+                <h4 style="margin: 0; color: #333; font-size: 1.1rem; font-weight: 800; letter-spacing: -0.5px;">${actionText}</h4>
+                <p style="margin: 5px 0 0; font-size: 0.8rem; color: #999;">An toàn • Bảo mật • Tức thì</p>
+            </div>
+            
+            <div style="background: #f8f9fa; border-radius: 20px; padding: 18px; margin-bottom: 20px; border: 1.5px solid #eee;">
+                <label style="font-size: 0.7rem; color: #888; font-weight: 700; text-transform: uppercase; display: block; margin-bottom: 10px; letter-spacing: 0.5px;">Số tiền giao dịch</label>
+                <div style="display: flex; align-items: center; position: relative;">
+                    <input type="number" id="trans-amount-input" 
+                        style="width: 100%; border: none; background: transparent; font-size: 1.6rem; font-weight: 800; color: #333; outline: none; padding: 0;" 
+                        placeholder="0" autofocus>
+                    <span style="font-weight: 800; color: ${themeColor}; font-size: 1rem; margin-left: 10px;">VNĐ</span>
+                </div>
+                
+                <div style="display: flex; gap: 8px; margin-top: 15px;">
+                    <button onclick="document.getElementById('trans-amount-input').value=50000" style="flex: 1; border: 1px solid #ddd; background: #fff; border-radius: 10px; font-size: 0.75rem; padding: 6px 0; cursor: pointer; color: #666; font-weight: 600; transition: 0.2s;" onmouseover="this.style.borderColor='${themeColor}'" onmouseout="this.style.borderColor='#ddd'">50k</button>
+                    <button onclick="document.getElementById('trans-amount-input').value=100000" style="flex: 1; border: 1px solid #ddd; background: #fff; border-radius: 10px; font-size: 0.75rem; padding: 6px 0; cursor: pointer; color: #666; font-weight: 600; transition: 0.2s;" onmouseover="this.style.borderColor='${themeColor}'" onmouseout="this.style.borderColor='#ddd'">100k</button>
+                    <button onclick="document.getElementById('trans-amount-input').value=500000" style="flex: 1; border: 1px solid #ddd; background: #fff; border-radius: 10px; font-size: 0.75rem; padding: 6px 0; cursor: pointer; color: #666; font-weight: 600; transition: 0.2s;" onmouseover="this.style.borderColor='${themeColor}'" onmouseout="this.style.borderColor='#ddd'">500k</button>
                 </div>
             </div>
             
             ${type === 'withdraw' ? `
-                <div class="input-group-pass" style="margin-top: 15px; text-align: left;">
-                    <label style="font-size: 0.85rem; color: #ff69b4; font-weight: bold;">Mật khẩu thẻ:</label>
-                    <input type="password" id="trans-pass-input" class="sweetie-input-style" placeholder="Nhập mật khẩu thẻ..." autocomplete="new-password">
+                <div style="background: #f8f9fa; border-radius: 20px; padding: 15px 18px; margin-bottom: 20px; border: 1.5px solid #eee;">
+                    <label style="font-size: 0.7rem; color: #888; font-weight: 700; text-transform: uppercase; display: block; margin-bottom: 8px;">Mật khẩu xác thực</label>
+                    <input type="password" id="trans-pass-input" 
+                        style="width: 100%; border: none; background: transparent; font-size: 1rem; outline: none; letter-spacing: 4px;" 
+                        placeholder="••••••" autocomplete="new-password">
                 </div>
             ` : ''}
 
-            <div class="btn-group-horizontal" style="margin-top: 25px; display: flex; gap: 10px;">
-                <button id="btn-cancel-trans" class="btn-sweetie btn-secondary" style="flex: 1;">HỦY</button>
-                <button id="btn-confirm-trans" class="btn-sweetie btn-primary" style="flex: 2;">XÁC NHẬN</button>
+            <div style="display: flex; gap: 12px; margin-top: 10px;">
+                <button id="btn-cancel-trans" style="flex: 1; padding: 14px; border: none; border-radius: 16px; background: #f0f0f0; color: #777; font-weight: 700; cursor: pointer; transition: 0.3s;">HỦY</button>
+                <button id="btn-confirm-trans" style="flex: 2; padding: 14px; border: none; border-radius: 16px; background: ${themeColor}; color: #fff; font-weight: 700; cursor: pointer; box-shadow: 0 8px 20px ${themeColor}40; transition: 0.3s;">XÁC NHẬN</button>
             </div>
         </div>
     `;
 
-    // --- PHẦN SỬA QUAN TRỌNG ĐỂ HẾT BỊ LẶP 2 LẦN ---
-    // Thay vì dùng onclick trong HTML string, ta gán trực tiếp bằng JS
+    // --- GIỮ NGUYÊN LOGIC GÁN SỰ KIỆN 100% ---
     const confirmBtn = document.getElementById('btn-confirm-trans');
     const cancelBtn = document.getElementById('btn-cancel-trans');
 
     if (confirmBtn) {
-        confirmBtn.onclick = null; // Xóa bỏ mọi sự kiện cũ (nếu có)
+        confirmBtn.onclick = null; 
         confirmBtn.onclick = function() {
             executeTransaction(type);
         };
