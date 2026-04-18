@@ -13633,10 +13633,18 @@ function initChatSystem() {
                 // --- ĐOẠN Henry CẦN SỬA ĐỂ PHÂN LOẠI ĐÚNG ---
                 const notiType = data.type || 'open_chat';
                 
+                // CHỈNH SỬA TẠI ĐÂY: Xác định nội dung hiển thị để tránh lỗi undefined
+                let displayBody = "";
+                if (data.type === 'friend_request' || data.type === 'system') {
+                    displayBody = data.text; // Hiện thẳng nội dung nếu là hệ thống/kết bạn
+                } else {
+                    displayBody = `${data.from || "Hệ thống"} vừa nhắn: "${data.text}"`;
+                }
+
                 // 1. Đẩy nội dung vào Chuông thông báo
                 addNotification(
-                    data.title, 
-                    data.type === 'friend_request' ? data.text : `${data.from} vừa nhắn: "${data.text}"`,
+                    data.title || "Thông báo", 
+                    displayBody,
                     false, // Phát tiếng Ting
                     { 
                         type: notiType, // Gán đúng loại để handleNotiClick mở đúng chỗ
@@ -13653,11 +13661,10 @@ function initChatSystem() {
                 }
 
                 // --- BỔ SUNG: BẮN THÔNG BÁO RA MÁY ĐIỆN THOẠI (Push Notification) ---
-                // Nếu Henry đang không ở trong tab web (hidden) hoặc không mở chat với người đó
                 if (document.visibilityState !== 'visible' || currentChatFriend !== data.from) {
                     if (Notification.permission === "granted") {
                         const pushOptions = {
-                            body: data.type === 'friend_request' ? data.text : `${data.from}: ${data.text}`,
+                            body: displayBody, // Sử dụng displayBody đã xử lý ở trên
                             icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
                             badge: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
                             tag: data.from ? "msg-" + data.from : "system-noti",
@@ -20086,12 +20093,14 @@ addNotification("📤 CHUYỂN TIỀN THÀNH CÔNG", `Bạn đã gửi ${amount.
 
             // --- THÊM THÔNG BÁO HOÀN TIỀN CHO ĐỐI PHƯƠNG (NGƯỜI GỬI) ---
             // Vì người gửi đang không on máy lúc này hoặc ở máy khác, ta bắn vào queue của họ
-            db.ref(`notifications_queue/${currentChatFriend}`).push({
-                title: "🔄 TIỀN ĐÃ HOÀN LẠI",
-                text: `Giao dịch ${amount.toLocaleString()} VNĐ bị từ chối. Tiền đã được hoàn về thẻ của bạn.`,
-                time: Date.now(),
-                type: "system"
-            });
+            // --- TRONG PHẦN XỬ LÝ REFUSE ---
+db.ref(`notifications_queue/${currentChatFriend}`).push({
+    title: "🔄 TIỀN ĐÃ HOÀN LẠI",
+    from: "Hệ thống", // Thêm dòng này để không bị undefined
+    text: `Giao dịch ${amount.toLocaleString()} VNĐ bị từ chối. Tiền đã được hoàn về thẻ của bạn.`,
+    time: Date.now(),
+    type: "system" // Loại hệ thống
+});
 
             alert("🌸 Đã hoàn tiền lại cho đối phương!");
         } catch (e) { console.error("Lỗi hoàn tiền:", e); }
