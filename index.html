@@ -20071,32 +20071,43 @@ addNotification("📤 CHUYỂN TIỀN THÀNH CÔNG", `Bạn đã gửi ${amount.
     const chatRef = db.ref(`chats/${realChatId}/messages/${msgId}`);
 
     // --- TRƯỜNG HỢP: TỪ CHỐI ---
-    if (action === 'refuse') {
-        try {
-            // 1. Hoàn tiền thật về thẻ của người gửi
-            await db.ref(`sweetie_cards/${senderCardId}/balance`).transaction(val => (val || 0) + amount);
-            
-            // 2. Ghi loại là 'refund' để hiện icon Hoàn tiền trong lịch sử
-            recordCardHistory(senderCardId, 'refund', amount, { 
-                note: "Tiền bị từ chối nhận" 
-            });
-            
-            // 3. Cập nhật trạng thái tin nhắn
-            await chatRef.child('status').set('refused');
+if (action === 'refuse') {
+    try {
+        // Lấy dữ liệu tin nhắn cũ để biết ai gửi
+        const msgSnap = await chatRef.once('value');
+        const msgData = msgSnap.val();
+        
+        // senderName ở đây là người đã gửi tiền (người sẽ được nhận hoàn tiền)
+        const senderName = msgData.sender; 
+        const amountStr = amount.toLocaleString('vi-VN');
 
-            // --- THÊM THÔNG BÁO HOÀN TIỀN CHO ĐỐI PHƯƠNG (NGƯỜI GỬI) ---
-            // Vì người gửi đang không on máy lúc này hoặc ở máy khác, ta bắn vào queue của họ
-            db.ref(`notifications_queue/${currentChatFriend}`).push({
-                title: "🔄 TIỀN ĐÃ HOÀN LẠI",
-                text: `Giao dịch ${amount.toLocaleString()} VNĐ bị từ chối. Tiền đã được hoàn về thẻ của bạn.`,
-                time: Date.now(),
-                type: "system"
-            });
+        // 1. Hoàn tiền thật về thẻ của người gửi
+        await db.ref(`sweetie_cards/${senderCardId}/balance`).transaction(val => (val || 0) + amount);
+        
+        // 2. Ghi lịch sử cho người gửi (refund)
+        recordCardHistory(senderCardId, 'refund', amount, { 
+            note: "Tiền bị từ chối nhận" 
+        });
+        
+        // 3. Cập nhật trạng thái tin nhắn thành từ chối
+        await chatRef.child('status').set('refused');
 
-            alert("🌸 Đã hoàn tiền lại cho đối phương!");
-        } catch (e) { console.error("Lỗi hoàn tiền:", e); }
-        return;
-    }
+        // --- 4. BẮN THÔNG BÁO CHO NGƯỜI GỬI (CHỦ ĐỘNG LẤY TÊN) ---
+        // Ta dùng senderName lấy từ msgData thay vì dùng biến currentChatFriend
+        db.ref(`notifications_queue/${senderName}`).push({
+            title: "🔄 TIỀN ĐÃ HOÀN LẠI",
+            text: `Giao dịch ${amountStr} VNĐ cho ${currentUser} bị từ chối. Tiền đã về thẻ của bạn.`,
+            time: Date.now(),
+            type: "system"
+        });
+
+        // Thông báo cho chính Henry (người bấm từ chối)
+        addNotification("🌸 ĐÃ TỪ CHỐI", `Bạn đã trả lại ${amountStr} VNĐ cho ${senderName}.`);
+        
+        alert("🌸 Đã hoàn tiền lại cho đối phương!");
+    } catch (e) { console.error("Lỗi hoàn tiền:", e); }
+    return;
+}
 
     // --- TRƯỜNG HỢP: CHẤP NHẬN ---
     const myCardSnap = await db.ref(`users/${currentUser}/linkedCard`).once('value');
