@@ -20059,61 +20059,48 @@ function renderCardDashboard(cardId) {
     cardRef.off(); 
 
     // Bắt đầu lắng nghe dữ liệu một cách sạch sẽ
-    cardRef.on('value', async (snapshot) => {
+    cardRef.on('value', (snapshot) => {
         const card = snapshot.val();
         
         // Nếu thẻ bị xóa hoặc không tồn tại, thoát ra để tránh lỗi render
         if (!card) return;
 
-        // --- MỚI: TỰ ĐỘNG CẤP STK NẾU CHƯA CÓ (TRÁNH UNDEFINED) ---
-        let displayAccNum = card.accountNumber;
-        if (!displayAccNum) {
-            displayAccNum = Math.floor(100000000000 + Math.random() * 899999999999).toString();
-            // Cập nhật lên Firebase để đồng bộ vĩnh viễn
-            await db.ref(`sweetie_cards/${cardId}/accountNumber`).set(displayAccNum);
-            await db.ref(`card_numbers/${displayAccNum}`).set(cardId);
-        }
-
         flow.innerHTML = `
             <div class="card-dashboard-container" style="animation: fadeIn 0.5s">
                 <h3 style="color: #d81b60; margin-bottom: 15px; font-weight: 800;">Thẻ của bạn</h3>
                 
-                <div class="sweetie-card-design bank-style">
-                    <div class="card-watermark">SWEETIE CARD SWEETIE CARD SWEETIE CARD</div>
-                    
-                    <div class="card-header-row">
-                        <div class="bank-logo">
-                            <i class="fas fa-heart"></i> SWEETIE BANK
-                        </div>
-                        <div class="card-contactless">
-                            <i class="fas fa-wifi"></i>
-                        </div>
-                    </div>
+               <div class="sweetie-card-design bank-style">
+    <div class="card-watermark">SWEETIE CARD SWEETIE CARD SWEETIE CARD</div>
+    
+    <div class="card-header-row">
+        <div class="bank-logo">
+            <i class="fas fa-heart"></i> SWEETIE BANK
+        </div>
+        <div class="card-contactless">
+            <i class="fas fa-wifi"></i>
+        </div>
+    </div>
 
-                    <div class="emv-chip">
-                        <div class="chip-line"></div>
-                        <div class="chip-line"></div>
-                        <div class="chip-line"></div>
-                        <div class="chip-line"></div>
-                    </div>
+    <div class="emv-chip">
+        <div class="chip-line"></div>
+        <div class="chip-line"></div>
+        <div class="chip-line"></div>
+        <div class="chip-line"></div>
+    </div>
 
-                    <div class="card-id-view">${cardId.match(/.{1,4}/g).join(' ')}</div>
-                    
-                    <div class="stk-display" style="color: #fff; text-align: center; font-size: 0.8rem; margin-top: -10px; font-family: monospace; opacity: 0.9;">
-                        STK: ${displayAccNum.match(/.{1,4}/g).join(' ')}
-                    </div>
+    <div class="card-id-view">${cardId.match(/.{1,4}/g).join(' ')}</div>
 
-                    <div class="card-footer-info">
-                        <div class="footer-left">
-                            <span class="label">CARD HOLDER</span>
-                            <div class="card-holder-name">${(card.ownerName || card.owner).toUpperCase()}</div>
-                        </div>
-                        <div class="footer-right">
-                            <span class="label">VALID THRU</span>
-                            <div class="expiry">12/29</div>
-                        </div>
-                    </div>
-                </div>
+    <div class="card-footer-info">
+        <div class="footer-left">
+            <span class="label">CARD HOLDER</span>
+            <div class="card-holder-name">${(card.ownerName || card.owner).toUpperCase()}</div>
+        </div>
+        <div class="footer-right">
+            <span class="label">VALID THRU</span>
+            <div class="expiry">12/29</div>
+        </div>
+    </div>
+</div>
 
                 <div class="card-balance-box" style="margin: 20px 0; padding: 15px; background: #fff; border-radius: 20px; border: 2px dashed #ffb6c1;">
                     <span style="color: #888; font-size: 0.85rem;">Số dư khả dụng</span>
@@ -20130,10 +20117,6 @@ function renderCardDashboard(cardId) {
                         </button>
                     </div>
                     
-                    <button onclick="openDirectTransferModal('${cardId}', ${card.balance || 0})" class="btn-history-soft" style="background: #ff1493; color: #fff; border: none; margin-bottom: 8px;">
-                        <i class="fas fa-paper-plane"></i> Chuyển tiền qua STK
-                    </button>
-
                     <button onclick="showCardHistory('${cardId}')" class="btn-history-soft">
                         <i class="fas fa-history"></i> Lịch sử giao dịch
                     </button>
@@ -20872,174 +20855,6 @@ function setRpMode(mode) {
         amounts.push(remainingAmount + min);
     }
     return amounts;
-}
-
-   async function openDirectTransferModal(myCardId, myBalance) {
-    const overlay = document.createElement('div');
-    overlay.id = 'bank-transfer-overlay';
-    overlay.className = 'sweetie-transaction-overlay'; // Dùng lại class cũ của Henry
-    
-    overlay.innerHTML = `
-        <div class="bank-transfer-content" style="background:#fff; width:90%; max-width:380px; border-radius:30px; padding:25px; animation: slideUp 0.4s ease;">
-            <div style="text-align:center; margin-bottom:20px;">
-                <h3 style="color:#ff1493; margin:0;">SWEETIE BANK</h3>
-                <p style="font-size:0.7rem; color:#888;">Chuyển khoản nhanh 24/7</p>
-            </div>
-
-            <div style="background:#fff5f8; padding:15px; border-radius:20px; margin-bottom:20px; border:1px solid #ffb6c140;">
-                <span style="font-size:0.7rem; color:#ff69b4; font-weight:800;">SỐ DƯ KHẢ DỤNG</span>
-                <div style="font-size:1.2rem; font-weight:800; color:#333;">${myBalance.toLocaleString()} ₫</div>
-            </div>
-
-            <div class="bank-input-group">
-                <label style="font-size:0.7rem; font-weight:800; color:#666;">SỐ TÀI KHOẢN NHẬN</label>
-                <input type="number" id="dest-acc-num" placeholder="Nhập 12 số tài khoản..." 
-                    style="width:100%; border:none; border-bottom:2px solid #eee; padding:10px 0; font-size:1.1rem; outline:none; margin-bottom:5px;">
-                <div id="dest-owner-name" style="height:20px; color:#ff1493; font-weight:800; font-size:0.85rem; margin-bottom:15px;"></div>
-
-                <label style="font-size:0.7rem; font-weight:800; color:#666;">SỐ TIỀN CHUYỂN</label>
-                <input type="number" id="transfer-amount" placeholder="0" 
-                    style="width:100%; border:none; border-bottom:2px solid #eee; padding:10px 0; font-size:1.1rem; outline:none; margin-bottom:15px;">
-
-                <label style="font-size:0.7rem; font-weight:800; color:#666;">LỜI NHẮN</label>
-                <input type="text" id="transfer-msg" placeholder="Nội dung chuyển tiền" 
-                    style="width:100%; border:none; border-bottom:2px solid #eee; padding:10px 0; font-size:0.9rem; outline:none; margin-bottom:15px;">
-                
-                <label style="font-size:0.7rem; font-weight:800; color:#666;">MÃ PIN (MẬT KHẨU THẺ)</label>
-                <input type="password" id="transfer-pin" placeholder="••••••" 
-                    style="width:100%; border:none; border-bottom:2px solid #eee; padding:10px 0; font-size:1.1rem; outline:none; letter-spacing:4px;">
-            </div>
-
-            <div style="display:flex; gap:10px; margin-top:25px;">
-                <button onclick="this.closest('#bank-transfer-overlay').remove()" style="flex:1; padding:12px; border-radius:15px; border:none; background:#f5f5f5; color:#999; font-weight:700;">HỦY</button>
-                <button id="btn-do-transfer" style="flex:2; padding:12px; border-radius:15px; border:none; background:#ff1493; color:#fff; font-weight:800; cursor:pointer;">XÁC NHẬN</button>
-            </div>
-        </div>
-    `;
-
-    document.body.appendChild(overlay);
-
-    // Xử lý tìm tên chủ tài khoản tự động khi nhập STK
-    const accInput = document.getElementById('dest-acc-num');
-    const nameDisplay = document.getElementById('dest-owner-name');
-    let targetCardId = null;
-
-    accInput.oninput = async function() {
-        const val = this.value;
-        if (val.length === 12) {
-            nameDisplay.innerText = "🔍 Đang tìm...";
-            const snap = await db.ref(`card_numbers/${val}`).once('value');
-            if (snap.exists()) {
-                targetCardId = snap.val();
-                const cardSnap = await db.ref(`sweetie_cards/${targetCardId}`).once('value');
-                const name = cardSnap.val().ownerName || cardSnap.val().owner;
-                nameDisplay.innerText = "✅ " + name.toUpperCase();
-            } else {
-                nameDisplay.innerText = "❌ Không tìm thấy tài khoản";
-                targetCardId = null;
-            }
-        } else {
-            nameDisplay.innerText = "";
-            targetCardId = null;
-        }
-    };
-
-    // Nút thực hiện chuyển khoản
-    document.getElementById('btn-do-transfer').onclick = async function() {
-        const amount = parseInt(document.getElementById('transfer-amount').value);
-        const pin = document.getElementById('transfer-pin').value;
-        let msg = document.getElementById('transfer-msg').value.trim();
-        
-        if (!targetCardId) return alert("Vui lòng nhập đúng STK người nhận!");
-        if (isNaN(amount) || amount < 1000) return alert("Số tiền tối thiểu là 1.000đ");
-        if (amount > myBalance) return alert("Số dư thẻ không đủ!");
-        
-        // Kiểm tra mã PIN
-        const myCardSnap = await db.ref(`sweetie_cards/${myCardId}`).once('value');
-        const myCardData = myCardSnap.val();
-        
-        if (pin !== myCardData.password) return alert("Mã PIN không chính xác!");
-
-        if (!msg) {
-            const myName = myCardData.ownerName || myCardData.owner;
-            msg = `${myName.toUpperCase()} đã chuyển tiền`;
-        }
-
-        // Thực hiện trừ tiền mình, cộng tiền họ (Dùng Transaction để an toàn)
-        try {
-            this.disabled = true;
-            this.innerText = "ĐANG XỬ LÝ...";
-            
-            await db.ref(`sweetie_cards/${myCardId}/balance`).transaction(b => (b || 0) - amount);
-            await db.ref(`sweetie_cards/${targetCardId}/balance`).transaction(b => (b || 0) + amount);
-
-            // Ghi lịch sử
-            recordCardHistory(myCardId, 'transfer_out', amount, { toUser: nameDisplay.innerText.replace('✅ ', ''), note: msg });
-            recordCardHistory(targetCardId, 'transfer_in', amount, { fromUser: (myCardData.ownerName || myCardData.owner).toUpperCase(), note: msg });
-
-            // Hiện Bill - SỬA LỖI: Lấy trực tiếp accInput.value thay vì biến val không xác định
-            showTransferBill({
-                amount: amount,
-                msg: msg,
-                destName: nameDisplay.innerText.replace('✅ ', ''),
-                destAcc: accInput.value, 
-                time: Date.now(),
-                transId: "SWB" + Math.random().toString(36).substr(2, 9).toUpperCase()
-            });
-            
-            overlay.remove();
-        } catch (e) {
-            console.error(e);
-            alert("Giao dịch thất bại!");
-            this.disabled = false;
-            this.innerText = "XÁC NHẬN";
-        }
-    };
-}
-
-    function showTransferBill(data) {
-    const billOverlay = document.createElement('div');
-    billOverlay.id = 'bill-overlay';
-    billOverlay.style.cssText = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:20000; display:flex; align-items:center; justify-content:center;";
-    
-    billOverlay.innerHTML = `
-        <div id="bank-bill" style="background:#fff; width:340px; border-radius:20px; overflow:hidden; position:relative; font-family: sans-serif;">
-            <div style="background:#ff1493; padding:20px; text-align:center; color:#fff;">
-                <i class="fas fa-check-circle" style="font-size:3rem; margin-bottom:10px;"></i>
-                <div style="font-size:1.1rem; font-weight:800;">GIAO DỊCH THÀNH CÔNG</div>
-                <div style="font-size:1.5rem; font-weight:800; margin-top:10px;">${data.amount.toLocaleString()} ₫</div>
-            </div>
-            
-            <div style="padding:20px; background:#fff;">
-                <div style="display:flex; justify-content:space-between; margin-bottom:15px; border-bottom:1px dashed #eee; padding-bottom:10px;">
-                    <span style="color:#888; font-size:0.8rem;">Thời gian</span>
-                    <span style="font-weight:700; font-size:0.8rem;">${new Date(data.time).toLocaleString()}</span>
-                </div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:15px; border-bottom:1px dashed #eee; padding-bottom:10px;">
-                    <span style="color:#888; font-size:0.8rem;">Người nhận</span>
-                    <span style="font-weight:700; font-size:0.8rem; color:#ff1493;">${data.destName}</span>
-                </div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:15px; border-bottom:1px dashed #eee; padding-bottom:10px;">
-                    <span style="color:#888; font-size:0.8rem;">Nội dung</span>
-                    <span style="font-weight:700; font-size:0.8rem; text-align:right; max-width:150px;">${data.msg}</span>
-                </div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
-                    <span style="color:#888; font-size:0.8rem;">Mã giao dịch</span>
-                    <span style="font-weight:700; font-size:0.8rem;">${data.transId}</span>
-                </div>
-                
-                <div style="text-align:center; margin-top:20px;">
-                    <p style="font-size:0.6rem; color:#ccc;">Cảm ơn bạn đã sử dụng Sweetie Bank ✨</p>
-                </div>
-            </div>
-
-            <div style="display:flex; padding:15px; gap:10px; background:#f9f9f9;">
-                <button onclick="window.print()" style="flex:1; padding:10px; border-radius:10px; border:1px solid #ff1493; background:#fff; color:#ff1493; font-weight:700; cursor:pointer;">LƯU BILL</button>
-                <button onclick="document.getElementById('bill-overlay').remove()" style="flex:1; padding:10px; border-radius:10px; border:none; background:#ff1493; color:#fff; font-weight:700; cursor:pointer;">QUAY VỀ</button>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(billOverlay);
 }
 </script>
 </body>
