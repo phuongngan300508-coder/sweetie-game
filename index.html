@@ -14637,7 +14637,7 @@ function renderSingleMessage(msgId, msg, position = 'bottom', targetContainer = 
 
     let bodyContentHtml = `<div class="text-content">${finalMsgText}</div>`;
     
-    // --- PHẦN XỬ LÝ Ô TIN NHẮN CHUYỂN TIỀN (WECHAT LUXURY STYLE) ---
+    // --- PHẦN XỬ LÝ Ô TIN NHẮN CHUYỂN TIỀN (WECHAT STYLE - PINK EDITION) ---
 if (msg.type === 'bank_transfer') {
     const amount = msg.amount || 0;
     const status = msg.status || 'pending';
@@ -14646,62 +14646,50 @@ if (msg.type === 'bank_transfer') {
     let statusLabel = "Sweetie Bank Transfer";
     let subLabel = "Nhấn để nhận tiền ✨";
     let cardOpacity = 1;
-    // Sử dụng tông hồng đỏ đặc trưng của phong bao lì xì điện tử
-    let bgColor = "linear-gradient(135deg, #f06292, #d81b60)"; 
-    let iconBg = "rgba(255, 255, 255, 0.2)";
+    let bgColor = "linear-gradient(135deg, #ff4081, #d81b60)"; // Màu mặc định chưa nhận
+    let iconColor = "#fff";
 
     if (status === 'accepted') {
         statusLabel = "Đã nhận tiền";
         subLabel = "Giao dịch thành công ✅";
-        cardOpacity = 0.85;
-        bgColor = "linear-gradient(135deg, #fce4ec, #f8bbd0)"; 
-        iconBg = "rgba(216, 27, 96, 0.1)";
+        cardOpacity = 0.8;
+        bgColor = "linear-gradient(135deg, #ffb2d1, #f48fb1)"; // Màu hồng nhạt khi đã nhận
     } else if (status === 'refused') {
         statusLabel = "Giao dịch đã hoàn";
         subLabel = "Đã từ chối/hoàn tiền ❌";
         cardOpacity = 0.8;
-        bgColor = "#f5f5f5"; 
-        iconBg = "rgba(0, 0, 0, 0.05)";
+        bgColor = "#e0e0e0"; // Màu xám khi từ chối
     }
 
-    const isAccepted = status === 'accepted';
-    const textColor = isAccepted ? "#d81b60" : "white";
-    const subTextColor = isAccepted ? "#ad1457" : "rgba(255,255,255,0.85)";
-
     bodyContentHtml = `
-        <div class="wechat-luxury-card" style="width: 250px; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px rgba(216, 27, 96, 0.12); opacity: ${cardOpacity}; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; transition: 0.3s; background: white;">
-            <div style="background: ${bgColor}; padding: 18px 15px; display: flex; align-items: center; gap: 14px; position: relative;">
-                <div style="position: absolute; right: -10px; top: -10px; width: 80px; height: 80px; background: rgba(255,255,255,0.05); border-radius: 50%;"></div>
-                
-                <div style="width: 44px; height: 44px; background: ${iconBg}; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: inset 0 0 8px rgba(0,0,0,0.05);">
-                    <i class="fas fa-hand-holding-usd" style="color: ${textColor}; font-size: 1.3rem;"></i>
+        <div class="wechat-pay-card" style="width: 240px; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1); opacity: ${cardOpacity}; font-family: sans-serif; cursor: default;">
+            <div style="background: ${bgColor}; padding: 15px; display: flex; align-items: center; gap: 15px;">
+                <div style="width: 42px; height: 42px; background: rgba(255,255,255,0.25); border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <i class="fas fa-hand-holding-usd" style="color: ${iconColor}; font-size: 1.4rem;"></i>
                 </div>
-                
-                <div style="display: flex; flex-direction: column; overflow: hidden; z-index: 1;">
-                    <span style="font-size: 1rem; color: ${textColor}; font-weight: 700; letter-spacing: 0.3px;">
-                        ${amount.toLocaleString()} <small style="font-size: 0.65rem;">VNĐ</small>
+                <div style="display: flex; flex-direction: column; overflow: hidden;">
+                    <span style="font-size: 0.95rem; color: white; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                        ${amount.toLocaleString()} VNĐ
                     </span>
-                    <span style="font-size: 0.75rem; color: ${subTextColor}; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px;">
+                    <span style="font-size: 0.75rem; color: rgba(255,255,255,0.85); font-weight: 500;">
                         ${note}
                     </span>
                 </div>
             </div>
             
-            <div style="background: white; padding: 10px 15px; display: flex; justify-content: space-between; align-items: center;">
-                <span style="font-size: 0.6rem; color: #bbb; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase;">${statusLabel}</span>
-                <span style="font-size: 0.6rem; color: #ff4081; font-weight: 800;">${isAccepted ? 'XEM CHI TIẾT >' : 'ĐANG CHỜ...'}</span>
+            <div style="background: white; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(0,0,0,0.05);">
+                <span style="font-size: 0.65rem; color: #888; font-weight: bold; letter-spacing: 0.3px; text-transform: uppercase;">${statusLabel}</span>
+                <span style="font-size: 0.65rem; color: #ff1493; font-weight: bold;">${subLabel}</span>
             </div>
 
             ${(!isMe && status === 'pending') ? `
-                <div style="display: flex; background: white; padding: 0 15px 15px 15px; gap: 10px;">
+                <div style="display: flex; background: white; padding: 0 10px 10px 10px; gap: 8px;">
                     <button onclick="handleTransferAction('${msgId}', 'accept', ${amount}, '${msg.senderCard}')" 
-                            style="flex: 2; padding: 10px; background: #d81b60; border: none; color: white; border-radius: 10px; font-size: 0.75rem; font-weight: 800; cursor: pointer; transition: 0.3s; box-shadow: 0 4px 12px rgba(216, 27, 96, 0.25);"
-                            onmouseover="this.style.transform='translateY(-1px)'; this.style.filter='brightness(1.1)';" 
-                            onmouseout="this.style.transform='translateY(0)'; this.style.filter='none';">NHẬN TIỀN</button>
+                            style="flex: 2; padding: 8px; background: #ff1493; border: none; color: white; border-radius: 6px; font-size: 0.75rem; font-weight: 800; cursor: pointer; transition: 0.2s; box-shadow: 0 2px 6px rgba(255, 20, 147, 0.3);"
+                            onmouseover="this.style.filter='brightness(1.1)'" onmouseout="this.style.filter='none'">NHẬN TIỀN</button>
                     <button onclick="handleTransferAction('${msgId}', 'refuse', ${amount}, '${msg.senderCard}')" 
-                            style="flex: 1; padding: 10px; background: #fff; border: 1.5px solid #f8bbd0; color: #d81b60; border-radius: 10px; font-size: 0.75rem; font-weight: 800; cursor: pointer; transition: 0.3s;"
-                            onmouseover="this.style.background='#fce4ec'" 
-                            onmouseout="this.style.background='#fff'">TỪ CHỐI</button>
+                            style="flex: 1; padding: 8px; background: #fff; border: 1.5px solid #ffb6c1; color: #ff1493; border-radius: 6px; font-size: 0.75rem; font-weight: 800; cursor: pointer; transition: 0.2s;"
+                            onmouseover="this.style.background='#fff0f5'" onmouseout="this.style.background='#fff'">TỪ CHỐI</button>
                 </div>
             ` : ''}
         </div>`;
