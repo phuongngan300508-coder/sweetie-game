@@ -20622,7 +20622,7 @@ async function claimRedPacket(packetId) {
             packet.claimedBy[currentUser] = amountToGive;
 
             return packet;
-        }, (error, committed, snapshot) => { 
+        }, (error, committed, snapshot) => { // Bỏ async ở đây
             if (committed) {
                 const finalData = snapshot.val();
                 const myAmount = finalData.claimedBy[currentUser];
@@ -20642,17 +20642,7 @@ async function claimRedPacket(packetId) {
                         if (typeof saveData === 'function') saveData();
                     }
 
-                    // --- BƯỚC BỔ SUNG: THÔNG BÁO CHO NGƯỜI GỬI ---
-                    const senderNotificationRef = db.ref(`users/${finalData.senderId}/notifications`).push();
-                    senderNotificationRef.set({
-                        title: "🧧 LÌ XÌ ĐÃ ĐƯỢC NHẬN",
-                        message: `<b>${userData.profile.name}</b> đã nhận được <b>${myAmount.toLocaleString()}đ</b> từ bao lì xì của bạn!`,
-                        time: firebase.database.ServerValue.TIMESTAMP,
-                        type: "lixi_claimed",
-                        read: false
-                    });
-
-                    // 5. CẬP NHẬT GIAO DIỆN VÀ THÔNG BÁO CHO NGƯỜI NHẬN
+                    // 5. CẬP NHẬT GIAO DIỆN VÀ THÔNG BÁO
                     if (typeof updateUI === 'function') updateUI();
 
                     showSuccessLixi(myAmount);
@@ -20673,7 +20663,7 @@ async function claimRedPacket(packetId) {
     }
 }
 
-function showSuccessLixi(amount) {
+    function showSuccessLixi(amount) {
     const popup = document.getElementById('sweetie-success-popup');
     const amountEl = document.getElementById('success-amount');
     if(popup && amountEl) {
