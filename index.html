@@ -19499,7 +19499,7 @@ addNotification("💳 THẺ MỚI ĐÃ KÍCH HOẠT", "Chào mừng Henry đến
     }
 }
 
-function handleCardTransaction(type) {
+async function handleCardTransaction(type) {
     // 1. Kiểm tra đăng nhập
     if (typeof currentUser === 'undefined' || !currentUser) {
         alert("🌸 Bạn ơi, bạn cần đăng nhập trước nhé!");
@@ -19508,14 +19508,22 @@ function handleCardTransaction(type) {
 
     // 2. Tìm Dashboard để làm gốc tọa độ
     const dashboard = document.querySelector('.card-dashboard-container');
-    if (!dashboard) {
-        console.error("Lỗi: Không tìm thấy '.card-dashboard-container' trong HTML!");
-        return;
-    }
+    if (!dashboard) return;
     
     dashboard.style.position = 'relative';
 
-    // 3. Tìm hoặc tạo khung lớp phủ giao dịch
+    // 3. Lấy số dư hiện tại từ Firebase (Dùng async/await để đợi dữ liệu)
+    let currentBalance = 0;
+    try {
+        // Giả sử senderCardId là ID thẻ của Henry, hoặc bạn có cách lấy ID thẻ khác
+        // Ở đây mình lấy theo cấu trúc path thông thường của bạn: sweetie_cards/ID_USER/balance
+        const cardSnap = await db.ref(`sweetie_cards/${currentUser}/balance`).once('value');
+        currentBalance = cardSnap.val() || 0;
+    } catch (e) {
+        console.error("Lỗi lấy số dư:", e);
+    }
+
+    // 4. Tìm hoặc tạo khung lớp phủ giao dịch
     let transUI = document.getElementById('transaction-ui');
     if (!transUI) {
         const uiDiv = document.createElement('div');
@@ -19527,13 +19535,12 @@ function handleCardTransaction(type) {
 
     // --- THIẾT LẬP 2 TÔNG HỒNG KHÁC NHAU ---
     const isDeposit = type === 'deposit';
-    // Nạp: Hồng đậm (quyến rũ, đầy đặn) | Rút: Hồng nhẹ (tinh tế, dịu dàng)
     const themeColor = isDeposit ? '#ff1493' : '#ff85a2'; 
-    const bgColor = isDeposit ? '#ff149310' : '#ff85a215'; // Màu nền icon mờ
+    const bgColor = isDeposit ? '#ff149310' : '#ff85a215'; 
     const actionText = isDeposit ? 'NẠP TIỀN VÀO THẺ' : 'RÚT TIỀN VỀ VÍ';
-    const icon = isDeposit ? 'fa-arrow-down-long' : 'fa-arrow-up-long';
+    const icon = isDeposit ? 'fa-vault' : 'fa-money-bill-transfer';
 
-    // 4. Hiển thị giao diện
+    // 5. Hiển thị giao diện
     transUI.style.display = 'flex'; 
     transUI.innerHTML = `
         <div class="trans-content-wrapper" style="width: 100%; max-width: 380px; background: #fff; border-radius: 28px; padding: 30px; box-shadow: 0 25px 50px rgba(0,0,0,0.08); border: 1px solid #fdf2f8; animation: fadeInUp 0.4s ease;">
@@ -19547,7 +19554,16 @@ function handleCardTransaction(type) {
             </div>
             
             <div style="background: #fffafa; border-radius: 22px; padding: 20px; margin-bottom: 20px; border: 2px solid ${themeColor}10;">
-                <label style="font-size: 0.7rem; color: ${themeColor}; font-weight: 800; text-transform: uppercase; display: block; margin-bottom: 12px; letter-spacing: 0.8px;">Số tiền (VNĐ)</label>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <label style="font-size: 0.7rem; color: ${themeColor}; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px;">Số tiền (VNĐ)</label>
+                    
+                    ${!isDeposit ? `
+                        <span style="font-size: 0.7rem; color: #888; font-weight: bold;">
+                            Số dư: <span style="color: #333;">${currentBalance.toLocaleString()}₫</span>
+                        </span>
+                    ` : ''}
+                </div>
+
                 <div style="display: flex; align-items: center;">
                     <input type="number" id="trans-amount-input" 
                         style="width: 100%; border: none; background: transparent; font-size: 1.8rem; font-weight: 800; color: #333; outline: none; padding: 0;" 
@@ -19556,9 +19572,13 @@ function handleCardTransaction(type) {
                 </div>
                 
                 <div style="display: flex; gap: 10px; margin-top: 18px;">
-                    <button onclick="document.getElementById('trans-amount-input').value=50000" style="flex: 1; border: 1px solid #ffe4e1; background: #fff; border-radius: 12px; font-size: 0.75rem; padding: 8px 0; cursor: pointer; color: #666; font-weight: 700; transition: 0.3s;" onmouseover="this.style.background='${themeColor}08'" onmouseout="this.style.background='#fff'">50k</button>
-                    <button onclick="document.getElementById('trans-amount-input').value=100000" style="flex: 1; border: 1px solid #ffe4e1; background: #fff; border-radius: 12px; font-size: 0.75rem; padding: 8px 0; cursor: pointer; color: #666; font-weight: 700; transition: 0.3s;" onmouseover="this.style.background='${themeColor}08'" onmouseout="this.style.background='#fff'">100k</button>
-                    <button onclick="document.getElementById('trans-amount-input').value=500000" style="flex: 1; border: 1px solid #ffe4e1; background: #fff; border-radius: 12px; font-size: 0.75rem; padding: 8px 0; cursor: pointer; color: #666; font-weight: 700; transition: 0.3s;" onmouseover="this.style.background='${themeColor}08'" onmouseout="this.style.background='#fff'">500k</button>
+                    <button onclick="document.getElementById('trans-amount-input').value=50000" style="flex: 1; border: 1px solid #ffe4e1; background: #fff; border-radius: 12px; font-size: 0.75rem; padding: 8px 0; cursor: pointer; color: #666; font-weight: 700; transition: 0.3s;">50k</button>
+                    <button onclick="document.getElementById('trans-amount-input').value=100000" style="flex: 1; border: 1px solid #ffe4e1; background: #fff; border-radius: 12px; font-size: 0.75rem; padding: 8px 0; cursor: pointer; color: #666; font-weight: 700; transition: 0.3s;">100k</button>
+                    
+                    ${!isDeposit ? 
+                        `<button onclick="document.getElementById('trans-amount-input').value=${currentBalance}" style="flex: 1; border: 1px solid ${themeColor}40; background: ${themeColor}05; border-radius: 12px; font-size: 0.75rem; padding: 8px 0; cursor: pointer; color: ${themeColor}; font-weight: 700; transition: 0.3s;">Tất cả</button>` : 
+                        `<button onclick="document.getElementById('trans-amount-input').value=500000" style="flex: 1; border: 1px solid #ffe4e1; background: #fff; border-radius: 12px; font-size: 0.75rem; padding: 8px 0; cursor: pointer; color: #666; font-weight: 700; transition: 0.3s;">500k</button>`
+                    }
                 </div>
             </div>
             
