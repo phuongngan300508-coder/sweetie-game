@@ -20524,10 +20524,21 @@ async function createRedPacket() {
     if (userData.balance < amount) return alert("Số dư ví không đủ để phát lì xì!");
 
     try {
-        // 1. Trừ tiền ví tổng người gửi
+        // 1. Trừ tiền ví tổng người gửi trên Firebase
         await db.ref(`users/${currentUser}/balance`).transaction(val => (val || 0) - amount);
-        userData.balance -= amount;
-        saveData(); // Lưu local
+        
+        // --- CẬP NHẬT REAL-TIME NGAY TẠI ĐÂY ---
+        userData.balance -= amount; // Cập nhật biến local
+        
+        // Ghi lịch sử "Phát lì xì" để hiện trong renderHistoryV2
+        if (typeof recordTransaction === 'function') {
+            recordTransaction("Phát lì xì thế giới", amount, "minus");
+        }
+
+        // Cập nhật lại toàn bộ giao diện (Số dư ví trên Sidebar/Header)
+        if (typeof updateUI === 'function') updateUI();
+        
+        saveData(); // Lưu local (LocalStorage)
 
         // 2. Chia tiền ngẫu nhiên
         const packetAmounts = generateRedPacketAmounts(amount, slots);
@@ -20577,6 +20588,7 @@ async function createRedPacket() {
         alert("Có lỗi xảy ra, bạn kiểm tra lại kết nối nhé!");
     }
 }
+    
 // --- NHẬN LÌ XÌ ---
 async function claimRedPacket(packetId) {
     const packetRef = db.ref(`global_chat/red_packets/${packetId}`);
