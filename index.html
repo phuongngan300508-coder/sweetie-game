@@ -14458,8 +14458,10 @@ function renderSingleMessage(msgId, msg, position = 'bottom', targetContainer = 
         }
     }
 
-    // --- 5. TEMPLATE HTML (GIỮ NGUYÊN CẤU TRÚC GỐC) ---
+    // --- 5. TEMPLATE HTML (CẬP NHẬT ĐỂ CHUYỂN KHOẢN KHÔNG CÓ BONG BÓNG) ---
     const isSticker = msg.type === 'sticker';
+    const isTransfer = msg.type === 'bank_transfer'; // Khai báo thêm biến này
+    
     let pinMarkerHtml = msg.isPinned ? `<div class="pin-marker" style="font-size: 0.8em; color: #ff1493; margin-bottom: 3px;"><i class="fas fa-thumbtack"></i></div>` : "";
     
     const msgHtml = `
@@ -14484,8 +14486,8 @@ function renderSingleMessage(msgId, msg, position = 'bottom', targetContainer = 
                 <span class="${getEmojiClass('👍')}" onclick="sendReaction('${msgId}', '👍')">👍</span>
             </div>
 
-            <div class="msg-bubble ${isSticker ? '' : (isMe ? 'msg-me' : 'msg-friend')}" 
-                 style="display: flex; flex-direction: column; position: relative; ${isSticker ? 'background: transparent; box-shadow: none; border: none; padding: 0;' : ''}"
+            <div class="msg-bubble ${(isSticker || isTransfer) ? '' : (isMe ? 'msg-me' : 'msg-friend')}" 
+                 style="display: flex; flex-direction: column; position: relative; ${(isSticker || isTransfer) ? 'background: transparent; box-shadow: none; border: none; padding: 0;' : ''}"
                  ondblclick="sendReaction('${msgId}', '❤️')" 
                  ontouchstart="handleTouchStart(event, '${msgId}')" 
                  ontouchend="handleTouchEnd()"
