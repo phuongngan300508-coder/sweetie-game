@@ -14739,44 +14739,45 @@ if (msg.type === 'bank_transfer') {
         }
     }
 
-   // --- 5. TEMPLATE HTML (CHỈNH SỬA ĐỂ CARD CHUYỂN TIỀN CÓ KHỐI RIÊNG) ---
-    const isSticker = msg.type === 'sticker';
-    const isTransfer = msg.type === 'bank_transfer';
+  // --- 5. TEMPLATE HTML (CHỈNH SỬA ĐỂ REACTION HIỂN THỊ ĐÈ LÊN NGOÀI CARD) ---
+const isSticker = msg.type === 'sticker';
+const isTransfer = msg.type === 'bank_transfer';
+
+let pinMarkerHtml = msg.isPinned ? `<div class="pin-marker" style="font-size: 0.8em; color: #ff1493; margin-bottom: 3px;"><i class="fas fa-thumbtack"></i></div>` : "";
+
+// Xác định Class cho bong bóng tin nhắn
+let bubbleClass = "";
+if (isSticker) {
+    bubbleClass = "msg-sticker"; 
+} else if (isTransfer) {
+    bubbleClass = "msg-transfer-card"; 
+} else {
+    bubbleClass = isMe ? "msg-me" : "msg-friend"; 
+}
+
+const msgHtml = `
+<div class="msg-wrapper ${isMe ? 'msg-me-wrap' : 'msg-friend-wrap'}" id="msg-${msgId}"
+     style="position: relative; display: flex; flex-direction: column; width: 100%; margin-bottom: 12px; ${isMe ? 'align-items: flex-end;' : 'align-items: flex-start;'}"
+     data-id="${msgId}" data-text="${msg.text || ''}" data-sender="${msg.sender}"
+     onclick="toggleMsgStatus('${msgId}')">
     
-    let pinMarkerHtml = msg.isPinned ? `<div class="pin-marker" style="font-size: 0.8em; color: #ff1493; margin-bottom: 3px;"><i class="fas fa-thumbtack"></i></div>` : "";
-    
-    // Xác định Class cho bong bóng tin nhắn
-    let bubbleClass = "";
-    if (isSticker) {
-        bubbleClass = "msg-sticker"; // Henry có thể định nghĩa CSS riêng cho Sticker
-    } else if (isTransfer) {
-        bubbleClass = "msg-transfer-card"; // Class riêng cho chuyển tiền (Không trong suốt)
-    } else {
-        bubbleClass = isMe ? "msg-me" : "msg-friend"; // Tin nhắn thường
-    }
+    ${pinMarkerHtml}
 
-    const msgHtml = `
-    <div class="msg-wrapper ${isMe ? 'msg-me-wrap' : 'msg-friend-wrap'}" id="msg-${msgId}"
-         style="position: relative; display: flex; flex-direction: column; width: 100%; margin-bottom: 12px; ${isMe ? 'align-items: flex-end;' : 'align-items: flex-start;'}"
-         data-id="${msgId}" data-text="${msg.text || ''}" data-sender="${msg.sender}"
-         onclick="toggleMsgStatus('${msgId}')">
-        
-        ${pinMarkerHtml}
+    <div class="msg-content-container" 
+         style="display: flex; align-items: center; width: fit-content; position: relative; ${isMe ? 'flex-direction: row-reverse;' : 'flex-direction: row;'}"
+         onmouseenter="showActionBtn('${msgId}')" 
+         onmouseleave="hideActionBtn('${msgId}')">
 
-        <div class="msg-content-container" 
-             style="display: flex; align-items: center; width: fit-content; ${isMe ? 'flex-direction: row-reverse;' : 'flex-direction: row;'}"
-             onmouseenter="showActionBtn('${msgId}')" 
-             onmouseleave="hideActionBtn('${msgId}')">
+        <div id="picker-${msgId}" class="reaction-picker reaction-stay" style="display:none; z-index: 10;">
+            <span class="${getEmojiClass('❤️')}" onclick="sendReaction('${msgId}', '❤️')">❤️</span>
+            <span class="${getEmojiClass('😆')}" onclick="sendReaction('${msgId}', '😆')">😆</span>
+            <span class="${getEmojiClass('😮')}" onclick="sendReaction('${msgId}', '😮')">😮</span>
+            <span class="${getEmojiClass('😢')}" onclick="sendReaction('${msgId}', '😢')">😢</span>
+            <span class="${getEmojiClass('😡')}" onclick="sendReaction('${msgId}', '😡')">😡</span>
+            <span class="${getEmojiClass('👍')}" onclick="sendReaction('${msgId}', '👍')">👍</span>
+        </div>
 
-            <div id="picker-${msgId}" class="reaction-picker reaction-stay" style="display:none;">
-                <span class="${getEmojiClass('❤️')}" onclick="sendReaction('${msgId}', '❤️')">❤️</span>
-                <span class="${getEmojiClass('😆')}" onclick="sendReaction('${msgId}', '😆')">😆</span>
-                <span class="${getEmojiClass('😮')}" onclick="sendReaction('${msgId}', '😮')">😮</span>
-                <span class="${getEmojiClass('😢')}" onclick="sendReaction('${msgId}', '😢')">😢</span>
-                <span class="${getEmojiClass('😡')}" onclick="sendReaction('${msgId}', '😡')">😡</span>
-                <span class="${getEmojiClass('👍')}" onclick="sendReaction('${msgId}', '👍')">👍</span>
-            </div>
-
+        <div style="position: relative;">
             <div class="msg-bubble ${bubbleClass}" 
                  style="display: flex; flex-direction: column; position: relative; ${isSticker ? 'background: transparent; box-shadow: none; border: none; padding: 0;' : ''}"
                  ondblclick="sendReaction('${msgId}', '❤️')" 
@@ -14785,33 +14786,38 @@ if (msg.type === 'bank_transfer') {
                  ${msg.type === 'call_system' ? `onclick="makeCall('${msg.text.includes('video') ? 'video' : 'audio'}')"` : ''}>
                 ${replyHtml}
                 ${bodyContentHtml}
+            </div>
+
+            <div class="reaction-container-external" 
+                 style="position: absolute; bottom: -8px; ${isMe ? 'left: 5px;' : 'right: 5px;'} z-index: 2;">
                 ${reactionDisplayHtml}
             </div>
-
-            <div class="msg-actions" id="actions-${msgId}" 
-                 style="display: flex; align-items: center; opacity: 0; transition: opacity 0.2s; ${isMe ? 'flex-direction: row-reverse;' : ''}">
-                <i class="far fa-smile reaction-stay" onclick="toggleReactionPicker('${msgId}')" style="cursor:pointer; ${isMe ? 'margin-left:5px;' : 'margin-right:5px;'} color:#ff69b4;"></i>
-                <i class="fas fa-ellipsis-v" onclick="showActionMenu('${msgId}', ${isMe})" style="cursor:pointer; padding: 0 5px;"></i>
-                <div class="action-menu" id="menu-${msgId}">
-                    <div onclick="setReply('${msgId}', '${msg.text || ''}', '${msg.sender}')"><i class="fas fa-reply"></i> Trả lời</div>
-                    <div onclick="togglePinMessage('${msgId}', '${msg.text || ''}')"><i class="fas fa-thumbtack"></i> ${msg.isPinned ? 'Bỏ ghim' : 'Ghim tin nhắn'}</div>
-                    <div onclick="deleteMessage('${msgId}', ${isMe})" style="color:red"><i class="fas fa-trash"></i> Xóa</div>
-                </div>
-            </div>
         </div>
 
-       <div id="status-${msgId}" class="msg-external-status" 
-             style="display: none; font-size: 0.6em; opacity: 0.7; margin-top: 2px; width: fit-content; ${isMe ? 'margin-right: 5px; text-align: right;' : 'margin-left: 5px; text-align: left;'}">
-            ${timeDisplay} • <span class="status-text-val">Đã gửi</span>
-        </div>
-
-        ${isMe ? `
-            <div class="seen-avatar-wrap" style="display: none; margin-right: 5px; margin-top: 2px;">
-                <img class="seen-avatar-img" src="" style="width: 14px; height: 14px; border-radius: 50%; border: 1px solid #fff; object-fit: cover;">
+        <div class="msg-actions" id="actions-${msgId}" 
+             style="display: flex; align-items: center; opacity: 0; transition: opacity 0.2s; ${isMe ? 'flex-direction: row-reverse;' : ''}">
+            <i class="far fa-smile reaction-stay" onclick="toggleReactionPicker('${msgId}')" style="cursor:pointer; ${isMe ? 'margin-left:5px;' : 'margin-right:5px;'} color:#ff69b4;"></i>
+            <i class="fas fa-ellipsis-v" onclick="showActionMenu('${msgId}', ${isMe})" style="cursor:pointer; padding: 0 5px;"></i>
+            <div class="action-menu" id="menu-${msgId}">
+                <div onclick="setReply('${msgId}', '${msg.text || ''}', '${msg.sender}')"><i class="fas fa-reply"></i> Trả lời</div>
+                <div onclick="togglePinMessage('${msgId}', '${msg.text || ''}')"><i class="fas fa-thumbtack"></i> ${msg.isPinned ? 'Bỏ ghim' : 'Ghim tin nhắn'}</div>
+                <div onclick="deleteMessage('${msgId}', ${isMe})" style="color:red"><i class="fas fa-trash"></i> Xóa</div>
             </div>
-        ` : ''}
-    </div>`;
+        </div>
+    </div>
 
+    <div id="status-${msgId}" class="msg-external-status" 
+         style="display: none; font-size: 0.6em; opacity: 0.7; margin-top: 2px; width: fit-content; ${isMe ? 'margin-right: 5px; text-align: right;' : 'margin-left: 5px; text-align: left;'}">
+        ${timeDisplay} • <span class="status-text-val">Đã gửi</span>
+    </div>
+
+    ${isMe ? `
+        <div class="seen-avatar-wrap" style="display: none; margin-right: 5px; margin-top: 2px;">
+            <img class="seen-avatar-img" src="" style="width: 14px; height: 14px; border-radius: 50%; border: 1px solid #fff; object-fit: cover;">
+        </div>
+    ` : ''}
+</div>`;
+    
     // --- 6. PHẦN RENDER (GIỮ NGUYÊN 100%) ---
     if (targetContainer) {
         targetContainer.innerHTML = msgHtml;
