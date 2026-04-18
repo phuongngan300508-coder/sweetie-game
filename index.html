@@ -15122,12 +15122,21 @@ function showFriendRequestProfile(friendData) {
     }, 150); // Tăng lên 150ms để đảm bảo mượt mà trên điện thoại
 }
 
+// Thêm 1 dòng này ở ngoài cùng của file code (biến toàn cục)
+let profileFooterVersion = 0;
+
 function resetProfileFooter() {
     const footer = document.getElementById('modal-other-profile').querySelector('.profile-card-footer');
     if (!footer || !currentViewedUser || !currentUser) return;
 
+    // Đánh dấu phiên làm việc hiện tại
+    const currentVersion = ++profileFooterVersion;
+
     // Bước 0: Kiểm tra xem Henry có đang chặn người này không
     db.ref(`blocks/${currentUser}/${currentViewedUser}`).once('value', (snapBlock) => {
+        // Kiểm tra phiên: Nếu có lệnh mới hơn rồi thì dừng lệnh này lại
+        if (currentVersion !== profileFooterVersion) return;
+
         if (snapBlock.exists()) {
             footer.innerHTML = `
                 <button class="btn-action-pink" onclick="unblockUser('${currentViewedUser}')" style="width: 100%; background: #6c757d; border: none;">
@@ -15141,6 +15150,9 @@ function resetProfileFooter() {
 
             Promise.all([checkFriend, checkIncoming, checkOutgoing]).then(([snapFriend, snapIncoming, snapOutgoing]) => {
                 
+                // Kiểm tra phiên một lần nữa trước khi render HTML
+                if (currentVersion !== profileFooterVersion) return;
+
                 const blockBtnHtml = `
                     <button class="btn-action-white" onclick="blockUser('${currentViewedUser}')" style="flex: 0.3; color: red; border-color: red;">
                         <i class="fas fa-ban"></i>
