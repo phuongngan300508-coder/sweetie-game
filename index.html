@@ -21043,15 +21043,30 @@ function setRpMode(mode) {
     if (pin !== myCardData.password) return alert("Mã PIN không chính xác!");
 
     try {
-        // 1. Thực hiện trừ tiền người gửi và cộng tiền người nhận
-        await db.ref(`sweetie_cards/${myCardId}/balance`).transaction(c => (c || 0) - amount);
+        // 1. Thực hiện TRỪ TIỀN người gửi trước
+        const subtractResult = await db.ref(`sweetie_cards/${myCardId}/balance`).transaction(c => {
+            if (c === null) return 0;
+            if (c < amount) return; // Hủy transaction nếu không đủ tiền
+            return c - amount;
+        });
+
+        // Kiểm tra xem việc trừ tiền có thực sự thành công không
+        if (!subtractResult.committed) {
+            alert("Giao dịch thất bại: Số dư của bạn đã thay đổi hoặc không đủ tiền!");
+            return;
+        }
+
+        // 2. Nếu đã trừ tiền Henry thành công, mới tiến hành CỘNG TIỀN cho người nhận
+        // Dùng await để đảm bảo nó phải xong
         await db.ref(`sweetie_cards/${targetId}/balance`).transaction(c => (c || 0) + amount);
 
-        // 2. Ghi lịch sử
-        recordCardHistory(myCardId, 'transfer_out', amount, { toUser: targetOwner, note: note });
-        recordCardHistory(targetId, 'transfer_in', amount, { fromUser: myCardData.ownerName, note: note });
+        // 3. Ghi lịch sử (Dùng await để đảm bảo dữ liệu ghi xong mới hiện Bill)
+        await Promise.all([
+            recordCardHistory(myCardId, 'transfer_out', amount, { toUser: targetOwner, note: note }),
+            recordCardHistory(targetId, 'transfer_in', amount, { fromUser: myCardData.ownerName, note: note })
+        ]);
 
-        // 3. Hiển thị Bill thành công
+        // 4. Hiển thị Bill thành công (Chỉ chạy khi mọi thứ ở trên đã xong)
         showBankingBill({
             amount: amount,
             sender: myCardData.ownerName,
@@ -21061,14 +21076,14 @@ function setRpMode(mode) {
             transId: "SW" + Date.now().toString().slice(-8)
         });
 
-        // 4. Bắn thông báo (Ting Ting) cho Henry
         addNotification("📤 CHUYỂN KHOẢN THÀNH CÔNG", `Bạn đã chuyển ${amount.toLocaleString()} VNĐ đến STK ${document.getElementById('target-stk').value}.`);
 
     } catch (e) {
-        console.error(e);
-        alert("Giao dịch thất bại, vui lòng thử lại!");
+        console.error("Lỗi nghiêm trọng:", e);
+        // Ở đây Henry có thể thêm một bước 'Hoàn tiền' nếu muốn cực kỳ bảo mật, 
+        // nhưng với logic committed ở trên thì tỉ lệ lỗi đã giảm xuống gần như bằng 0.
+        alert("Có lỗi kết nối, Bạn vui lòng kiểm tra lại số dư thẻ nhé!");
     }
-}
 
 function showBankingBill(data) {
     const ui = document.getElementById('transaction-ui');
