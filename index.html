@@ -14607,7 +14607,12 @@ function renderSingleMessage(msgId, msg, position = 'bottom', targetContainer = 
     let reactionDisplayHtml = "";
     const uniqueReactions = [...new Set(Object.values(reactions))];
     if (uniqueReactions.length > 0) {
-        reactionDisplayHtml = `<div class="msg-reaction-display" onclick="sendReaction('${msgId}', '${myReaction}')" style="cursor:pointer;">${uniqueReactions.join('')}</div>`;
+        // Henry lưu ý: style absolute ở đây giúp cảm xúc "bay" trên viền thẻ
+        reactionDisplayHtml = `
+            <div class="msg-reaction-display" onclick="sendReaction('${msgId}', '${myReaction}')" 
+                 style="cursor:pointer; position: absolute; bottom: -10px; ${isMe ? 'left: 10px;' : 'right: 10px;'} z-index: 10; background: white; border-radius: 10px; padding: 2px 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); font-size: 0.9rem; line-height: 1;">
+                 ${uniqueReactions.join('')}
+            </div>`;
     }
     const getEmojiClass = (emoji) => (myReaction === emoji) ? "emoji-btn emoji-active" : "emoji-btn";
 
@@ -14628,7 +14633,7 @@ function renderSingleMessage(msgId, msg, position = 'bottom', targetContainer = 
         }
     }
 
-   // --- 4. LOGIC MEDIA, STICKER, VOICE, CALL & BANK TRANSFER ---
+    // --- 4. LOGIC MEDIA, STICKER, VOICE, CALL & BANK TRANSFER ---
     let finalMsgText = msg.text || "";
     if (typeof currentSearchKeyword !== 'undefined' && currentSearchKeyword && msg.text) {
         const regex = new RegExp(`(${currentSearchKeyword})`, 'gi');
@@ -14637,197 +14642,115 @@ function renderSingleMessage(msgId, msg, position = 'bottom', targetContainer = 
 
     let bodyContentHtml = `<div class="text-content">${finalMsgText}</div>`;
     
-    // --- PHẦN XỬ LÝ Ô TIN NHẮN CHUYỂN TIỀN (WECHAT STYLE - PINK EDITION) ---
-if (msg.type === 'bank_transfer') {
-    const amount = msg.amount || 0;
-    const status = msg.status || 'pending';
-    const note = msg.note || "Chuyển tiền qua Sweetie Bank"; 
-    
-    let statusLabel = "Sweetie Bank Transfer";
-    let subLabel = "Nhấn để nhận tiền ✨";
-    let cardOpacity = 1;
-    let bgColor = "linear-gradient(135deg, #ff4081, #d81b60)"; // Màu mặc định chưa nhận
-    let iconColor = "#fff";
-
-    if (status === 'accepted') {
-        statusLabel = "Đã nhận tiền";
-        subLabel = "Giao dịch thành công ✅";
-        cardOpacity = 0.8;
-        bgColor = "linear-gradient(135deg, #ffb2d1, #f48fb1)"; // Màu hồng nhạt khi đã nhận
-    } else if (status === 'refused') {
-        statusLabel = "Giao dịch đã hoàn";
-        subLabel = "Đã từ chối/hoàn tiền ❌";
-        cardOpacity = 0.8;
-        bgColor = "#e0e0e0"; // Màu xám khi từ chối
-    }
-
-    bodyContentHtml = `
-        <div class="wechat-pay-card" style="width: 240px; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1); opacity: ${cardOpacity}; font-family: sans-serif; cursor: default;">
-            <div style="background: ${bgColor}; padding: 15px; display: flex; align-items: center; gap: 15px;">
-                <div style="width: 42px; height: 42px; background: rgba(255,255,255,0.25); border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                    <i class="fas fa-hand-holding-usd" style="color: ${iconColor}; font-size: 1.4rem;"></i>
-                </div>
-                <div style="display: flex; flex-direction: column; overflow: hidden;">
-                    <span style="font-size: 0.95rem; color: white; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                        ${amount.toLocaleString()} VNĐ
-                    </span>
-                    <span style="font-size: 0.75rem; color: rgba(255,255,255,0.85); font-weight: 500;">
-                        ${note}
-                    </span>
-                </div>
-            </div>
-            
-            <div style="background: white; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(0,0,0,0.05);">
-                <span style="font-size: 0.65rem; color: #888; font-weight: bold; letter-spacing: 0.3px; text-transform: uppercase;">${statusLabel}</span>
-                <span style="font-size: 0.65rem; color: #ff1493; font-weight: bold;">${subLabel}</span>
-            </div>
-
-            ${(!isMe && status === 'pending') ? `
-                <div style="display: flex; background: white; padding: 0 10px 10px 10px; gap: 8px;">
-                    <button onclick="handleTransferAction('${msgId}', 'accept', ${amount}, '${msg.senderCard}')" 
-                            style="flex: 2; padding: 8px; background: #ff1493; border: none; color: white; border-radius: 6px; font-size: 0.75rem; font-weight: 800; cursor: pointer; transition: 0.2s; box-shadow: 0 2px 6px rgba(255, 20, 147, 0.3);"
-                            onmouseover="this.style.filter='brightness(1.1)'" onmouseout="this.style.filter='none'">NHẬN TIỀN</button>
-                    <button onclick="handleTransferAction('${msgId}', 'refuse', ${amount}, '${msg.senderCard}')" 
-                            style="flex: 1; padding: 8px; background: #fff; border: 1.5px solid #ffb6c1; color: #ff1493; border-radius: 6px; font-size: 0.75rem; font-weight: 800; cursor: pointer; transition: 0.2s;"
-                            onmouseover="this.style.background='#fff0f5'" onmouseout="this.style.background='#fff'">TỪ CHỐI</button>
-                </div>
-            ` : ''}
-        </div>`;
-}
-        
-    // --- CÁC LOGIC CŨ CỦA HENRY (GIỮ NGUYÊN) ---
-    else if (msg.type === 'call_system') {
-        const callIcon = msg.text.includes('video') ? 'fas fa-video' : 'fas fa-phone';
-        const themeColor = isMe ? '#ffffff' : (area.style.getPropertyValue('--theme-main-color') || '#ff69b4');
-        const subText = "Nhấn để gọi lại"; 
+    // Xử lý chuyển tiền (Giữ nguyên logic thiết kế đẹp của bạn)
+    if (msg.type === 'bank_transfer') {
+        const amount = msg.amount || 0;
+        const status = msg.status || 'pending';
+        const note = msg.note || "Chuyển tiền qua Sweetie Bank"; 
+        let statusLabel = "Sweetie Bank Transfer";
+        let subLabel = "Nhấn để nhận tiền ✨";
+        let cardOpacity = 1;
+        let bgColor = "linear-gradient(135deg, #ff4081, #d81b60)";
+        if (status === 'accepted') {
+            statusLabel = "Đã nhận tiền";
+            subLabel = "Giao dịch thành công ✅";
+            cardOpacity = 0.8;
+            bgColor = "linear-gradient(135deg, #ffb2d1, #f48fb1)";
+        } else if (status === 'refused') {
+            statusLabel = "Giao dịch đã hoàn";
+            subLabel = "Đã từ chối/hoàn tiền ❌";
+            cardOpacity = 0.8;
+            bgColor = "#e0e0e0";
+        }
 
         bodyContentHtml = `
-            <div class="call-msg-bubble" style="display: flex; align-items: center; gap: 12px; padding: 5px 10px; min-width: 180px;">
-                <div style="width: 35px; height: 35px; border-radius: 50%; background: ${isMe ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.05)'}; display: flex; align-items: center; justify-content: center;">
-                    <i class="${callIcon}" style="font-size: 1.1em; color: ${themeColor};"></i>
-                </div>
-                <div style="display: flex; flex-direction: column;">
-                    <span style="font-size: 0.9em; font-weight: bold; color: ${isMe ? '#fff' : '#333'}">${msg.text}</span>
-                    <span style="font-size: 0.75em; opacity: 0.8; color: ${isMe ? '#fff' : '#666'}">${subText}</span>
-                </div>
-            </div>`;
-    }
-    else if (msg.type === 'sticker') {
-        bodyContentHtml = `<img src="${msg.mediaUrl}" class="animate__animated animate__zoomIn" style="width: 150px; height: auto; display: block; cursor: pointer;">`;
-    } 
-    else if (msg.mediaType === 'voice') {
-        const themeColor = area.style.getPropertyValue('--theme-main-color') || '#ff69b4';
-        bodyContentHtml = `
-            <div class="voice-msg-container" style="display: flex; align-items: center; gap: 12px; padding: 5px; min-width: 120px;">
-                <i class="fas fa-play-circle" onclick="playVoice(this, '${msg.mediaUrl}')" 
-                   style="font-size: 2.2em; color: ${isMe ? '#ffffff' : themeColor}; cursor: pointer; transition: transform 0.2s;"></i>
-                <div style="display: flex; flex-direction: column;">
-                    <span style="font-size: 0.75em; font-weight: bold; opacity: 0.9;">Tin nhắn thoại</span>
-                    <div class="voice-wave" style="display: flex; gap: 2px; margin-top: 3px;">
-                        <span style="width:2px; height:8px; background: ${isMe ? '#ffffff' : themeColor}; opacity: 0.5;"></span>
-                        <span style="width:2px; height:12px; background: ${isMe ? '#ffffff' : themeColor};"></span>
-                        <span style="width:2px; height:8px; background: ${isMe ? '#ffffff' : themeColor}; opacity: 0.5;"></span>
+            <div class="wechat-pay-card" style="width: 240px; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1); opacity: ${cardOpacity}; font-family: sans-serif;">
+                <div style="background: ${bgColor}; padding: 15px; display: flex; align-items: center; gap: 15px;">
+                    <div style="width: 42px; height: 42px; background: rgba(255,255,255,0.25); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-hand-holding-usd" style="color: #fff; font-size: 1.4rem;"></i>
+                    </div>
+                    <div style="display: flex; flex-direction: column;">
+                        <span style="font-size: 0.95rem; color: white; font-weight: 600;">${amount.toLocaleString()} VNĐ</span>
+                        <span style="font-size: 0.75rem; color: rgba(255,255,255,0.85);">${note}</span>
                     </div>
                 </div>
+                <div style="background: white; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(0,0,0,0.05);">
+                    <span style="font-size: 0.65rem; color: #888; font-weight: bold;">${statusLabel}</span>
+                    <span style="font-size: 0.65rem; color: #ff1493; font-weight: bold;">${subLabel}</span>
+                </div>
+                ${(!isMe && status === 'pending') ? `
+                    <div style="display: flex; background: white; padding: 0 10px 10px 10px; gap: 8px;">
+                        <button onclick="handleTransferAction('${msgId}', 'accept', ${amount}, '${msg.senderCard}')" style="flex: 2; padding: 8px; background: #ff1493; border: none; color: white; border-radius: 6px; font-size: 0.75rem; font-weight: 800; cursor: pointer;">NHẬN TIỀN</button>
+                        <button onclick="handleTransferAction('${msgId}', 'refuse', ${amount}, '${msg.senderCard}')" style="flex: 1; padding: 8px; background: #fff; border: 1.5px solid #ffb6c1; color: #ff1493; border-radius: 6px; font-size: 0.75rem; font-weight: 800; cursor: pointer;">TỪ CHỐI</button>
+                    </div>
+                ` : ''}
             </div>`;
+        
+    } else if (msg.type === 'call_system') {
+        const callIcon = msg.text.includes('video') ? 'fas fa-video' : 'fas fa-phone';
+        const themeColor = isMe ? '#ffffff' : (area.style.getPropertyValue('--theme-main-color') || '#ff69b4');
+        bodyContentHtml = `<div class="call-msg-bubble" style="display: flex; align-items: center; gap: 12px; padding: 5px 10px; min-width: 180px;"><div style="width: 35px; height: 35px; border-radius: 50%; background: ${isMe ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.05)'}; display: flex; align-items: center; justify-content: center;"><i class="${callIcon}" style="font-size: 1.1em; color: ${themeColor};"></i></div><div style="display: flex; flex-direction: column;"><span style="font-size: 0.9em; font-weight: bold; color: ${isMe ? '#fff' : '#333'}">${msg.text}</span><span style="font-size: 0.75em; opacity: 0.8; color: ${isMe ? '#fff' : '#666'}">Nhấn để gọi lại</span></div></div>`;
+    } else if (msg.type === 'sticker') {
+        bodyContentHtml = `<img src="${msg.mediaUrl}" style="width: 150px; height: auto; display: block;">`;
+    } else if (msg.mediaType === 'voice') {
+        const themeColor = area.style.getPropertyValue('--theme-main-color') || '#ff69b4';
+        bodyContentHtml = `<div class="voice-msg-container" style="display: flex; align-items: center; gap: 12px; padding: 5px; min-width: 120px;"><i class="fas fa-play-circle" onclick="playVoice(this, '${msg.mediaUrl}')" style="font-size: 2.2em; color: ${isMe ? '#ffffff' : themeColor}; cursor: pointer;"></i><div style="display: flex; flex-direction: column;"><span style="font-size: 0.75em; font-weight: bold; opacity: 0.9;">Tin nhắn thoại</span></div></div>`;
+    } else if (msg.mediaUrl) {
+        if (msg.mediaType === 'image') bodyContentHtml = `<img src="${msg.mediaUrl}" onclick="openFS('${msg.mediaUrl}', 'image')" style="max-width:100%; border-radius:10px; cursor:pointer; display: block;">`;
+        else if (msg.mediaType === 'video') bodyContentHtml = `<div style="position:relative;"><video src="${msg.mediaUrl}" muted style="max-width:100%; border-radius:10px;"></video><i class="fas fa-play-circle" onclick="openFS('${msg.mediaUrl}', 'video')" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); color:white; font-size:2.5em; cursor:pointer;"></i></div>`;
     }
-    else if (msg.mediaUrl) {
-        if (msg.mediaType === 'image') {
-            bodyContentHtml = `<img src="${msg.mediaUrl}" onclick="openFS('${msg.mediaUrl}', 'image')" style="max-width:100%; border-radius:10px; cursor:pointer; display: block; margin-bottom: 5px;">`;
-        } else if (msg.mediaType === 'video') {
-            bodyContentHtml = `<div style="position:relative; display: block; margin-bottom: 5px;"><video src="${msg.mediaUrl}" muted style="max-width:100%; border-radius:10px; display: block;"></video><i class="fas fa-play-circle" onclick="openFS('${msg.mediaUrl}', 'video')" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); color:white; font-size:2.5em; cursor:pointer; opacity: 0.9;"></i></div>`;
-        }
-    }
 
-  // --- 5. TEMPLATE HTML (CHỈNH SỬA ĐỂ REACTION HIỂN THỊ ĐÈ LÊN NGOÀI CARD) ---
-const isSticker = msg.type === 'sticker';
-const isTransfer = msg.type === 'bank_transfer';
+    // --- 5. TEMPLATE HTML (KHÔNG LÀM LỆCH TIN NHẮN) ---
+    const isSticker = msg.type === 'sticker';
+    const isTransfer = msg.type === 'bank_transfer';
+    let bubbleClass = isSticker ? "msg-sticker" : (isTransfer ? "msg-transfer-card" : (isMe ? "msg-me" : "msg-friend"));
 
-let pinMarkerHtml = msg.isPinned ? `<div class="pin-marker" style="font-size: 0.8em; color: #ff1493; margin-bottom: 3px;"><i class="fas fa-thumbtack"></i></div>` : "";
+    const msgHtml = `
+    <div class="msg-wrapper ${isMe ? 'msg-me-wrap' : 'msg-friend-wrap'}" id="msg-${msgId}"
+         style="display: flex; flex-direction: column; width: 100%; margin-bottom: 12px; ${isMe ? 'align-items: flex-end;' : 'align-items: flex-start;'}"
+         data-id="${msgId}" data-sender="${msg.sender}" onclick="toggleMsgStatus('${msgId}')">
+        
+        ${msg.isPinned ? `<div class="pin-marker" style="font-size: 0.8em; color: #ff1493; margin-bottom: 3px;"><i class="fas fa-thumbtack"></i></div>` : ""}
 
-// Xác định Class cho bong bóng tin nhắn
-let bubbleClass = "";
-if (isSticker) {
-    bubbleClass = "msg-sticker"; 
-} else if (isTransfer) {
-    bubbleClass = "msg-transfer-card"; 
-} else {
-    bubbleClass = isMe ? "msg-me" : "msg-friend"; 
-}
+        <div class="msg-content-container" style="display: flex; align-items: center; position: relative; ${isMe ? 'flex-direction: row-reverse;' : 'flex-direction: row;'}">
+            
+            <div id="picker-${msgId}" class="reaction-picker reaction-stay" style="display:none; z-index: 20;">
+                <span class="${getEmojiClass('❤️')}" onclick="sendReaction('${msgId}', '❤️')">❤️</span>
+                <span class="${getEmojiClass('😆')}" onclick="sendReaction('${msgId}', '😆')">😆</span>
+                <span class="${getEmojiClass('😮')}" onclick="sendReaction('${msgId}', '😮')">😮</span>
+                <span class="${getEmojiClass('😢')}" onclick="sendReaction('${msgId}', '😢')">😢</span>
+                <span class="${getEmojiClass('😡')}" onclick="sendReaction('${msgId}', '😡')">😡</span>
+                <span class="${getEmojiClass('👍')}" onclick="sendReaction('${msgId}', '👍')">👍</span>
+            </div>
 
-const msgHtml = `
-<div class="msg-wrapper ${isMe ? 'msg-me-wrap' : 'msg-friend-wrap'}" id="msg-${msgId}"
-     style="position: relative; display: flex; flex-direction: column; width: 100%; margin-bottom: 12px; ${isMe ? 'align-items: flex-end;' : 'align-items: flex-start;'}"
-     data-id="${msgId}" data-text="${msg.text || ''}" data-sender="${msg.sender}"
-     onclick="toggleMsgStatus('${msgId}')">
-    
-    ${pinMarkerHtml}
-
-    <div class="msg-content-container" 
-         style="display: flex; align-items: center; width: fit-content; position: relative; ${isMe ? 'flex-direction: row-reverse;' : 'flex-direction: row;'}"
-         onmouseenter="showActionBtn('${msgId}')" 
-         onmouseleave="hideActionBtn('${msgId}')">
-
-        <div id="picker-${msgId}" class="reaction-picker reaction-stay" style="display:none; z-index: 10;">
-            <span class="${getEmojiClass('❤️')}" onclick="sendReaction('${msgId}', '❤️')">❤️</span>
-            <span class="${getEmojiClass('😆')}" onclick="sendReaction('${msgId}', '😆')">😆</span>
-            <span class="${getEmojiClass('😮')}" onclick="sendReaction('${msgId}', '😮')">😮</span>
-            <span class="${getEmojiClass('😢')}" onclick="sendReaction('${msgId}', '😢')">😢</span>
-            <span class="${getEmojiClass('😡')}" onclick="sendReaction('${msgId}', '😡')">😡</span>
-            <span class="${getEmojiClass('👍')}" onclick="sendReaction('${msgId}', '👍')">👍</span>
-        </div>
-
-        <div style="position: relative;">
             <div class="msg-bubble ${bubbleClass}" 
-                 style="display: flex; flex-direction: column; position: relative; ${isSticker ? 'background: transparent; box-shadow: none; border: none; padding: 0;' : ''}"
+                 style="position: relative; ${isSticker ? 'background: transparent; padding: 0;' : ''}"
                  ondblclick="sendReaction('${msgId}', '❤️')" 
-                 ontouchstart="handleTouchStart(event, '${msgId}')" 
-                 ontouchend="handleTouchEnd()"
-                 ${msg.type === 'call_system' ? `onclick="makeCall('${msg.text.includes('video') ? 'video' : 'audio'}')"` : ''}>
+                 onmouseenter="showActionBtn('${msgId}')" onmouseleave="hideActionBtn('${msgId}')">
                 ${replyHtml}
                 ${bodyContentHtml}
-            </div>
-
-            <div class="reaction-container-external" 
-                 style="position: absolute; bottom: -8px; ${isMe ? 'left: 5px;' : 'right: 5px;'} z-index: 2;">
                 ${reactionDisplayHtml}
             </div>
-        </div>
 
-        <div class="msg-actions" id="actions-${msgId}" 
-             style="display: flex; align-items: center; opacity: 0; transition: opacity 0.2s; ${isMe ? 'flex-direction: row-reverse;' : ''}">
-            <i class="far fa-smile reaction-stay" onclick="toggleReactionPicker('${msgId}')" style="cursor:pointer; ${isMe ? 'margin-left:5px;' : 'margin-right:5px;'} color:#ff69b4;"></i>
-            <i class="fas fa-ellipsis-v" onclick="showActionMenu('${msgId}', ${isMe})" style="cursor:pointer; padding: 0 5px;"></i>
-            <div class="action-menu" id="menu-${msgId}">
-                <div onclick="setReply('${msgId}', '${msg.text || ''}', '${msg.sender}')"><i class="fas fa-reply"></i> Trả lời</div>
-                <div onclick="togglePinMessage('${msgId}', '${msg.text || ''}')"><i class="fas fa-thumbtack"></i> ${msg.isPinned ? 'Bỏ ghim' : 'Ghim tin nhắn'}</div>
-                <div onclick="deleteMessage('${msgId}', ${isMe})" style="color:red"><i class="fas fa-trash"></i> Xóa</div>
+            <div class="msg-actions" id="actions-${msgId}" style="display: flex; opacity: 0; transition: 0.2s; ${isMe ? 'flex-direction: row-reverse;' : ''}">
+                <i class="far fa-smile reaction-stay" onclick="toggleReactionPicker('${msgId}')" style="cursor:pointer; padding: 0 5px; color:#ff69b4;"></i>
+                <i class="fas fa-ellipsis-v" onclick="showActionMenu('${msgId}', ${isMe})" style="cursor:pointer; padding: 0 5px;"></i>
+                <div class="action-menu" id="menu-${msgId}">
+                    <div onclick="setReply('${msgId}', '${msg.text || ''}', '${msg.sender}')"><i class="fas fa-reply"></i> Trả lời</div>
+                    <div onclick="togglePinMessage('${msgId}', '${msg.text || ''}')"><i class="fas fa-thumbtack"></i> ${msg.isPinned ? 'Bỏ ghim' : 'Ghim'}</div>
+                    <div onclick="deleteMessage('${msgId}', ${isMe})" style="color:red"><i class="fas fa-trash"></i> Xóa</div>
+                </div>
             </div>
         </div>
-    </div>
 
-    <div id="status-${msgId}" class="msg-external-status" 
-         style="display: none; font-size: 0.6em; opacity: 0.7; margin-top: 2px; width: fit-content; ${isMe ? 'margin-right: 5px; text-align: right;' : 'margin-left: 5px; text-align: left;'}">
-        ${timeDisplay} • <span class="status-text-val">Đã gửi</span>
-    </div>
-
-    ${isMe ? `
-        <div class="seen-avatar-wrap" style="display: none; margin-right: 5px; margin-top: 2px;">
-            <img class="seen-avatar-img" src="" style="width: 14px; height: 14px; border-radius: 50%; border: 1px solid #fff; object-fit: cover;">
+        <div id="status-${msgId}" class="msg-external-status" style="display: none; font-size: 0.6em; opacity: 0.7; margin-top: 2px;">
+            ${timeDisplay} • Đã gửi
         </div>
-    ` : ''}
-</div>`;
-    
-    // --- 6. PHẦN RENDER (GIỮ NGUYÊN 100%) ---
-    if (targetContainer) {
-        targetContainer.innerHTML = msgHtml;
-    } else {
-        if (position === 'bottom') {
-            area.insertAdjacentHTML('beforeend', msgHtml);
-        } else {
-            area.insertAdjacentHTML('afterbegin', msgHtml);
-        }
-    }
+    </div>`;
+
+    // --- 6. PHẦN RENDER ---
+    if (targetContainer) targetContainer.innerHTML = msgHtml;
+    else area.insertAdjacentHTML(position === 'bottom' ? 'beforeend' : 'afterbegin', msgHtml);
 
     const el = document.getElementById(`msg-${msgId}`);
     if (el) initSwipe(el, isMe, msgId, msg.text, msg.sender);
