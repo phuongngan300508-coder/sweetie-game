@@ -19236,7 +19236,6 @@ async function renderGlobalMessage(id, msg) {
         const isInactive = isFull || hasClaimed;
         
         // --- THIẾT KẾ BAO LÌ XÌ THỰC TẾ ---
-        // Màu sắc hồng đậm hơn để giống bao lì xì truyền thống
         const redPacketColor = isInactive ? "#e57373" : "#ff1493"; 
 
         messageBodyHtml = `
@@ -19290,7 +19289,6 @@ async function renderGlobalMessage(id, msg) {
             </style>
         `;
 
-        // Lắng nghe trạng thái Real-time
         db.ref(`global_chat/red_packets/${msg.redPacketId}`).on('value', (snap) => {
             const data = snap.val();
             const el = document.getElementById(`rp-${msg.redPacketId}`);
@@ -19305,14 +19303,15 @@ async function renderGlobalMessage(id, msg) {
                 el.style.opacity = "0.8";
                 statusEl.innerText = nowFull ? "Hết slot" : "Đã nhận";
                 el.onclick = null;
-                // Xóa nút mở nếu có
                 const pulse = el.querySelector('div[style*="pulse-rp"]');
                 if (pulse) pulse.remove();
             }
         });
 
     } else {
-        // --- GIỮ NGUYÊN STYLE TIN NHẮN CŨ CỦA HENRY ---
+        // --- PHẦN ĐÃ CẬP NHẬT: NHẬN DIỆN LỜI CẢM ƠN ---
+        const isThanks = msg.text && msg.text.startsWith('💌');
+
         messageBodyHtml = `
             <div style="display: inline-block; padding: 10px 14px; border-radius: 18px; font-size: 0.85em; 
                         background: ${isMe ? 'linear-gradient(135deg, #ff69b4, #ff1493)' : 'white'}; 
@@ -19320,6 +19319,7 @@ async function renderGlobalMessage(id, msg) {
                         box-shadow: 0 2px 5px rgba(0,0,0,0.05);
                         border: ${isMe ? 'none' : '1px solid #ffe4e1'};
                         ${isMe ? 'border-top-right-radius: 2px;' : 'border-top-left-radius: 2px;'}
+                        ${isThanks ? 'font-style: italic; border: 1px solid #ffb6c1;' : ''}
                         word-break: break-word;">
                 ${msg.text}
             </div>
@@ -20719,13 +20719,13 @@ function sendThanksMessage() {
         return;
     }
 
-    // Tạo dữ liệu tin nhắn cảm ơn
+    // Tạo dữ liệu tin nhắn cảm ơn (Giữ nguyên cấu trúc của Henry)
     const msgData = {
         sender: userData.profile.uid,
         senderName: userData.profile.name,
         senderAvatar: userData.profile.customAvatar || "",
         senderGender: userData.profile.gender,
-        text: `💌 ${message}`, // Thêm icon bức thư cho phân biệt
+        text: `💌 ${message}`, 
         timestamp: firebase.database.ServerValue.TIMESTAMP,
         vip: typeof getVipLevel === 'function' ? getVipLevel(userData.totalSpent || 0) : 0
     };
@@ -20734,6 +20734,12 @@ function sendThanksMessage() {
     db.ref('global_chat/messages').push(msgData).then(() => {
         if(thanksPopup) thanksPopup.style.display = 'none';
         input.value = ""; // Reset input
+
+        // --- BỔ SUNG: Cuộn xuống để Henry thấy lời cảm ơn của mình hiện lên ---
+        const globalArea = document.getElementById('global-messages-area');
+        if (globalArea) {
+            globalArea.scrollTop = globalArea.scrollHeight;
+        }
     }).catch(err => {
         console.error("Lỗi gửi lời cảm ơn:", err);
         alert("Có lỗi khi gửi tin nhắn, nhưng tiền đã vào túi bạn rồi, đừng lo!");
