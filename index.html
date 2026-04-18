@@ -20592,37 +20592,38 @@ async function claimRedPacket(packetId) {
             packet.claimedBy[currentUser] = amountToGive;
 
             return packet;
-        }, async (error, committed, snapshot) => {
+        }, (error, committed, snapshot) => { // Bỏ async ở đây
             if (committed) {
                 const finalData = snapshot.val();
                 const myAmount = finalData.claimedBy[currentUser];
                 
-                // 1. Cộng tiền vào Firebase
-                await db.ref(`users/${currentUser}/balance`).transaction(val => (val || 0) + myAmount);
-                
-                // 2. Cập nhật biến local userData và lưu lại
-                if (typeof userData !== 'undefined') {
-                    userData.balance = (userData.balance || 0) + myAmount;
-                    if (typeof saveData === 'function') saveData();
-                }
+                // 1. Cộng tiền vào Firebase (Dùng Promise để chắc chắn xong rồi mới làm tiếp)
+                db.ref(`users/${currentUser}/balance`).transaction(val => (val || 0) + myAmount)
+                .then(() => {
+                    // 2. GHI LỊCH SỬ VÀO VÍ TỔNG TRƯỚC (Để đảm bảo dữ liệu mới nhất)
+                    if (typeof recordTransaction === 'function') {
+                        recordTransaction("Nhận lì xì thế giới", myAmount, "plus");
+                    }
 
-                // 3. GHI LỊCH SỬ VÀO VÍ TỔNG
-                if (typeof recordTransaction === 'function') {
-                    recordTransaction("Nhận lì xì thế giới", myAmount, "plus");
-                }
+                    // 3. Cập nhật biến local userData
+                    if (typeof userData !== 'undefined') {
+                        userData.balance = (userData.balance || 0) + myAmount;
+                        // 4. Lưu lại sau khi đã có lịch sử mới
+                        if (typeof saveData === 'function') saveData();
+                    }
 
-                // 4. Thông báo cho người dùng
-                alert(`🧧 Chúc mừng bạn! Bạn đã nhận được ${myAmount.toLocaleString()}đ lì xì!`);
-                if (typeof addNotification === 'function') {
-                    addNotification("🧧 NHẬN LÌ XÌ", `Bạn vừa nhận được ${myAmount.toLocaleString()}đ lì xì may mắn từ ${finalData.senderName}!`);
-                }
+                    // 5. CẬP NHẬT GIAO DIỆN VÀ THÔNG BÁO
+                    if (typeof updateUI === 'function') updateUI();
 
-                // 5. CẬP NHẬT GIAO DIỆN NGAY LẬP TỨC
-                if (typeof updateUI === 'function') updateUI();
+                    alert(`🧧 Chúc mừng bạn! Bạn đã nhận được ${myAmount.toLocaleString()}đ lì xì!`);
+                    if (typeof addNotification === 'function') {
+                        addNotification("🧧 NHẬN LÌ XÌ", `Bạn vừa nhận được ${myAmount.toLocaleString()}đ lì xì may mắn từ ${finalData.senderName}!`);
+                    }
+                });
 
             } else {
-                // Chỉ hiện alert nếu thực sự lỗi hoặc hết slot (tránh hiện alert thừa khi đã chặn sender ở trên)
-                if (!error && snapshot.val() && snapshot.val().remainingSlots <= 0) {
+                // Chỉ hiện alert nếu thực sự lỗi hoặc hết slot
+                if (!error && snapshot && snapshot.val() && snapshot.val().remainingSlots <= 0) {
                      alert("Rất tiếc, lì xì đã hết hoặc bạn đã nhận rồi!");
                 }
             }
