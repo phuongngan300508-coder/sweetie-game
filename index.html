@@ -20874,7 +20874,7 @@ function setRpMode(mode) {
     return amounts;
 }
 
-    async function openDirectTransferModal(myCardId, myBalance) {
+   async function openDirectTransferModal(myCardId, myBalance) {
     const overlay = document.createElement('div');
     overlay.id = 'bank-transfer-overlay';
     overlay.className = 'sweetie-transaction-overlay'; // Dùng lại class cũ của Henry
@@ -20956,10 +20956,12 @@ function setRpMode(mode) {
         
         // Kiểm tra mã PIN
         const myCardSnap = await db.ref(`sweetie_cards/${myCardId}`).once('value');
-        if (pin !== myCardSnap.val().password) return alert("Mã PIN không chính xác!");
+        const myCardData = myCardSnap.val();
+        
+        if (pin !== myCardData.password) return alert("Mã PIN không chính xác!");
 
         if (!msg) {
-            const myName = myCardSnap.val().ownerName || myCardSnap.val().owner;
+            const myName = myCardData.ownerName || myCardData.owner;
             msg = `${myName.toUpperCase()} đã chuyển tiền`;
         }
 
@@ -20973,21 +20975,24 @@ function setRpMode(mode) {
 
             // Ghi lịch sử
             recordCardHistory(myCardId, 'transfer_out', amount, { toUser: nameDisplay.innerText.replace('✅ ', ''), note: msg });
-            recordCardHistory(targetCardId, 'transfer_in', amount, { fromUser: myCardSnap.val().ownerName.toUpperCase(), note: msg });
+            recordCardHistory(targetCardId, 'transfer_in', amount, { fromUser: (myCardData.ownerName || myCardData.owner).toUpperCase(), note: msg });
 
-            // Hiện Bill
+            // Hiện Bill - SỬA LỖI: Lấy trực tiếp accInput.value thay vì biến val không xác định
             showTransferBill({
                 amount: amount,
                 msg: msg,
                 destName: nameDisplay.innerText.replace('✅ ', ''),
-                destAcc: val,
+                destAcc: accInput.value, 
                 time: Date.now(),
                 transId: "SWB" + Math.random().toString(36).substr(2, 9).toUpperCase()
             });
             
             overlay.remove();
         } catch (e) {
+            console.error(e);
             alert("Giao dịch thất bại!");
+            this.disabled = false;
+            this.innerText = "XÁC NHẬN";
         }
     };
 }
