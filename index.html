@@ -7118,13 +7118,26 @@ input[type="date"].sweetie-input-style {
 
         <div id="global-messages-area"></div>
 
-        <div class="chat-input-area">
-            <div style="flex: 1; position: relative; display: flex; align-items: center;">
-                <input type="text" id="global-input" placeholder="Nhắn gì đó với thế giới...">
+       <div class="chat-input-area">
+    <button onclick="toggleRedPacketMenu()" class="add-btn" style="background: none; border: none; color: #ff69b4; font-size: 1.2rem; padding: 0 10px; cursor: pointer;">
+        <i class="fas fa-plus-circle"></i>
+    </button>
+    <div style="flex: 1; position: relative; display: flex; align-items: center;">
+        <input type="text" id="global-input" placeholder="Nhắn gì đó với thế giới...">
+    </div>
+    <button onclick="sendGlobalMessage()" class="send-btn">
+        <i class="fas fa-paper-plane"></i>
+    </button>
+    
+    <div id="chat-extra-menu" style="display:none; position: absolute; bottom: 60px; left: 10px; background: white; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); padding: 10px; z-index: 100;">
+        <div onclick="openRedPacketCreator()" style="display: flex; flex-direction: column; align-items: center; gap: 5px; cursor: pointer; padding: 10px;">
+            <div style="width: 45px; height: 45px; background: #ff1493; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">
+                <i class="fas fa-envelope-open-dollar"></i>
             </div>
-            <button onclick="sendGlobalMessage()" class="send-btn">
-                <i class="fas fa-paper-plane"></i>
-            </button>
+            <span style="font-size: 0.7rem; font-weight: bold; color: #333;">Lì xì</span>
+        </div>
+    </div>
+</div>
         </div>
     </div>
 </div>
@@ -8921,6 +8934,32 @@ input[type="date"].sweetie-input-style {
         
         <div id="card-app-flow">
             </div>
+    </div>
+</div>
+
+    <div id="red-packet-creator" class="sweetie-transaction-overlay" style="display:none; align-items: center; justify-content: center;">
+    <div class="trans-content-wrapper" style="width: 100%; max-width: 350px; background: #fff; border-radius: 28px; padding: 25px; border: 1px solid #ffe4e1;">
+        <div style="text-align: center; margin-bottom: 20px;">
+            <div style="width: 50px; height: 50px; background: #ff1493; color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; font-size: 1.5rem; box-shadow: 0 5px 15px rgba(255, 20, 147, 0.3);">
+                <i class="fas fa-gift"></i>
+            </div>
+            <h4 style="margin: 0; color: #333;">GỬI LÌ XÌ MAY MẮN</h4>
+        </div>
+
+        <div style="background: #fffafa; border-radius: 20px; padding: 15px; margin-bottom: 15px; border: 1px solid #ff149315;">
+            <label style="font-size: 0.7rem; color: #ff1493; font-weight: 800; display: block; margin-bottom: 8px;">TỔNG SỐ TIỀN (VNĐ)</label>
+            <input type="number" id="rp-total-amount" class="sweetie-input-style" style="font-size: 1.2rem; font-weight: bold;" placeholder="0">
+        </div>
+
+        <div style="background: #fffafa; border-radius: 20px; padding: 15px; margin-bottom: 15px; border: 1px solid #ff149315;">
+            <label style="font-size: 0.7rem; color: #ff1493; font-weight: 800; display: block; margin-bottom: 8px;">SỐ LƯỢNG NGƯỜI NHẬN</label>
+            <input type="number" id="rp-total-slots" class="sweetie-input-style" placeholder="Ví dụ: 5">
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+            <button onclick="closeRedPacketCreator()" style="flex: 1; padding: 12px; border: none; border-radius: 15px; background: #eee; color: #666; font-weight: bold; cursor: pointer;">HỦY</button>
+            <button onclick="createRedPacket()" style="flex: 2; padding: 12px; border: none; border-radius: 15px; background: #ff1493; color: #fff; font-weight: bold; cursor: pointer; box-shadow: 0 5px 15px rgba(255, 20, 147, 0.3);">PHÁT LÌ XÌ</button>
+        </div>
     </div>
 </div>
 <script>
@@ -19088,7 +19127,6 @@ function renderGlobalMessage(id, msg) {
     const area = document.getElementById('global-messages-area');
     if (!area) return;
 
-    // SỬA TẠI ĐÂY: So sánh UID của người gửi với UID của chính Henry để biết tin nhắn nào bên trái/phải
     const isMe = msg.sender === userData.profile.uid; 
     
     const vipColors = ["#888", "#28a745", "#007bff", "#6a0dad", "#ff8c00", "#ff1493"];
@@ -19100,6 +19138,63 @@ function renderGlobalMessage(id, msg) {
              <i class="fas ${msg.senderGender === 'Nam' ? 'fa-user-tie' : 'fa-user-graduate'}" style="font-size:0.8em;"></i>
            </div>`;
 
+    // --- PHẦN XỬ LÝ NỘI DUNG (TIN NHẮN HOẶC LÌ XÌ) ---
+    let messageBodyHtml = "";
+
+    if (msg.redPacketId) {
+        // Nếu là Lì xì: Tạo giao diện bao lì xì màu hồng banking
+        // Chúng ta đặt ID cho div này để tí nữa Listener Firebase cập nhật trạng thái "Hết slot" real-time
+        messageBodyHtml = `
+            <div id="rp-${msg.redPacketId}" onclick="claimRedPacket('${msg.redPacketId}')" 
+                 style="background: linear-gradient(135deg, #ff477e, #ff1493); padding: 12px 16px; border-radius: 15px; cursor: pointer; min-width: 180px; box-shadow: 0 4px 15px rgba(255, 20, 147, 0.2); border: 1px solid rgba(255,255,255,0.2);">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="font-size: 1.8rem; color: #ffeb3b; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));">
+                        <i class="fas fa-envelope-open-text"></i>
+                    </div>
+                    <div style="text-align: left;">
+                        <div style="color: white; font-weight: 800; font-size: 0.85em; letter-spacing: 0.5px;">NHẬN LÌ XÌ</div>
+                        <div style="color: rgba(255,255,255,0.9); font-size: 0.65em;">Chúc mừng năm mới!</div>
+                    </div>
+                </div>
+                <div id="status-rp-${msg.redPacketId}" style="margin-top: 8px; font-size: 0.6em; color: rgba(255,255,255,0.7); text-align: right; font-style: italic;">
+                    Nhấn để mở ngay...
+                </div>
+            </div>
+        `;
+
+        // Lắng nghe trạng thái Lì xì để đổi màu nếu hết slot (Dùng .on để Real-time)
+        db.ref(`global_chat/red_packets/${msg.redPacketId}`).on('value', (snap) => {
+            const data = snap.val();
+            const el = document.getElementById(`rp-${msg.redPacketId}`);
+            const statusEl = document.getElementById(`status-rp-${msg.redPacketId}`);
+            if (!data || !el || !statusEl) return;
+
+            const hasClaimed = data.claimedBy && data.claimedBy[currentUser];
+            const isFull = data.remainingSlots <= 0;
+
+            if (isFull || hasClaimed) {
+                el.style.filter = "grayscale(0.6)"; // Làm mờ đi nếu đã nhận hoặc hết
+                el.style.opacity = "0.8";
+                statusEl.innerText = isFull ? "Lì xì đã hết slot" : "Bạn đã nhận lì xì này";
+                if (isFull) el.onclick = null; // Hết rồi thì không cho bấm nữa
+            }
+        });
+
+    } else {
+        // Nếu là tin nhắn bình thường: Giữ nguyên style cũ của Henry
+        messageBodyHtml = `
+            <div style="display: inline-block; padding: 10px 14px; border-radius: 18px; font-size: 0.85em; 
+                        background: ${isMe ? 'linear-gradient(135deg, #ff69b4, #ff1493)' : 'white'}; 
+                        color: ${isMe ? 'white' : '#333'};
+                        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+                        border: ${isMe ? 'none' : '1px solid #ffe4e1'};
+                        ${isMe ? 'border-top-right-radius: 2px;' : 'border-top-left-radius: 2px;'}
+                        word-break: break-word;">
+                ${msg.text}
+            </div>
+        `;
+    }
+
     const html = `
         <div class="animate__animated animate__fadeInUp" style="display: flex; gap: 8px; ${isMe ? 'flex-direction: row-reverse;' : 'flex-direction: row;'} align-items: flex-start; margin-bottom: 8px;">
             <div onclick="searchFriendByID('${msg.sender}')" style="cursor:pointer; flex-shrink: 0;">
@@ -19110,15 +19205,7 @@ function renderGlobalMessage(id, msg) {
                     ${msg.vip > 0 ? `<span style="background:${myVipColor}; color:white; padding:1px 4px; border-radius:4px; margin-right:4px; font-size: 0.8em;">VIP ${msg.vip}</span>` : ''}
                     ${msg.senderName}
                 </div>
-                <div style="display: inline-block; padding: 10px 14px; border-radius: 18px; font-size: 0.85em; 
-                            background: ${isMe ? 'linear-gradient(135deg, #ff69b4, #ff1493)' : 'white'}; 
-                            color: ${isMe ? 'white' : '#333'};
-                            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-                            border: ${isMe ? 'none' : '1px solid #ffe4e1'};
-                            ${isMe ? 'border-top-right-radius: 2px;' : 'border-top-left-radius: 2px;'}
-                            word-break: break-word;">
-                    ${msg.text}
-                </div>
+                ${messageBodyHtml}
             </div>
         </div>
     `;
@@ -20275,6 +20362,124 @@ db.ref(`notifications_queue/${currentChatFriend}`).push({
         alert("Lỗi khi nhận tiền!");
         console.error(e);
     }
+}
+
+    // --- QUẢN LÝ GIAO DIỆN TẠO LÌ XÌ ---
+function toggleRedPacketMenu() {
+    const menu = document.getElementById('chat-extra-menu');
+    menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+}
+
+function openRedPacketCreator() {
+    document.getElementById('chat-extra-menu').style.display = 'none';
+    document.getElementById('red-packet-creator').style.display = 'flex';
+}
+
+function closeRedPacketCreator() {
+    document.getElementById('red-packet-creator').style.display = 'none';
+}
+
+// --- THUẬT TOÁN CHIA TIỀN NGẪU NHIÊN (LÌ XÌ) ---
+function generateRedPacketAmounts(totalAmount, slots) {
+    const min = 1000; // Mỗi người ít nhất 1.000đ
+    let amounts = [];
+    let remainingAmount = totalAmount - (slots * min);
+
+    for (let i = 0; i < slots - 1; i++) {
+        // Random từ 0 đến phần còn lại
+        const share = Math.floor(Math.random() * (remainingAmount / (slots - i) * 2));
+        amounts.push(share + min);
+        remainingAmount -= share;
+    }
+    amounts.push(remainingAmount + min); // Người cuối lấy phần còn lại
+    return amounts;
+}
+
+// --- TẠO LÌ XÌ VÀ GỬI LÊN KÊNH THẾ GIỚI ---
+async function createRedPacket() {
+    const amount = parseInt(document.getElementById('rp-total-amount').value);
+    const slots = parseInt(document.getElementById('rp-total-slots').value);
+
+    if (isNaN(amount) || amount < slots * 1000) return alert("Tổng tiền phải lớn hơn " + (slots * 1000).toLocaleString() + "đ");
+    if (slots <= 0) return alert("Số người nhận không hợp lệ!");
+    if (userData.balance < amount) return alert("Số dư ví không đủ để phát lì xì!");
+
+    try {
+        // 1. Trừ tiền ví tổng người gửi
+        await db.ref(`users/${currentUser}/balance`).transaction(val => (val || 0) - amount);
+        userData.balance -= amount;
+        saveData(); // Lưu local
+
+        // 2. Chia tiền ngẫu nhiên
+        const packetAmounts = generateRedPacketAmounts(amount, slots);
+
+        // 3. Đẩy dữ liệu lì xì vào Firebase
+        const packetRef = db.ref('global_chat/red_packets').push();
+        const packetId = packetRef.key;
+
+        await packetRef.set({
+            senderId: currentUser,
+            senderName: userData.profile.name,
+            totalAmount: amount,
+            totalSlots: slots,
+            remainingSlots: slots,
+            amounts: packetAmounts, // Mảng tiền ngẫu nhiên
+            claimedBy: {}, // Danh sách người đã nhận
+            time: firebase.database.ServerValue.TIMESTAMP
+        });
+
+        // 4. Gửi tin nhắn chứa Lì xì lên Chat Thế giới
+        const msgData = {
+            sender: userData.profile.uid,
+            senderName: userData.profile.name,
+            senderAvatar: userData.profile.customAvatar || "",
+            text: `🧧 [LÌ XÌ MAY MẮN] Mọi người ơi nhận lì xì từ mình nhé!`,
+            redPacketId: packetId, // Đính kèm ID lì xì
+            timestamp: firebase.database.ServerValue.TIMESTAMP
+        };
+        await db.ref('global_chat/messages').push(msgData);
+
+        closeRedPacketCreator();
+        alert("🌸 Đã phát lì xì thành công!");
+    } catch (e) { console.error(e); }
+}
+
+// --- NHẬN LÌ XÌ ---
+async function claimRedPacket(packetId) {
+    const packetRef = db.ref(`global_chat/red_packets/${packetId}`);
+    
+    // Sử dụng transaction để tránh 2 người cùng nhận 1 phần tiền
+    packetRef.transaction((packet) => {
+        if (!packet) return;
+        if (packet.remainingSlots <= 0) return; // Hết slot
+        if (packet.claimedBy && packet.claimedBy[currentUser]) return; // Đã nhận rồi
+
+        // Lấy phần tiền tiếp theo trong mảng amounts
+        const claimIndex = packet.totalSlots - packet.remainingSlots;
+        const amountToGive = packet.amounts[claimIndex];
+
+        // Cập nhật packet
+        packet.remainingSlots -= 1;
+        if (!packet.claimedBy) packet.claimedBy = {};
+        packet.claimedBy[currentUser] = amountToGive;
+
+        return packet;
+    }, async (error, committed, snapshot) => {
+        if (committed) {
+            const finalData = snapshot.val();
+            const myAmount = finalData.claimedBy[currentUser];
+            
+            // Cộng tiền vào ví tổng
+            await db.ref(`users/${currentUser}/balance`).transaction(val => (val || 0) + myAmount);
+            userData.balance += myAmount;
+            saveData();
+
+            alert(`🧧 Chúc mừng Henry! Bạn đã nhận được ${myAmount.toLocaleString()}đ lì xì!`);
+            addNotification("🧧 NHẬN LÌ XÌ", `Bạn vừa nhận được ${myAmount.toLocaleString()}đ lì xì may mắn!`);
+        } else {
+            alert("Rất tiếc, lì xì đã hết hoặc Henry đã nhận rồi!");
+        }
+    });
 }
 </script>
 </body>
