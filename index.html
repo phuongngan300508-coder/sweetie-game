@@ -14385,7 +14385,8 @@ function renderSingleMessage(msgId, msg, position = 'bottom', targetContainer = 
     // --- PHẦN XỬ LÝ Ô TIN NHẮN CHUYỂN TIỀN (WECHAT/ZALOPAY STYLE) ---
     if (msg.type === 'bank_transfer') {
         const amount = msg.amount || 0;
-        const status = msg.status || 'pending'; // pending, accepted, refused
+        const status = msg.status || 'pending';
+        const note = msg.note || "Đã chuyển tiền cho bạn"; // Lời nhắn hiển thị ở đây
         
         // Cấu hình giao diện theo trạng thái
         let statusLabel = "Chuyển tiền Sweetie Bank";
@@ -14405,24 +14406,28 @@ function renderSingleMessage(msgId, msg, position = 'bottom', targetContainer = 
             iconAnim = "";
         }
 
-        bodyContentHtml = `
-            <div class="transfer-message-card" style="width: 220px; border-radius: 15px; overflow: hidden; box-shadow: 0 4px 15px rgba(216, 27, 96, 0.15); opacity: ${cardOpacity};">
+       bodyContentHtml = `
+            <div class="transfer-message-card" style="width: 220px; border-radius: 15px; overflow: hidden; box-shadow: 0 4px 15px rgba(216,27,96,0.15); opacity: ${cardOpacity};">
                 <div style="background: linear-gradient(135deg, #ff1493, #d81b60); padding: 12px; color: white; display: flex; align-items: center; gap: 12px;">
                     <div class="animate__animated ${iconAnim}" style="width: 40px; height: 40px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
                         <i class="fas fa-wallet" style="font-size: 1.2rem;"></i>
                     </div>
                     <div style="display: flex; flex-direction: column;">
                         <span style="font-size: 1.1rem; font-weight: 800;">${amount.toLocaleString()}</span>
-                        <span style="font-size: 0.65rem; opacity: 0.9; font-weight: bold; letter-spacing: 0.5px;">VNĐ</span>
+                        <span style="font-size: 0.65rem; opacity: 0.9; font-weight: bold;">VNĐ</span>
                     </div>
                 </div>
                 
                 <div style="padding: 10px; background: ${isMe ? 'rgba(255,255,255,0.9)' : '#fffafa'};">
-                    <div style="font-size: 0.75rem; color: #d81b60; font-weight: bold; margin-bottom: 8px;">${statusLabel}</div>
-                    <div style="font-size: 0.65rem; color: #888; margin-bottom: 10px;">${subLabel}</div>
+                    <div style="font-size: 0.8rem; color: #333; font-weight: 600; margin-bottom: 5px; line-height: 1.3;">
+                        ${note}
+                    </div>
+                    <div style="font-size: 0.65rem; color: #d81b60; font-weight: bold; border-top: 1px solid #ffdae0; padding-top: 5px;">
+                        ${statusLabel}
+                    </div>
                     
                     ${(!isMe && status === 'pending') ? `
-                        <div style="display: flex; gap: 8px;">
+                        <div style="display: flex; gap: 8px; margin-top: 10px;">
                             <button onclick="handleTransferAction('${msgId}', 'accept', ${amount}, '${msg.senderCard}')" 
                                 style="flex: 2; padding: 6px; background: #ff1493; border: none; color: white; border-radius: 8px; font-size: 0.7rem; font-weight: bold; cursor: pointer;">NHẬN</button>
                             <button onclick="handleTransferAction('${msgId}', 'refuse', ${amount}, '${msg.senderCard}')" 
@@ -14432,6 +14437,7 @@ function renderSingleMessage(msgId, msg, position = 'bottom', targetContainer = 
                 </div>
             </div>`;
     }
+        
     // --- CÁC LOGIC CŨ CỦA HENRY (GIỮ NGUYÊN) ---
     else if (msg.type === 'call_system') {
         const callIcon = msg.text.includes('video') ? 'fas fa-video' : 'fas fa-phone';
@@ -19879,7 +19885,7 @@ async function unlinkCard() {
     // 1. Kiểm tra thẻ ngân hàng của mình
     const myCardIdSnap = await db.ref(`users/${currentUser}/linkedCard`).once('value');
     if (!myCardIdSnap.exists()) {
-        alert("🌸 Bạn ơi, bạn cần tạo thẻ Sweetie Bank trước khi chuyển tiền nhé!");
+        alert("🌸 Henry ơi, bạn cần tạo thẻ Sweetie Bank trước khi chuyển tiền nhé!");
         if (typeof openSweetieCardModal === 'function') openSweetieCardModal();
         return;
     }
@@ -19894,9 +19900,9 @@ async function unlinkCard() {
     const existing = document.getElementById('transfer-popup-overlay');
     if (existing) existing.remove();
 
-    // 3. Tạo cấu trúc HTML khớp hoàn toàn với CSS của Henry
+    // 3. Tạo cấu trúc HTML (Bổ sung ô nhập Lời nhắn)
     const transferOverlay = document.createElement('div');
-    transferOverlay.id = 'transfer-popup-overlay'; // Khớp ID khung nền mờ
+    transferOverlay.id = 'transfer-popup-overlay'; 
     
     transferOverlay.innerHTML = `
         <div class="transfer-popup-content"> 
@@ -19924,6 +19930,11 @@ async function unlinkCard() {
                 <input type="number" id="transfer-amount-in" class="sweetie-input-style" placeholder="Nhập số tiền..." autocomplete="off">
             </div>
 
+            <div style="text-align: left; margin-bottom: 10px;">
+                <label style="font-size: 0.8rem; color: #d81b60; font-weight: bold; margin-bottom: 5px; display: block;">Lời nhắn (Ghi chú):</label>
+                <input type="text" id="transfer-note-in" class="sweetie-input-style" placeholder="Gửi lời yêu thương..." maxlength="50" autocomplete="off">
+            </div>
+
             <div style="text-align: left;">
                 <label style="font-size: 0.8rem; color: #d81b60; font-weight: bold; margin-bottom: 5px; display: block;">Mật khẩu thẻ (PIN):</label>
                 <input type="password" id="transfer-pass-in" class="sweetie-input-style" placeholder="••••••" autocomplete="new-password">
@@ -19935,10 +19946,8 @@ async function unlinkCard() {
         </div>
     `;
 
-    // 4. Chèn vào body để Fixed bám theo toàn màn hình web
     document.body.appendChild(transferOverlay);
     
-    // Đảm bảo nút đóng hoạt động mượt mà
     const amountInput = document.getElementById('transfer-amount-in');
     if (amountInput) amountInput.focus();
 
@@ -19946,53 +19955,58 @@ async function unlinkCard() {
     document.getElementById('btn-confirm-transfer').onclick = async function() {
         const amount = parseInt(document.getElementById('transfer-amount-in').value);
         const pass = document.getElementById('transfer-pass-in').value;
+        
+        // Lấy lời nhắn, nếu trống thì dùng mặc định: [Tên chủ thẻ] + đã chuyển tiền cho bạn
+        let note = document.getElementById('transfer-note-in').value.trim();
+        if (!note) {
+            const owner = cardData.ownerName || cardData.owner || currentUser;
+            note = `${owner} đã chuyển tiền cho bạn`;
+        }
 
         if (!amount || amount <= 0) return alert("Henry hãy nhập số tiền hợp lệ nhé!");
         if (amount > currentBalance) return alert("Số dư không đủ để thực hiện giao dịch này!");
         if (!pass) return alert("Vui lòng nhập mật khẩu xác nhận!");
 
-        // Khóa nút để tránh click 2 lần
         this.disabled = true;
         this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ĐANG XỬ LÝ...';
 
-        // Gọi hàm xử lý trừ tiền và gửi tin nhắn chat
-        await processTransfer(amount, pass, myCardId);
+        // Truyền thêm biến note vào hàm xử lý tiếp theo
+        await processTransfer(amount, pass, myCardId, note);
         
-        // Hoàn tất thì đóng popup
         transferOverlay.remove();
     };
 }
     
-async function processTransfer(amount, pass, myCardId) {
-    // 1. Kiểm tra đầu vào cơ bản
+// Thêm tham số note vào hàm
+async function processTransfer(amount, pass, myCardId, note) {
+    // 1. Kiểm tra đầu vào cơ bản (Giữ nguyên)
     if (!amount || amount <= 0 || !myCardId) return;
 
     const cardRef = db.ref(`sweetie_cards/${myCardId}`);
     
     try {
-        // 2. Lấy dữ liệu thẻ mới nhất để kiểm tra mật khẩu và số dư
+        // 2. Lấy dữ liệu thẻ mới nhất để kiểm tra mật khẩu và số dư (Giữ nguyên)
         const cardSnap = await cardRef.once('value');
         if (!cardSnap.exists()) return alert("Lỗi: Không tìm thấy thông tin thẻ!");
         
         const cardData = cardSnap.val();
 
-        // Kiểm tra mật khẩu
+        // Kiểm tra mật khẩu (Giữ nguyên)
         if (pass !== cardData.password) {
             alert("Mật khẩu thẻ không đúng, bạn kiểm tra lại nhé! 🌸");
             return;
         }
 
-        // Kiểm tra số dư (Check lần 1 tại máy khách)
+        // Kiểm tra số dư (Giữ nguyên)
         if ((cardData.balance || 0) < amount) {
             alert("Số dư trong thẻ không đủ để thực hiện chuyển khoản!");
             return;
         }
 
-        // 3. THỰC HIỆN GIAO DỊCH (Trừ tiền)
-        // Dùng transaction để đảm bảo tính toàn vẹn dữ liệu nếu nhiều người cùng thao tác
+        // 3. THỰC HIỆN GIAO DỊCH (Trừ tiền) (Giữ nguyên)
         const result = await cardRef.child('balance').transaction(currentBalance => {
             if (currentBalance === null) return 0;
-            if (currentBalance < amount) return; // Hủy transaction nếu không đủ tiền
+            if (currentBalance < amount) return; 
             return currentBalance - amount;
         });
 
@@ -20001,24 +20015,25 @@ async function processTransfer(amount, pass, myCardId) {
             return;
         }
 
-       // --- 4. GHI LỊCH SỬ GIAO DỊCH (PHẦN SỬA ĐỔI) ---
+        // --- 4. GHI LỊCH SỬ GIAO DỊCH (CẬP NHẬT THÊM NOTE) ---
         if (typeof recordCardHistory === 'function') {
-            // Thay 'withdraw' bằng 'transfer_out' và gửi kèm tên người nhận
             recordCardHistory(myCardId, 'transfer_out', amount, { 
-                toUser: currentChatFriend // currentChatFriend là biến lưu tên người Henry đang chat cùng
+                toUser: currentChatFriend,
+                note: note // Lưu lời nhắn vào lịch sử giao dịch của thẻ
             });
         }
 
-        // 5. Chuẩn bị dữ liệu tin nhắn chuyển tiền
+        // --- 5. CHUẨN BỊ DỮ LIỆU TIN NHẮN (CẬP NHẬT THÊM NOTE) ---
         const transferData = {
             type: 'bank_transfer',
             amount: amount,
-            status: 'pending', // Chờ nhận
+            note: note, // Gửi lời nhắn vào bong bóng chat y hệt WeChat
+            status: 'pending', 
             senderCard: myCardId,
             timestamp: firebase.database.ServerValue.TIMESTAMP
         };
 
-        // Gửi tin nhắn vào chat thông qua hàm sendMessage đã nâng cấp
+        // Gửi tin nhắn vào chat (Giữ nguyên)
         if (typeof sendMessage === 'function') {
             await sendMessage(null, transferData);
             alert(`🌸 Chuyển thành công ${amount.toLocaleString()} VNĐ! Đang chờ đối phương xác nhận.`);
@@ -20029,7 +20044,7 @@ async function processTransfer(amount, pass, myCardId) {
         alert("Đã có lỗi xảy ra trong quá trình giao dịch!");
     }
 }
-
+    
    async function handleTransferAction(msgId, action, amount, senderCardId) {
     // TỰ ĐỘNG TẠO LẠI ID PHÒNG CHAT THẬT (Giữ nguyên)
     if (!currentChatFriend) {
