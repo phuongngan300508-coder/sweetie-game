@@ -11868,6 +11868,9 @@ function addNotification(title, message, silent = false, extraData = null) {
         id: Date.now(),
         title: title,
         message: message,
+        // BỔ SUNG: Nếu có tên người gửi trong extraData thì lấy, không thì để là "Hệ thống" 
+        // để tránh bị hiện chữ "undefined"
+        senderName: (extraData && extraData.senderName) ? extraData.senderName : "Sweetie Bank", 
         time: getVietnamTime().toLocaleString('vi-VN'),
         unread: true,
         extraData: extraData // Lưu trữ thông tin người dùng tại đây
@@ -20070,40 +20073,40 @@ addNotification("📤 CHUYỂN TIỀN THÀNH CÔNG", `Bạn đã gửi ${amount.
     const realChatId = [currentUser, currentChatFriend].sort().join('_');
     const chatRef = db.ref(`chats/${realChatId}/messages/${msgId}`);
 
-    // --- TRƯỜNG HỢP: TỪ CHỐI ---
+   // --- TRƯỜNG HỢP: TỪ CHỐI ---
 if (action === 'refuse') {
     try {
-        // Lấy dữ liệu tin nhắn cũ để biết ai gửi
+        // Lấy lại dữ liệu tin nhắn để biết chắc chắn ai là người gửi tiền ban đầu
         const msgSnap = await chatRef.once('value');
         const msgData = msgSnap.val();
-        
-        // senderName ở đây là người đã gửi tiền (người sẽ được nhận hoàn tiền)
-        const senderName = msgData.sender; 
-        const amountStr = amount.toLocaleString('vi-VN');
+        if (!msgData) return;
 
-        // 1. Hoàn tiền thật về thẻ của người gửi
+        const senderName = msgData.sender; // Người gửi tiền (người nhận hoàn tiền)
+        const myName = currentUser;       // Chính là bạn (người từ chối)
+
+        // 1. Hoàn tiền về thẻ người gửi
         await db.ref(`sweetie_cards/${senderCardId}/balance`).transaction(val => (val || 0) + amount);
         
-        // 2. Ghi lịch sử cho người gửi (refund)
-        recordCardHistory(senderCardId, 'refund', amount, { 
-            note: "Tiền bị từ chối nhận" 
-        });
+        // 2. Ghi lịch sử
+        recordCardHistory(senderCardId, 'refund', amount, { note: "Tiền bị từ chối nhận" });
         
-        // 3. Cập nhật trạng thái tin nhắn thành từ chối
+        // 3. Cập nhật trạng thái tin nhắn
         await chatRef.child('status').set('refused');
 
-        // --- 4. BẮN THÔNG BÁO CHO NGƯỜI GỬI (CHỦ ĐỘNG LẤY TÊN) ---
-        // Ta dùng senderName lấy từ msgData thay vì dùng biến currentChatFriend
+        // --- 4. SỬA LỖI UNDEFINED TẠI ĐÂY ---
+        // Gửi thông báo cho người gửi tiền (senderName)
         db.ref(`notifications_queue/${senderName}`).push({
             title: "🔄 TIỀN ĐÃ HOÀN LẠI",
-            text: `Giao dịch ${amountStr} VNĐ cho ${currentUser} bị từ chối. Tiền đã về thẻ của bạn.`,
+            // Quan trọng: Phải truyền myName (currentUser) vào đây để phía người nhận không bị undefined
+            friendName: myName, 
+            text: `Giao dịch ${amount.toLocaleString()} VNĐ cho ${myName} bị từ chối. Tiền đã về thẻ của bạn.`,
             time: Date.now(),
             type: "system"
         });
 
-        // Thông báo cho chính Henry (người bấm từ chối)
-        addNotification("🌸 ĐÃ TỪ CHỐI", `Bạn đã trả lại ${amountStr} VNĐ cho ${senderName}.`);
-        
+        // Thông báo cho chính bạn (người bấm nút)
+        addNotification("🌸 ĐÃ HOÀN TIỀN", `Bạn đã trả lại ${amount.toLocaleString()} VNĐ cho ${senderName}.`);
+
         alert("🌸 Đã hoàn tiền lại cho đối phương!");
     } catch (e) { console.error("Lỗi hoàn tiền:", e); }
     return;
