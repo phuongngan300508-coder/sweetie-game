@@ -19217,41 +19217,25 @@ async function renderGlobalMessage(id, msg) {
              <i class="fas ${msg.senderGender === 'Nam' ? 'fa-user-tie' : 'fa-user-graduate'}" style="font-size:0.8em;"></i>
            </div>`;
 
-    // --- PHẦN XỬ LÝ NỘI DUNG (TIN NHẮN HOẶC LÌ XÌ) ---
     let messageBodyHtml = "";
 
     if (msg.redPacketId) {
-        // Lấy lời chúc từ msg.text, nếu có icon 🧧 thì xóa đi
+        // --- HIỂN THỊ KHUNG LÌ XÌ TRƯỚC (KHÔNG DÙNG AWAIT) ---
         const displayMsg = msg.text ? msg.text.replace('🧧 ', '') : "Chúc mừng năm mới!";
-        
-        // Lấy dữ liệu 1 lần trước khi render
-        const packetSnap = await db.ref(`global_chat/red_packets/${msg.redPacketId}`).once('value');
-        const pData = packetSnap.val();
-        
-        const hasClaimed = pData && pData.claimedBy && pData.claimedBy[currentUser];
-        const isFull = pData && pData.remainingSlots <= 0;
-        
-        // Trạng thái hiển thị
-        const statusText = isFull ? "Hết slot" : (hasClaimed ? "Đã nhận" : "Mở ngay");
-        const isInactive = isFull || hasClaimed;
-        
-        // --- THIẾT KẾ BAO LÌ XÌ THỰC TẾ ---
-        const redPacketColor = isInactive ? "#e57373" : "#ff1493"; 
+        const redPacketColor = "#ff1493"; 
 
         messageBodyHtml = `
-            <div id="rp-${msg.redPacketId}" onclick="${isInactive ? '' : `claimRedPacket('${msg.redPacketId}')`}" 
+            <div id="rp-${msg.redPacketId}" onclick="claimRedPacket('${msg.redPacketId}')" 
                  style="position: relative; width: 180px; height: 110px; cursor: pointer; border-radius: 12px; transition: all 0.3s; 
-                        box-shadow: 0 10px 20px rgba(0,0,0,0.15); overflow: hidden;
-                        ${isInactive ? 'filter: grayscale(0.5); opacity: 0.8;' : ''}">
+                        box-shadow: 0 10px 20px rgba(0,0,0,0.15); overflow: hidden;">
                 
-                <div style="position: absolute; bottom: 0; left: 0; width: 100%; height: 95px; 
+                <div class="rp-bg" style="position: absolute; bottom: 0; left: 0; width: 100%; height: 95px; 
                             background: linear-gradient(135deg, ${redPacketColor}, #d81b60);
                             border-radius: 12px; border: 1px solid rgba(255,255,255,0.2);">
                 </div>
 
-                <div style="position: absolute; top: 0; left: 10px; width: 160px; height: 25px; 
-                            background: ${isInactive ? '#c62828' : '#c2185b'}; 
-                            border-radius: 5px 5px 50% 50%;
+                <div class="rp-cap" style="position: absolute; top: 0; left: 10px; width: 160px; height: 25px; 
+                            background: #c2185b; border-radius: 5px 5px 50% 50%;
                             box-shadow: 0 3px 5px rgba(0,0,0,0.1); z-index: 2;">
                 </div>
 
@@ -19272,23 +19256,15 @@ async function renderGlobalMessage(id, msg) {
 
                 <div id="status-rp-${msg.redPacketId}" style="position: absolute; bottom: 8px; right: 10px; background: rgba(0,0,0,0.1); 
                              color: #ffeb3b; font-size: 0.65em; font-weight: bold; padding: 2px 8px; border-radius: 10px; z-index: 2;">
-                    ${statusText}
+                    Đang tải...
                 </div>
-
-                ${!isInactive ? `
-                <div style="position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); width: 20px; height: 20px; 
-                            background: #ffeb3b; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-                            box-shadow: 0 3px 6px rgba(0,0,0,0.2); z-index: 2; color: #c2185b; font-size: 0.7rem; animation: pulse-rp 1.5s infinite;">
-                    <i class="fas fa-money-bill-alt"></i>
-                </div>
-                ` : ''}
             </div>
-
             <style>
                 @keyframes pulse-rp { 0% { box-shadow: 0 0 0 0 rgba(255, 235, 59, 0.7); } 70% { box-shadow: 0 0 0 8px rgba(255, 235, 59, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 235, 59, 0); } }
             </style>
         `;
 
+        // Lắng nghe trạng thái Real-time để cập nhật UI sau khi render xong
         db.ref(`global_chat/red_packets/${msg.redPacketId}`).on('value', (snap) => {
             const data = snap.val();
             const el = document.getElementById(`rp-${msg.redPacketId}`);
@@ -19303,16 +19279,13 @@ async function renderGlobalMessage(id, msg) {
                 el.style.opacity = "0.8";
                 statusEl.innerText = nowFull ? "Hết slot" : "Đã nhận";
                 el.onclick = null;
-                const pulse = el.querySelector('div[style*="pulse-rp"]');
-                if (pulse) pulse.remove();
+            } else {
+                statusEl.innerText = "Mở ngay";
             }
         });
 
     } else {
-        // --- ĐOẠN ĐÃ CẬP NHẬT: NHẬN DIỆN LỜI CẢM ƠN (💌) ---
-        // Sử dụng includes để load trang lại vẫn nhận diện được icon 💌 trong tin nhắn cũ
         const isThanks = msg.text && msg.text.includes('💌');
-
         messageBodyHtml = `
             <div style="display: inline-block; padding: 10px 14px; border-radius: 18px; font-size: 0.85em; 
                         background: ${isMe ? 'linear-gradient(135deg, #ff69b4, #ff1493)' : 'white'}; 
@@ -19327,6 +19300,7 @@ async function renderGlobalMessage(id, msg) {
         `;
     }
 
+    // --- PHẦN RENDER CHUNG: CHÈN VÀO CUỐI THEO TRÌNH TỰ THỜI GIAN ---
     const html = `
         <div class="animate__animated animate__fadeInUp" style="display: flex; gap: 8px; ${isMe ? 'flex-direction: row-reverse;' : 'flex-direction: row;'} align-items: flex-start; margin-bottom: 8px;">
             <div onclick="searchFriendByID('${msg.sender}')" style="cursor:pointer; flex-shrink: 0;">
@@ -19337,9 +19311,7 @@ async function renderGlobalMessage(id, msg) {
                     ${msg.vip > 0 ? `<span style="background:${myVipColor}; color:white; padding:1px 4px; border-radius:4px; margin-right:4px; font-size: 0.8em;">VIP ${msg.vip}</span>` : ''}
                     ${msg.senderName}
                 </div>
-                <div style="display:inline-block; position:relative; ${msg.redPacketId ? 'border:none; padding:0; background:transparent;' : ''}">
-                    ${messageBodyHtml}
-                </div>
+                <div>${messageBodyHtml}</div>
             </div>
         </div>
     `;
