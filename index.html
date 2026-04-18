@@ -6590,6 +6590,20 @@ input[type="date"].sweetie-input-style {
                 max-width: 60%;
                 word-wrap: break-word;
             }
+
+    .banking-scroll-area::-webkit-scrollbar { display: none; }
+        .banking-scroll-area { -ms-overflow-style: none; scrollbar-width: none; }
+
+        .sweetie-input-style:focus {
+            border-color: #ff1493 !important;
+            box-shadow: 0 0 0 3px rgba(255, 20, 147, 0.05);
+        }
+        #btn-do-transfer:active { transform: scale(0.98); }
+
+        @keyframes slideUpPopup {
+            from { transform: translateY(30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
 </style>
 </head>
 <body>
@@ -20950,26 +20964,24 @@ function setRpMode(mode) {
 }
 
     async function openBankingTransfer(myCardId) {
-    // 1. Lấy body để gắn popup vào lớp trên cùng của trang web
+    // 1. Khởi tạo overlay bung toàn màn hình (gắn vào body)
     let transUI = document.getElementById('transaction-ui');
     if (!transUI) {
         transUI = document.createElement('div');
         transUI.id = 'transaction-ui';
-        // THIẾT LẬP LỚP NỀN MỜ TOÀN MÀN HÌNH
         Object.assign(transUI.style, {
             position: 'fixed',
             top: '0',
             left: '0',
             width: '100vw',
             height: '100vh',
-            backgroundColor: 'rgba(0, 0, 0, 0.5)', // Nền tối nhẹ
-            backdropFilter: 'blur(8px)', // Làm mờ lớp nền phía sau
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            backdropFilter: 'blur(8px)',
             webkitBackdropFilter: 'blur(8px)',
             display: 'none',
             justifyContent: 'center',
             alignItems: 'center',
-            zIndex: '99999', // Nằm trên tất cả mọi thứ
-            overflowY: 'auto',
+            zIndex: '99999',
             padding: '20px 0'
         });
         document.body.appendChild(transUI);
@@ -20980,31 +20992,14 @@ function setRpMode(mode) {
 
     transUI.style.display = 'flex';
     
-    // Đảm bảo khi mở popup thì cuộn lên đầu trang popup
+    // Reset trạng thái cuộn của lớp phủ
     transUI.scrollTop = 0;
 
     transUI.innerHTML = `
-    <style>
-        /* Ẩn thanh cuộn vật lý */
-        #transaction-ui::-webkit-scrollbar { display: none; }
-        #transaction-ui { -ms-overflow-style: none; scrollbar-width: none; }
 
-        .sweetie-input-style:focus {
-            border-color: #ff1493 !important;
-            box-shadow: 0 0 0 3px rgba(255, 20, 147, 0.05);
-        }
-        #btn-do-transfer:active {
-            transform: scale(0.98);
-        }
-        @keyframes slideUpPopup {
-            from { transform: translateY(50px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-    </style>
-
-    <div class="banking-transfer-form" style="width: 90%; max-width: 400px; margin: auto; animation: slideUpPopup 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); background: #fff; border-radius: 35px; overflow: hidden; box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2); flex-shrink: 0;">
+    <div class="banking-transfer-form" style="width: 90%; max-width: 400px; max-height: 85vh; background: #fff; border-radius: 35px; overflow: hidden; display: flex; flex-direction: column; animation: slideUpPopup 0.4s ease; box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2); flex-shrink: 0;">
         
-        <div style="background: linear-gradient(135deg, #ff1493, #ff69b4); padding: 25px 20px; color: #fff; text-align: center; position: relative;">
+        <div style="background: linear-gradient(135deg, #ff1493, #ff69b4); padding: 25px 20px; color: #fff; text-align: center; position: relative; flex-shrink: 0;">
             <h4 style="margin: 0; font-size: 1.1rem; font-weight: 800; letter-spacing: 1px;">CHUYỂN TIỀN 24/7</h4>
             <div style="font-size: 0.7rem; opacity: 0.9; margin-top: 5px; display: flex; align-items: center; justify-content: center; gap: 5px;">
                 <i class="fas fa-shield-alt"></i> Giao dịch an toàn & bảo mật
@@ -21012,7 +21007,7 @@ function setRpMode(mode) {
             <i class="fas fa-times" onclick="document.getElementById('transaction-ui').style.display='none'" style="position: absolute; right: 20px; top: 25px; cursor: pointer; opacity: 0.8; font-size: 1.2rem;"></i>
         </div>
 
-        <div style="padding: 20px; background: #fffafa;">
+        <div class="banking-scroll-area" style="flex: 1; overflow-y: auto; padding: 20px; background: #fffafa;">
             
             <div style="background: #fff; padding: 15px; border-radius: 20px; border: 1px solid #ff149315; margin-bottom: 20px; display: flex; align-items: center; gap: 15px;">
                 <div style="width: 45px; height: 45px; background: #fff0f5; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #ff1493;">
@@ -21034,13 +21029,12 @@ function setRpMode(mode) {
                     <input type="number" id="target-stk" class="sweetie-input-style" 
                         placeholder="Số tài khoản (12 số)" 
                         maxlength="12" 
-                        autocomplete="off" 
-                        style="width: 100%; padding: 15px; border-radius: 15px; border: 1px solid #eee; outline: none; font-weight: 700; background: #fff; transition: 0.3s; box-sizing: border-box; font-size: 1rem;">
+                        style="width: 100%; padding: 15px; border-radius: 15px; border: 1px solid #eee; outline: none; font-weight: 700; background: #fff; box-sizing: border-box;">
                     <div id="stk-loading" style="display:none; position:absolute; right:15px; top:15px;"><i class="fas fa-spinner fa-spin" style="color:#ff1493;"></i></div>
                 </div>
-                <div id="target-owner-display" style="color: #2e7d32; font-weight: 800; font-size: 0.85rem; margin-top: 8px; height: 18px; text-transform: uppercase; letter-spacing: 0.5px;"></div>
+                <div id="target-owner-display" style="color: #2e7d32; font-weight: 800; font-size: 0.85rem; margin-top: 8px; height: 18px; text-transform: uppercase;"></div>
                 
-                <label style="display: flex; align-items: center; gap: 8px; font-size: 0.75rem; color: #888; margin-top: 10px; cursor: pointer; width: fit-content;">
+                <label style="display: flex; align-items: center; gap: 8px; font-size: 0.75rem; color: #888; margin-top: 10px; cursor: pointer;">
                     <input type="checkbox" id="save-account-check" style="accent-color: #ff1493; width: 16px; height: 16px;"> Lưu vào danh bạ
                 </label>
             </div>
@@ -21048,9 +21042,7 @@ function setRpMode(mode) {
             <div class="bank-input-box" style="margin-bottom: 15px; text-align: left;">
                 <label style="font-size: 0.7rem; color: #ff69b4; font-weight: 800; display: block; margin-bottom: 8px;">SỐ TIỀN CHUYỂN</label>
                 <div style="position: relative;">
-                    <input type="number" id="transfer-amount" class="sweetie-input-style" 
-                        placeholder="0" 
-                        autocomplete="off" 
+                    <input type="number" id="transfer-amount" placeholder="0" 
                         style="width: 100%; padding: 15px 45px 15px 15px; border-radius: 15px; border: 1px solid #eee; font-weight: 800; color: #ff1493; font-size: 1.2rem; outline: none; box-sizing: border-box;">
                     <span style="position: absolute; right: 15px; top: 16px; font-weight: 800; color: #ccc;">đ</span>
                 </div>
@@ -21058,31 +21050,27 @@ function setRpMode(mode) {
 
             <div class="bank-input-box" style="margin-bottom: 15px; text-align: left;">
                 <label style="font-size: 0.7rem; color: #ff69b4; font-weight: 800; display: block; margin-bottom: 8px;">NỘI DUNG GIAO DỊCH</label>
-                <textarea id="transfer-note" class="sweetie-input-style" 
-                    placeholder="Nhập lời nhắn cho người nhận..." 
-                    style="width: 100%; padding: 12px; border-radius: 15px; border: 1px solid #eee; height: 60px; outline: none; resize: none; font-family: inherit; font-size: 0.85rem; box-sizing: border-box;"></textarea>
+                <textarea id="transfer-note" placeholder="Nhập lời nhắn..." 
+                    style="width: 100%; padding: 12px; border-radius: 15px; border: 1px solid #eee; height: 60px; outline: none; resize: none; font-size: 0.85rem; box-sizing: border-box; font-family: inherit;"></textarea>
             </div>
 
-            <div class="bank-input-box" style="margin-bottom: 25px; text-align: left;">
+            <div class="bank-input-box" style="margin-bottom: 10px; text-align: left;">
                 <label style="font-size: 0.7rem; color: #ff69b4; font-weight: 800; display: block; margin-bottom: 8px;">XÁC THỰC MÃ PIN</label>
-                <input type="password" id="transfer-pin" class="sweetie-input-style" 
-                    placeholder="••••••" 
-                    maxlength="6"
-                    autocomplete="new-password" 
+                <input type="password" id="transfer-pin" placeholder="••••••" maxlength="6"
                     style="width: 100%; padding: 15px; border-radius: 15px; border: 1px solid #eee; letter-spacing: 8px; text-align: center; font-weight: 900; outline: none; box-sizing: border-box; font-size: 1.1rem;">
             </div>
+        </div>
 
-            <div style="display: flex; gap: 12px;">
-                <button onclick="document.getElementById('transaction-ui').style.display='none'" 
-                    style="flex: 1; padding: 15px; border: none; border-radius: 18px; background: #fff; color: #999; font-weight: bold; cursor: pointer; border: 1px solid #eee;">HỦY</button>
-                <button id="btn-do-transfer" 
-                    style="flex: 2; padding: 15px; border: none; border-radius: 18px; background: linear-gradient(to right, #ff1493, #ff69b4); color: #fff; font-weight: 800; cursor: pointer; box-shadow: 0 8px 20px rgba(255,20,147,0.3); transition: 0.3s;">TIẾP TỤC</button>
-            </div>
+        <div style="padding: 20px; background: #fff; border-top: 1px solid #f0f0f0; display: flex; gap: 12px; flex-shrink: 0;">
+            <button onclick="document.getElementById('transaction-ui').style.display='none'" 
+                style="flex: 1; padding: 15px; border: 1.5px solid #eee; border-radius: 18px; background: #fff; color: #999; font-weight: bold; cursor: pointer;">HỦY</button>
+            <button id="btn-do-transfer" 
+                style="flex: 2; padding: 15px; border: none; border-radius: 18px; background: linear-gradient(to right, #ff1493, #ff69b4); color: #fff; font-weight: 800; cursor: pointer; box-shadow: 0 8px 20px rgba(255, 20, 147, 0.3);">TIẾP TỤC</button>
         </div>
     </div>
-`;
+    `;
 
-    // --- LOGIC TRA CỨU Tên CHỦ TK TỰ ĐỘNG ---
+    // --- LOGIC TRA CỨU Tên CHỦ TK TỰ ĐỘNG (Giữ nguyên 100%) ---
     const stkInput = document.getElementById('target-stk');
     const ownerDisplay = document.getElementById('target-owner-display');
     const loadingIcon = document.getElementById('stk-loading');
@@ -21093,10 +21081,8 @@ function setRpMode(mode) {
             loadingIcon.style.display = 'block';
             ownerDisplay.innerText = "Đang kiểm tra...";
             ownerDisplay.style.color = "#888";
-            
             const cardsRef = db.ref('sweetie_cards');
             const query = await cardsRef.orderByChild('accountNo').equalTo(stk).once('value');
-            
             loadingIcon.style.display = 'none';
             if (query.exists()) {
                 const targetData = Object.values(query.val())[0];
@@ -21109,9 +21095,7 @@ function setRpMode(mode) {
                 ownerDisplay.style.color = "#c62828";
                 ownerDisplay.dataset.targetId = "";
             }
-        } else {
-            ownerDisplay.innerText = "";
-        }
+        } else { ownerDisplay.innerText = ""; }
     };
 
     document.getElementById('btn-do-transfer').onclick = () => executeBankingTransfer(myCardId, myCardData);
