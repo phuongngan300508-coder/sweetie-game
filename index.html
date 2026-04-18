@@ -14601,16 +14601,16 @@ function renderSingleMessage(msgId, msg, position = 'bottom', targetContainer = 
             </div>`;
     }
 
-    // --- 2. LOGIC CẢM XÚC (GIỮ NGUYÊN 100%) ---
+    // --- 2. LOGIC CẢM XÚC (CHỈNH SỬA ĐỂ HIỂN THỊ ĐÈ LÊN NGOÀI CARD) ---
     const reactions = msg.reactions || {};
     const myReaction = reactions[currentUser];
     let reactionDisplayHtml = "";
     const uniqueReactions = [...new Set(Object.values(reactions))];
     if (uniqueReactions.length > 0) {
-        // Henry lưu ý: style absolute ở đây giúp cảm xúc "bay" trên viền thẻ
+        // Tăng z-index và dùng absolute để "bay" lên trên lớp overflow
         reactionDisplayHtml = `
             <div class="msg-reaction-display" onclick="sendReaction('${msgId}', '${myReaction}')" 
-                 style="cursor:pointer; position: absolute; bottom: -10px; ${isMe ? 'left: 10px;' : 'right: 10px;'} z-index: 10; background: white; border-radius: 10px; padding: 2px 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); font-size: 0.9rem; line-height: 1;">
+                 style="cursor:pointer; position: absolute; bottom: -8px; ${isMe ? 'left: 12px;' : 'right: 12px;'} z-index: 100; background: white; border-radius: 12px; padding: 2px 6px; box-shadow: 0 3px 8px rgba(0,0,0,0.15); font-size: 0.9rem; line-height: 1; border: 1px solid #fff0f5;">
                  ${uniqueReactions.join('')}
             </div>`;
     }
@@ -14642,7 +14642,6 @@ function renderSingleMessage(msgId, msg, position = 'bottom', targetContainer = 
 
     let bodyContentHtml = `<div class="text-content">${finalMsgText}</div>`;
     
-    // Xử lý chuyển tiền (Giữ nguyên logic thiết kế đẹp của bạn)
     if (msg.type === 'bank_transfer') {
         const amount = msg.amount || 0;
         const status = msg.status || 'pending';
@@ -14663,29 +14662,32 @@ function renderSingleMessage(msgId, msg, position = 'bottom', targetContainer = 
             bgColor = "#e0e0e0";
         }
 
+        // Bọc card vào một div có overflow: visible để trái tim không bị mất
         bodyContentHtml = `
-            <div class="wechat-pay-card" style="width: 240px; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1); opacity: ${cardOpacity}; font-family: sans-serif;">
-                <div style="background: ${bgColor}; padding: 15px; display: flex; align-items: center; gap: 15px;">
-                    <div style="width: 42px; height: 42px; background: rgba(255,255,255,0.25); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
-                        <i class="fas fa-hand-holding-usd" style="color: #fff; font-size: 1.4rem;"></i>
+            <div style="position: relative; overflow: visible;">
+                <div class="wechat-pay-card" style="width: 240px; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1); opacity: ${cardOpacity}; font-family: sans-serif; background: white;">
+                    <div style="background: ${bgColor}; padding: 15px; display: flex; align-items: center; gap: 15px;">
+                        <div style="width: 42px; height: 42px; background: rgba(255,255,255,0.25); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-hand-holding-usd" style="color: #fff; font-size: 1.4rem;"></i>
+                        </div>
+                        <div style="display: flex; flex-direction: column;">
+                            <span style="font-size: 0.95rem; color: white; font-weight: 600;">${amount.toLocaleString()} VNĐ</span>
+                            <span style="font-size: 0.75rem; color: rgba(255,255,255,0.85);">${note}</span>
+                        </div>
                     </div>
-                    <div style="display: flex; flex-direction: column;">
-                        <span style="font-size: 0.95rem; color: white; font-weight: 600;">${amount.toLocaleString()} VNĐ</span>
-                        <span style="font-size: 0.75rem; color: rgba(255,255,255,0.85);">${note}</span>
+                    <div style="background: white; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(0,0,0,0.05);">
+                        <span style="font-size: 0.65rem; color: #888; font-weight: bold;">${statusLabel}</span>
+                        <span style="font-size: 0.65rem; color: #ff1493; font-weight: bold;">${subLabel}</span>
                     </div>
+                    ${(!isMe && status === 'pending') ? `
+                        <div style="display: flex; background: white; padding: 0 10px 10px 10px; gap: 8px;">
+                            <button onclick="handleTransferAction('${msgId}', 'accept', ${amount}, '${msg.senderCard}')" style="flex: 2; padding: 8px; background: #ff1493; border: none; color: white; border-radius: 6px; font-size: 0.75rem; font-weight: 800; cursor: pointer;">NHẬN TIỀN</button>
+                            <button onclick="handleTransferAction('${msgId}', 'refuse', ${amount}, '${msg.senderCard}')" style="flex: 1; padding: 8px; background: #fff; border: 1.5px solid #ffb6c1; color: #ff1493; border-radius: 6px; font-size: 0.75rem; font-weight: 800; cursor: pointer;">TỪ CHỐI</button>
+                        </div>
+                    ` : ''}
                 </div>
-                <div style="background: white; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(0,0,0,0.05);">
-                    <span style="font-size: 0.65rem; color: #888; font-weight: bold;">${statusLabel}</span>
-                    <span style="font-size: 0.65rem; color: #ff1493; font-weight: bold;">${subLabel}</span>
-                </div>
-                ${(!isMe && status === 'pending') ? `
-                    <div style="display: flex; background: white; padding: 0 10px 10px 10px; gap: 8px;">
-                        <button onclick="handleTransferAction('${msgId}', 'accept', ${amount}, '${msg.senderCard}')" style="flex: 2; padding: 8px; background: #ff1493; border: none; color: white; border-radius: 6px; font-size: 0.75rem; font-weight: 800; cursor: pointer;">NHẬN TIỀN</button>
-                        <button onclick="handleTransferAction('${msgId}', 'refuse', ${amount}, '${msg.senderCard}')" style="flex: 1; padding: 8px; background: #fff; border: 1.5px solid #ffb6c1; color: #ff1493; border-radius: 6px; font-size: 0.75rem; font-weight: 800; cursor: pointer;">TỪ CHỐI</button>
-                    </div>
-                ` : ''}
+                ${reactionDisplayHtml}
             </div>`;
-        
     } else if (msg.type === 'call_system') {
         const callIcon = msg.text.includes('video') ? 'fas fa-video' : 'fas fa-phone';
         const themeColor = isMe ? '#ffffff' : (area.style.getPropertyValue('--theme-main-color') || '#ff69b4');
@@ -14700,7 +14702,7 @@ function renderSingleMessage(msgId, msg, position = 'bottom', targetContainer = 
         else if (msg.mediaType === 'video') bodyContentHtml = `<div style="position:relative;"><video src="${msg.mediaUrl}" muted style="max-width:100%; border-radius:10px;"></video><i class="fas fa-play-circle" onclick="openFS('${msg.mediaUrl}', 'video')" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); color:white; font-size:2.5em; cursor:pointer;"></i></div>`;
     }
 
-    // --- 5. TEMPLATE HTML (KHÔNG LÀM LỆCH TIN NHẮN) ---
+    // --- 5. TEMPLATE HTML ---
     const isSticker = msg.type === 'sticker';
     const isTransfer = msg.type === 'bank_transfer';
     let bubbleClass = isSticker ? "msg-sticker" : (isTransfer ? "msg-transfer-card" : (isMe ? "msg-me" : "msg-friend"));
@@ -14714,7 +14716,7 @@ function renderSingleMessage(msgId, msg, position = 'bottom', targetContainer = 
 
         <div class="msg-content-container" style="display: flex; align-items: center; position: relative; ${isMe ? 'flex-direction: row-reverse;' : 'flex-direction: row;'}">
             
-            <div id="picker-${msgId}" class="reaction-picker reaction-stay" style="display:none; z-index: 20;">
+            <div id="picker-${msgId}" class="reaction-picker reaction-stay" style="display:none; z-index: 200;">
                 <span class="${getEmojiClass('❤️')}" onclick="sendReaction('${msgId}', '❤️')">❤️</span>
                 <span class="${getEmojiClass('😆')}" onclick="sendReaction('${msgId}', '😆')">😆</span>
                 <span class="${getEmojiClass('😮')}" onclick="sendReaction('${msgId}', '😮')">😮</span>
@@ -14724,12 +14726,12 @@ function renderSingleMessage(msgId, msg, position = 'bottom', targetContainer = 
             </div>
 
             <div class="msg-bubble ${bubbleClass}" 
-                 style="position: relative; ${isSticker ? 'background: transparent; padding: 0;' : ''}"
+                 style="position: relative; ${isSticker || isTransfer ? 'background: transparent; padding: 0; box-shadow: none;' : ''}"
                  ondblclick="sendReaction('${msgId}', '❤️')" 
                  onmouseenter="showActionBtn('${msgId}')" onmouseleave="hideActionBtn('${msgId}')">
                 ${replyHtml}
                 ${bodyContentHtml}
-                ${reactionDisplayHtml}
+                ${(!isTransfer) ? reactionDisplayHtml : ''}
             </div>
 
             <div class="msg-actions" id="actions-${msgId}" style="display: flex; opacity: 0; transition: 0.2s; ${isMe ? 'flex-direction: row-reverse;' : ''}">
