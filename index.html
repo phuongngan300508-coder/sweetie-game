@@ -21030,58 +21030,70 @@ function setRpMode(mode) {
     document.getElementById('btn-do-transfer').onclick = () => executeBankingTransfer(myCardId, myCardData);
 }
 
-    async function executeBankingTransfer(myCardId, myCardData) {
-    const targetId = document.getElementById('target-owner-display').dataset.targetId;
-    const amount = parseInt(document.getElementById('transfer-amount').value);
-    const note = document.getElementById('transfer-note').value.trim() || `${myCardData.ownerName.toUpperCase()} chuyển tiền`;
-    const pin = document.getElementById('transfer-pin').value;
-    const targetOwner = document.getElementById('target-owner-display').innerText;
+   async function executeBankingTransfer(myCardId, myCardData) {
+    // 1. LẤY CÁC PHẦN TỬ (Thêm kiểm tra để tránh lỗi null)
+    const elTargetDisplay = document.getElementById('target-owner-display');
+    const elAmount = document.getElementById('transfer-amount');
+    const elNote = document.getElementById('transfer-note');
+    const elPin = document.getElementById('transfer-pin');
+    const elStk = document.getElementById('target-stk');
 
+    // Nếu thiếu bất kỳ ô nào, dừng lại để không bị lỗi "reading value"
+    if (!elTargetDisplay || !elAmount || !elPin || !elStk) {
+        return alert("Lỗi: Không tìm thấy giao diện nhập liệu. Henry vui lòng thử lại nhé!");
+    }
+
+    // 2. TRÍCH XUẤT GIÁ TRỊ
+    const targetId = elTargetDisplay.dataset.targetId;
+    const amount = parseInt(elAmount.value);
+    const pin = elPin.value;
+    const targetOwner = elTargetDisplay.innerText;
+    // Lấy nội dung, nếu ô note không có thì dùng mặc định
+    const note = (elNote ? elNote.value.trim() : "") || `${myCardData.ownerName.toUpperCase()} chuyển tiền`;
+    const targetStkNum = elStk.value;
+
+    // 3. KIỂM TRA ĐIỀU KIỆN (Giữ nguyên logic của Henry)
     if (!targetId) return alert("Vui lòng nhập đúng số tài khoản người nhận!");
     if (isNaN(amount) || amount <= 0) return alert("Số tiền không hợp lệ!");
     if (amount > myCardData.balance) return alert("Số dư thẻ không đủ!");
     if (pin !== myCardData.password) return alert("Mã PIN không chính xác!");
 
     try {
-        // 1. Thực hiện TRỪ TIỀN người gửi trước
+        // 4. THỰC HIỆN GIAO DỊCH (Giữ nguyên logic an toàn của Henry)
         const subtractResult = await db.ref(`sweetie_cards/${myCardId}/balance`).transaction(c => {
             if (c === null) return 0;
             if (c < amount) return; // Hủy transaction nếu không đủ tiền
             return c - amount;
         });
 
-        // Kiểm tra xem việc trừ tiền có thực sự thành công không
         if (!subtractResult.committed) {
             alert("Giao dịch thất bại: Số dư của bạn đã thay đổi hoặc không đủ tiền!");
             return;
         }
 
-        // 2. Nếu đã trừ tiền Henry thành công, mới tiến hành CỘNG TIỀN cho người nhận
-        // Dùng await để đảm bảo nó phải xong
+        // 2. Nếu đã trừ tiền thành công, mới tiến hành CỘNG TIỀN cho người nhận
         await db.ref(`sweetie_cards/${targetId}/balance`).transaction(c => (c || 0) + amount);
 
-        // 3. Ghi lịch sử (Dùng await để đảm bảo dữ liệu ghi xong mới hiện Bill)
+        // 3. Ghi lịch sử
         await Promise.all([
             recordCardHistory(myCardId, 'transfer_out', amount, { toUser: targetOwner, note: note }),
             recordCardHistory(targetId, 'transfer_in', amount, { fromUser: myCardData.ownerName, note: note })
         ]);
 
-        // 4. Hiển thị Bill thành công (Chỉ chạy khi mọi thứ ở trên đã xong)
+        // 4. Hiển thị Bill thành công (Dùng các biến đã trích xuất an toàn)
         showBankingBill({
             amount: amount,
             sender: myCardData.ownerName,
             receiver: targetOwner,
             note: note,
-            stk: document.getElementById('target-stk').value,
+            stk: targetStkNum,
             transId: "SW" + Date.now().toString().slice(-8)
         });
 
-        addNotification("📤 CHUYỂN KHOẢN THÀNH CÔNG", `Bạn đã chuyển ${amount.toLocaleString()} VNĐ đến STK ${document.getElementById('target-stk').value}.`);
+        addNotification("📤 CHUYỂN KHOẢN THÀNH CÔNG", `Bạn đã chuyển ${amount.toLocaleString()} VNĐ đến STK ${targetStkNum}.`);
 
     } catch (e) {
         console.error("Lỗi nghiêm trọng:", e);
-        // Ở đây Henry có thể thêm một bước 'Hoàn tiền' nếu muốn cực kỳ bảo mật, 
-        // nhưng với logic committed ở trên thì tỉ lệ lỗi đã giảm xuống gần như bằng 0.
         alert("Có lỗi kết nối, Bạn vui lòng kiểm tra lại số dư thẻ nhé!");
     }
 }
