@@ -9785,14 +9785,11 @@ function closeFinanceModal(id) {
     }
 }
 
-async function renderHistoryV2() {
+function renderHistoryV2() {
     const container = document.getElementById('history-v2-body');
-    
-    // 1. Lấy dữ liệu từ mảng lịch sử tổng của người dùng
-    // (Giả sử các hàm nạp/rút thẻ đã push vào đây như mình đã hướng dẫn ở câu trước)
-    let totalHistory = [...(userData.history || [])];
+    const history = userData.history || [];
 
-    if (totalHistory.length === 0) {
+    if (history.length === 0) {
         container.innerHTML = `<div style="text-align:center; padding:30px; color:#ccc;">
             <i class="fas fa-receipt" style="font-size: 3em; margin-bottom:10px; opacity:0.3;"></i>
             <p>Chưa có giao dịch nào được thực hiện.</p>
@@ -9800,129 +9797,21 @@ async function renderHistoryV2() {
         return;
     }
 
-    // 2. SẮP XẾP VÀ GIỚI HẠN 100 GIAO DỊCH
-    // Sắp xếp theo thời gian thực (nếu có realTime) hoặc parse từ chuỗi date
-    totalHistory.sort((a, b) => {
-        const timeA = a.realTime || new Date(a.date.split('/').reverse().join('/')).getTime();
-        const timeB = b.realTime || new Date(b.date.split('/').reverse().join('/')).getTime();
-        return timeB - timeA; 
-    });
-
-    // Chỉ lấy đúng 100 cái mới nhất
-    const limitedHistory = totalHistory.slice(0, 100);
-
-    // 3. Render ra màn hình
-    container.innerHTML = limitedHistory.map(item => {
-        // Kiểm tra dấu cộng/trừ để định dạng màu sắc
-        const isPlus = item.amount.toString().includes('+');
-        
-        // Tự động gán icon dựa trên loại giao dịch
-        let icon = "fa-wallet"; // Mặc định là ví
-        if (item.type.toLowerCase().includes('thẻ')) icon = "fa-credit-card";
-        if (item.type.toLowerCase().includes('nạp')) icon = "fa-arrow-down";
-        if (item.type.toLowerCase().includes('rút')) icon = "fa-arrow-up";
-
+    // Hiển thị lịch sử (đảo ngược để cái mới nhất lên đầu)
+    container.innerHTML = history.slice().reverse().map(item => {
+        const isPlus = item.amount.includes('+');
         return `
-            <div class="history-item" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f8f8f8;">
-                <div style="text-align: left;">
-                    <div style="font-weight: 700; color: #333; font-size: 0.9rem; display: flex; align-items: center; gap: 8px;">
-                        <div style="width: 28px; height: 28px; background: #fff0f5; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
-                            <i class="fas ${icon}" style="color: #ff69b4; font-size: 0.75rem;"></i>
-                        </div>
-                        ${item.type}
-                    </div>
-                    <div style="font-size: 0.65rem; color: #bbb; margin-top: 4px; margin-left: 36px;">
-                        <i class="far fa-clock"></i> ${item.date}
-                    </div>
+            <div class="history-item">
+                <div class="history-left">
+                    <span class="history-type">${item.type}</span>
+                    <span class="history-date"><i class="far fa-clock"></i> ${item.date}</span>
                 </div>
-                <div style="font-weight: 800; color: ${isPlus ? '#2ecc71' : '#e74c3c'}; font-size: 0.95rem; letter-spacing: -0.3px;">
+                <div class="history-amount ${isPlus ? 'amount-plus' : 'amount-minus'}">
                     ${item.amount}
                 </div>
             </div>
         `;
     }).join('');
-}
-
-   async function confirmDepositToCard() {
-    const input = document.getElementById('input-deposit-card-amount');
-    const amount = parseInt(input.value);
-    const myBalance = Number(userData.balance) || 0;
-
-    if (isNaN(amount) || amount <= 0) return alert("Henry nhập số tiền hợp lệ nhé!");
-    if (amount > myBalance) return alert("Số dư ví không đủ để nạp vào thẻ đâu nè!");
-
-    const myCardIdSnap = await db.ref(`users/${currentUser}/linkedCard`).once('value');
-    if (!myCardIdSnap.exists()) return alert("Bạn chưa tạo thẻ Sweetie Bank mà!");
-    const myCardId = myCardIdSnap.val();
-
-    await db.ref(`sweetie_cards/${myCardId}/balance`).transaction(c => (c || 0) + amount);
-
-    userData.balance -= amount;
-
-    // --- CẬP NHẬT NHẬT KÝ V2 (GIỚI HẠN 100) ---
-    if (!userData.history) userData.history = [];
-    
-    userData.history.push({ 
-        type: 'Nạp tiền vào thẻ', 
-        amount: `-${amount.toLocaleString('vi-VN')} VNĐ`, 
-        date: getVietnamTime().toLocaleString('vi-VN'),
-        realTime: Date.now() // Thêm timestamp để sắp xếp chính xác
-    });
-
-    // Nếu vượt quá 100, xóa cái cũ nhất (đầu mảng)
-    if (userData.history.length > 100) {
-        userData.history.shift();
-    }
-
-    if (typeof recordCardHistory === 'function') {
-        recordCardHistory(myCardId, 'deposit', amount);
-    }
-
-    saveData(); 
-    updateUI(); 
-    closeFinanceModal('modal-deposit-card'); 
-    alert(`🎉 Đã nạp ${amount.toLocaleString('vi-VN')}đ vào thẻ Sweetie Bank thành công!`);
-}
-
-    async function confirmWithdrawFromCard() {
-    const input = document.getElementById('input-withdraw-card-amount');
-    const amount = parseInt(input.value);
-
-    const myCardIdSnap = await db.ref(`users/${currentUser}/linkedCard`).once('value');
-    const myCardId = myCardIdSnap.val();
-    const cardSnap = await db.ref(`sweetie_cards/${myCardId}`).once('value');
-    const cardBalance = cardSnap.val().balance || 0;
-
-    if (isNaN(amount) || amount <= 0) return alert("Henry nhập số tiền hợp lệ nhé!");
-    if (amount > cardBalance) return alert("Số dư trong thẻ không đủ để rút về ví!");
-
-    await db.ref(`sweetie_cards/${myCardId}/balance`).transaction(c => c - amount);
-
-    userData.balance = (Number(userData.balance) || 0) + amount;
-
-    // --- CẬP NHẬT NHẬT KÝ V2 (GIỚI HẠN 100) ---
-    if (!userData.history) userData.history = [];
-
-    userData.history.push({ 
-        type: 'Rút tiền từ thẻ', 
-        amount: `+${amount.toLocaleString('vi-VN')} VNĐ`, 
-        date: getVietnamTime().toLocaleString('vi-VN'),
-        realTime: Date.now() // Thêm timestamp để sắp xếp chính xác
-    });
-
-    // Nếu vượt quá 100, xóa cái cũ nhất (đầu mảng)
-    if (userData.history.length > 100) {
-        userData.history.shift();
-    }
-
-    if (typeof recordCardHistory === 'function') {
-        recordCardHistory(myCardId, 'withdraw', amount);
-    }
-
-    saveData();
-    updateUI();
-    closeFinanceModal('modal-withdraw-card'); 
-    alert(`✅ Đã rút ${amount.toLocaleString('vi-VN')}đ từ thẻ về ví thành công!`);
 }
     
 function buyCheckinAccess() {
