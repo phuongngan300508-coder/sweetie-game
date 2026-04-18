@@ -20945,42 +20945,55 @@ function setRpMode(mode) {
 
     transUI.style.display = 'flex';
     transUI.innerHTML = `
-        <div class="banking-transfer-form" style="width: 100%; animation: slideUp 0.4s ease; padding: 20px; background: #fff; border-radius: 25px;">
-            <div style="text-align: center; margin-bottom: 20px;">
-                <h4 style="color: #ff1493; font-weight: 800; margin: 0;">CHUYỂN KHOẢN 24/7</h4>
-                <p style="font-size: 0.7rem; color: #aaa;">Nguồn: **** ${myCardId.slice(-4)}</p>
-            </div>
-
-            <div class="bank-input-box" style="margin-bottom: 15px; text-align: left;">
-                <label style="font-size: 0.65rem; color: #ff69b4; font-weight: 800; display: block; margin-bottom: 5px;">SỐ TÀI KHOẢN NHẬN</label>
-                <div style="position: relative;">
-                    <input type="number" id="target-stk" class="sweetie-input-style" placeholder="Nhập 12 số tài khoản..." maxlength="12" style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #eee; outline: none;">
-                    <div id="stk-loading" style="display:none; position:absolute; right:10px; top:12px;"><i class="fas fa-spinner fa-spin" style="color:#ff1493;"></i></div>
-                </div>
-                <div id="target-owner-display" style="color: #ff1493; font-weight: 800; font-size: 0.85rem; margin-top: 8px; height: 18px; text-transform: uppercase;"></div>
-            </div>
-
-            <div class="bank-input-box" style="margin-bottom: 15px; text-align: left;">
-                <label style="font-size: 0.65rem; color: #ff69b4; font-weight: 800; display: block; margin-bottom: 5px;">SỐ TIỀN (Số dư: ${myCardData.balance.toLocaleString()}đ)</label>
-                <input type="number" id="transfer-amount" class="sweetie-input-style" placeholder="0" style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #eee;">
-            </div>
-
-            <div class="bank-input-box" style="margin-bottom: 15px; text-align: left;">
-                <label style="font-size: 0.65rem; color: #ff69b4; font-weight: 800; display: block; margin-bottom: 5px;">NỘI DUNG</label>
-                <input type="text" id="transfer-note" class="sweetie-input-style" placeholder="Nhập lời nhắn..." style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #eee;">
-            </div>
-
-            <div class="bank-input-box" style="margin-bottom: 20px; text-align: left;">
-                <label style="font-size: 0.65rem; color: #ff69b4; font-weight: 800; display: block; margin-bottom: 5px;">MÃ PIN (MẬT KHẨU THẺ)</label>
-                <input type="password" id="transfer-pin" class="sweetie-input-style" placeholder="••••••" style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #eee; letter-spacing: 5px;">
-            </div>
-
-            <div style="display: flex; gap: 10px;">
-                <button onclick="document.getElementById('transaction-ui').style.display='none'" class="btn-bank-cancel" style="flex: 1; padding: 12px; border: none; border-radius: 15px; background: #f5f5f5; color: #999; font-weight: bold; cursor: pointer;">HỦY</button>
-                <button id="btn-do-transfer" class="btn-bank-confirm" style="flex: 2; padding: 12px; border: none; border-radius: 15px; background: #ff1493; color: #fff; font-weight: 800; cursor: pointer; box-shadow: 0 4px 15px rgba(255,20,147,0.3);">XÁC NHẬN</button>
-            </div>
+    <div class="banking-transfer-form" style="width: 100%; animation: slideUp 0.4s ease; padding: 20px; background: #fff; border-radius: 25px;">
+        <div style="text-align: center; margin-bottom: 20px;">
+            <h4 style="color: #ff1493; font-weight: 800; margin: 0;">CHUYỂN KHOẢN 24/7</h4>
+            <p style="font-size: 0.7rem; color: #aaa;">Nguồn: **** ${myCardId.slice(-4)}</p>
         </div>
-    `;
+
+        <div class="bank-input-box" style="margin-bottom: 15px; text-align: left;">
+            <label style="font-size: 0.65rem; color: #ff69b4; font-weight: 800; display: block; margin-bottom: 5px;">SỐ TÀI KHOẢN NHẬN</label>
+            <div style="position: relative;">
+                <input type="number" id="target-stk" class="sweetie-input-style" 
+                    placeholder="Nhập 12 số tài khoản..." 
+                    maxlength="12" 
+                    autocomplete="off" 
+                    style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #eee; outline: none;">
+                <div id="stk-loading" style="display:none; position:absolute; right:10px; top:12px;"><i class="fas fa-spinner fa-spin" style="color:#ff1493;"></i></div>
+            </div>
+            <div id="target-owner-display" style="color: #ff1493; font-weight: 800; font-size: 0.85rem; margin-top: 8px; height: 18px; text-transform: uppercase;"></div>
+        </div>
+
+        <div class="bank-input-box" style="margin-bottom: 15px; text-align: left;">
+            <label style="font-size: 0.65rem; color: #ff69b4; font-weight: 800; display: block; margin-bottom: 5px;">SỐ TIỀN (Số dư: ${myCardData.balance.toLocaleString()}đ)</label>
+            <input type="number" id="transfer-amount" class="sweetie-input-style" 
+                placeholder="0" 
+                autocomplete="off" 
+                style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #eee;">
+        </div>
+
+        <div class="bank-input-box" style="margin-bottom: 15px; text-align: left;">
+            <label style="font-size: 0.65rem; color: #ff69b4; font-weight: 800; display: block; margin-bottom: 5px;">NỘI DUNG</label>
+            <input type="text" id="transfer-note" class="sweetie-input-style" 
+                placeholder="Nhập lời nhắn..." 
+                autocomplete="off" 
+                style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #eee;">
+        </div>
+
+        <div class="bank-input-box" style="margin-bottom: 20px; text-align: left;">
+            <label style="font-size: 0.65rem; color: #ff69b4; font-weight: 800; display: block; margin-bottom: 5px;">MÃ PIN (MẬT KHẨU THÈ)</label>
+            <input type="password" id="transfer-pin" class="sweetie-input-style" 
+                placeholder="••••••" 
+                autocomplete="new-password" 
+                style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #eee; letter-spacing: 5px;">
+        </div>
+
+        <div style="display: flex; gap: 10px;">
+            <button onclick="document.getElementById('transaction-ui').style.display='none'" class="btn-bank-cancel" style="flex: 1; padding: 12px; border: none; border-radius: 15px; background: #f5f5f5; color: #999; font-weight: bold; cursor: pointer;">HỦY</button>
+            <button id="btn-do-transfer" class="btn-bank-confirm" style="flex: 2; padding: 12px; border: none; border-radius: 15px; background: #ff1493; color: #fff; font-weight: 800; cursor: pointer; box-shadow: 0 4px 15px rgba(255,20,147,0.3);">XÁC NHẬN</button>
+        </div>
+    </div>
+`;
 
     // --- LOGIC TRA CỨU Tên CHỦ TK TỰ ĐỘNG ---
     const stkInput = document.getElementById('target-stk');
