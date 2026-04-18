@@ -19512,12 +19512,21 @@ async function handleCardTransaction(type) {
     
     dashboard.style.position = 'relative';
 
-    // 3. Lấy số dư hiện tại từ Firebase (Dùng async/await để đợi dữ liệu)
+    // 3. LẤY SỐ DƯ CHÍNH XÁC TỪ THẺ ĐÃ LIÊN KẾT
     let currentBalance = 0;
+    let cardId = "";
     try {
-        // Giả sử senderCardId là ID thẻ của Henry, hoặc bạn có cách lấy ID thẻ khác
-        // Ở đây mình lấy theo cấu trúc path thông thường của bạn: sweetie_cards/ID_USER/balance
-        const cardSnap = await db.ref(`sweetie_cards/${currentUser}/balance`).once('value');
+        // Bước A: Lấy ID thẻ mà Henry đang dùng
+        const linkedCardSnap = await db.ref(`users/${currentUser}/linkedCard`).once('value');
+        cardId = linkedCardSnap.val();
+
+        if (!cardId) {
+            alert("Lỗi: Không tìm thấy thẻ liên kết!");
+            return;
+        }
+
+        // Bước B: Lấy số dư từ đúng ID thẻ đó
+        const cardSnap = await db.ref(`sweetie_cards/${cardId}/balance`).once('value');
         currentBalance = cardSnap.val() || 0;
     } catch (e) {
         console.error("Lỗi lấy số dư:", e);
@@ -19533,12 +19542,12 @@ async function handleCardTransaction(type) {
         transUI = uiDiv;
     }
 
-    // --- THIẾT LẬP 2 TÔNG HỒNG KHÁC NHAU ---
+    // --- THIẾT LẬP GIAO DIỆN ---
     const isDeposit = type === 'deposit';
     const themeColor = isDeposit ? '#ff1493' : '#ff85a2'; 
     const bgColor = isDeposit ? '#ff149310' : '#ff85a215'; 
     const actionText = isDeposit ? 'NẠP TIỀN VÀO THẺ' : 'RÚT TIỀN VỀ VÍ';
-    const icon = isDeposit ? 'fa-vault' : 'fa-money-bill-transfer';
+    const icon = isDeposit ? 'fa-vault' : 'fa-hand-holding-magic';
 
     // 5. Hiển thị giao diện
     transUI.style.display = 'flex'; 
@@ -19557,11 +19566,9 @@ async function handleCardTransaction(type) {
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                     <label style="font-size: 0.7rem; color: ${themeColor}; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px;">Số tiền (VNĐ)</label>
                     
-                    ${!isDeposit ? `
-                        <span style="font-size: 0.7rem; color: #888; font-weight: bold;">
-                            Số dư: <span style="color: #333;">${currentBalance.toLocaleString()}₫</span>
-                        </span>
-                    ` : ''}
+                    <span style="font-size: 0.7rem; color: #888; font-weight: bold;">
+                        Số dư thẻ: <span style="color: #333;">${currentBalance.toLocaleString()}₫</span>
+                    </span>
                 </div>
 
                 <div style="display: flex; align-items: center;">
@@ -19598,7 +19605,7 @@ async function handleCardTransaction(type) {
         </div>
     `;
 
-    // --- LOGIC GÁN SỰ KIỆN GIỮ NGUYÊN ---
+    // --- GIỮ NGUYÊN LOGIC GÁN SỰ KIỆN ---
     const confirmBtn = document.getElementById('btn-confirm-trans');
     const cancelBtn = document.getElementById('btn-cancel-trans');
 
