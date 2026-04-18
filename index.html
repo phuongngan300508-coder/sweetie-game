@@ -19392,7 +19392,8 @@ function saveStep(step) {
             saveData(); // Gọi hàm lưu của Henry để cập nhật localStorage ngay lập tức
         }
 
-        alert("🌸 Chúc mừng Henry! Thẻ Sweetie Card của bạn đã được kích hoạt vĩnh viễn.");
+       alert("🌸 Chúc mừng bạn! Thẻ Sweetie Card của bạn đã được kích hoạt vĩnh viễn.");
+addNotification("💳 THẺ MỚI ĐÃ KÍCH HOẠT", "Chào mừng Henry đến với Sweetie Bank! Thẻ của bạn đã sẵn sàng sử dụng.");
         
         // 5. Chuyển sang giao diện quản lý thẻ
         renderCardDashboard(finalData.id);
@@ -19521,8 +19522,6 @@ async function executeTransaction(type) {
                 userData.balance -= amount;
                 saveData();
             }
-            // --- BỎ LỆNH recordCardHistory Ở ĐÂY ---
-
         } else {
             if (pass === "" || pass === null) {
                 isProcessingTransaction = false; // Mở khóa
@@ -19550,10 +19549,18 @@ async function executeTransaction(type) {
                 userData.balance += amount;
                 saveData();
             }
-            // --- BỎ LỆNH recordCardHistory Ở ĐÂY ---
         }
 
         alert("🌸 Giao dịch thành công! Số dư đã được cập nhật.");
+
+        // --- PHẦN SỬA ĐỔI: THÔNG BÁO VÀO CHUÔNG ---
+        if (typeof addNotification === 'function') {
+            if (type === 'deposit') {
+                addNotification("💰 NẠP TIỀN VÀO THẺ", `Bạn vừa nạp ${amount.toLocaleString()} VNĐ từ ví vào thẻ Sweetie Card.`);
+            } else {
+                addNotification("💸 RÚT TIỀN VỀ VÍ", `Bạn đã rút thành công ${amount.toLocaleString()} VNĐ từ thẻ về ví chính.`);
+            }
+        }
         
         // CHỈ GỌI 1 LẦN DUY NHẤT Ở CUỐI CÙNG
         if (typeof recordCardHistory === 'function') {
@@ -19636,6 +19643,7 @@ async function handleLinkCardSubmit() {
         }
 
         alert("🌸 Tuyệt vời! Bạn đã kết nối thành công thẻ " + inputId);
+addNotification("🔗 KẾT NỐI THẺ THÀNH CÔNG", `Thẻ mã số ${inputId} đã được liên kết lại vào tài khoản của bạn.`);
 
         // --- PHẦN BỔ SUNG: TỰ ĐỘNG CHUYỂN GIAO DIỆN ---
         // Gọi hàm render dashboard ngay lập tức với ID thẻ vừa kết nối
@@ -20043,6 +20051,7 @@ async function processTransfer(amount, pass, myCardId, note) {
             // Truyền note làm tham số text chính để các hàm hiển thị khác dễ lấy dữ liệu
             await sendMessage(note, transferData); 
             alert(`🌸 Chuyển thành công ${amount.toLocaleString()} VNĐ! Đang chờ đối phương xác nhận.`);
+addNotification("📤 CHUYỂN TIỀN THÀNH CÔNG", `Bạn đã gửi ${amount.toLocaleString()} VNĐ cho ${currentChatFriend}.`);
         }
 
     } catch (e) {
@@ -20067,13 +20076,23 @@ async function processTransfer(amount, pass, myCardId, note) {
             // 1. Hoàn tiền thật về thẻ của người gửi
             await db.ref(`sweetie_cards/${senderCardId}/balance`).transaction(val => (val || 0) + amount);
             
-            // 2. SỬA TẠI ĐÂY: Ghi loại là 'refund' để hiện icon Hoàn tiền trong lịch sử
+            // 2. Ghi loại là 'refund' để hiện icon Hoàn tiền trong lịch sử
             recordCardHistory(senderCardId, 'refund', amount, { 
                 note: "Tiền bị từ chối nhận" 
             });
             
             // 3. Cập nhật trạng thái tin nhắn
             await chatRef.child('status').set('refused');
+
+            // --- THÊM THÔNG BÁO HOÀN TIỀN CHO ĐỐI PHƯƠNG (NGƯỜI GỬI) ---
+            // Vì người gửi đang không on máy lúc này hoặc ở máy khác, ta bắn vào queue của họ
+            db.ref(`notifications_queue/${currentChatFriend}`).push({
+                title: "🔄 TIỀN ĐÃ HOÀN LẠI",
+                text: `Giao dịch ${amount.toLocaleString()} VNĐ bị từ chối. Tiền đã được hoàn về thẻ của bạn.`,
+                time: Date.now(),
+                type: "system"
+            });
+
             alert("🌸 Đã hoàn tiền lại cho đối phương!");
         } catch (e) { console.error("Lỗi hoàn tiền:", e); }
         return;
@@ -20100,6 +20119,11 @@ async function processTransfer(amount, pass, myCardId, note) {
         // 3. Cập nhật trạng thái tin nhắn
         await chatRef.child('status').set('accepted');
         
+        // --- THÔNG BÁO CHO NGƯỜI NHẬN (LÀ CHÍNH BẠN) ---
+        if (typeof addNotification === 'function') {
+            addNotification("📥 NHẬN TIỀN THÀNH CÔNG", `Bạn đã nhận ${amount.toLocaleString()} VNĐ từ ${currentChatFriend} vào thẻ.`);
+        }
+
         alert("🌸 Bạn đã nhận tiền thành công! Kiểm tra số dư thẻ nhé.");
     } catch (e) {
         alert("Lỗi khi nhận tiền!");
