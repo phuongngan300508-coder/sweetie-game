@@ -8984,6 +8984,24 @@ input[type="date"].sweetie-input-style {
         </div>
     </div>
 </div>
+
+    <div id="sweetie-success-popup" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 192, 203, 0.4); backdrop-filter: blur(5px); z-index: 100001; align-items: center; justify-content: center;">
+    <div class="animate__animated animate__zoomIn" style="background: white; width: 85%; max-width: 320px; border-radius: 30px; padding: 30px; text-align: center; box-shadow: 0 15px 40px rgba(255, 20, 147, 0.2); border: 2px solid #ffe4e1; position: relative; overflow: hidden;">
+        <div style="position: absolute; top: -20px; right: -20px; font-size: 5rem; color: #ff14930a; transform: rotate(15deg);"><i class="fas fa-heart"></i></div>
+        
+        <div style="width: 70px; height: 70px; background: linear-gradient(135deg, #ff69b4, #ff1493); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; color: white; font-size: 2rem; box-shadow: 0 10px 20px rgba(255, 20, 147, 0.3);">
+            <i class="fas fa-coins"></i>
+        </div>
+        
+        <h3 style="color: #ff1493; margin-bottom: 10px; font-weight: 800; letter-spacing: -0.5px;">THÀNH CÔNG!</h3>
+        <p style="color: #666; font-size: 0.9rem; margin-bottom: 5px;">Bạn vừa nhận được lì xì</p>
+        <div id="success-amount" style="font-size: 1.8rem; font-weight: 900; color: #ff1493; text-shadow: 2px 2px #ff149310; margin-bottom: 20px;">+0đ</div>
+        
+        <button onclick="closeSuccessPopup()" style="width: 100%; padding: 12px; border: none; border-radius: 20px; background: linear-gradient(135deg, #ff69b4, #ff1493); color: white; font-weight: bold; cursor: pointer; box-shadow: 0 5px 15px rgba(255, 20, 147, 0.2);">
+            TUYỆT VỜI ✨
+        </button>
+    </div>
+</div>
 <script>
   let replyingTo = null; // Lưu tin nhắn đang được trả lời {id, text, sender}
   // Biến cờ để đảm bảo mỗi máy chỉ "nghe" Firebase đúng 1 lần duy nhất
@@ -20615,7 +20633,7 @@ async function claimRedPacket(packetId) {
                     // 5. CẬP NHẬT GIAO DIỆN VÀ THÔNG BÁO
                     if (typeof updateUI === 'function') updateUI();
 
-                    alert(`🧧 Chúc mừng bạn! Bạn đã nhận được ${myAmount.toLocaleString()}đ lì xì!`);
+                    showSuccessLixi(myAmount);
                     if (typeof addNotification === 'function') {
                         addNotification("🧧 NHẬN LÌ XÌ", `Bạn vừa nhận được ${myAmount.toLocaleString()}đ lì xì may mắn từ ${finalData.senderName}!`);
                     }
@@ -20631,6 +20649,20 @@ async function claimRedPacket(packetId) {
     } catch (e) {
         console.error("Lỗi khi nhận lì xì:", e);
     }
+}
+
+    function showSuccessLixi(amount) {
+    const popup = document.getElementById('sweetie-success-popup');
+    const amountEl = document.getElementById('success-amount');
+    if(popup && amountEl) {
+        amountEl.innerText = `+${amount.toLocaleString()}đ`;
+        popup.style.display = 'flex';
+    }
+}
+
+function closeSuccessPopup() {
+    const popup = document.getElementById('sweetie-success-popup');
+    if(popup) popup.style.display = 'none';
 }
 </script>
 </body>
