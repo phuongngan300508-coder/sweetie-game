@@ -6623,6 +6623,9 @@ input[type="date"].sweetie-input-style {
                     background: #fff;
                     box-shadow: 0 0 15px rgba(255, 182, 193, 0.3);
                 }
+
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+            .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 </style>
 </head>
 <body>
@@ -20983,7 +20986,6 @@ function setRpMode(mode) {
 }
 
     async function openBankingTransfer(myCardId) {
-    // 1. Khởi tạo overlay bung toàn màn hình (gắn vào body)
     let transUI = document.getElementById('transaction-ui');
     if (!transUI) {
         transUI = document.createElement('div');
@@ -20998,10 +21000,10 @@ function setRpMode(mode) {
             backdropFilter: 'blur(8px)',
             webkitBackdropFilter: 'blur(8px)',
             display: 'none',
-            justifyContent: 'center', // Căn giữa ngang
-            alignItems: 'center',     // Căn giữa dọc
+            justifyContent: 'center',
+            alignItems: 'center',
             zIndex: '99999',
-            padding: '20px'           // Tạo khoảng cách an toàn với mép màn hình
+            padding: '20px'
         });
         document.body.appendChild(transUI);
     }
@@ -21010,14 +21012,20 @@ function setRpMode(mode) {
     const myCardData = cardSnap.val();
 
     transUI.style.display = 'flex';
-    
-    // Reset trạng thái cuộn của lớp phủ
     transUI.scrollTop = 0;
 
     transUI.innerHTML = `
-
-    <div class="banking-transfer-form" style="width: 90%; max-width: 400px; max-height: 85vh; background: #fff; border-radius: 35px; overflow: hidden; display: flex; flex-direction: column; animation: slideUpPopup 0.4s ease; box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2); flex-shrink: 0;">
+    <style>
+        .banking-scroll-area::-webkit-scrollbar { display: none; }
+        .banking-scroll-area { -ms-overflow-style: none; scrollbar-width: none; }
         
+        @keyframes slideUpPopup {
+            from { transform: translateY(30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+    </style>
+
+    <div class="banking-transfer-form" style="width: 100%; max-width: 400px; max-height: 85vh; background: #fff; border-radius: 35px; overflow: hidden; display: flex; flex-direction: column; animation: slideUpPopup 0.4s ease; box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2); margin: 0; flex-shrink: 0;">
         <div style="background: linear-gradient(135deg, #ff1493, #ff69b4); padding: 25px 20px; color: #fff; text-align: center; position: relative; flex-shrink: 0;">
             <h4 style="margin: 0; font-size: 1.1rem; font-weight: 800; letter-spacing: 1px;">CHUYỂN TIỀN 24/7</h4>
             <div style="font-size: 0.7rem; opacity: 0.9; margin-top: 5px; display: flex; align-items: center; justify-content: center; gap: 5px;">
@@ -21027,11 +21035,8 @@ function setRpMode(mode) {
         </div>
 
         <div class="banking-scroll-area" style="flex: 1; overflow-y: auto; padding: 20px; background: #fffafa;">
-            
             <div style="background: #fff; padding: 15px; border-radius: 20px; border: 1px solid #ff149315; margin-bottom: 20px; display: flex; align-items: center; gap: 15px;">
-                <div style="width: 45px; height: 45px; background: #fff0f5; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #ff1493;">
-                    <i class="fas fa-wallet" style="font-size: 1.2rem;"></i>
-                </div>
+                <div style="width: 45px; height: 45px; background: #fff0f5; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #ff1493;"><i class="fas fa-wallet" style="font-size: 1.2rem;"></i></div>
                 <div style="text-align: left;">
                     <div style="font-size: 0.65rem; color: #888; font-weight: 700;">TÀI KHOẢN NGUỒN</div>
                     <div style="font-size: 0.9rem; font-weight: 800; color: #333;">**** ${myCardId.slice(-4)}</div>
@@ -21041,18 +21046,14 @@ function setRpMode(mode) {
 
             <div class="bank-input-box" style="margin-bottom: 15px; text-align: left;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                    <label style="font-size: 0.7rem; color: #ff69b4; font-weight: 800; letter-spacing: 0.3px;">THÔNG TIN THỤ HƯỞNG</label>
-                    <i class="fas fa-address-book" onclick="openSavedAccounts()" style="color: #ff1493; cursor: pointer; font-size: 1.2rem;" title="Danh bạ"></i>
+                    <label style="font-size: 0.7rem; color: #ff69b4; font-weight: 800;">THÔNG TIN THỤ HƯỞNG</label>
+                    <i class="fas fa-address-book" onclick="openSavedAccounts()" style="color: #ff1493; cursor: pointer; font-size: 1.2rem;"></i>
                 </div>
                 <div style="position: relative;">
-                    <input type="number" id="target-stk" class="sweetie-input-style" 
-                        placeholder="Số tài khoản (12 số)" 
-                        maxlength="12" 
-                        style="width: 100%; padding: 15px; border-radius: 15px; border: 1px solid #eee; outline: none; font-weight: 700; background: #fff; box-sizing: border-box;">
+                    <input type="number" id="target-stk" placeholder="Số tài khoản (12 số)" maxlength="12" style="width: 100%; padding: 15px; border-radius: 15px; border: 1px solid #eee; outline: none; font-weight: 700; background: #fff; box-sizing: border-box;">
                     <div id="stk-loading" style="display:none; position:absolute; right:15px; top:15px;"><i class="fas fa-spinner fa-spin" style="color:#ff1493;"></i></div>
                 </div>
                 <div id="target-owner-display" style="color: #2e7d32; font-weight: 800; font-size: 0.85rem; margin-top: 8px; height: 18px; text-transform: uppercase;"></div>
-                
                 <label style="display: flex; align-items: center; gap: 8px; font-size: 0.75rem; color: #888; margin-top: 10px; cursor: pointer;">
                     <input type="checkbox" id="save-account-check" style="accent-color: #ff1493; width: 16px; height: 16px;"> Lưu vào danh bạ
                 </label>
@@ -21061,34 +21062,25 @@ function setRpMode(mode) {
             <div class="bank-input-box" style="margin-bottom: 15px; text-align: left;">
                 <label style="font-size: 0.7rem; color: #ff69b4; font-weight: 800; display: block; margin-bottom: 8px;">SỐ TIỀN CHUYỂN</label>
                 <div style="position: relative;">
-                    <input type="number" id="transfer-amount" placeholder="0" 
-                        style="width: 100%; padding: 15px 45px 15px 15px; border-radius: 15px; border: 1px solid #eee; font-weight: 800; color: #ff1493; font-size: 1.2rem; outline: none; box-sizing: border-box;">
+                    <input type="number" id="transfer-amount" placeholder="0" style="width: 100%; padding: 15px 45px 15px 15px; border-radius: 15px; border: 1px solid #eee; font-weight: 800; color: #ff1493; font-size: 1.2rem; outline: none; box-sizing: border-box;">
                     <span style="position: absolute; right: 15px; top: 16px; font-weight: 800; color: #ccc;">đ</span>
                 </div>
             </div>
 
             <div class="bank-input-box" style="margin-bottom: 15px; text-align: left;">
-                <label style="font-size: 0.7rem; color: #ff69b4; font-weight: 800; display: block; margin-bottom: 8px;">NỘI DUNG GIAO DỊCH</label>
-                <textarea id="transfer-note" placeholder="Nhập lời nhắn..." 
-                    style="width: 100%; padding: 12px; border-radius: 15px; border: 1px solid #eee; height: 60px; outline: none; resize: none; font-size: 0.85rem; box-sizing: border-box; font-family: inherit;"></textarea>
+                <label style="font-size: 0.7rem; color: #ff69b4; font-weight: 800; display: block; margin-bottom: 8px;">NỘI DUNG</label>
+                <textarea id="transfer-note" placeholder="Nhập lời nhắn..." style="width: 100%; padding: 12px; border-radius: 15px; border: 1px solid #eee; height: 60px; outline: none; resize: none; font-size: 0.85rem; box-sizing: border-box; font-family: inherit;"></textarea>
             </div>
 
-            <div class="bank-input-box" style="margin-bottom: 25px; text-align: left;">
-    <label style="font-size: 0.7rem; color: #ff1493; font-weight: 800; display: block; margin-bottom: 8px;">XÁC THỰC MẬT KHẨU THÈ</label>
-    <input type="password" id="transfer-pin" 
-        placeholder="Nhập mật khẩu thẻ của bạn..." 
-        readonly 
-        onfocus="this.removeAttribute('readonly');"
-        autocomplete="new-password" 
-        style="width: 100%; padding: 15px; border-radius: 18px; border: 1.5px solid #eee; outline: none; box-sizing: border-box; font-size: 1rem; text-align: center; font-weight: 600; color: #333; transition: 0.3s; background: #fff;">
-</div>
+            <div class="bank-input-box" style="margin-bottom: 10px; text-align: left;">
+                <label style="font-size: 0.7rem; color: #ff1493; font-weight: 800; display: block; margin-bottom: 8px;">XÁC THỰC MẬT KHẨU</label>
+                <input type="password" id="transfer-pin" placeholder="Nhập mật khẩu thẻ..." readonly onfocus="this.removeAttribute('readonly');" autocomplete="new-password" style="width: 100%; padding: 15px; border-radius: 18px; border: 1px solid #eee; outline: none; box-sizing: border-box; font-size: 1rem; text-align: center; font-weight: 600; background: #fff;">
+            </div>
         </div>
 
         <div style="padding: 20px; background: #fff; border-top: 1px solid #f0f0f0; display: flex; gap: 12px; flex-shrink: 0;">
-            <button onclick="document.getElementById('transaction-ui').style.display='none'" 
-                style="flex: 1; padding: 15px; border: 1.5px solid #eee; border-radius: 18px; background: #fff; color: #999; font-weight: bold; cursor: pointer;">HỦY</button>
-            <button id="btn-do-transfer" 
-                style="flex: 2; padding: 15px; border: none; border-radius: 18px; background: linear-gradient(to right, #ff1493, #ff69b4); color: #fff; font-weight: 800; cursor: pointer; box-shadow: 0 8px 20px rgba(255, 20, 147, 0.3);">TIẾP TỤC</button>
+            <button onclick="document.getElementById('transaction-ui').style.display='none'" style="flex: 1; padding: 15px; border: 1.5px solid #eee; border-radius: 18px; background: #fff; color: #999; font-weight: bold; cursor: pointer;">HỦY</button>
+            <button id="btn-do-transfer" style="flex: 2; padding: 15px; border: none; border-radius: 18px; background: linear-gradient(to right, #ff1493, #ff69b4); color: #fff; font-weight: 800; cursor: pointer; box-shadow: 0 8px 20px rgba(255, 20, 147, 0.3);">TIẾP TỤC</button>
         </div>
     </div>
     `;
@@ -21224,19 +21216,38 @@ function showBankingBill(data) {
         else document.body.appendChild(ui);
     }
 
-    ui.style.display = 'flex';
-    
-    // --- NÂNG CẤP: CHO PHÉP CUỘN NHƯNG ẨN THANH CUỘN (GIỮ NGUYÊN) ---
-    ui.style.display = 'flex';
-    ui.style.justifyContent = 'center'; // Căn giữa ngang
-    ui.style.alignItems = 'center';     // Căn giữa dọc
-    ui.style.overflowY = 'auto'; 
-    ui.style.padding = '20px';
+    // --- THIẾT LẬP CĂN GIỮA TUYỆT ĐỐI CHO BILL ---
+    Object.assign(ui.style, {
+        display: 'flex',
+        justifyContent: 'center', // Căn giữa ngang
+        alignItems: 'center',     // Căn giữa dọc
+        position: 'fixed',        // Bung toàn màn hình
+        top: '0',
+        left: '0',
+        width: '100vw',
+        height: '100vh',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        backdropFilter: 'blur(8px)',
+        webkitBackdropFilter: 'blur(8px)',
+        zIndex: '99999',
+        overflowY: 'auto',
+        padding: '20px'
+    });
 
-    // Nội dung Bill nâng cấp chuyên nghiệp - Đã bỏ mã QR
+    // Nội dung Bill nâng cấp chuyên nghiệp
     ui.innerHTML = `
+        <style>
+            /* Ẩn thanh cuộn vật lý nếu bill quá dài trên màn hình nhỏ */
+            #transaction-ui::-webkit-scrollbar { display: none; }
+            #transaction-ui { -ms-overflow-style: none; scrollbar-width: none; }
+            
+            @keyframes zoomInBill {
+                from { transform: scale(0.9); opacity: 0; }
+                to { transform: scale(1); opacity: 1; }
+            }
+        </style>
 
-        <div id="bill-canvas" class="banking-bill-v2" style="width: 100%; max-width: 350px; background: #fff; border-radius: 35px; padding: 0; overflow: hidden; animation: zoomIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 20px 60px rgba(255, 20, 147, 0.15); border: 1px solid #fff0f5; position: relative; flex-shrink: 0; margin: auto;">
+        <div id="bill-canvas" class="banking-bill-v2" style="width: 100%; max-width: 350px; background: #fff; border-radius: 35px; padding: 0; overflow: hidden; animation: zoomInBill 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 25px 60px rgba(0, 0, 0, 0.3); border: 1px solid #fff0f5; position: relative; flex-shrink: 0; margin: 0;">
             
             <div style="background: linear-gradient(135deg, #ff1493, #ff69b4); padding: 30px 20px; text-align: center; color: #fff;">
                 <div style="width: 60px; height: 60px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; border: 2px solid #fff;">
@@ -21292,7 +21303,7 @@ function showBankingBill(data) {
     `;
 }
 
-   function openSavedAccounts() {
+  function openSavedAccounts() {
     // 1. Gắn trực tiếp vào body để bung toàn màn hình
     let savedUI = document.getElementById('saved-accounts-ui');
     
@@ -21312,8 +21323,8 @@ function showBankingBill(data) {
             display: 'none',
             justifyContent: 'center', // Căn giữa ngang
             alignItems: 'center',     // Căn giữa dọc
-            zIndex: "100001",         // Cao hơn popup chuyển tiền (99999)
-            padding: '20px'           // Khoảng cách an toàn với mép màn hình
+            zIndex: "100001",         // Luôn cao hơn popup chuyển tiền (99999)
+            padding: '20px'           // Khoảng cách an toàn tránh dính mép
         });
         document.body.appendChild(savedUI);
     }
@@ -21321,6 +21332,7 @@ function showBankingBill(data) {
     const allAccounts = userData.savedAccounts || [];
     savedUI.style.display = 'flex';
     
+    // Giữ nguyên logic render của Henry
     const renderList = (filteredAccounts) => {
         const listContainer = savedUI.querySelector('.accounts-list-container');
         if (!listContainer) return;
@@ -21360,8 +21372,9 @@ function showBankingBill(data) {
         }).join('');
     };
 
+    // Sửa style của modal để không bị lệch
     savedUI.innerHTML = `
-    <div class="saved-accounts-modal" style="width: 90%; max-width: 380px; max-height: 80vh; background: #fff; border-radius: 35px; overflow: hidden; display: flex; flex-direction: column; animation: slideUp 0.4s ease; box-shadow: 0 25px 50px rgba(0,0,0,0.2); margin: 0;">
+    <div class="saved-accounts-modal" style="width: 100%; max-width: 380px; max-height: 80vh; background: #fff; border-radius: 35px; overflow: hidden; display: flex; flex-direction: column; animation: slideUp 0.4s ease; box-shadow: 0 25px 50px rgba(0,0,0,0.2); margin: 0; flex-shrink: 0;">
         
         <div style="background: linear-gradient(135deg, #ff1493, #ff69b4); padding: 25px 20px; color: #fff; text-align: center; position: relative; flex-shrink: 0;">
             <h4 style="margin: 0; font-size: 1.1rem; font-weight: 800; letter-spacing: 1px;">DANH SÁCH TÀI KHOẢN</h4>
@@ -21379,11 +21392,6 @@ function showBankingBill(data) {
         
         <div class="accounts-list-container hide-scrollbar" style="overflow-y: auto; flex: 1; padding: 0 10px 20px; background: #fff;">
         </div>
-        
-        <style>
-            .hide-scrollbar::-webkit-scrollbar { display: none; }
-            .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        </style>
     </div>
     `;
 
@@ -21401,7 +21409,6 @@ function showBankingBill(data) {
         renderList(filtered);
     };
 }
-
 // --- HÀM BỔ TRỢ ĐỂ ĐẶT VÀ XÓA BIỆT DANH ---
 
 window.setAccountNickname = function(stk) {
