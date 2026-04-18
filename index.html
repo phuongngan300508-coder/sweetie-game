@@ -9932,28 +9932,40 @@ function renderHistoryV2() {
     const container = document.getElementById('history-v2-body');
     if (!container || !currentUser) return;
 
-    // --- LẤY DỮ LIỆU TỪ FIREBASE ĐỂ UPDATE REAL-TIME ---
+    // --- 1. QUAN TRỌNG: GỠ BỎ LISTENER CŨ ĐỂ KHÔNG BỊ LẶP DỮ LIỆU ---
+    db.ref(`users/${currentUser}/history`).off();
+
+    // Hiển thị trạng thái đang tải
+    container.innerHTML = `<div style="text-align:center; padding:20px; color:#ccc; font-size:0.8em;">Đang cập nhật lịch sử...</div>`;
+
+    // --- 2. LẮNG NGHE DỮ LIỆU TỪ FIREBASE ---
     db.ref(`users/${currentUser}/history`).limitToLast(20).on('value', (snapshot) => {
         const data = snapshot.val();
         
         if (!data) {
-            container.innerHTML = `<div style="text-align:center; padding:30px; color:#ccc;">
-                <i class="fas fa-receipt" style="font-size: 3em; margin-bottom:10px; opacity:0.3;"></i>
-                <p>Chưa có giao dịch nào được thực hiện.</p>
-            </div>`;
+            container.innerHTML = `
+                <div style="text-align:center; padding:30px; color:#ccc;">
+                    <i class="fas fa-receipt" style="font-size: 3em; margin-bottom:10px; opacity:0.3;"></i>
+                    <p style="font-size:0.9em;">Chưa có giao dịch nào được thực hiện.</p>
+                </div>`;
             return;
         }
 
         // Chuyển object Firebase thành mảng và đảo ngược để cái mới nhất lên đầu
-        const historyArray = Object.values(data).reverse();
+        const historyArray = Object.keys(data).map(key => ({
+            id: key,
+            ...data[key]
+        })).reverse();
 
         container.innerHTML = historyArray.map(item => {
-            // Kiểm tra loại giao dịch để gán class màu sắc
-            // Nếu item.type là "plus" thì hiện màu xanh, ngược lại hiện màu đỏ
+            // Xác định loại giao dịch để gán class màu sắc
             const isPlus = item.type === 'plus';
-            const amountFormatted = isPlus ? `+${item.amount.toLocaleString()}` : `-${item.amount.toLocaleString()}`;
             
-            // Định dạng thời gian
+            // Format số tiền (Đảm bảo item.amount là số)
+            const amountVal = parseInt(item.amount) || 0;
+            const amountFormatted = (isPlus ? '+' : '-') + amountVal.toLocaleString('vi-VN') + ' VNĐ';
+            
+            // Định dạng thời gian chuẩn Việt Nam
             const timeStr = item.time ? new Date(item.time).toLocaleString('vi-VN', {
                 hour: '2-digit', 
                 minute: '2-digit', 
@@ -9962,18 +9974,49 @@ function renderHistoryV2() {
             }) : "Vừa xong";
 
             return `
-                <div class="history-item">
-                    <div class="history-left">
-                        <span class="history-type">${item.action || "Giao dịch"}</span>
-                        <span class="history-date"><i class="far fa-clock"></i> ${timeStr}</span>
+                <div class="history-item animate__animated animate__fadeInIn" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border-bottom: 1px solid #fff5f8;">
+                    <div class="history-left" style="display: flex; flex-direction: column; gap: 4px;">
+                        <span class="history-type" style="font-weight: 800; color: #444; font-size: 0.9rem;">${item.action || "Giao dịch"}</span>
+                        <span class="history-date" style="font-size: 0.7rem; color: #bbb;">
+                            <i class="far fa-clock"></i> ${timeStr}
+                        </span>
                     </div>
-                    <div class="history-amount ${isPlus ? 'amount-plus' : 'amount-minus'}">
+                    <div class="history-amount ${isPlus ? 'amount-plus' : 'amount-minus'}" 
+                         style="font-weight: 800; font-size: 0.95rem; color: ${isPlus ? '#2ecc71' : '#e74c3c'};">
                         ${amountFormatted}
                     </div>
                 </div>
             `;
         }).join('');
     });
+}
+    
+    function recordTransaction(action, amount, type) {
+    if (!currentUser) return;
+
+    // 1. Ghi lên Firebase (Dữ liệu thật, vĩnh viễn)
+    const historyRef = db.ref(`users/${currentUser}/history`).push();
+    const newLog = {
+        action: action,
+        amount: amount,
+        type: type, // "plus" hoặc "minus"
+        time: firebase.database.ServerValue.TIMESTAMP
+    };
+
+    historyRef.set(newLog);
+
+    // 2. Cập nhật vào userData local (Để đồng bộ với các hàm cũ của Henry nếu cần)
+    if (!userData.history) userData.history = [];
+    
+    // Chuyển đổi format cho giống dữ liệu cũ của Henry để không bị lỗi render
+    const localLog = {
+        type: action,
+        date: new Date().toLocaleString('vi-VN'),
+        amount: (type === 'plus' ? '+' : '-') + amount.toLocaleString() + ' VNĐ'
+    };
+    
+    userData.history.push(localLog);
+    saveData(); // Lưu LocalStorage
 }
     
 function buyCheckinAccess() {
@@ -15695,7 +15738,7 @@ function togglePinFriend(fName) {
     } else {
         // Kiểm tra giới hạn 5 người
         if (pinnedFriends.length >= 5) {
-            alert("Henry ơi, mình chỉ ghim được tối đa 5 người thôi nè! ❤️");
+            alert("Bạn ơi, mình chỉ ghim được tối đa 5 người thôi nè! ❤️");
             return;
         }
         pinnedFriends.unshift(fName); // Thêm vào đầu danh sách ghim
@@ -16839,7 +16882,7 @@ function showThemeType(type) {
     function enterMobilePreview() {
     // 1. Kiểm tra nếu Henry chưa chọn cái nào mà đã bấm xem trước
     if (!tempThemeData) {
-        alert("Henry ơi, chọn một màu hoặc chủ đề trước khi xem thử nhé!");
+        alert("Bạn ơi, chọn một màu hoặc chủ đề trước khi xem thử nhé!");
         return;
     }
 
@@ -17283,7 +17326,7 @@ async function handleMediaUpload(e) {
     const isImg = file.type.startsWith('image/');
     const limit = isImg ? 10 : 50;
     if (file.size > limit * 1024 * 1024) {
-        alert(`❌ File quá nặng! ${isImg ? 'Ảnh' : 'Video'} tối đa ${limit}MB thôi Henry ơi.`);
+        alert(`❌ File quá nặng! ${isImg ? 'Ảnh' : 'Video'} tối đa ${limit}MB thôi bạn ơi.`);
         return;
     }
 
@@ -18196,7 +18239,7 @@ function showPinActions(msgId) {
         }, 1500);
     } else {
         // 4. Thông báo nếu tin chưa được load (Giữ nguyên)
-        alert("📍 Tin nhắn này nằm ở khá xa, Henry hãy cuộn lên trên một chút để hệ thống tải dữ liệu cũ nhé!");
+        alert("📍 Tin nhắn này nằm ở khá xa, bạn hãy cuộn lên trên một chút để hệ thống tải dữ liệu cũ nhé!");
     }
 }
 
@@ -18245,7 +18288,7 @@ async function startVoiceRecording() {
         recordingInterval = setInterval(updateRecordingTimer, 1000);
 
     } catch (err) {
-        alert("❌ Henry ơi, bạn cần cấp quyền truy cập Micro nhé!");
+        alert("❌ Bạn ơi, bạn cần cấp quyền truy cập Micro nhé!");
     }
 }
     
@@ -18489,7 +18532,7 @@ async function makeCall(type) { // type: 'audio' hoặc 'video'
         }
 
     } catch (err) {
-        alert("❌ Henry ơi, bạn chưa cấp quyền Camera/Micro rồi!");
+        alert("❌ Bạn ơi, bạn chưa cấp quyền Camera/Micro rồi!");
         console.error(err);
     }
 }
@@ -19046,60 +19089,54 @@ function initGlobalChat() {
     if (!globalArea) return;
 
     // --- QUAN TRỌNG: GỠ BỎ LISTENER CŨ ĐỂ TRÁNH LẶP THÔNG BÁO ---
-    // Lệnh .off() giúp đảm bảo dù hàm này chạy bao nhiêu lần, chỉ có 1 listener duy nhất tồn tại.
     db.ref('global_chat/messages').off();
     db.ref('status').off();
 
-    // Reset nội dung cũ để tránh lặp khi gọi lại hàm
+    // Reset nội dung cũ
     globalArea.innerHTML = '<div style="text-align:center; font-size:0.7em; color:#ccc; padding:10px;">Đang tải tin nhắn thế giới...</div>';
 
-    // 1. LẤY 50 TIN NHẮN CŨ ĐỂ HIỂN THỊ
-    db.ref('global_chat/messages').limitToLast(50).on('value', (snapshot) => {
-        globalArea.innerHTML = ''; 
-        const data = snapshot.val();
-        if (data) {
-            Object.keys(data).forEach(key => {
-                renderGlobalMessage(key, data[key]);
-            });
-            globalArea.scrollTop = globalArea.scrollHeight;
-        } else {
-            globalArea.innerHTML = '<div style="text-align:center; font-size:0.7em; color:#ccc; padding:20px;">Chưa có tin nhắn nào. Hãy là người đầu tiên lên sóng!</div>';
+    // --- GIẢI PHÁP: CHỈ DÙNG CHILD_ADDED ĐỂ RENDER ---
+    // Cách này giúp tin nhắn hiện ra từng cái một, không bao giờ bị lặp hay load lại cả bảng
+    db.ref('global_chat/messages').limitToLast(50).on('child_added', (snapshot) => {
+        // Xóa dòng "Đang tải" nếu đây là tin nhắn đầu tiên
+        if (globalArea.innerHTML.includes("Đang tải tin nhắn")) {
+            globalArea.innerHTML = '';
         }
-    });
 
-    // 2. LẮNG NGHE TIN NHẮN MỚI ĐỂ THÔNG BÁO
-    db.ref('global_chat/messages').limitToLast(1).on('child_added', (snapshot) => {
         const msg = snapshot.val();
-        if (!msg || msg.timestamp <= sessionStartTime) return;
+        const key = snapshot.key;
+        if (!msg) return;
 
-        const isMe = msg.sender === userData.profile.uid;
-        
-        const chatTabEl = document.getElementById('tab-global');
-        // Kiểm tra style thực tế của tab (bao gồm cả class CSS)
-        const isChatOpen = chatTabEl && (window.getComputedStyle(chatTabEl).display !== 'none');
-        const isTabHidden = document.hidden || document.visibilityState === 'hidden';
-        
-        if (!isMe) {
-            // --- THÔNG BÁO TRONG GAME ---
-            if (!isChatOpen && typeof addNotification === 'function') {
-                addNotification(
-                    "💬 TIN NHẮN THẾ GIỚI", 
-                    `<b>${msg.senderName}:</b> ${msg.text}`,
-                    "linear-gradient(135deg, #ff69b4, #ff1493)"
-                );
-            }
+        // 1. VẼ TIN NHẮN LÊN GIAO DIỆN (Bao gồm cả tin cũ và mới)
+        renderGlobalMessage(key, msg);
+        globalArea.scrollTop = globalArea.scrollHeight;
 
-            // --- THÔNG BÁO HỆ THỐNG ---
-            if (isTabHidden) {
-                if ("Notification" in window && Notification.permission === "granted") {
+        // 2. LOGIC THÔNG BÁO (Chỉ chạy cho tin nhắn mới phát sinh sau khi mở app)
+        if (msg.timestamp > sessionStartTime) {
+            const isMe = msg.sender === userData.profile.uid;
+            const chatTabEl = document.getElementById('tab-global');
+            const isChatOpen = chatTabEl && (window.getComputedStyle(chatTabEl).display !== 'none');
+            const isTabHidden = document.hidden || document.visibilityState === 'hidden';
+
+            if (!isMe) {
+                // Thông báo trong game
+                if (!isChatOpen && typeof addNotification === 'function') {
+                    addNotification(
+                        "💬 TIN NHẮN THẾ GIỚI", 
+                        `<b>${msg.senderName}:</b> ${msg.text}`,
+                        "linear-gradient(135deg, #ff69b4, #ff1493)"
+                    );
+                }
+
+                // Thông báo hệ thống
+                if (isTabHidden && "Notification" in window && Notification.permission === "granted") {
                     const n = new Notification(`🌸 ${msg.senderName}`, {
                         body: msg.text,
                         icon: msg.senderAvatar || "URL_ANH_MAC_DINH",
-                        tag: "global-chat-msg", // Tag này giúp các thông báo sau ghi đè lên cái cũ, không bị hiện 1 loạt
+                        tag: "global-chat-msg",
                         renotify: true,
                         silent: false 
                     });
-                    
                     n.onclick = () => { 
                         window.focus(); 
                         if (typeof switchTab === 'function') switchTab('tab-global'); 
@@ -19110,7 +19147,7 @@ function initGlobalChat() {
         }
     });
 
-    // 3. LẮNG NGHE SỐ NGƯỜI ĐANG ONLINE
+    // 3. LẮNG NGHE SỐ NGƯỜI ĐANG ONLINE (Giữ nguyên)
     db.ref('status').on('value', (snap) => {
         const data = snap.val() || {};
         const onlineCount = Object.values(data).filter(s => s.state === 'online').length;
@@ -19125,7 +19162,7 @@ function initGlobalChat() {
         }
     });
 
-    // 4. Nhấn Enter gửi tin
+    // 4. Nhấn Enter gửi tin (Giữ nguyên)
     const inputField = document.getElementById('global-input');
     if (inputField && !inputField.dataset.listener) {
         inputField.addEventListener('keypress', (e) => {
@@ -19490,7 +19527,7 @@ async function openSweetieCardModal() {
         }
     } catch (error) {
         console.error("Lỗi khi tải Sweetie Card:", error);
-        alert("Không thể kết nối đến hệ thống thẻ, Henry vui lòng thử lại nhé!");
+        alert("Không thể kết nối đến hệ thống thẻ, bạn vui lòng thử lại nhé!");
     }
 }
     
@@ -19669,14 +19706,14 @@ function saveStep(step) {
         }
 
        alert("🌸 Chúc mừng bạn! Thẻ Sweetie Card của bạn đã được kích hoạt vĩnh viễn.");
-addNotification("💳 THẺ MỚI ĐÃ KÍCH HOẠT", "Chào mừng Henry đến với Sweetie Bank! Thẻ của bạn đã sẵn sàng sử dụng.");
+addNotification("💳 THẺ MỚI ĐÃ KÍCH HOẠT", "Chào mừng bạn đến với Sweetie Bank! Thẻ của bạn đã sẵn sàng sử dụng.");
         
         // 5. Chuyển sang giao diện quản lý thẻ
         renderCardDashboard(finalData.id);
 
     } catch (error) {
         console.error("Lỗi tạo thẻ:", error);
-        alert("Đã có lỗi xảy ra khi lưu thẻ. Henry hãy kiểm tra kết nối mạng nhé!");
+        alert("Đã có lỗi xảy ra khi lưu thẻ. Bạn hãy kiểm tra kết nối mạng nhé!");
     }
 }
 
@@ -19821,7 +19858,7 @@ async function executeTransaction(type) {
     const pass = passInput ? passInput.value : null;
 
     if (isNaN(amount) || amount <= 0) {
-        alert("Số tiền không hợp lệ, Henry vui lòng nhập lại nhé!");
+        alert("Số tiền không hợp lệ, bạn vui lòng nhập lại nhé!");
         return;
     }
 
@@ -19899,7 +19936,7 @@ async function executeTransaction(type) {
 
     } catch (error) {
         console.error("Lỗi giao dịch thẻ:", error);
-        alert("Đã có lỗi xảy ra. Henry hãy kiểm tra lại kết nối mạng!");
+        alert("Đã có lỗi xảy ra. Bạn hãy kiểm tra lại kết nối mạng!");
     } finally {
         isProcessingTransaction = false; // Luôn mở khóa khi kết thúc (dù lỗi hay thành công)
     }
@@ -19938,7 +19975,7 @@ async function handleLinkCardSubmit() {
     const inputId = document.getElementById('link_card_id').value;
     const inputPass = document.getElementById('link_card_pass').value;
 
-    if (!inputId || !inputPass) return alert("Henry ơi, nhập đủ ID và Pass nhé!");
+    if (!inputId || !inputPass) return alert("Bạn ơi, nhập đủ ID và Pass nhé!");
 
     try {
         // 1. Kiểm tra thẻ có tồn tại trên Firebase không
@@ -20074,7 +20111,7 @@ function renderCardDashboard(cardId) {
     
 // Thêm hàm gỡ thẻ nếu Henry muốn đổi thẻ khác
 async function unlinkCard() {
-    if(confirm("Henry muốn gỡ liên kết thẻ này khỏi tài khoản chứ? (Tiền trong thẻ vẫn sẽ còn vĩnh viễn)")) {
+    if(confirm("Bạn muốn gỡ liên kết thẻ này khỏi tài khoản chứ? (Tiền trong thẻ vẫn sẽ còn vĩnh viễn)")) {
         await db.ref(`users/${currentUser}/linkedCard`).remove();
         if (typeof userData !== 'undefined') {
             userData.linkedCard = null;
@@ -20223,7 +20260,7 @@ async function unlinkCard() {
     // 1. Kiểm tra thẻ ngân hàng của mình
     const myCardIdSnap = await db.ref(`users/${currentUser}/linkedCard`).once('value');
     if (!myCardIdSnap.exists()) {
-        alert("🌸 Henry ơi, bạn cần tạo thẻ Sweetie Bank trước khi chuyển tiền nhé!");
+        alert("🌸 Bạn ơi, bạn cần tạo thẻ Sweetie Bank trước khi chuyển tiền nhé!");
         if (typeof openSweetieCardModal === 'function') openSweetieCardModal();
         return;
     }
@@ -20301,7 +20338,7 @@ async function unlinkCard() {
             note = `${owner} đã chuyển tiền cho bạn`;
         }
 
-        if (!amount || amount <= 0) return alert("Henry hãy nhập số tiền hợp lệ nhé!");
+        if (!amount || amount <= 0) return alert("Bạn hãy nhập số tiền hợp lệ nhé!");
         if (amount > currentBalance) return alert("Số dư không đủ để thực hiện giao dịch này!");
         if (!pass) return alert("Vui lòng nhập mật khẩu xác nhận!");
 
@@ -20530,13 +20567,17 @@ async function createRedPacket() {
             sender: userData.profile.uid,
             senderName: userData.profile.name,
             senderAvatar: userData.profile.customAvatar || "",
-            // Cập nhật text hiển thị thành lời nhắn của Henry
+            // Đảm bảo lấy đủ VIP để render đúng style của Henry
+            vip: typeof getVipLevel === 'function' ? getVipLevel(userData.totalSpent || 0) : 0,
             text: `🧧 ${message}`, 
             redPacketId: packetId, // Đính kèm ID lì xì
             timestamp: firebase.database.ServerValue.TIMESTAMP
         };
+
+        // CHỈ PUSH LÊN FIREBASE - KHÔNG GỌI HÀM RENDER THỦ CÔNG TẠI ĐÂY
         await db.ref('global_chat/messages').push(msgData);
 
+        // 5. Dọn dẹp giao diện
         closeRedPacketCreator();
         
         // Reset các ô nhập để lần sau Henry mở lên nó trắng sạch
@@ -20545,62 +20586,82 @@ async function createRedPacket() {
         document.getElementById('rp-message').value = "";
 
         alert("🌸 Đã phát lì xì thành công!");
-    } catch (e) { console.error(e); }
+    } catch (e) { 
+        console.error("Lỗi khi tạo lì xì:", e); 
+        alert("Có lỗi xảy ra, bạn kiểm tra lại kết nối nhé!");
+    }
 }
-
 // --- NHẬN LÌ XÌ ---
 async function claimRedPacket(packetId) {
     const packetRef = db.ref(`global_chat/red_packets/${packetId}`);
     
-    // Sử dụng transaction để tránh 2 người cùng nhận 1 phần tiền
-    packetRef.transaction((packet) => {
-        if (!packet) return;
-        if (packet.remainingSlots <= 0) return; // Hết slot
-        if (packet.claimedBy && packet.claimedBy[currentUser]) return; // Đã nhận rồi
+    try {
+        // --- BƯỚC BỔ SUNG: KIỂM TRA NGƯỜI GỬI ---
+        const snapshotCheck = await packetRef.once('value');
+        const packetInfo = snapshotCheck.val();
 
-        // Lấy phần tiền tiếp theo trong mảng amounts
-        const claimIndex = packet.totalSlots - packet.remainingSlots;
-        const amountToGive = packet.amounts[claimIndex];
+        if (!packetInfo) return;
 
-        // Cập nhật packet
-        packet.remainingSlots -= 1;
-        if (!packet.claimedBy) packet.claimedBy = {};
-        packet.claimedBy[currentUser] = amountToGive;
-
-        return packet;
-    }, async (error, committed, snapshot) => {
-        if (committed) {
-            const finalData = snapshot.val();
-            const myAmount = finalData.claimedBy[currentUser];
-            
-            // 1. Cộng tiền vào Firebase
-            await db.ref(`users/${currentUser}/balance`).transaction(val => (val || 0) + myAmount);
-            
-            // 2. Cập nhật biến local userData và lưu lại
-            if (typeof userData !== 'undefined') {
-                userData.balance = (userData.balance || 0) + myAmount;
-                if (typeof saveData === 'function') saveData();
-            }
-
-            // 3. GHI LỊCH SỬ VÀO VÍ TỔNG (Để hiện trong renderHistoryV2)
-            // Henry kiểm tra tên hàm ghi log của mình nhé, thường là recordTransaction
-            if (typeof recordTransaction === 'function') {
-                recordTransaction("Nhận lì xì thế giới", myAmount, "plus");
-            }
-
-            // 4. Thông báo cho người dùng
-            alert(`🧧 Chúc mừng Henry! Bạn đã nhận được ${myAmount.toLocaleString()}đ lì xì!`);
-            if (typeof addNotification === 'function') {
-                addNotification("🧧 NHẬN LÌ XÌ", `Bạn vừa nhận được ${myAmount.toLocaleString()}đ lì xì may mắn từ ${finalData.senderName}!`);
-            }
-
-            // 5. CẬP NHẬT GIAO DIỆN NGAY LẬP TỨC
-            if (typeof updateUI === 'function') updateUI();
-
-        } else {
-            alert("Rất tiếc, lì xì đã hết hoặc Henry đã nhận rồi!");
+        // Nếu người đang nhấn là người đã gửi bao lì xì này
+        if (packetInfo.senderId === currentUser) {
+            alert("🌸 Bạn ơi, bạn không thể tự nhận lì xì do chính mình phát đâu nè!");
+            return;
         }
-    });
+
+        // --- TIẾP TỤC LOGIC NHẬN LÌ XÌ ---
+        packetRef.transaction((packet) => {
+            if (!packet) return;
+            if (packet.remainingSlots <= 0) return; // Hết slot
+            if (packet.claimedBy && packet.claimedBy[currentUser]) return; // Đã nhận rồi
+
+            // Lấy phần tiền tiếp theo trong mảng amounts
+            const claimIndex = packet.totalSlots - packet.remainingSlots;
+            const amountToGive = packet.amounts[claimIndex];
+
+            // Cập nhật packet
+            packet.remainingSlots -= 1;
+            if (!packet.claimedBy) packet.claimedBy = {};
+            packet.claimedBy[currentUser] = amountToGive;
+
+            return packet;
+        }, async (error, committed, snapshot) => {
+            if (committed) {
+                const finalData = snapshot.val();
+                const myAmount = finalData.claimedBy[currentUser];
+                
+                // 1. Cộng tiền vào Firebase
+                await db.ref(`users/${currentUser}/balance`).transaction(val => (val || 0) + myAmount);
+                
+                // 2. Cập nhật biến local userData và lưu lại
+                if (typeof userData !== 'undefined') {
+                    userData.balance = (userData.balance || 0) + myAmount;
+                    if (typeof saveData === 'function') saveData();
+                }
+
+                // 3. GHI LỊCH SỬ VÀO VÍ TỔNG
+                if (typeof recordTransaction === 'function') {
+                    recordTransaction("Nhận lì xì thế giới", myAmount, "plus");
+                }
+
+                // 4. Thông báo cho người dùng
+                alert(`🧧 Chúc mừng bạn! Bạn đã nhận được ${myAmount.toLocaleString()}đ lì xì!`);
+                if (typeof addNotification === 'function') {
+                    addNotification("🧧 NHẬN LÌ XÌ", `Bạn vừa nhận được ${myAmount.toLocaleString()}đ lì xì may mắn từ ${finalData.senderName}!`);
+                }
+
+                // 5. CẬP NHẬT GIAO DIỆN NGAY LẬP TỨC
+                if (typeof updateUI === 'function') updateUI();
+
+            } else {
+                // Chỉ hiện alert nếu thực sự lỗi hoặc hết slot (tránh hiện alert thừa khi đã chặn sender ở trên)
+                if (!error && snapshot.val() && snapshot.val().remainingSlots <= 0) {
+                     alert("Rất tiếc, lì xì đã hết hoặc bạn đã nhận rồi!");
+                }
+            }
+        });
+    } catch (e) {
+        console.error("Lỗi khi nhận lì xì:", e);
+    }
 }
 </script>
 </body>
