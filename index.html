@@ -9930,31 +9930,50 @@ function closeFinanceModal(id) {
 
 function renderHistoryV2() {
     const container = document.getElementById('history-v2-body');
-    const history = userData.history || [];
+    if (!container || !currentUser) return;
 
-    if (history.length === 0) {
-        container.innerHTML = `<div style="text-align:center; padding:30px; color:#ccc;">
-            <i class="fas fa-receipt" style="font-size: 3em; margin-bottom:10px; opacity:0.3;"></i>
-            <p>Chưa có giao dịch nào được thực hiện.</p>
-        </div>`;
-        return;
-    }
+    // --- LẤY DỮ LIỆU TỪ FIREBASE ĐỂ UPDATE REAL-TIME ---
+    db.ref(`users/${currentUser}/history`).limitToLast(20).on('value', (snapshot) => {
+        const data = snapshot.val();
+        
+        if (!data) {
+            container.innerHTML = `<div style="text-align:center; padding:30px; color:#ccc;">
+                <i class="fas fa-receipt" style="font-size: 3em; margin-bottom:10px; opacity:0.3;"></i>
+                <p>Chưa có giao dịch nào được thực hiện.</p>
+            </div>`;
+            return;
+        }
 
-    // Hiển thị lịch sử (đảo ngược để cái mới nhất lên đầu)
-    container.innerHTML = history.slice().reverse().map(item => {
-        const isPlus = item.amount.includes('+');
-        return `
-            <div class="history-item">
-                <div class="history-left">
-                    <span class="history-type">${item.type}</span>
-                    <span class="history-date"><i class="far fa-clock"></i> ${item.date}</span>
+        // Chuyển object Firebase thành mảng và đảo ngược để cái mới nhất lên đầu
+        const historyArray = Object.values(data).reverse();
+
+        container.innerHTML = historyArray.map(item => {
+            // Kiểm tra loại giao dịch để gán class màu sắc
+            // Nếu item.type là "plus" thì hiện màu xanh, ngược lại hiện màu đỏ
+            const isPlus = item.type === 'plus';
+            const amountFormatted = isPlus ? `+${item.amount.toLocaleString()}` : `-${item.amount.toLocaleString()}`;
+            
+            // Định dạng thời gian
+            const timeStr = item.time ? new Date(item.time).toLocaleString('vi-VN', {
+                hour: '2-digit', 
+                minute: '2-digit', 
+                day: '2-digit', 
+                month: '2-digit'
+            }) : "Vừa xong";
+
+            return `
+                <div class="history-item">
+                    <div class="history-left">
+                        <span class="history-type">${item.action || "Giao dịch"}</span>
+                        <span class="history-date"><i class="far fa-clock"></i> ${timeStr}</span>
+                    </div>
+                    <div class="history-amount ${isPlus ? 'amount-plus' : 'amount-minus'}">
+                        ${amountFormatted}
+                    </div>
                 </div>
-                <div class="history-amount ${isPlus ? 'amount-plus' : 'amount-minus'}">
-                    ${item.amount}
-                </div>
-            </div>
-        `;
-    }).join('');
+            `;
+        }).join('');
+    });
 }
     
 function buyCheckinAccess() {
@@ -19145,12 +19164,11 @@ function sendGlobalMessage() {
 }
 
 // --- 3. HIỂN THỊ TIN NHẮN (Style giống thế giới Liên Quân) ---
-function renderGlobalMessage(id, msg) {
+async function renderGlobalMessage(id, msg) {
     const area = document.getElementById('global-messages-area');
     if (!area) return;
 
     const isMe = msg.sender === userData.profile.uid; 
-    
     const vipColors = ["#888", "#28a745", "#007bff", "#6a0dad", "#ff8c00", "#ff1493"];
     const myVipColor = vipColors[msg.vip] || "#888";
 
@@ -19164,47 +19182,98 @@ function renderGlobalMessage(id, msg) {
     let messageBodyHtml = "";
 
     if (msg.redPacketId) {
-        // Lấy lời chúc từ msg.text, nếu có icon 🧧 thì xóa đi để hiển thị cho đẹp trên bao lì xì
+        // Lấy lời chúc từ msg.text, nếu có icon 🧧 thì xóa đi
         const displayMsg = msg.text ? msg.text.replace('🧧 ', '') : "Chúc mừng năm mới!";
+        
+        // Lấy dữ liệu 1 lần trước khi render
+        const packetSnap = await db.ref(`global_chat/red_packets/${msg.redPacketId}`).once('value');
+        const pData = packetSnap.val();
+        
+        const hasClaimed = pData && pData.claimedBy && pData.claimedBy[currentUser];
+        const isFull = pData && pData.remainingSlots <= 0;
+        
+        // Trạng thái hiển thị
+        const statusText = isFull ? "Hết slot" : (hasClaimed ? "Đã nhận" : "Mở ngay");
+        const isInactive = isFull || hasClaimed;
+        
+        // --- THIẾT KẾ BAO LÌ XÌ THỰC TẾ ---
+        // Màu sắc hồng đậm hơn để giống bao lì xì truyền thống
+        const redPacketColor = isInactive ? "#e57373" : "#ff1493"; 
 
         messageBodyHtml = `
-            <div id="rp-${msg.redPacketId}" onclick="claimRedPacket('${msg.redPacketId}')" 
-                 style="background: linear-gradient(135deg, #ff477e, #ff1493); padding: 12px 16px; border-radius: 15px; cursor: pointer; min-width: 180px; box-shadow: 0 4px 15px rgba(255, 20, 147, 0.2); border: 1px solid rgba(255,255,255,0.2);">
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <div style="font-size: 1.8rem; color: #ffeb3b; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));">
-                        <i class="fas fa-gift"></i>
-                    </div>
-                    <div style="text-align: left;">
-                        <div style="color: white; font-weight: 800; font-size: 0.85em; letter-spacing: 0.5px; margin-bottom: 2px; line-height: 1.2;">
-                            ${displayMsg}
+            <div id="rp-${msg.redPacketId}" onclick="${isInactive ? '' : `claimRedPacket('${msg.redPacketId}')`}" 
+                 style="position: relative; width: 180px; height: 110px; cursor: pointer; border-radius: 12px; transition: all 0.3s; 
+                        box-shadow: 0 10px 20px rgba(0,0,0,0.15); overflow: hidden;
+                        ${isInactive ? 'filter: grayscale(0.5); opacity: 0.8;' : ''}">
+                
+                <div style="position: absolute; bottom: 0; left: 0; width: 100%; height: 95px; 
+                            background: linear-gradient(135deg, ${redPacketColor}, #d81b60);
+                            border-radius: 12px; border: 1px solid rgba(255,255,255,0.2);">
+                </div>
+
+                <div style="position: absolute; top: 0; left: 10px; width: 160px; height: 25px; 
+                            background: ${isInactive ? '#c62828' : '#c2185b'}; 
+                            border-radius: 5px 5px 50% 50%;
+                            box-shadow: 0 3px 5px rgba(0,0,0,0.1); z-index: 2;">
+                </div>
+
+                <div style="position: relative; z-index: 1; padding: 35px 15px 10px; text-align: left;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <div style="font-size: 2rem; color: #ffeb3b; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));">
+                            <i class="fas fa-gift"></i>
                         </div>
-                        <div style="color: rgba(255,255,255,0.9); font-size: 0.65em;">Nhấn để mở lì xì!</div>
+                        <div style="text-align: left; flex: 1;">
+                            <div style="color: white; font-weight: 800; font-size: 0.85em; letter-spacing: 0.5px; margin-bottom: 2px; line-height: 1.2;
+                                        display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis;">
+                                ${displayMsg}
+                            </div>
+                            <div style="color: rgba(255,255,255,0.8); font-size: 0.65em;">Sweetie Lì Xì</div>
+                        </div>
                     </div>
                 </div>
-                <div id="status-rp-${msg.redPacketId}" style="margin-top: 8px; font-size: 0.65em; color: #ffeb3b; text-align: right; font-weight: bold;">
-                    Đang chờ bạn mở...
+
+                <div id="status-rp-${msg.redPacketId}" style="position: absolute; bottom: 8px; right: 10px; background: rgba(0,0,0,0.1); 
+                             color: #ffeb3b; font-size: 0.65em; font-weight: bold; padding: 2px 8px; border-radius: 10px; z-index: 2;">
+                    ${statusText}
                 </div>
+
+                ${!isInactive ? `
+                <div style="position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); width: 20px; height: 20px; 
+                            background: #ffeb3b; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+                            box-shadow: 0 3px 6px rgba(0,0,0,0.2); z-index: 2; color: #c2185b; font-size: 0.7rem; animation: pulse-rp 1.5s infinite;">
+                    <i class="fas fa-money-bill-alt"></i>
+                </div>
+                ` : ''}
             </div>
+
+            <style>
+                @keyframes pulse-rp { 0% { box-shadow: 0 0 0 0 rgba(255, 235, 59, 0.7); } 70% { box-shadow: 0 0 0 8px rgba(255, 235, 59, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 235, 59, 0); } }
+            </style>
         `;
 
+        // Lắng nghe trạng thái Real-time
         db.ref(`global_chat/red_packets/${msg.redPacketId}`).on('value', (snap) => {
             const data = snap.val();
             const el = document.getElementById(`rp-${msg.redPacketId}`);
             const statusEl = document.getElementById(`status-rp-${msg.redPacketId}`);
             if (!data || !el || !statusEl) return;
 
-            const hasClaimed = data.claimedBy && data.claimedBy[currentUser];
-            const isFull = data.remainingSlots <= 0;
+            const nowClaimed = data.claimedBy && data.claimedBy[currentUser];
+            const nowFull = data.remainingSlots <= 0;
 
-            if (isFull || hasClaimed) {
-                el.style.filter = "grayscale(0.6)"; 
+            if (nowFull || nowClaimed) {
+                el.style.filter = "grayscale(0.5)"; 
                 el.style.opacity = "0.8";
-                statusEl.innerText = isFull ? "Lì xì đã hết slot" : "Bạn đã nhận lì xì này";
-                if (isFull) el.onclick = null;
+                statusEl.innerText = nowFull ? "Hết slot" : "Đã nhận";
+                el.onclick = null;
+                // Xóa nút mở nếu có
+                const pulse = el.querySelector('div[style*="pulse-rp"]');
+                if (pulse) pulse.remove();
             }
         });
 
     } else {
+        // --- GIỮ NGUYÊN STYLE TIN NHẮN CŨ CỦA HENRY ---
         messageBodyHtml = `
             <div style="display: inline-block; padding: 10px 14px; border-radius: 18px; font-size: 0.85em; 
                         background: ${isMe ? 'linear-gradient(135deg, #ff69b4, #ff1493)' : 'white'}; 
@@ -19223,12 +19292,14 @@ function renderGlobalMessage(id, msg) {
             <div onclick="searchFriendByID('${msg.sender}')" style="cursor:pointer; flex-shrink: 0;">
                 ${avatarHtml}
             </div>
-            <div style="max-width: 75%; ${isMe ? 'text-align: right;' : 'text-align: left;'}">
+            <div style="max-width: 80%; ${isMe ? 'text-align: right;' : 'text-align: left;'}">
                 <div style="font-size: 0.65em; font-weight: 800; color: ${myVipColor}; margin-bottom: 2px; padding: 0 5px;">
                     ${msg.vip > 0 ? `<span style="background:${myVipColor}; color:white; padding:1px 4px; border-radius:4px; margin-right:4px; font-size: 0.8em;">VIP ${msg.vip}</span>` : ''}
                     ${msg.senderName}
                 </div>
-                ${messageBodyHtml}
+                <div style="display:inline-block; position:relative; ${msg.redPacketId ? 'border:none; padding:0; background:transparent;' : ''}">
+                    ${messageBodyHtml}
+                </div>
             </div>
         </div>
     `;
@@ -20502,13 +20573,30 @@ async function claimRedPacket(packetId) {
             const finalData = snapshot.val();
             const myAmount = finalData.claimedBy[currentUser];
             
-            // Cộng tiền vào ví tổng
+            // 1. Cộng tiền vào Firebase
             await db.ref(`users/${currentUser}/balance`).transaction(val => (val || 0) + myAmount);
-            userData.balance += myAmount;
-            saveData();
+            
+            // 2. Cập nhật biến local userData và lưu lại
+            if (typeof userData !== 'undefined') {
+                userData.balance = (userData.balance || 0) + myAmount;
+                if (typeof saveData === 'function') saveData();
+            }
 
+            // 3. GHI LỊCH SỬ VÀO VÍ TỔNG (Để hiện trong renderHistoryV2)
+            // Henry kiểm tra tên hàm ghi log của mình nhé, thường là recordTransaction
+            if (typeof recordTransaction === 'function') {
+                recordTransaction("Nhận lì xì thế giới", myAmount, "plus");
+            }
+
+            // 4. Thông báo cho người dùng
             alert(`🧧 Chúc mừng Henry! Bạn đã nhận được ${myAmount.toLocaleString()}đ lì xì!`);
-            addNotification("🧧 NHẬN LÌ XÌ", `Bạn vừa nhận được ${myAmount.toLocaleString()}đ lì xì may mắn!`);
+            if (typeof addNotification === 'function') {
+                addNotification("🧧 NHẬN LÌ XÌ", `Bạn vừa nhận được ${myAmount.toLocaleString()}đ lì xì may mắn từ ${finalData.senderName}!`);
+            }
+
+            // 5. CẬP NHẬT GIAO DIỆN NGAY LẬP TỨC
+            if (typeof updateUI === 'function') updateUI();
+
         } else {
             alert("Rất tiếc, lì xì đã hết hoặc Henry đã nhận rồi!");
         }
