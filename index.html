@@ -6321,6 +6321,81 @@ input[type="date"].sweetie-input-style {
     letter-spacing: 1px;
     text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
 }
+
+    /* Khung nền mờ của popup chuyển tiền */
+#transfer-popup-overlay {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(255, 240, 245, 0.8);
+    backdrop-filter: blur(4px);
+    z-index: 1000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 25px; /* Khớp với dashboard của bạn */
+}
+
+/* Nội dung popup */
+.transfer-popup-content {
+    background: white;
+    width: 85%;
+    max-width: 320px;
+    padding: 25px;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(216, 27, 96, 0.2);
+    border: 2px solid #ffb6c1;
+}
+
+/* Ô hiển thị thông tin người nhận & số dư */
+.transfer-target-box, .transfer-balance-info {
+    background: #fff5f8;
+    padding: 12px;
+    border-radius: 12px;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+.transfer-balance-info {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    color: #666;
+    border: 1px dashed #ffb6c1;
+}
+
+.transfer-balance-info strong {
+    color: #ff1493;
+}
+
+/* Nút xác nhận kiểu ngân hàng */
+.btn-sweetie-confirm-bank {
+    width: 100%;
+    padding: 12px;
+    margin-top: 20px;
+    border: none;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #ff1493, #d81b60);
+    color: white;
+    font-weight: 800;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: 0.3s;
+    box-shadow: 0 4px 10px rgba(216, 27, 96, 0.3);
+}
+
+.btn-sweetie-confirm-bank:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.1);
+}
+
+/* Animation Up */
+.animate__fadeInUp {
+    animation: fadeInUp 0.4s ease;
+}
+@keyframes fadeInUp {
+    from { transform: translateY(30px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
 </style>
 </head>
 <body>
@@ -19711,24 +19786,78 @@ async function unlinkCard() {
     }
 }
 
-    async function openTransferPopup() {
-    toggleMediaMenu(); // Đóng menu dấu cộng lại
-    
-    // Kiểm tra mình có thẻ chưa
-    const myCardSnap = await db.ref(`users/${currentUser}/linkedCard`).once('value');
-    if (!myCardSnap.exists()) {
-        alert("🌸 Henry ơi, bạn cần tạo thẻ Sweetie Bank trước khi chuyển tiền nhé!");
+   async function openTransferPopup() {
+    toggleMediaMenu(); // Đóng menu dấu cộng
+
+    // 1. Kiểm tra thẻ và lấy số dư
+    const myCardIdSnap = await db.ref(`users/${currentUser}/linkedCard`).once('value');
+    if (!myCardIdSnap.exists()) {
+        alert("🌸 Henry ơi, bạn cần tạo thẻ Sweetie Bank trước nhé!");
         openSweetieCardModal();
         return;
     }
 
-    const amount = prompt("Nhập số tiền bạn muốn chuyển cho " + document.getElementById('chat-target-name').innerText + ":");
-    if (!amount || isNaN(amount) || amount <= 0) return;
+    const myCardId = myCardIdSnap.val();
+    const cardSnap = await db.ref(`sweetie_cards/${myCardId}`).once('value');
+    const cardData = cardSnap.val();
+    const currentBalance = cardData.balance || 0;
+    const targetName = document.getElementById('chat-target-name').innerText;
 
-    const pass = prompt("Nhập mật khẩu thẻ để xác nhận chuyển tiền:");
-    if (!pass) return;
+    // 2. Tạo giao diện Popup chuyển tiền
+    const dashboard = document.querySelector('.card-dashboard-container') || document.body;
+    const transferOverlay = document.createElement('div');
+    transferOverlay.id = 'transfer-popup-overlay';
+    transferOverlay.className = 'sweetie-transaction-overlay'; // Dùng lại class overlay của bạn
+    
+    transferOverlay.innerHTML = `
+        <div class="transfer-popup-content animate__animated animate__fadeInUp">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3 style="color: #d81b60; margin: 0; font-size: 1.1rem;">💸 CHUYỂN KHOẢN</h3>
+                <i class="fas fa-times" onclick="this.parentElement.parentElement.parentElement.remove()" style="cursor:pointer; color: #ffb6c1; font-size: 1.2rem;"></i>
+            </div>
 
-    processTransfer(parseInt(amount), pass, myCardSnap.val());
+            <div class="transfer-target-box">
+                <span style="font-size: 0.8rem; color: #888;">Người nhận:</span>
+                <div style="font-weight: 800; color: #ff1493; font-size: 1.1rem;">${targetName}</div>
+            </div>
+
+            <div class="transfer-balance-info">
+                <span>Số dư khả dụng:</span>
+                <strong>${currentBalance.toLocaleString()} VNĐ</strong>
+            </div>
+
+            <div class="input-group-sweetie">
+                <label>Số tiền chuyển:</label>
+                <input type="number" id="transfer-amount-in" class="sweetie-input-style" placeholder="0">
+            </div>
+
+            <div class="input-group-sweetie" style="margin-top: 15px;">
+                <label>Mật khẩu thẻ:</label>
+                <input type="password" id="transfer-pass-in" class="sweetie-input-style" placeholder="••••••">
+            </div>
+
+            <button id="btn-confirm-transfer" class="btn-sweetie-confirm-bank">
+                XÁC NHẬN CHUYỂN TIỀN
+            </button>
+        </div>
+    `;
+
+    dashboard.appendChild(transferOverlay);
+    transferOverlay.style.display = 'flex';
+
+    // 3. Xử lý sự kiện nút xác nhận
+    document.getElementById('btn-confirm-transfer').onclick = async () => {
+        const amount = parseInt(document.getElementById('transfer-amount-in').value);
+        const pass = document.getElementById('transfer-pass-in').value;
+
+        if (!amount || amount <= 0) return alert("Vui lòng nhập số tiền hợp lệ!");
+        if (amount > currentBalance) return alert("Số dư không đủ rồi Henry ơi!");
+        if (!pass) return alert("Vui lòng nhập mật khẩu xác nhận!");
+
+        // Gọi hàm xử lý giao dịch đã viết ở bước trước
+        await processTransfer(amount, pass, myCardId);
+        transferOverlay.remove(); // Đóng popup sau khi xong
+    };
 }
 
 async function processTransfer(amount, pass, myCardId) {
