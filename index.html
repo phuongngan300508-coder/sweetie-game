@@ -6519,6 +6519,56 @@ input[type="date"].sweetie-input-style {
 .btn-modern-primary { color: white; flex: 2; }
 .btn-modern-secondary { background: #f0f0f0; color: #666; flex: 1; }
 .btn-modern-primary:active { transform: scale(0.96); }
+
+    .btn-transfer-external {
+    width: 100%;
+    background: linear-gradient(to right, #ff1493, #ff69b4);
+    color: white;
+    border: none;
+    padding: 14px;
+    border-radius: 15px;
+    font-weight: 800;
+    margin-bottom: 10px;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(255, 20, 147, 0.2);
+}
+
+.bank-input-box {
+    text-align: left;
+    margin-bottom: 15px;
+}
+
+.bank-input-box label {
+    font-size: 0.65rem;
+    color: #ff69b4;
+    font-weight: 800;
+    display: block;
+    margin-bottom: 5px;
+}
+
+.bank-input-box input {
+    width: 100%;
+    padding: 12px 15px;
+    border: 1px solid #eee;
+    border-radius: 12px;
+    font-weight: 700;
+    outline: none;
+    transition: 0.3s;
+}
+
+.bank-input-box input:focus { border-color: #ff1493; background: #fff0f5; }
+
+.bill-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    font-size: 0.8rem;
+    border-bottom: 1px dashed #eee;
+    padding-bottom: 8px;
+}
+
+.bill-row span { color: #888; }
+.bill-row strong { color: #333; }
 </style>
 </head>
 <body>
@@ -19689,9 +19739,12 @@ function saveStep(step) {
     }
 }
 
-   async function confirmCreateCard() {
+  async function confirmCreateCard() {
     // 1. Kiểm tra đăng nhập
     if (!currentUser) return alert("Lỗi: Không tìm thấy người dùng!");
+
+    // --- HÀM TẠO STK 12 SỐ NGẪU NHIÊN CHO THẺ MỚI ---
+    const generateSTK = () => Math.floor(100000000000 + Math.random() * 900000000000).toString();
 
     const finalData = {
         id: cardDraft.id,
@@ -19700,6 +19753,8 @@ function saveStep(step) {
         gender: cardDraft.gender,
         password: cardDraft.password,
         balance: 0,
+        // BỔ SUNG: Cấp số tài khoản ngay khi tạo thẻ
+        accountNo: generateSTK(), 
         createdAt: firebase.database.ServerValue.TIMESTAMP // Dùng thời gian server sẽ chuẩn hơn Date.now()
     };
 
@@ -20059,48 +20114,60 @@ function renderCardDashboard(cardId) {
     cardRef.off(); 
 
     // Bắt đầu lắng nghe dữ liệu một cách sạch sẽ
-    cardRef.on('value', (snapshot) => {
+    cardRef.on('value', async (snapshot) => {
         const card = snapshot.val();
         
         // Nếu thẻ bị xóa hoặc không tồn tại, thoát ra để tránh lỗi render
         if (!card) return;
 
+        // --- HÀM TẠO STK 12 SỐ NGẪU NHIÊN ---
+        function generateSTK() {
+            return Math.floor(100000000000 + Math.random() * 900000000000).toString();
+        }
+
+        // --- LOGIC CẤP STK CHO THẺ CŨ (Nếu chưa có accountNo thì tự tạo) ---
+        if (!card.accountNo) {
+            const newSTK = generateSTK();
+            await cardRef.update({ accountNo: newSTK });
+            return; // Firebase sẽ tự trigger lại hàm on('value') với dữ liệu mới
+        }
+
         flow.innerHTML = `
             <div class="card-dashboard-container" style="animation: fadeIn 0.5s">
                 <h3 style="color: #d81b60; margin-bottom: 15px; font-weight: 800;">Thẻ của bạn</h3>
                 
-               <div class="sweetie-card-design bank-style">
-    <div class="card-watermark">SWEETIE CARD SWEETIE CARD SWEETIE CARD</div>
-    
-    <div class="card-header-row">
-        <div class="bank-logo">
-            <i class="fas fa-heart"></i> SWEETIE BANK
-        </div>
-        <div class="card-contactless">
-            <i class="fas fa-wifi"></i>
-        </div>
-    </div>
+                <div class="sweetie-card-design bank-style">
+                    <div class="card-watermark">SWEETIE CARD SWEETIE CARD SWEETIE CARD</div>
+                    
+                    <div class="card-header-row">
+                        <div class="bank-logo">
+                            <i class="fas fa-heart"></i> SWEETIE BANK
+                        </div>
+                        <div class="card-contactless">
+                            <i class="fas fa-wifi"></i>
+                        </div>
+                    </div>
 
-    <div class="emv-chip">
-        <div class="chip-line"></div>
-        <div class="chip-line"></div>
-        <div class="chip-line"></div>
-        <div class="chip-line"></div>
-    </div>
+                    <div class="emv-chip">
+                        <div class="chip-line"></div>
+                        <div class="chip-line"></div>
+                        <div class="chip-line"></div>
+                        <div class="chip-line"></div>
+                    </div>
 
-    <div class="card-id-view">${cardId.match(/.{1,4}/g).join(' ')}</div>
+                    <div class="card-id-view">${card.accountNo.match(/.{1,4}/g).join(' ')}</div>
 
-    <div class="card-footer-info">
-        <div class="footer-left">
-            <span class="label">CARD HOLDER</span>
-            <div class="card-holder-name">${(card.ownerName || card.owner).toUpperCase()}</div>
-        </div>
-        <div class="footer-right">
-            <span class="label">VALID THRU</span>
-            <div class="expiry">12/29</div>
-        </div>
-    </div>
-</div>
+                    <div class="card-footer-info">
+                        <div class="footer-left">
+                            <span class="label">CARD HOLDER</span>
+                            <div class="card-holder-name">${(card.ownerName || card.owner).toUpperCase()}</div>
+                        </div>
+                        <div class="footer-right">
+                            <span class="label">VALID THRU</span>
+                            <div class="expiry">12/29</div>
+                        </div>
+                    </div>
+                </div>
 
                 <div class="card-balance-box" style="margin: 20px 0; padding: 15px; background: #fff; border-radius: 20px; border: 2px dashed #ffb6c1;">
                     <span style="color: #888; font-size: 0.85rem;">Số dư khả dụng</span>
@@ -20116,6 +20183,10 @@ function renderCardDashboard(cardId) {
                             <i class="fas fa-minus-circle"></i> Rút tiền
                         </button>
                     </div>
+                    
+                    <button onclick="openBankingTransfer('${cardId}')" class="btn-card-action btn-transfer-main" style="width: 100%; margin-bottom: 10px; background: #ff1493; color: #fff; border: none; border-radius: 15px; padding: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 15px rgba(255,20,147,0.2);">
+                        <i class="fas fa-paper-plane"></i> Chuyển khoản ngay
+                    </button>
                     
                     <button onclick="showCardHistory('${cardId}')" class="btn-history-soft">
                         <i class="fas fa-history"></i> Lịch sử giao dịch
@@ -20855,6 +20926,72 @@ function setRpMode(mode) {
         amounts.push(remainingAmount + min);
     }
     return amounts;
+}
+
+    async function executeExternalTransfer(myCardId, myCardData) {
+    const targetId = document.getElementById('target-owner-display').dataset.targetId;
+    const amount = parseInt(document.getElementById('transfer-amount').value);
+    const note = document.getElementById('transfer-note').value.trim() || `${myCardData.ownerName} đã chuyển tiền`;
+    const pin = document.getElementById('transfer-pin').value;
+    const targetOwner = document.getElementById('target-owner-display').innerText;
+
+    if (!targetId) return alert("Vui lòng nhập đúng số tài khoản người nhận!");
+    if (isNaN(amount) || amount <= 0) return alert("Số tiền không hợp lệ!");
+    if (amount > myCardData.balance) return alert("Số dư thẻ không đủ!");
+    if (pin !== myCardData.password) return alert("Mã PIN không chính xác!");
+
+    try {
+        // Thực hiện transaction
+        await db.ref(`sweetie_cards/${myCardId}/balance`).transaction(c => c - amount);
+        await db.ref(`sweetie_cards/${targetId}/balance`).transaction(c => (c || 0) + amount);
+
+        // Ghi lịch sử cho cả 2
+        recordCardHistory(myCardId, 'transfer_out', amount, { toUser: targetOwner, note: note });
+        recordCardHistory(targetId, 'transfer_in', amount, { fromUser: myCardData.ownerName, note: note });
+
+        // Hiện Bill
+        showBankingBill({
+            amount: amount,
+            sender: myCardData.ownerName,
+            receiver: targetOwner,
+            note: note,
+            stk: document.getElementById('target-stk').value,
+            transId: "SW" + Date.now()
+        });
+
+        // Bắn thông báo cho người nhận (nếu họ đang online)
+        const targetSnap = await db.ref(`sweetie_cards/${targetId}/ownerName`).once('value');
+        // (Bạn có thể thêm logic lấy UID người dùng từ Card ID để bắn addNotification tại đây)
+
+    } catch (e) {
+        alert("Giao dịch thất bại!");
+    }
+}
+
+function showBankingBill(data) {
+    const ui = document.getElementById('transaction-ui');
+    ui.innerHTML = `
+        <div class="banking-bill" id="bill-to-save" style="width: 100%; background: #fff; border-radius: 30px; padding: 40px 20px; text-align: center; position: relative; animation: zoomIn 0.4s ease;">
+            <div style="color: #2e7d32; font-size: 3rem; margin-bottom: 15px;"><i class="fas fa-check-circle"></i></div>
+            <h2 style="margin: 0; color: #333; font-weight: 800;">Chuyển tiền thành công</h2>
+            <h1 style="color: #ff1493; margin: 10px 0 30px; font-size: 2.2rem;">${data.amount.toLocaleString()}đ</h1>
+
+            <div style="text-align: left; background: #f9f9f9; border-radius: 20px; padding: 20px;">
+                <div class="bill-row"><span>Người thụ hưởng</span> <strong>${data.receiver}</strong></div>
+                <div class="bill-row"><span>Số tài khoản</span> <strong>${data.stk}</strong></div>
+                <div class="bill-row"><span>Nội dung</span> <strong>${data.note}</strong></div>
+                <div class="bill-row"><span>Mã giao dịch</span> <strong>${data.transId}</strong></div>
+                <div class="bill-row"><span>Thời gian</span> <strong>${new Date().toLocaleString()}</strong></div>
+            </div>
+
+            <div style="margin-top: 30px; display: flex; flex-direction: column; gap: 10px;">
+                <button onclick="alert('Đã lưu bill vào thư viện!')" class="btn-save-bill">LƯU ẢNH BILL</button>
+                <button onclick="document.getElementById('transaction-ui').style.display='none'" class="btn-back-home">VỀ TRANG CHỦ</button>
+            </div>
+            
+            <div style="margin-top: 20px; font-size: 0.65rem; color: #ccc;">Sweetie Bank - Trao gửi yêu thương 🌸</div>
+        </div>
+    `;
 }
 </script>
 </body>
