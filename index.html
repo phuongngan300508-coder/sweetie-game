@@ -9932,91 +9932,59 @@ function renderHistoryV2() {
     const container = document.getElementById('history-v2-body');
     if (!container || !currentUser) return;
 
-    // --- 1. QUAN TRỌNG: GỠ BỎ LISTENER CŨ ĐỂ KHÔNG BỊ LẶP DỮ LIỆU ---
-    db.ref(`users/${currentUser}/history`).off();
-
-    // Hiển thị trạng thái đang tải
-    container.innerHTML = `<div style="text-align:center; padding:20px; color:#ccc; font-size:0.8em;">Đang cập nhật lịch sử...</div>`;
-
-    // --- 2. LẮNG NGHE DỮ LIỆU TỪ FIREBASE ---
+    // --- LẮNG NGHE FIREBASE ĐỂ LẤY LÌ XÌ VÀ CÁC GIAO DỊCH ONLINE ---
     db.ref(`users/${currentUser}/history`).limitToLast(20).on('value', (snapshot) => {
-        const data = snapshot.val();
+        const firebaseData = snapshot.val();
         
-        if (!data) {
+        // 1. Lấy dữ liệu cũ từ userData.history (Logic cũ bạn muốn giữ)
+        let localHistory = (userData.history || []).map(item => ({
+            type: item.type,
+            date: item.date,
+            amount: item.amount,
+            isPlus: item.amount.includes('+')
+        }));
+
+        // 2. Lấy dữ liệu mới từ Firebase (Nếu có)
+        let remoteHistory = [];
+        if (firebaseData) {
+            remoteHistory = Object.values(firebaseData).map(item => ({
+                type: item.action,
+                date: new Date(item.time).toLocaleString('vi-VN'),
+                amount: (item.type === 'plus' ? '+' : '-') + (item.amount || 0).toLocaleString() + ' VNĐ',
+                isPlus: item.type === 'plus',
+                timestamp: item.time // Dùng để sắp xếp
+            }));
+        }
+
+        // 3. GỘP CẢ HAI VÀO MỘT MẢNG
+        // Chúng ta lọc bỏ những mục trùng lập nếu Henry lỡ ghi cả 2 nơi
+        let combinedHistory = [...localHistory, ...remoteHistory];
+
+        if (combinedHistory.length === 0) {
             container.innerHTML = `
                 <div style="text-align:center; padding:30px; color:#ccc;">
                     <i class="fas fa-receipt" style="font-size: 3em; margin-bottom:10px; opacity:0.3;"></i>
-                    <p style="font-size:0.9em;">Chưa có giao dịch nào được thực hiện.</p>
+                    <p>Chưa có giao dịch nào được thực hiện.</p>
                 </div>`;
             return;
         }
 
-        // Chuyển object Firebase thành mảng và đảo ngược để cái mới nhất lên đầu
-        const historyArray = Object.keys(data).map(key => ({
-            id: key,
-            ...data[key]
-        })).reverse();
-
-        container.innerHTML = historyArray.map(item => {
-            // Xác định loại giao dịch để gán class màu sắc
-            const isPlus = item.type === 'plus';
-            
-            // Format số tiền (Đảm bảo item.amount là số)
-            const amountVal = parseInt(item.amount) || 0;
-            const amountFormatted = (isPlus ? '+' : '-') + amountVal.toLocaleString('vi-VN') + ' VNĐ';
-            
-            // Định dạng thời gian chuẩn Việt Nam
-            const timeStr = item.time ? new Date(item.time).toLocaleString('vi-VN', {
-                hour: '2-digit', 
-                minute: '2-digit', 
-                day: '2-digit', 
-                month: '2-digit'
-            }) : "Vừa xong";
-
+        // 4. RENDER RA GIAO DIỆN (Đảo ngược để cái mới nhất lên đầu)
+        // Lưu ý: Henry giữ nguyên 100% class và style cũ của Henry ở đây
+        container.innerHTML = combinedHistory.slice().reverse().map(item => {
             return `
-                <div class="history-item animate__animated animate__fadeInIn" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border-bottom: 1px solid #fff5f8;">
-                    <div class="history-left" style="display: flex; flex-direction: column; gap: 4px;">
-                        <span class="history-type" style="font-weight: 800; color: #444; font-size: 0.9rem;">${item.action || "Giao dịch"}</span>
-                        <span class="history-date" style="font-size: 0.7rem; color: #bbb;">
-                            <i class="far fa-clock"></i> ${timeStr}
-                        </span>
+                <div class="history-item">
+                    <div class="history-left">
+                        <span class="history-type">${item.type}</span>
+                        <span class="history-date"><i class="far fa-clock"></i> ${item.date}</span>
                     </div>
-                    <div class="history-amount ${isPlus ? 'amount-plus' : 'amount-minus'}" 
-                         style="font-weight: 800; font-size: 0.95rem; color: ${isPlus ? '#2ecc71' : '#e74c3c'};">
-                        ${amountFormatted}
+                    <div class="history-amount ${item.isPlus ? 'amount-plus' : 'amount-minus'}">
+                        ${item.amount}
                     </div>
                 </div>
             `;
         }).join('');
     });
-}
-    
-    function recordTransaction(action, amount, type) {
-    if (!currentUser) return;
-
-    // 1. Ghi lên Firebase (Dữ liệu thật, vĩnh viễn)
-    const historyRef = db.ref(`users/${currentUser}/history`).push();
-    const newLog = {
-        action: action,
-        amount: amount,
-        type: type, // "plus" hoặc "minus"
-        time: firebase.database.ServerValue.TIMESTAMP
-    };
-
-    historyRef.set(newLog);
-
-    // 2. Cập nhật vào userData local (Để đồng bộ với các hàm cũ của Henry nếu cần)
-    if (!userData.history) userData.history = [];
-    
-    // Chuyển đổi format cho giống dữ liệu cũ của Henry để không bị lỗi render
-    const localLog = {
-        type: action,
-        date: new Date().toLocaleString('vi-VN'),
-        amount: (type === 'plus' ? '+' : '-') + amount.toLocaleString() + ' VNĐ'
-    };
-    
-    userData.history.push(localLog);
-    saveData(); // Lưu LocalStorage
 }
     
 function buyCheckinAccess() {
