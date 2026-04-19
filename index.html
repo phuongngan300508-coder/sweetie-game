@@ -20214,6 +20214,7 @@ function renderCardDashboard(cardId) {
             return; 
         }
 
+        // Lấy cấu hình ngân hàng (mặc định là sweetie nếu chưa có type)
         const bank = BANK_CONFIG[card.bankType || 'sweetie'];
         const originalID = card.id || cardId;
 
@@ -20223,7 +20224,7 @@ function renderCardDashboard(cardId) {
                 
                 <div class="sweetie-card-design bank-style" style="margin: 0 auto; background: ${bank.gradient}; border: none; box-shadow: 0 15px 30px ${bank.shadow}; position: relative; overflow: hidden;">
                     
-                    <div style="position: absolute; top: 0; left: -10%; width: 50%; height: 100%; background: linear-gradient(to right, transparent, rgba(255,255,255,0.15), rgba(255,255,255,0.3), rgba(255,255,255,0.15), transparent); transform: skewX(-25deg); pointer-events: none; animation: none;"></div>
+                    <div style="position: absolute; top: 0; left: -20%; width: 60%; height: 100%; background: linear-gradient(to right, transparent, rgba(255,255,255,0.2), rgba(255,255,255,0.4), rgba(255,255,255,0.2), transparent); transform: skewX(-20deg); pointer-events: none;"></div>
 
                     <div class="card-watermark" style="color: rgba(255,255,255,0.1);">${bank.name} ${bank.name}</div>
                     
@@ -20274,10 +20275,10 @@ function renderCardDashboard(cardId) {
 
                 <div class="card-actions-wrapper" style="width: 100%;">
                     <div class="main-actions" style="display: flex; gap: 10px; margin-bottom: 10px;">
-                        <button onclick="handleCardTransaction('deposit')" class="btn-card-action" style="flex: 1; background: ${bank.color}; color: #fff; border: none; border-radius: 15px; padding: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; box-shadow: 0 4px 10px ${bank.shadow}; transition: 0.3s;">
+                        <button onclick="handleCardTransaction('deposit')" class="btn-card-action" style="flex: 1; background: ${bank.color}; color: #fff; border: none; border-radius: 15px; padding: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px;">
                             <i class="fas fa-plus-circle"></i> Nạp tiền
                         </button>
-                        <button onclick="handleCardTransaction('withdraw')" class="btn-card-action" style="flex: 1; background: ${bank.color}; color: #fff; border: none; border-radius: 15px; padding: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; box-shadow: 0 4px 10px ${bank.shadow}; transition: 0.3s;">
+                        <button onclick="handleCardTransaction('withdraw')" class="btn-card-action" style="flex: 1; background: ${bank.color}; color: #fff; border: none; border-radius: 15px; padding: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px;">
                             <i class="fas fa-minus-circle"></i> Rút tiền
                         </button>
                     </div>
