@@ -21777,6 +21777,32 @@ async function selectSavedAccount(stk, name) {
         if (btnDone) btnDone.style.opacity = '1';
     }
 }
+
+    function listenSystemNotifications() {
+    if (!currentUser) return;
+
+    // Lắng nghe hộp thư chờ của chính mình
+    const myNotiQueue = db.ref(`notifications_queue/${currentUser}`);
+
+    myNotiQueue.on('child_added', (snapshot) => {
+        const noti = snapshot.val();
+        if (!noti) return;
+
+        // 1. Gọi hàm hiển thị thông báo vào chuông của Henry
+        if (typeof addNotification === 'function') {
+            addNotification(noti.title, noti.text);
+        }
+
+        // 2. Tùy chọn: Henry có thể hiện một cái Alert hồng hồng cho "xịn"
+        // alert(`🌸 ${noti.title}\n${noti.text}`);
+
+        // 3. Sau khi đã hiển thị xong, xóa thông báo này khỏi hàng chờ để không bị lặp lại
+        myNotiQueue.child(snapshot.key).remove();
+    });
+}
+
+// Gọi hàm này ngay sau khi currentUser đã được xác định
+// Ví dụ: Trong hàm checkLogin() của Henry
 </script>
 </body>
 </html>
