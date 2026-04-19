@@ -21170,11 +21170,12 @@ function setRpMode(mode) {
             recordCardHistory(targetId, 'transfer_in', amount, { fromUser: myCardData.ownerName, note: note })
         ]);
 
-        // --- BỔ SUNG: LOGIC LƯU DANH BẠ THỤ HƯỞNG ---
+        // --- SỬA TẠI ĐÂY: LOGIC LƯU DANH BẠ THỤ HƯỞNG (LỌC DẤU TÍCH) ---
         if (elSaveCheck && elSaveCheck.checked) {
-            // Chỉ lưu khi giao dịch đã thành công hoàn toàn
             if (typeof saveBeneficiary === 'function') {
-                saveBeneficiary(targetStkNum, targetOwner);
+                // Loại bỏ dấu ✓ và khoảng trắng thừa trước khi lưu vào danh bạ
+                const cleanOwnerName = targetOwner.replace('✓', '').trim();
+                saveBeneficiary(targetStkNum, cleanOwnerName);
             }
         }
 
@@ -21203,6 +21204,15 @@ async function saveBeneficiary(stk, name) {
     const cardId = cardIdSnap.val();
     if (!cardId) return;
 
+    // --- BỔ SUNG: LỌC BỎ DẤU TÍCH TRƯỚC KHI LƯU ---
+    // Nếu tên bắt đầu bằng "✓ " (dấu tích và khoảng trắng) thì cắt bỏ để lấy tên sạch
+    let cleanName = name;
+    if (name.startsWith("✓ ")) {
+        cleanName = name.substring(2); 
+    } else if (name.includes("✓")) {
+        cleanName = name.replace("✓", "").trim();
+    }
+
     const cardSavedRef = db.ref(`sweetie_cards/${cardId}/savedAccounts`);
     const snap = await cardSavedRef.once('value');
     let list = snap.val() || [];
@@ -21210,10 +21220,12 @@ async function saveBeneficiary(stk, name) {
     // 2. Kiểm tra trùng STK
     const isExist = list.find(acc => acc.stk === stk);
     if (!isExist) {
-        list.push({ stk: stk, name: name });
+        // Lưu cleanName thay vì name gốc có dấu tích
+        list.push({ stk: stk, name: cleanName });
+        
         // 3. Cập nhật lên Firebase của thẻ
         await cardSavedRef.set(list);
-        console.log("🌸 Sweetie Bank: Đã lưu STK mới vào danh bạ riêng của thẻ " + cardId);
+        console.log("🌸 Sweetie Bank: Đã lưu tên sạch vào danh bạ: " + cleanName);
     }
 }
 
