@@ -20214,7 +20214,6 @@ function renderCardDashboard(cardId) {
             return; 
         }
 
-        // Lấy cấu hình ngân hàng (mặc định là sweetie nếu chưa có type)
         const bank = BANK_CONFIG[card.bankType || 'sweetie'];
         const originalID = card.id || cardId;
 
@@ -20222,7 +20221,10 @@ function renderCardDashboard(cardId) {
             <div class="card-dashboard-container" style="animation: fadeIn 0.5s; display: flex; flex-direction: column; align-items: center;">
                 <h3 style="color: ${bank.color}; margin-bottom: 15px; font-weight: 800; width: 100%; text-align: left;">Thẻ của bạn</h3>
                 
-                <div class="sweetie-card-design bank-style" style="margin: 0 auto; background: ${bank.gradient}; border: none; box-shadow: 0 15px 30px ${bank.shadow};">
+                <div class="sweetie-card-design bank-style" style="margin: 0 auto; background: ${bank.gradient}; border: none; box-shadow: 0 15px 30px ${bank.shadow}; position: relative; overflow: hidden;">
+                    
+                    <div style="position: absolute; top: 0; left: -10%; width: 50%; height: 100%; background: linear-gradient(to right, transparent, rgba(255,255,255,0.15), rgba(255,255,255,0.3), rgba(255,255,255,0.15), transparent); transform: skewX(-25deg); pointer-events: none; animation: none;"></div>
+
                     <div class="card-watermark" style="color: rgba(255,255,255,0.1);">${bank.name} ${bank.name}</div>
                     
                     <div class="card-header-row">
@@ -20241,11 +20243,11 @@ function renderCardDashboard(cardId) {
                         <div class="chip-line"></div>
                     </div>
 
-                    <div class="card-id-view" style="color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    <div class="card-id-view" style="color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,0.1); position: relative; z-index: 2;">
                         ${card.accountNo.match(/.{1,4}/g).join(' ')}
                     </div>
 
-                    <div class="card-footer-info" style="color: #fff;">
+                    <div class="card-footer-info" style="color: #fff; position: relative; z-index: 2;">
                         <div class="footer-left">
                             <span class="label" style="opacity: 0.8;">CARD HOLDER</span>
                             <div class="card-holder-name">${(card.ownerName || card.owner).toUpperCase()}</div>
@@ -20272,10 +20274,10 @@ function renderCardDashboard(cardId) {
 
                 <div class="card-actions-wrapper" style="width: 100%;">
                     <div class="main-actions" style="display: flex; gap: 10px; margin-bottom: 10px;">
-                        <button onclick="handleCardTransaction('deposit')" class="btn-card-action btn-deposit" style="flex: 1; border-color: ${bank.color}30; color: ${bank.color};">
+                        <button onclick="handleCardTransaction('deposit')" class="btn-card-action" style="flex: 1; background: ${bank.color}; color: #fff; border: none; border-radius: 15px; padding: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; box-shadow: 0 4px 10px ${bank.shadow}; transition: 0.3s;">
                             <i class="fas fa-plus-circle"></i> Nạp tiền
                         </button>
-                        <button onclick="handleCardTransaction('withdraw')" class="btn-card-action btn-withdraw" style="flex: 1; border-color: ${bank.color}30; color: ${bank.color};">
+                        <button onclick="handleCardTransaction('withdraw')" class="btn-card-action" style="flex: 1; background: ${bank.color}; color: #fff; border: none; border-radius: 15px; padding: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; box-shadow: 0 4px 10px ${bank.shadow}; transition: 0.3s;">
                             <i class="fas fa-minus-circle"></i> Rút tiền
                         </button>
                     </div>
@@ -20284,7 +20286,7 @@ function renderCardDashboard(cardId) {
                         <i class="fas fa-paper-plane"></i> Chuyển khoản ngay
                     </button>
                     
-                    <button onclick="showCardHistory('${cardId}')" class="btn-history-soft" style="width: 100%; color: ${bank.color};">
+                    <button onclick="showCardHistory('${cardId}')" class="btn-history-soft" style="width: 100%; color: ${bank.color}; border: 1.5px solid ${bank.color}20; background: transparent; padding: 10px; border-radius: 15px; font-weight: bold; cursor: pointer;">
                         <i class="fas fa-history"></i> Lịch sử giao dịch
                     </button>
                 </div>
