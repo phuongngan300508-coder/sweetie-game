@@ -6608,7 +6608,7 @@ input[type="date"].sweetie-input-style {
     .hide-scrollbar::-webkit-scrollbar { display: none; }
             .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-    /* Style hỗ trợ chia cột trên PC */
+   /* Style hỗ trợ chia cột trên PC cho Henry */
                 .sweetie-dashboard-grid {
                     display: flex;
                     flex-direction: column;
@@ -20285,9 +20285,10 @@ function renderCardDashboard(cardId) {
                         <div class="original-id-security-box" style="margin-top: 15px; background: ${bank.color}05; padding: 10px 20px; border-radius: 12px; border: 1px dashed ${bank.color}50; display: flex; align-items: center; gap: 8px; width: 100%; box-sizing: border-box; justify-content: center;">
                             <i class="fas fa-shield-alt" style="color: ${bank.color}; font-size: 0.8rem;"></i>
                             <span style="font-size: 0.75rem; color: ${bank.color}; font-weight: 800; letter-spacing: 0.5px;">
-                                ID GỐC: <span style="font-family: monospace; font-size: 0.95rem; color: #333;">${originalID}</span>
+                                ID GỐC CỦA THẺ: <span style="font-family: monospace; font-size: 0.95rem; color: #333;">${originalID}</span>
                             </span>
                         </div>
+                        <p style="font-size: 0.6rem; color: #bbb; margin-top: 5px; text-align: center;">* Dùng mã này để khôi phục thẻ. Hãy giữ bí mật!</p>
                     </div>
 
                     <div class="dashboard-column-right" style="width: 100%;">
@@ -20299,22 +20300,23 @@ function renderCardDashboard(cardId) {
                         <div class="card-actions-wrapper" style="width: 100%; margin-top: 20px;">
                             <div class="main-actions" style="display: flex; gap: 12px; margin-bottom: 12px;">
                                 <button onclick="handleCardTransaction('deposit')" class="btn-card-action" 
-                                    style="flex: 1; background: ${bank.gradient}; color: #fff; border: none; border-radius: 16px; padding: 14px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 4px 10px ${bank.shadow};">
+                                    style="flex: 1; background: ${bank.gradient}; color: #fff; border: none; border-radius: 16px; padding: 14px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 4px 10px ${bank.shadow}; transition: all 0.2s active; outline: none;">
                                     <i class="fas fa-plus-circle"></i> Nạp tiền
                                 </button>
+
                                 <button onclick="handleCardTransaction('withdraw')" class="btn-card-action" 
-                                    style="flex: 1; background: ${bank.gradient}; color: #fff; border: none; border-radius: 16px; padding: 14px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 4px 10px ${bank.shadow};">
+                                    style="flex: 1; background: ${bank.gradient}; color: #fff; border: none; border-radius: 16px; padding: 14px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 4px 10px ${bank.shadow}; transition: all 0.2s; outline: none;">
                                     <i class="fas fa-minus-circle"></i> Rút tiền
                                 </button>
                             </div>
                             
                             <button onclick="openBankingTransfer('${cardId}')" class="btn-transfer-main" 
-                                style="width: 100%; margin-bottom: 12px; background: ${bank.gradient}; color: #fff; border: none; border-radius: 18px; padding: 16px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 6px 20px ${bank.shadow};">
+                                style="width: 100%; margin-bottom: 12px; background: ${bank.gradient}; color: #fff; border: none; border-radius: 18px; padding: 16px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 6px 20px ${bank.shadow}; transition: all 0.2s; outline: none;">
                                 <i class="fas fa-paper-plane"></i> Chuyển khoản ngay
                             </button>
                             
                             <button onclick="showCardHistory('${cardId}')" class="btn-history-soft" 
-                                style="width: 100%; color: ${bank.color}; border: 2px solid ${bank.color}30; background: #fff; padding: 12px; border-radius: 16px; font-weight: 800; cursor: pointer;">
+                                style="width: 100%; color: ${bank.color}; border: 2px solid ${bank.color}30; background: #fff; padding: 12px; border-radius: 16px; font-weight: 800; cursor: pointer; transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 8px;">
                                 <i class="fas fa-history"></i> Lịch sử giao dịch
                             </button>
                         </div>
