@@ -14042,7 +14042,11 @@ function initChatSystem() {
 
 // --- 1. SỬA HÀM MỞ CHAT (Bỏ dòng gán display flex trực tiếp để tránh xung đột) ---
 function openChatWith(friendName) {
-    // --- 1. HIỆN KHUNG CHAT NGAY LẬP TỨC (Tối ưu cảm giác mượt mà) ---
+    // --- BỔ SUNG: CẬP NHẬT TRẠNG THÁI ĐANG CHAT ---
+    // Gán ID người đang chat vào biến toàn cục để hệ thống không tăng unread_counts
+    window.currentChattingWith = friendName;
+
+    // --- 1. HIỆN KHUNG CHAT NGAY LẬP TỨC (Giữ nguyên) ---
     const chatBox = document.getElementById('messenger-box');
     if (chatBox && chatBox.style.display !== 'flex') {
         chatBox.style.display = 'flex';
@@ -14050,19 +14054,19 @@ function openChatWith(friendName) {
         chatBox.classList.add('animate__fadeInUp');
     }
 
-    // --- 2. TỰ ĐỘNG THOÁT CHẾ ĐỘ TÌM KIẾM KHI ĐỔI NGƯỜI CHAT ---
+    // --- 2. TỰ ĐỘNG THOÁT CHẾ ĐỘ TÌM KIẾM (Giữ nguyên) ---
     if (typeof exitSearchMode === 'function') {
         exitSearchMode();
     }
 
     currentChatFriend = friendName; 
 
-    // --- 3. LẤY DỮ LIỆU NGƯỜI DÙNG ---
+    // --- 3. LẤY DỮ LIỆU NGƯỜI DÙNG (Giữ nguyên) ---
     db.ref('users/' + friendName).once('value', (snapshot) => {
         const data = snapshot.val();
         if (!data) return;
 
-        // --- 4. HIỂN THỊ BONG BÓNG CHAT (BUBBLE) ---
+        // --- 4. HIỂN THỊ BONG BÓNG CHAT (Giữ nguyên) ---
         const bubble = document.getElementById('chat-bubble');
         const bImg = document.getElementById('bubble-avatar-img');
         const bIcon = document.getElementById('bubble-default-icon');
@@ -14084,7 +14088,7 @@ function openChatWith(friendName) {
             }; 
         }
 
-        // --- 5. CẬP NHẬT THÔNG TIN NGƯỜI ĐANG CHAT ---
+        // --- 5. CẬP NHẬT THÔNG TIN NGƯỜI ĐANG CHAT (Giữ nguyên) ---
         document.getElementById('chat-target-name').innerText = data.profile.name;
         const avatarDiv = document.getElementById('chat-target-avatar');
         
@@ -14094,21 +14098,17 @@ function openChatWith(friendName) {
             avatarDiv.innerHTML = `<i class="fas ${data.profile.gender === 'Nam' ? 'fa-user-tie' : 'fa-user-graduate'}"></i>`;
         }
 
-        // --- 6. BẮT ĐẦU LẮNG NGHE TIN NHẮN REALTIME ---
+        // --- 6. BẮT ĐẦU LẮNG NGHE TIN NHẮN REALTIME (Giữ nguyên) ---
         listenMessages(friendName);
         listenNicknames(friendName);
         
-        // --- BỔ SUNG: LẮNG NGHE TRẠNG THÁI ĐÃ XEM (SEEN RECEIPTS) ---
         if (typeof listenReadReceipts === 'function') {
             listenReadReceipts(friendName);
         }
 
-        // --- 7. ĐỒNG BỘ KẾT NỐI: XÓA THÔNG BÁO CHƯA ĐỌC & CẬP NHẬT ĐÃ XEM ---
+        // --- 7. ĐỒNG BỘ KẾT NỐI (Giữ nguyên) ---
         if (currentUser && friendName) {
-            // Henry thêm: Cập nhật UI ngay lập tức (Xóa chấm đỏ trong cache nội bộ nếu cần)
-            // Nếu renderFriendsList dùng 'on', Firebase sẽ tự động cập nhật lại UI khi remove() thành công.
-            
-            // Xóa số lượng chưa đọc trên Firebase
+            // Xóa số lượng chưa đọc trên Firebase ngay khi mở
             db.ref('unread_counts/' + currentUser + '/' + friendName).remove()
                 .then(() => {
                     console.log(`Hệ thống: Đã xóa số tin nhắn chưa đọc từ ${friendName}`);
@@ -14117,13 +14117,12 @@ function openChatWith(friendName) {
                     console.error("Lỗi xóa unread_counts:", err);
                 });
 
-            // Cập nhật mốc thời gian đã xem lên Firebase
             if (typeof updateReadReceipt === 'function') {
                 updateReadReceipt(friendName);
             }
         }
 
-        // --- 8. LẮNG NGHE TRẠNG THÁI ONLINE/OFFLINE REAL-TIME ---
+        // --- 8. LẮNG NGHE TRẠNG THÁI ONLINE/OFFLINE (Giữ nguyên) ---
         const statusEl = document.getElementById('chat-target-status');
         
         if (window.lastStatusRef) window.lastStatusRef.off();
@@ -14142,6 +14141,7 @@ function openChatWith(friendName) {
         });
     });
 }
+    
     // Hàm này Henry để bên ngoài nhé
 function listenUserStatus(friendName) {
     const statusEl = document.getElementById('chat-target-status');
@@ -14483,7 +14483,7 @@ function listenMessages(friendName) {
         }
     });
 
-    // 3. BỔ SUNG NÚT ACTIONS & NÚT TÌM KIẾM (Đã thêm nút Tin nhắn đã ghim)
+    // 3. BỔ SUNG NÚT ACTIONS & NÚT TÌM KIẾM (Giữ nguyên)
     const messengerActions = document.querySelector('.messenger-actions');
     if (messengerActions) {
         const oldMenu = document.getElementById('chat-more-menu-wrapper');
@@ -14498,9 +14498,9 @@ function listenMessages(friendName) {
                     <div onclick="openThemeModal()" style="color:#ff1493; padding:12px; font-weight:bold; font-size:0.7em; cursor:pointer; white-space: nowrap; border-bottom: 1px solid #eee;">
                         <i class="fas fa-palette"></i> Đổi giao diện
                     </div>
-<div onclick="openMediaLibrary()" style="color:#ff1493; padding:12px; font-weight:bold; font-size:0.7em; cursor:pointer; border-bottom: 1px solid #eee;">
-    <i class="fas fa-photo-video"></i> Kho phương tiện
-</div>
+                    <div onclick="openMediaLibrary()" style="color:#ff1493; padding:12px; font-weight:bold; font-size:0.7em; cursor:pointer; border-bottom: 1px solid #eee;">
+                        <i class="fas fa-photo-video"></i> Kho phương tiện
+                    </div>
                     <div onclick="openPinnedMessages()" style="color:#ff1493; padding:12px; font-weight:bold; font-size:0.7em; cursor:pointer; border-bottom: 1px solid #eee;">
                         <i class="fas fa-thumbtack"></i> Tin nhắn đã ghim
                     </div>
@@ -14530,12 +14530,12 @@ function listenMessages(friendName) {
         loadMoreMessages(friendName, true);
     }
 
-    // --- BỔ SUNG: LẮNG NGHE HIỆU ỨNG ĐANG TRẢ LỜI ---
+    // --- BỔ SUNG: LẮNG NGHE HIỆU ỨNG ĐANG TRẢ LỜI (Giữ nguyên) ---
     if (typeof listenTypingIndicator === 'function') {
         listenTypingIndicator(friendName);
     }
 
-    // 5. LẮNG NGHE TIN NHẮN MỚI (child_added) (Giữ nguyên & Thêm logic cập nhật Đã xem)
+    // 5. LẮNG NGHE TIN NHẮN MỚI (child_added) - ĐÃ ĐIỀU CHỈNH LOGIC CHƯA ĐỌC
     msgRef.limitToLast(1).on('child_added', (snapshot) => {
         const msgId = snapshot.key;
         if (document.getElementById(`msg-${msgId}`)) return; 
@@ -14546,11 +14546,15 @@ function listenMessages(friendName) {
 
         renderSingleMessage(msgId, msg, 'bottom');
         
-        // --- CẬP NHẬT TRẠNG THÁI ĐÃ XEM KHI TIN NHẮN MỚI ĐẾN ---
-        if (typeof currentChatFriend !== 'undefined' && currentChatFriend === friendName) {
+        // --- LOGIC ĐÃ XEM & CHƯA ĐỌC ---
+        // Nếu Henry đang mở chat với đúng người gửi tin này
+        if (window.currentChattingWith === friendName) {
+            // 1. Cập nhật trạng thái "Đã xem" (Seen)
             if (typeof updateReadReceipt === 'function') {
                 updateReadReceipt(friendName);
             }
+            // 2. KHÔNG cho phép tăng unread_counts (Bằng cách xóa nó đi ngay lập tức nếu lỡ bị tăng)
+            db.ref('unread_counts/' + currentUser + '/' + friendName).remove();
         }
 
         if (typeof currentSearchKeyword === 'undefined' || !currentSearchKeyword) {
@@ -14562,7 +14566,7 @@ function listenMessages(friendName) {
         }
     });
 
-    // --- MỚI: LẮNG NGHE CẬP NHẬT CẢM XÚC (child_changed) (Giữ nguyên) ---
+    // --- MỚI: LẮNG NGHE CẬP NHẬT CẢM XÚC (Giữ nguyên) ---
     msgRef.on('child_changed', (snapshot) => {
         const msgId = snapshot.key;
         const msg = snapshot.val();
@@ -14578,7 +14582,7 @@ function listenMessages(friendName) {
         }
     });
 
-    // --- MỚI: LẮNG NGHE XÓA TIN NHẮN (child_removed) (Giữ nguyên) ---
+    // --- MỚI: LẮNG NGHE XÓA TIN NHẮN (Giữ nguyên) ---
     msgRef.on('child_removed', (snapshot) => {
         const msgId = snapshot.key;
         const msgEl = document.getElementById(`msg-${msgId}`);
@@ -14588,23 +14592,18 @@ function listenMessages(friendName) {
         }
     });
 
-    // 6. SỰ KIỆN CUỘN (Giữ nguyên logic load tin cũ & Thêm ẩn hiện nút quay lại)
+    // 6. SỰ KIỆN CUỘN (Giữ nguyên)
     area.onscroll = () => {
-        // Tải tin cũ (Giữ nguyên)
         if (area.scrollTop < 50 && !isLoadingMore && !isAllLoaded) {
             if (typeof currentSearchKeyword === 'undefined' || !currentSearchKeyword) {
                 loadMoreMessages(friendName);
             }
         }
 
-        // --- BỔ SUNG: ẨN HIỆN NÚT CUỘN XUỐNG DƯỚI ---
         const scrollBtn = document.getElementById('scroll-bottom-btn');
         if (scrollBtn) {
-            // Tính khoảng cách từ đáy lên trên
             const isScrolledUp = (area.scrollHeight - area.scrollTop - area.clientHeight) > 300;
-            // Chỉ hiện khi KHÔNG ở chế độ tìm kiếm
             const isNotSearching = (typeof currentSearchKeyword === 'undefined' || !currentSearchKeyword);
-            
             scrollBtn.style.display = (isScrolledUp && isNotSearching) ? 'flex' : 'none';
         }
     };
@@ -15651,17 +15650,31 @@ async function renderFriendsList() {
         const friends = snapshot.val() || {};
         const friendNames = Object.keys(friends);
 
-        // 2. Lắng nghe số tin nhắn chưa đọc
+        // 2. Lắng nghe số tin nhắn chưa đọcasync function renderFriendsList() {
+    const container = document.getElementById('friends-list-container');
+    const requestContainer = document.getElementById('request-list-container'); 
+    const requestSection = document.getElementById('message-request-section'); 
+    
+    if (!container || !currentUser) return;
+
+    if (!window.statusListeners) window.statusListeners = {};
+
+    let pinnedFriends = JSON.parse(localStorage.getItem(`pinned_${currentUser}`)) || [];
+    let archivedFriends = JSON.parse(localStorage.getItem(`archived_${currentUser}`)) || [];
+
+    db.ref('users/' + currentUser + '/friends').on('value', async (snapshot) => {
+        const friends = snapshot.val() || {};
+        const friendNames = Object.keys(friends);
+
         db.ref('unread_counts/' + currentUser).on('value', async (unreadSnap) => {
             const allUnreads = unreadSnap.val() || {};
             const unreadNames = Object.keys(allUnreads);
 
-            // TỰ ĐỘNG BỎ LƯU TRỮ: Nếu có tin nhắn mới từ người trong kho lưu trữ
             let hasChange = false;
             archivedFriends = archivedFriends.filter(fName => {
                 if (allUnreads[fName] > 0) {
                     hasChange = true;
-                    return false; // Loại khỏi danh sách lưu trữ
+                    return false; 
                 }
                 return true;
             });
@@ -15669,7 +15682,6 @@ async function renderFriendsList() {
 
             const strangerNames = unreadNames.filter(name => !friends.hasOwnProperty(name));
             
-            // --- PHẦN 1: XỬ LÝ TIN NHẮN CHỜ (NGƯỜI LẠ) - GIỮ NGUYÊN ---
             if (strangerNames.length > 0 && requestContainer) {
                 const requestItems = await Promise.all(strangerNames.map(async (sName) => {
                     const uSnap = await db.ref('users/' + sName).once('value');
@@ -15686,7 +15698,9 @@ async function renderFriendsList() {
                         : `<i class="fas ${uData.profile.gender === 'Nam' ? 'fa-user-tie' : 'fa-user-graduate'}"></i>`;
 
                     setupStatusListener(sName);
-                    const unreadCount = allUnreads[sName] || 0;
+                    
+                    // ĐIỀU CHỈNH: Nếu đang mở chat với người lạ này, unreadCount = 0
+                    const unreadCount = (window.currentChattingWith === sName) ? 0 : (allUnreads[sName] || 0);
 
                     return `
                         <div class="friend-card-row animate__animated animate__fadeIn" style="display: flex; align-items: center; justify-content: space-between; background: #fff5f8; padding: 15px; border-radius: 20px; margin-bottom: 10px; border-left: 5px solid #ff1493; border: 1px dashed #ffc0cb;">
@@ -15719,7 +15733,6 @@ async function renderFriendsList() {
                 requestSection.style.display = 'none';
             }
 
-            // --- PHẦN 2: XỬ LÝ DANH SÁCH BẠN BÈ ---
             if (friendNames.length === 0) {
                 container.innerHTML = `<div id="empty-msg" style="text-align: center; padding: 40px;">Chưa có bạn bè</div>`;
                 return;
@@ -15744,7 +15757,9 @@ async function renderFriendsList() {
                         : `<i class="fas ${uData.profile.gender === 'Nam' ? 'fa-user-tie' : 'fa-user-graduate'}"></i>`;
 
                     setupStatusListener(fName);
-                    const unreadCount = allUnreads[fName] || 0;
+
+                    // ĐIỀU CHỈNH QUAN TRỌNG NHẤT: Kiểm tra xem có đang mở chat với người này không
+                    const unreadCount = (window.currentChattingWith === fName) ? 0 : (allUnreads[fName] || 0);
 
                     const htmlContent = `
                         <div class="friend-card-row animate__animated animate__fadeInUp" style="display: flex; align-items: center; justify-content: space-between; background: white; padding: 15px; border-radius: 20px; margin-bottom: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.03); border-left: 5px solid ${isPinned ? '#ff1493' : (isVip5 ? '#ff1493' : '#ffc0cb')}; position: relative;">
@@ -15796,10 +15811,8 @@ async function renderFriendsList() {
                 } catch (e) { return null; }
             }));
 
-            // LỌC: Chỉ hiện những người KHÔNG nằm trong kho lưu trữ ra danh sách chính
             const visibleFriends = friendItems.filter(i => i && !i.isArchived);
 
-            // SẮP XẾP: Ghim lên đầu -> Sau đó Alphabet
             const finalHtml = visibleFriends
                 .sort((a, b) => {
                     if (a.isPinned && !b.isPinned) return -1;
@@ -15811,7 +15824,6 @@ async function renderFriendsList() {
 
             container.innerHTML = finalHtml || `<div style="text-align: center; padding: 40px; color: #ccc;">Chưa có bạn bè</div>`;
 
-            // CẬP NHẬT KHO LƯU TRỮ (Popup)
             const archiveContainer = document.getElementById('archive-list-container');
             if (archiveContainer) {
                 const archivedHtml = friendItems
@@ -15823,6 +15835,7 @@ async function renderFriendsList() {
         }); 
     });
 }
+                                                   
     // Hàm đóng/mở menu 3 chấm
 function toggleFriendMenu(event, fName) {
     event.stopPropagation();
@@ -15990,12 +16003,18 @@ function closeChat() {
     const box = document.getElementById('messenger-box');
     if (!box) return;
 
+    // 1. Đánh dấu là đã thoát khỏi khung chat để hệ thống bắt đầu tính tin nhắn chưa đọc
+    window.currentChattingWith = null; 
+    currentChatFriend = null; // Henry nên giữ dòng này để đồng bộ trạng thái hệ thống
+
+    // 2. Chạy hiệu ứng đóng
     box.classList.remove('animate__fadeInUp');
     box.classList.add('animate__fadeOutDown');
 
     setTimeout(() => {
         box.style.display = 'none';
-        // Bỏ dòng currentChatFriend = null ở đây đi nhé Henry!
+        // Sau khi hiệu ứng kết thúc, đảm bảo các biến theo dõi đều sạch sẽ
+        console.log("🌸 Hệ thống: Đã đóng khung chat và gỡ trạng thái theo dõi.");
     }, 500);
 }
 
