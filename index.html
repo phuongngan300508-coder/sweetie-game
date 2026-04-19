@@ -21197,13 +21197,23 @@ function setRpMode(mode) {
 }
 
 // Hàm phụ để lưu vào userData (Henry đảm bảo hàm này tồn tại nhé)
-function saveBeneficiary(stk, name) {
-    if (!userData.savedAccounts) userData.savedAccounts = [];
-    // Kiểm tra trùng STK để không lưu lặp lại
-    const isExist = userData.savedAccounts.find(acc => acc.stk === stk);
+async function saveBeneficiary(stk, name) {
+    // 1. Lấy ID thẻ đang liên kết
+    const cardIdSnap = await db.ref(`users/${currentUser}/linkedCard`).once('value');
+    const cardId = cardIdSnap.val();
+    if (!cardId) return;
+
+    const cardSavedRef = db.ref(`sweetie_cards/${cardId}/savedAccounts`);
+    const snap = await cardSavedRef.once('value');
+    let list = snap.val() || [];
+
+    // 2. Kiểm tra trùng STK
+    const isExist = list.find(acc => acc.stk === stk);
     if (!isExist) {
-        userData.savedAccounts.push({ stk: stk, name: name });
-        saveData(); // Lưu vào localStorage/Firebase
+        list.push({ stk: stk, name: name });
+        // 3. Cập nhật lên Firebase của thẻ
+        await cardSavedRef.set(list);
+        console.log("🌸 Sweetie Bank: Đã lưu STK mới vào danh bạ riêng của thẻ " + cardId);
     }
 }
 
@@ -21296,14 +21306,13 @@ function showBankingBill(data) {
     `;
 }
 
-   function openSavedAccounts() {
-    // 1. Gắn trực tiếp vào body để bung toàn màn hình giống popup chuyển tiền
+   async function openSavedAccounts() {
+    // 1. Khởi tạo/Lấy overlay (Giữ nguyên logic giao diện của Henry)
     let savedUI = document.getElementById('saved-accounts-ui');
     
     if (!savedUI) {
         savedUI = document.createElement('div');
         savedUI.id = 'saved-accounts-ui';
-        // THIẾT LẬP LỚP PHỦ TOÀN MÀN HÌNH - ĐÈ LÊN POPUP CHUYỂN TIỀN
         Object.assign(savedUI.style, {
             position: 'fixed',
             top: '0',
@@ -21311,18 +21320,31 @@ function showBankingBill(data) {
             width: '100vw',
             height: '100vh',
             backgroundColor: 'rgba(0, 0, 0, 0.4)',
-            backdropFilter: 'blur(10px)', // Làm mờ cả popup chuyển tiền phía sau
+            backdropFilter: 'blur(10px)',
             webkitBackdropFilter: 'blur(10px)',
             display: 'none',
             justifyContent: 'center',
             alignItems: 'center',
-            zIndex: "100001", // CAO HƠN popup chuyển tiền (99999)
+            zIndex: "100001",
             padding: '20px 0'
         });
         document.body.appendChild(savedUI);
     }
 
-    const allAccounts = userData.savedAccounts || [];
+    // --- PHẦN THAY ĐỔI: LẤY DANH BẠ RIÊNG THEO THẺ ---
+    // Bước A: Lấy cardId đang liên kết với user
+    const cardIdSnap = await db.ref(`users/${currentUser}/linkedCard`).once('value');
+    const currentCardId = cardIdSnap.val();
+
+    if (!currentCardId) {
+        alert("Không tìm thấy thẻ liên kết để mở danh bạ!");
+        return;
+    }
+
+    // Bước B: Lấy danh bạ từ node của thẻ đó trên Firebase
+    const snap = await db.ref(`sweetie_cards/${currentCardId}/savedAccounts`).once('value');
+    const allAccounts = snap.val() || [];
+
     savedUI.style.display = 'flex';
     
     const renderList = (filteredAccounts) => {
@@ -21451,34 +21473,55 @@ window.setAccountNickname = function(stk) {
     setTimeout(() => document.getElementById('new-nickname-input').focus(), 150);
 };
 
-    window.confirmSetNickname = function(stk) {
+   window.confirmSetNickname = async function(stk) {
     const input = document.getElementById('new-nickname-input');
     const nick = input.value.trim();
     
-    const account = userData.savedAccounts.find(a => a.stk === stk);
+    // Lấy cardId
+    const cardIdSnap = await db.ref(`users/${currentUser}/linkedCard`).once('value');
+    const cardId = cardIdSnap.val();
+    
+    const cardSavedRef = db.ref(`sweetie_cards/${cardId}/savedAccounts`);
+    const snap = await cardSavedRef.once('value');
+    let list = snap.val() || [];
+
+    const account = list.find(a => a.stk === stk);
     if (account) {
-        // Nếu Henry để trống thì coi như xóa biệt danh (về lại null)
         account.nickname = nick || null;
+        await cardSavedRef.set(list); // Lưu lại danh sách đã sửa
         
-        if (typeof saveData === 'function') saveData();
-        
-        // Đóng popup edit
         document.getElementById('nickname-editor-popup').style.display = 'none';
-        
-        // Cập nhật lại danh bạ đang mở ở dưới
-        if (typeof openSavedAccounts === 'function') openSavedAccounts();
-        
-        // Thông báo nhẹ nhàng
+        openSavedAccounts(); // Tải lại giao diện
         addNotification("🌸 BIỆT DANH", nick ? `Đã đặt biệt danh là: ${nick}` : "Đã xóa biệt danh");
     }
 };
 
-window.removeAccountNickname = function(stk) {
-    const account = userData.savedAccounts.find(a => a.stk === stk);
+window.removeAccountNickname = async function(stk) {
+    // 1. Lấy cardId đang liên kết với tài khoản
+    const cardIdSnap = await db.ref(`users/${currentUser}/linkedCard`).once('value');
+    const currentCardId = cardIdSnap.val();
+
+    if (!currentCardId) return;
+
+    // 2. Lấy danh sách tài khoản đã lưu của thẻ này từ Firebase
+    const cardSavedRef = db.ref(`sweetie_cards/${currentCardId}/savedAccounts`);
+    const snap = await cardSavedRef.once('value');
+    let list = snap.val() || [];
+
+    // 3. Tìm tài khoản cần xóa biệt danh trong danh sách
+    const account = list.find(a => a.stk === stk);
+
     if (account && confirm(`Xóa biệt danh của ${account.nickname}?`)) {
+        // 4. Xóa thuộc tính nickname
         delete account.nickname;
-        if (typeof saveData === 'function') saveData();
-        openSavedAccounts(); // Tải lại danh bạ
+        
+        // 5. Cập nhật lại toàn bộ danh sách đã sửa lên Firebase
+        await cardSavedRef.set(list);
+        
+        // 6. Tải lại giao diện danh bạ
+        if (typeof openSavedAccounts === 'function') openSavedAccounts();
+        
+        console.log("🌸 Sweetie Bank: Đã xóa biệt danh thành công cho thẻ " + currentCardId);
     }
 };
     
