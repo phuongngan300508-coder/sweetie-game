@@ -13853,35 +13853,6 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const messaging = firebase.messaging();
 
-// --- HÀM LẮNG NGHE THÔNG BÁO NHẬN TIỀN VÀ CẬP NHẬT SỐ DƯ ---
-function listenSystemNotifications() {
-    if (typeof currentUser === 'undefined' || !currentUser) return;
-    
-    const myNotiQueue = db.ref(`notifications_queue/${currentUser}`);
-    
-    myNotiQueue.off(); // Xóa listener cũ
-    myNotiQueue.on('child_added', async (snapshot) => {
-        const noti = snapshot.val();
-        if (!noti) return;
-
-        // 1. Hiển thị vào chuông thông báo của Henry
-        if (typeof addNotification === 'function') {
-            // Nếu là thông báo chuyển khoản (type banking), mình cho màu xanh cho chuyên nghiệp
-            const bgColor = noti.type === 'banking' ? 'linear-gradient(135deg, #00b09b, #96c93d)' : 'linear-gradient(135deg, #ff69b4, #ff1493)';
-            addNotification(noti.title, noti.text, bgColor);
-        }
-
-        // 2. CẬP NHẬT SỐ DƯ REAL-TIME (Cực kỳ quan trọng khi nhận tiền)
-        // Gọi hàm updateUI hoặc hàm load dữ liệu ví của bạn để người dùng thấy tiền nhảy số luôn
-        if (typeof updateUI === 'function') {
-            updateUI(); 
-        }
-
-        // 3. Xóa thông báo đã xử lý khỏi Firebase để tránh hiện lại khi F5
-        myNotiQueue.child(snapshot.key).remove();
-    });
-}
-
 // Đăng ký Service Worker
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', function() {
@@ -13890,9 +13861,6 @@ if ('serviceWorker' in navigator) {
             console.log('✅ PWA: App đã sẵn sàng!');
             
             if (typeof currentUser !== 'undefined' && currentUser) {
-                // KÍCH HOẠT CHUÔNG THÔNG BÁO NGAY KHI APP SẴN SÀNG
-                listenSystemNotifications();
-
                 if (typeof initCallSystem === 'function') {
                     initCallSystem();
                 }
@@ -13923,6 +13891,7 @@ if ('serviceWorker' in navigator) {
 messaging.onMessage((payload) => {
     console.log('📩 Nhận thông báo mới:', payload);
     
+    // Chỉ hiện thông báo nếu người dùng KHÔNG đang mở tab chat
     const chatTab = document.getElementById('tab-global');
     const isChatOpen = chatTab && chatTab.style.display === 'flex';
 
@@ -13933,6 +13902,7 @@ messaging.onMessage((payload) => {
             icon: payload.notification.icon || "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
         };
 
+        // 1. Hiển thị thông báo trình duyệt
         if ("Notification" in window && Notification.permission === "granted") {
             const n = new Notification(notificationTitle, notificationOptions);
             n.onclick = () => {
@@ -13942,6 +13912,7 @@ messaging.onMessage((payload) => {
             };
         }
 
+        // 2. Hiển thị thông báo trong Game (Nếu bạn có hàm addNotification)
         if (typeof addNotification === 'function') {
             addNotification(
                 "💬 " + notificationTitle.toUpperCase(),
@@ -13951,13 +13922,14 @@ messaging.onMessage((payload) => {
         }
     }
 });
+// ------------------------------------------------------------------
 
 let deferredPrompt;
+
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   deferredPrompt = e;
 });
-    
 // Thay vì dùng setTimeout, mình dùng sự kiện click vào màn hình
 window.addEventListener('click', () => {
   if (deferredPrompt) {
@@ -21310,33 +21282,11 @@ function setRpMode(mode) {
             }
         }
 
-        if (targetId) {
-    const pushNotiRef = db.ref(`notifications_queue/${targetId}`).push();
-    
-    // Lấy tên ngân hàng để hiển thị trong tin nhắn cho xịn
-    const bankNames = {
-        'sweetie': 'Sweetie Bank',
-        'honey': 'Honey Bank',
-        'cloud': 'Cloud Bank'
-    };
-    const senderBankName = bankNames[myCardData.bankType || 'sweetie'];
-
-    await pushNotiRef.set({
-        title: "💰 BIẾN ĐỘNG SỐ DƯ",
-        // Nội dung hiển thị: Tên chủ thẻ + Số tài khoản chuyển đến
-        text: `Tài khoản ${myCardData.accountNo} (${myCardData.ownerName.toUpperCase()}) vừa chuyển +${amount.toLocaleString()} VNĐ qua ${senderBankName}.`,
-        from: myCardData.ownerName,
-        stk: myCardData.accountNo, // Gửi kèm số tài khoản người gửi
-        amount: amount,
-        time: firebase.database.ServerValue.TIMESTAMP,
-        type: "banking"
-    });
-}
-
-        // 4. Hiển thị Bill thành công (Giữ nguyên của Henry)
+        // 4. Hiển thị Bill thành công (Dùng các biến đã trích xuất an toàn)
         showBankingBill({
             amount: amount,
             sender: myCardData.ownerName,
+            // --- DÒNG QUAN TRỌNG NHẤT: Truyền bankType của bạn để Bill đổi màu ---
             senderBank: myCardData.bankType, 
             receiver: targetOwner,
             receiverBank: elTargetDisplay.dataset.targetBankName,
@@ -21345,7 +21295,6 @@ function setRpMode(mode) {
             transId: "SW" + Date.now().toString().slice(-8)
         });
 
-        // Thông báo cho chính Henry (người gửi)
         addNotification("📤 CHUYỂN KHOẢN THÀNH CÔNG", `Bạn đã chuyển ${amount.toLocaleString()} VNĐ đến STK ${targetStkNum}.`);
 
     } catch (e) {
@@ -21835,5 +21784,7 @@ async function selectSavedAccount(stk, name) {
         if (btnDone) btnDone.style.opacity = '1';
     }
 }
+    
+</script>
 </body>
 </html>
