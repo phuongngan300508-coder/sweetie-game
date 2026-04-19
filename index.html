@@ -19595,8 +19595,8 @@ function closeMediaLibrary() {
         const chatRoomId = [currentUser, currentChatFriend].sort().join('_');
         db.ref(`chats/${chatRoomId}/messages`).off('value', mediaLibraryListener);
     }
-}
-
+}  
+    
 let cardDraft = {}; // Lưu dữ liệu tạm khi đang tạo
 
 async function openSweetieCardModal() {
@@ -19674,6 +19674,38 @@ function renderStartMenu() {
         </div>`;
 }
 
+    function renderBankSelection() {
+    const flow = document.getElementById('card-app-flow');
+    flow.innerHTML = `
+        <div class="bank-selection-container" style="animation: fadeIn 0.5s;">
+            <h3 class="step-title">Chọn ngân hàng</h3>
+            <p class="step-desc">Hãy chọn phong cách thẻ mà bạn yêu thích nhất 🌸</p>
+            
+            <div style="display: flex; flex-direction: column; gap: 15px; margin-top: 25px;">
+                ${Object.keys(BANK_CONFIG).map(key => `
+                    <div class="bank-choice-card" onclick="selectBankType('${key}')" 
+                         style="background: ${BANK_CONFIG[key].gradient}; padding: 22px; border-radius: 25px; color: #fff; cursor: pointer; text-align: left; transition: 0.3s; box-shadow: 0 8px 15px rgba(0,0,0,0.1); position: relative; overflow: hidden;">
+                        <div style="font-weight: 800; font-size: 1.1rem; letter-spacing: 1px;">
+                            <i class="fas fa-university"></i> ${BANK_CONFIG[key].name}
+                        </div>
+                        <div style="font-size: 0.7rem; opacity: 0.8; margin-top: 5px;">Hệ thống thanh toán bảo mật 24/7</div>
+                        <i class="fas fa-chevron-right" style="position: absolute; right: 20px; top: 50%; transform: translateY(-50%); opacity: 0.6;"></i>
+                    </div>
+                `).join('')}
+            </div>
+            
+            <button onclick="renderStartMenu()" class="btn-back-link" style="margin-top: 20px; color: #bbb; border: none; background: none; cursor: pointer;">
+                <i class="fas fa-arrow-left"></i> Quay lại menu chính
+            </button>
+        </div>
+    `;
+}
+
+function selectBankType(type) {
+    cardDraft.bankType = type; // Lưu loại ngân hàng vào bản nháp
+    showCreateStep(1); // Chuyển sang bước nhập tên chủ thẻ
+}
+    
    function showCreateStep(step) {
     let html = "";
     const flow = document.getElementById('card-app-flow');
@@ -19777,8 +19809,8 @@ function saveStep(step) {
     }
 }
 
-  async function confirmCreateCard() {
-    // 1. Kiểm tra đăng nhập
+ async function confirmCreateCard() {
+    // 1. Kiểm tra đăng nhập (Giữ nguyên)
     if (!currentUser) return alert("Lỗi: Không tìm thấy người dùng!");
 
     // --- HÀM TẠO STK 12 SỐ NGẪU NHIÊN CHO THẺ MỚI ---
@@ -19791,30 +19823,41 @@ function saveStep(step) {
         gender: cardDraft.gender,
         password: cardDraft.password,
         balance: 0,
-        // BỔ SUNG: Cấp số tài khoản ngay khi tạo thẻ
+        // THAY ĐỔI: Lưu loại ngân hàng đã chọn (Sweetie/Honey/Cloud)
+        // Mặc định là sweetie nếu vì lý do nào đó cardDraft.bankType bị trống
+        bankType: cardDraft.bankType || 'sweetie', 
         accountNo: generateSTK(), 
-        createdAt: firebase.database.ServerValue.TIMESTAMP // Dùng thời gian server sẽ chuẩn hơn Date.now()
+        createdAt: firebase.database.ServerValue.TIMESTAMP 
     };
 
     try {
-        // 2. Lưu vào node vĩnh viễn trên Firebase (Dùng cardId làm key)
+        // 2. Lưu vào node vĩnh viễn trên Firebase (Giữ nguyên)
         await db.ref(`sweetie_cards/${finalData.id}`).set(finalData);
         
-        // 3. Liên kết ID thẻ vào tài khoản người dùng trên Firebase
-        // Lưu ý: Đổi currentUsername thành currentUser
+        // 3. Liên kết ID thẻ vào tài khoản người dùng trên Firebase (Giữ nguyên)
         await db.ref(`users/${currentUser}/linkedCard`).set(finalData.id);
         
-        // 4. CẬP NHẬT LOCALSTORAGE (Để đồng bộ với logic cũ của Henry)
-        // userData là biến toàn cục Henry đang dùng trong handleLogin
+        // 4. CẬP NHẬT LOCALSTORAGE (Giữ nguyên)
         if (typeof userData !== 'undefined') {
             userData.linkedCard = finalData.id; 
-            saveData(); // Gọi hàm lưu của Henry để cập nhật localStorage ngay lập tức
+            saveData(); 
         }
 
-       alert("🌸 Chúc mừng bạn! Thẻ Sweetie Card của bạn đã được kích hoạt vĩnh viễn.");
-addNotification("💳 THẺ MỚI ĐÃ KÍCH HOẠT", "Chào mừng bạn đến với Sweetie Bank! Thẻ của bạn đã sẵn sàng sử dụng.");
+        // Tùy biến thông báo chúc mừng theo tên ngân hàng cho "xịn"
+        const bankNames = {
+            'sweetie': 'Sweetie Bank',
+            'honey': 'Honey Bank',
+            'cloud': 'Cloud Bank'
+        };
+        const selectedBankName = bankNames[finalData.bankType];
+
+        alert(`🌸 Chúc mừng bạn! Thẻ ${selectedBankName} của bạn đã được kích hoạt vĩnh viễn.`);
         
-        // 5. Chuyển sang giao diện quản lý thẻ
+        if (typeof addNotification === 'function') {
+            addNotification("💳 THẺ MỚI ĐÃ KÍCH HOẠT", `Chào mừng bạn đến với ${selectedBankName}! Thẻ của bạn đã sẵn sàng sử dụng.`);
+        }
+        
+        // 5. Chuyển sang giao diện quản lý thẻ (Giữ nguyên)
         renderCardDashboard(finalData.id);
 
     } catch (error) {
@@ -20148,43 +20191,45 @@ function renderCardDashboard(cardId) {
     const flow = document.getElementById('card-app-flow');
     const cardRef = db.ref(`sweetie_cards/${cardId}`);
 
-    // --- BƯỚC QUAN TRỌNG: Gỡ bỏ tất cả listener cũ để không bị lặp thông báo ---
+    // Cấu hình màu sắc cho 3 ngân hàng
+    const BANK_CONFIG = {
+        'sweetie': { name: 'SWEETIE BANK', color: '#ff1493', gradient: 'linear-gradient(135deg, #ff1493, #ff69b4)', shadow: 'rgba(255, 20, 147, 0.2)' },
+        'honey': { name: 'HONEY BANK', color: '#f39c12', gradient: 'linear-gradient(135deg, #f39c12, #f1c40f)', shadow: 'rgba(243, 156, 18, 0.2)' },
+        'cloud': { name: 'CLOUD BANK', color: '#3498db', gradient: 'linear-gradient(135deg, #3498db, #85c1e9)', shadow: 'rgba(52, 152, 219, 0.2)' }
+    };
+
     cardRef.off(); 
 
-    // Bắt đầu lắng nghe dữ liệu một cách sạch sẽ
     cardRef.on('value', async (snapshot) => {
         const card = snapshot.val();
-        
-        // Nếu thẻ bị xóa hoặc không tồn tại, thoát ra để tránh lỗi render
         if (!card) return;
 
-        // --- HÀM TẠO STK 12 SỐ NGẪU NHIÊN ---
         function generateSTK() {
             return Math.floor(100000000000 + Math.random() * 900000000000).toString();
         }
 
-        // --- LOGIC CẤP STK CHO THẺ CŨ (Nếu chưa có accountNo thì tự tạo) ---
         if (!card.accountNo) {
             const newSTK = generateSTK();
             await cardRef.update({ accountNo: newSTK });
-            return; // Firebase sẽ tự trigger lại hàm on('value') với dữ liệu mới
+            return; 
         }
 
-        // Lấy ID gốc bảo mật (8 số) từ dữ liệu thẻ hoặc từ chính key cardId
+        // Lấy cấu hình ngân hàng (mặc định là sweetie nếu chưa có type)
+        const bank = BANK_CONFIG[card.bankType || 'sweetie'];
         const originalID = card.id || cardId;
 
         flow.innerHTML = `
             <div class="card-dashboard-container" style="animation: fadeIn 0.5s; display: flex; flex-direction: column; align-items: center;">
-                <h3 style="color: #d81b60; margin-bottom: 15px; font-weight: 800; width: 100%; text-align: left;">Thẻ của bạn</h3>
+                <h3 style="color: ${bank.color}; margin-bottom: 15px; font-weight: 800; width: 100%; text-align: left;">Thẻ của bạn</h3>
                 
-                <div class="sweetie-card-design bank-style" style="margin: 0 auto;">
-                    <div class="card-watermark">SWEETIE CARD SWEETIE CARD SWEETIE CARD</div>
+                <div class="sweetie-card-design bank-style" style="margin: 0 auto; background: ${bank.gradient}; border: none; box-shadow: 0 15px 30px ${bank.shadow};">
+                    <div class="card-watermark" style="color: rgba(255,255,255,0.1);">${bank.name} ${bank.name}</div>
                     
                     <div class="card-header-row">
-                        <div class="bank-logo">
-                            <i class="fas fa-heart"></i> SWEETIE BANK
+                        <div class="bank-logo" style="color: #fff;">
+                            <i class="fas fa-university"></i> ${bank.name}
                         </div>
-                        <div class="card-contactless">
+                        <div class="card-contactless" style="color: #fff;">
                             <i class="fas fa-wifi"></i>
                         </div>
                     </div>
@@ -20196,53 +20241,55 @@ function renderCardDashboard(cardId) {
                         <div class="chip-line"></div>
                     </div>
 
-                    <div class="card-id-view">${card.accountNo.match(/.{1,4}/g).join(' ')}</div>
+                    <div class="card-id-view" style="color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        ${card.accountNo.match(/.{1,4}/g).join(' ')}
+                    </div>
 
-                    <div class="card-footer-info">
+                    <div class="card-footer-info" style="color: #fff;">
                         <div class="footer-left">
-                            <span class="label">CARD HOLDER</span>
+                            <span class="label" style="opacity: 0.8;">CARD HOLDER</span>
                             <div class="card-holder-name">${(card.ownerName || card.owner).toUpperCase()}</div>
                         </div>
                         <div class="footer-right">
-                            <span class="label">VALID THRU</span>
+                            <span class="label" style="opacity: 0.8;">VALID THRU</span>
                             <div class="expiry">12/29</div>
                         </div>
                     </div>
                 </div>
 
-                <div class="original-id-security-box" style="margin-top: 15px; background: #fff5f8; padding: 10px 20px; border-radius: 12px; border: 1px dashed #ffb6c1; display: flex; align-items: center; gap: 8px; width: fit-content;">
-                    <i class="fas fa-shield-alt" style="color: #ff1493; font-size: 0.8rem;"></i>
-                    <span style="font-size: 0.75rem; color: #d81b60; font-weight: 800; letter-spacing: 0.5px;">
+                <div class="original-id-security-box" style="margin-top: 15px; background: ${bank.color}05; padding: 10px 20px; border-radius: 12px; border: 1px dashed ${bank.color}50; display: flex; align-items: center; gap: 8px; width: fit-content;">
+                    <i class="fas fa-shield-alt" style="color: ${bank.color}; font-size: 0.8rem;"></i>
+                    <span style="font-size: 0.75rem; color: ${bank.color}; font-weight: 800; letter-spacing: 0.5px;">
                         ID GỐC CỦA THẺ: <span style="font-family: monospace; font-size: 0.95rem; color: #333; margin-left: 5px;">${originalID}</span>
                     </span>
                 </div>
                 <p style="font-size: 0.6rem; color: #bbb; margin-top: 5px;">* Dùng mã này để khôi phục thẻ. Hãy giữ bí mật!</p>
 
-                <div class="card-balance-box" style="margin: 20px 0; padding: 15px; background: #fff; border-radius: 20px; border: 2px dashed #ffb6c1; width: 100%; box-sizing: border-box;">
+                <div class="card-balance-box" style="margin: 20px 0; padding: 15px; background: #fff; border-radius: 20px; border: 2px dashed ${bank.color}40; width: 100%; box-sizing: border-box;">
                     <span style="color: #888; font-size: 0.85rem;">Số dư khả dụng</span>
-                    <h2 style="color: #ff1493; margin: 5px 0; font-size: 1.6rem;">${(card.balance || 0).toLocaleString()} VNĐ</h2>
+                    <h2 style="color: ${bank.color}; margin: 5px 0; font-size: 1.6rem;">${(card.balance || 0).toLocaleString()} VNĐ</h2>
                 </div>
 
                 <div class="card-actions-wrapper" style="width: 100%;">
                     <div class="main-actions" style="display: flex; gap: 10px; margin-bottom: 10px;">
-                        <button onclick="handleCardTransaction('deposit')" class="btn-card-action btn-deposit" style="flex: 1;">
+                        <button onclick="handleCardTransaction('deposit')" class="btn-card-action btn-deposit" style="flex: 1; border-color: ${bank.color}30; color: ${bank.color};">
                             <i class="fas fa-plus-circle"></i> Nạp tiền
                         </button>
-                        <button onclick="handleCardTransaction('withdraw')" class="btn-card-action btn-withdraw" style="flex: 1;">
+                        <button onclick="handleCardTransaction('withdraw')" class="btn-card-action btn-withdraw" style="flex: 1; border-color: ${bank.color}30; color: ${bank.color};">
                             <i class="fas fa-minus-circle"></i> Rút tiền
                         </button>
                     </div>
                     
-                    <button onclick="openBankingTransfer('${cardId}')" class="btn-card-action btn-transfer-main" style="width: 100%; margin-bottom: 10px; background: #ff1493; color: #fff; border: none; border-radius: 15px; padding: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 15px rgba(255,20,147,0.2);">
+                    <button onclick="openBankingTransfer('${cardId}')" class="btn-transfer-main" style="width: 100%; margin-bottom: 10px; background: ${bank.color}; color: #fff; border: none; border-radius: 15px; padding: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 15px ${bank.shadow};">
                         <i class="fas fa-paper-plane"></i> Chuyển khoản ngay
                     </button>
                     
-                    <button onclick="showCardHistory('${cardId}')" class="btn-history-soft" style="width: 100%;">
+                    <button onclick="showCardHistory('${cardId}')" class="btn-history-soft" style="width: 100%; color: ${bank.color};">
                         <i class="fas fa-history"></i> Lịch sử giao dịch
                     </button>
                 </div>
                 
-                <button onclick="unlinkCard()" style="margin-top: 20px; background: none; border: none; color: #ffb6c1; cursor: pointer; font-size: 0.75rem; text-decoration: underline; font-weight: 600;">
+                <button onclick="unlinkCard()" style="margin-top: 20px; background: none; border: none; color: #bbb; cursor: pointer; font-size: 0.75rem; text-decoration: underline; font-weight: 600;">
                     Gỡ liên kết thẻ
                 </button>
             </div>
@@ -20981,42 +21028,40 @@ function setRpMode(mode) {
 }
 
     async function openBankingTransfer(myCardId) {
-    // 1. Khởi tạo overlay bung toàn màn hình (gắn vào body)
+    // Cấu hình 3 ngân hàng để lấy màu sắc động
+    const BANK_CONFIG = {
+        'sweetie': { name: 'SWEETIE BANK', color: '#ff1493', gradient: 'linear-gradient(135deg, #ff1493, #ff69b4)', bg: '#fffafa' },
+        'honey': { name: 'HONEY BANK', color: '#f39c12', gradient: 'linear-gradient(135deg, #f39c12, #f1c40f)', bg: '#fffdf5' },
+        'cloud': { name: 'CLOUD BANK', color: '#3498db', gradient: 'linear-gradient(135deg, #3498db, #85c1e9)', bg: '#f5faff' }
+    };
+
+    // 1. Khởi tạo overlay (Giữ nguyên logic)
     let transUI = document.getElementById('transaction-ui');
     if (!transUI) {
         transUI = document.createElement('div');
         transUI.id = 'transaction-ui';
         Object.assign(transUI.style, {
-            position: 'fixed',
-            top: '0',
-            left: '0',
-            width: '100vw',
-            height: '100vh',
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-            backdropFilter: 'blur(8px)',
-            webkitBackdropFilter: 'blur(8px)',
-            display: 'none',
-            justifyContent: 'center',
-            alignItems: 'center',
-            zIndex: '99999',
-            padding: '20px 0'
+            position: 'fixed', top: '0', left: '0', width: '100vw', height: '100vh',
+            backgroundColor: 'rgba(0, 0, 0, 0.5)', backdropFilter: 'blur(8px)',
+            webkitBackdropFilter: 'blur(8px)', display: 'none', justifyContent: 'center',
+            alignItems: 'center', zIndex: '99999', padding: '20px 0'
         });
         document.body.appendChild(transUI);
     }
 
     const cardSnap = await db.ref(`sweetie_cards/${myCardId}`).once('value');
     const myCardData = cardSnap.val();
+    
+    // Lấy config của ngân hàng hiện tại (mặc định sweetie)
+    const myBank = BANK_CONFIG[myCardData.bankType || 'sweetie'];
 
     transUI.style.display = 'flex';
-    
-    // Reset trạng thái cuộn của lớp phủ
     transUI.scrollTop = 0;
 
     transUI.innerHTML = `
-
     <div class="banking-transfer-form" style="width: 90%; max-width: 400px; max-height: 85vh; background: #fff; border-radius: 35px; overflow: hidden; display: flex; flex-direction: column; animation: slideUpPopup 0.4s ease; box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2); flex-shrink: 0;">
         
-        <div style="background: linear-gradient(135deg, #ff1493, #ff69b4); padding: 25px 20px; color: #fff; text-align: center; position: relative; flex-shrink: 0;">
+        <div style="background: ${myBank.gradient}; padding: 25px 20px; color: #fff; text-align: center; position: relative; flex-shrink: 0;">
             <h4 style="margin: 0; font-size: 1.1rem; font-weight: 800; letter-spacing: 1px;">CHUYỂN TIỀN 24/7</h4>
             <div style="font-size: 0.7rem; opacity: 0.9; margin-top: 5px; display: flex; align-items: center; justify-content: center; gap: 5px;">
                 <i class="fas fa-shield-alt"></i> Giao dịch an toàn & bảo mật
@@ -21024,74 +21069,74 @@ function setRpMode(mode) {
             <i class="fas fa-times" onclick="document.getElementById('transaction-ui').style.display='none'" style="position: absolute; right: 20px; top: 25px; cursor: pointer; opacity: 0.8; font-size: 1.2rem;"></i>
         </div>
 
-        <div class="banking-scroll-area" style="flex: 1; overflow-y: auto; padding: 20px; background: #fffafa;">
+        <div class="banking-scroll-area" style="flex: 1; overflow-y: auto; padding: 20px; background: ${myBank.bg};">
             
-            <div style="background: #fff; padding: 15px; border-radius: 20px; border: 1px solid #ff149315; margin-bottom: 20px; display: flex; align-items: center; gap: 15px;">
-                <div style="width: 45px; height: 45px; background: #fff0f5; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #ff1493;">
+            <div style="background: #fff; padding: 15px; border-radius: 20px; border: 1px solid ${myBank.color}15; margin-bottom: 20px; display: flex; align-items: center; gap: 15px;">
+                <div style="width: 45px; height: 45px; background: ${myBank.color}10; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: ${myBank.color};">
                     <i class="fas fa-wallet" style="font-size: 1.2rem;"></i>
                 </div>
                 <div style="text-align: left;">
-                    <div style="font-size: 0.65rem; color: #888; font-weight: 700;">TÀI KHOẢN NGUỒN</div>
+                    <div style="font-size: 0.65rem; color: #888; font-weight: 700;">TÀI KHOẢN NGUỒN (${myBank.name})</div>
                     <div style="font-size: 0.9rem; font-weight: 800; color: #333;">**** ${myCardId.slice(-4)}</div>
-                    <div style="font-size: 0.7rem; color: #ff1493; font-weight: 600;">Khả dụng: ${myCardData.balance.toLocaleString()}đ</div>
+                    <div style="font-size: 0.7rem; color: ${myBank.color}; font-weight: 600;">Khả dụng: ${myCardData.balance.toLocaleString()}đ</div>
                 </div>
             </div>
 
             <div class="bank-input-box" style="margin-bottom: 15px; text-align: left;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                    <label style="font-size: 0.7rem; color: #ff69b4; font-weight: 800; letter-spacing: 0.3px;">THÔNG TIN THỤ HƯỞNG</label>
-                    <i class="fas fa-address-book" onclick="openSavedAccounts()" style="color: #ff1493; cursor: pointer; font-size: 1.2rem;" title="Danh bạ"></i>
+                    <label style="font-size: 0.7rem; color: ${myBank.color}; font-weight: 800; letter-spacing: 0.3px;">THÔNG TIN THỤ HƯỞNG</label>
+                    <i class="fas fa-address-book" onclick="openSavedAccounts()" style="color: ${myBank.color}; cursor: pointer; font-size: 1.2rem;" title="Danh bạ"></i>
                 </div>
                 <div style="position: relative;">
                     <input type="number" id="target-stk" class="sweetie-input-style" 
                         placeholder="Số tài khoản (12 số)" 
                         maxlength="12" 
                         style="width: 100%; padding: 15px; border-radius: 15px; border: 1px solid #eee; outline: none; font-weight: 700; background: #fff; box-sizing: border-box;">
-                    <div id="stk-loading" style="display:none; position:absolute; right:15px; top:15px;"><i class="fas fa-spinner fa-spin" style="color:#ff1493;"></i></div>
+                    <div id="stk-loading" style="display:none; position:absolute; right:15px; top:15px;"><i class="fas fa-spinner fa-spin" style="color:${myBank.color};"></i></div>
                 </div>
-                <div id="target-owner-display" style="color: #2e7d32; font-weight: 800; font-size: 0.85rem; margin-top: 8px; height: 18px; text-transform: uppercase;"></div>
+                <div id="target-owner-display" style="font-weight: 800; font-size: 0.85rem; margin-top: 8px; min-height: 18px; text-transform: uppercase;"></div>
                 
                 <label style="display: flex; align-items: center; gap: 8px; font-size: 0.75rem; color: #888; margin-top: 10px; cursor: pointer;">
-                    <input type="checkbox" id="save-account-check" style="accent-color: #ff1493; width: 16px; height: 16px;"> Lưu vào danh bạ
+                    <input type="checkbox" id="save-account-check" style="accent-color: ${myBank.color}; width: 16px; height: 16px;"> Lưu vào danh bạ
                 </label>
             </div>
 
             <div class="bank-input-box" style="margin-bottom: 15px; text-align: left;">
-                <label style="font-size: 0.7rem; color: #ff69b4; font-weight: 800; display: block; margin-bottom: 8px;">SỐ TIỀN CHUYỂN</label>
+                <label style="font-size: 0.7rem; color: ${myBank.color}; font-weight: 800; display: block; margin-bottom: 8px;">SỐ TIỀN CHUYỂN</label>
                 <div style="position: relative;">
                     <input type="number" id="transfer-amount" placeholder="0" 
-                        style="width: 100%; padding: 15px 45px 15px 15px; border-radius: 15px; border: 1px solid #eee; font-weight: 800; color: #ff1493; font-size: 1.2rem; outline: none; box-sizing: border-box;">
+                        style="width: 100%; padding: 15px 45px 15px 15px; border-radius: 15px; border: 1px solid #eee; font-weight: 800; color: ${myBank.color}; font-size: 1.2rem; outline: none; box-sizing: border-box;">
                     <span style="position: absolute; right: 15px; top: 16px; font-weight: 800; color: #ccc;">đ</span>
                 </div>
             </div>
 
             <div class="bank-input-box" style="margin-bottom: 15px; text-align: left;">
-                <label style="font-size: 0.7rem; color: #ff69b4; font-weight: 800; display: block; margin-bottom: 8px;">NỘI DUNG GIAO DỊCH</label>
+                <label style="font-size: 0.7rem; color: ${myBank.color}; font-weight: 800; display: block; margin-bottom: 8px;">NỘI DUNG GIAO DỊCH</label>
                 <textarea id="transfer-note" placeholder="Nhập lời nhắn..." 
                     style="width: 100%; padding: 12px; border-radius: 15px; border: 1px solid #eee; height: 60px; outline: none; resize: none; font-size: 0.85rem; box-sizing: border-box; font-family: inherit;"></textarea>
             </div>
 
             <div class="bank-input-box" style="margin-bottom: 25px; text-align: left;">
-    <label style="font-size: 0.7rem; color: #ff1493; font-weight: 800; display: block; margin-bottom: 8px;">XÁC THỰC MẬT KHẨU THÈ</label>
-    <input type="password" id="transfer-pin" 
-        placeholder="Nhập mật khẩu thẻ của bạn..." 
-        readonly 
-        onfocus="this.removeAttribute('readonly');"
-        autocomplete="new-password" 
-        style="width: 100%; padding: 15px; border-radius: 18px; border: 1.5px solid #eee; outline: none; box-sizing: border-box; font-size: 1rem; text-align: center; font-weight: 600; color: #333; transition: 0.3s; background: #fff;">
-</div>
+                <label style="font-size: 0.7rem; color: ${myBank.color}; font-weight: 800; display: block; margin-bottom: 8px;">XÁC THỰC MẬT KHẨU THẺ</label>
+                <input type="password" id="transfer-pin" 
+                    placeholder="Nhập mật khẩu thẻ của bạn..." 
+                    readonly 
+                    onfocus="this.removeAttribute('readonly');"
+                    autocomplete="new-password" 
+                    style="width: 100%; padding: 15px; border-radius: 18px; border: 1.5px solid #eee; outline: none; box-sizing: border-box; font-size: 1rem; text-align: center; font-weight: 600; color: #333; transition: 0.3s; background: #fff;">
+            </div>
         </div>
 
         <div style="padding: 20px; background: #fff; border-top: 1px solid #f0f0f0; display: flex; gap: 12px; flex-shrink: 0;">
             <button onclick="document.getElementById('transaction-ui').style.display='none'" 
                 style="flex: 1; padding: 15px; border: 1.5px solid #eee; border-radius: 18px; background: #fff; color: #999; font-weight: bold; cursor: pointer;">HỦY</button>
             <button id="btn-do-transfer" 
-                style="flex: 2; padding: 15px; border: none; border-radius: 18px; background: linear-gradient(to right, #ff1493, #ff69b4); color: #fff; font-weight: 800; cursor: pointer; box-shadow: 0 8px 20px rgba(255, 20, 147, 0.3);">TIẾP TỤC</button>
+                style="flex: 2; padding: 15px; border: none; border-radius: 18px; background: ${myBank.gradient}; color: #fff; font-weight: 800; cursor: pointer; box-shadow: 0 8px 20px ${myBank.color}30;">TIẾP TỤC</button>
         </div>
     </div>
     `;
 
-    // --- LOGIC TRA CỨU Tên CHỦ TK TỰ ĐỘNG (Giữ nguyên 100%) ---
+    // --- LOGIC TRA CỨU (Giữ nguyên logic tra cứu ngân hàng đối phương) ---
     const stkInput = document.getElementById('target-stk');
     const ownerDisplay = document.getElementById('target-owner-display');
     const loadingIcon = document.getElementById('stk-loading');
@@ -21100,23 +21145,30 @@ function setRpMode(mode) {
         const stk = this.value;
         if (stk.length === 12) {
             loadingIcon.style.display = 'block';
-            ownerDisplay.innerText = "Đang kiểm tra...";
-            ownerDisplay.style.color = "#888";
-            const cardsRef = db.ref('sweetie_cards');
-            const query = await cardsRef.orderByChild('accountNo').equalTo(stk).once('value');
+            ownerDisplay.innerHTML = `<span style="color: #888;">Đang kiểm tra...</span>`;
+            
+            const query = await db.ref('sweetie_cards').orderByChild('accountNo').equalTo(stk).once('value');
             loadingIcon.style.display = 'none';
+
             if (query.exists()) {
                 const targetData = Object.values(query.val())[0];
                 const targetId = Object.keys(query.val())[0];
-                ownerDisplay.innerText = "✓ " + targetData.ownerName.toUpperCase();
+                const tBank = BANK_CONFIG[targetData.bankType || 'sweetie'];
+
+                // Hiển thị Tên + Tên Ngân hàng đối phương
+                ownerDisplay.innerHTML = `
+                    <div style="display: flex; flex-direction: column; line-height: 1.4;">
+                        <span style="color: #2e7d32;">✓ ${targetData.ownerName.toUpperCase()}</span>
+                        <span style="font-size: 0.65rem; color: ${tBank.color}; font-weight: 800;">${tBank.name}</span>
+                    </div>
+                `;
                 ownerDisplay.dataset.targetId = targetId;
-                ownerDisplay.style.color = "#2e7d32";
+                ownerDisplay.dataset.targetBankName = tBank.name; // Để dùng cho Bill sau này
             } else {
-                ownerDisplay.innerText = "⚠ TÀI KHOẢN KHÔNG TỒN TẠI";
-                ownerDisplay.style.color = "#c62828";
+                ownerDisplay.innerHTML = `<span style="color: #c62828;">⚠ TÀI KHOẢN KHÔNG TỒN TẠI</span>`;
                 ownerDisplay.dataset.targetId = "";
             }
-        } else { ownerDisplay.innerText = ""; }
+        } else { ownerDisplay.innerHTML = ""; }
     };
 
     document.getElementById('btn-do-transfer').onclick = () => executeBankingTransfer(myCardId, myCardData);
@@ -21233,6 +21285,16 @@ async function saveBeneficiary(stk, name) {
 }
 
 function showBankingBill(data) {
+    // Cấu hình màu sắc động cho Bill dựa trên ngân hàng nhận
+    const BANK_CONFIG = {
+        'SWEETIE BANK': { color: '#ff1493', gradient: 'linear-gradient(135deg, #ff1493, #ff69b4)', bg: '#fffafa' },
+        'HONEY BANK': { color: '#f39c12', gradient: 'linear-gradient(135deg, #f39c12, #f1c40f)', bg: '#fffdf5' },
+        'CLOUD BANK': { color: '#3498db', gradient: 'linear-gradient(135deg, #3498db, #85c1e9)', bg: '#f5faff' }
+    };
+
+    // Lấy config màu dựa trên tên ngân hàng (data.receiverBank), mặc định là Sweetie
+    const billTheme = BANK_CONFIG[data.receiverBank] || BANK_CONFIG['SWEETIE BANK'];
+
     const dashboard = document.querySelector('.card-dashboard-container');
     let ui = document.getElementById('transaction-ui');
 
@@ -21245,29 +21307,19 @@ function showBankingBill(data) {
     }
 
     ui.style.display = 'flex';
-    
-    // --- NÂNG CẤP: CHO PHÉP CUỘN NHƯNG ẨN THANH CUỘN (GIỮ NGUYÊN) ---
     ui.style.overflowY = 'auto'; 
     ui.style.alignItems = 'center'; 
     ui.style.padding = '20px 0'; 
 
-    // Nội dung Bill nâng cấp chuyên nghiệp - Đã bỏ mã QR
     ui.innerHTML = `
         <style>
-            /* Ẩn thanh cuộn cho Chrome, Safari và Opera */
-            #transaction-ui::-webkit-scrollbar {
-                display: none;
-            }
-            /* Ẩn thanh cuộn cho IE, Edge và Firefox */
-            #transaction-ui {
-                -ms-overflow-style: none;  /* IE and Edge */
-                scrollbar-width: none;  /* Firefox */
-            }
+            #transaction-ui::-webkit-scrollbar { display: none; }
+            #transaction-ui { -ms-overflow-style: none; scrollbar-width: none; }
         </style>
 
-        <div id="bill-canvas" class="banking-bill-v2" style="width: 100%; max-width: 350px; background: #fff; border-radius: 35px; padding: 0; overflow: hidden; animation: zoomIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 20px 60px rgba(255, 20, 147, 0.15); border: 1px solid #fff0f5; position: relative; flex-shrink: 0; margin: auto;">
+        <div id="bill-canvas" class="banking-bill-v2" style="width: 100%; max-width: 350px; background: #fff; border-radius: 35px; padding: 0; overflow: hidden; animation: zoomIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 20px 60px ${billTheme.color}25; border: 1px solid ${billTheme.color}10; position: relative; flex-shrink: 0; margin: auto;">
             
-            <div style="background: linear-gradient(135deg, #ff1493, #ff69b4); padding: 30px 20px; text-align: center; color: #fff;">
+            <div style="background: ${billTheme.gradient}; padding: 30px 20px; text-align: center; color: #fff;">
                 <div style="width: 60px; height: 60px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; border: 2px solid #fff;">
                     <i class="fas fa-check" style="font-size: 2rem;"></i>
                 </div>
@@ -21276,44 +21328,50 @@ function showBankingBill(data) {
             </div>
 
             <div style="padding: 25px 20px; position: relative; background: #fff;">
-                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-15deg); font-size: 3rem; font-weight: 900; color: rgba(255, 20, 147, 0.03); pointer-events: none; white-space: nowrap;">SWEETIE BANK</div>
+                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-15deg); font-size: 2.5rem; font-weight: 900; color: ${billTheme.color}08; pointer-events: none; white-space: nowrap; text-transform: uppercase;">${data.receiverBank || 'SWEETIE BANK'}</div>
 
                 <div style="text-align: center; margin-bottom: 25px;">
                     <span style="font-size: 0.8rem; color: #888; font-weight: 600;">Số tiền chuyển</span>
-                    <h1 style="color: #ff1493; margin: 5px 0; font-size: 2.2rem; font-weight: 900;">${data.amount.toLocaleString()}<span style="font-size: 1.2rem; margin-left: 5px;">VND</span></h1>
+                    <h1 style="color: ${billTheme.color}; margin: 5px 0; font-size: 2.2rem; font-weight: 900;">${data.amount.toLocaleString()}<span style="font-size: 1.2rem; margin-left: 5px;">VND</span></h1>
                 </div>
 
-                <div style="background: #fffafa; border-radius: 20px; padding: 15px; border: 1px solid #ff149310;">
-                    <div class="bill-row-v2" style="display: flex; justify-content: space-between; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid #ff149308;">
+                <div style="background: ${billTheme.bg}; border-radius: 20px; padding: 15px; border: 1px solid ${billTheme.color}10;">
+                    <div class="bill-row-v2" style="display: flex; justify-content: space-between; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid ${billTheme.color}08;">
                         <span style="font-size: 0.75rem; color: #888; font-weight: 500;">Người nhận</span>
                         <strong style="font-size: 0.8rem; color: #333; text-align: right; max-width: 60%;">${data.receiver.toUpperCase()}</strong>
                     </div>
-                    <div class="bill-row-v2" style="display: flex; justify-content: space-between; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid #ff149308;">
+                    
+                    <div class="bill-row-v2" style="display: flex; justify-content: space-between; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid ${billTheme.color}08;">
+                        <span style="font-size: 0.75rem; color: #888; font-weight: 500;">Ngân hàng thụ hưởng</span>
+                        <strong style="font-size: 0.8rem; color: ${billTheme.color}; text-align: right;">${data.receiverBank || 'SWEETIE BANK'}</strong>
+                    </div>
+
+                    <div class="bill-row-v2" style="display: flex; justify-content: space-between; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid ${billTheme.color}08;">
                         <span style="font-size: 0.75rem; color: #888; font-weight: 500;">Số tài khoản</span>
                         <strong style="font-family: monospace; font-size: 0.9rem; color: #333;">${data.stk.match(/.{1,4}/g).join(' ')}</strong>
                     </div>
-                    <div class="bill-row-v2" style="display: flex; justify-content: space-between; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid #ff149308;">
+                    <div class="bill-row-v2" style="display: flex; justify-content: space-between; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid ${billTheme.color}08;">
                         <span style="font-size: 0.75rem; color: #888; font-weight: 500;">Nội dung</span>
                         <strong style="font-size: 0.8rem; color: #555; text-align: right; max-width: 60%;">${data.note}</strong>
                     </div>
                     <div class="bill-row-v2" style="display: flex; justify-content: space-between; align-items: flex-start; padding: 12px 0;">
                         <span style="font-size: 0.75rem; color: #888; font-weight: 500;">Mã giao dịch</span>
-                        <strong style="font-size: 0.8rem; color: #ff69b4;">${data.transId}</strong>
+                        <strong style="font-size: 0.8rem; color: ${billTheme.color};">${data.transId}</strong>
                     </div>
                 </div>
 
                 <div style="margin-top: 25px; text-align: center;">
-                    <p style="font-size: 0.65rem; color: #bbb; margin: 0; font-weight: 600; letter-spacing: 0.5px;">SWEETIE BANK - TRAO GỬI YÊU THƯƠNG 🌸</p>
+                    <p style="font-size: 0.65rem; color: #bbb; margin: 0; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase;">${data.receiverBank || 'SWEETIE BANK'} - TRAO GỬI YÊU THƯƠNG 🌸</p>
                 </div>
             </div>
 
             <div style="padding: 0 20px 25px; display: flex; flex-direction: column; gap: 10px;">
                 <button onclick="downloadBill()" 
-                    style="width: 100%; padding: 12px; border: 1.5px solid #ff1493; border-radius: 20px; background: #fff; color: #ff1493; font-weight: 800; cursor: pointer; transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                    style="width: 100%; padding: 12px; border: 1.5px solid ${billTheme.color}; border-radius: 20px; background: #fff; color: ${billTheme.color}; font-weight: 800; cursor: pointer; transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 8px;">
                     <i class="fas fa-download"></i> LƯU ẢNH BILL
                 </button>
                 <button onclick="document.getElementById('transaction-ui').style.display='none'" 
-                    style="width: 100%; padding: 12px; border: none; border-radius: 20px; background: #ff1493; color: #fff; font-weight: 800; cursor: pointer; transition: 0.3s;">
+                    style="width: 100%; padding: 12px; border: none; border-radius: 20px; background: ${billTheme.color}; color: #fff; font-weight: 800; cursor: pointer; transition: 0.3s;">
                     HOÀN TẤT
                 </button>
             </div>
@@ -21605,6 +21663,7 @@ function selectSavedAccount(stk, name) {
         if (btnDone) btnDone.style.opacity = '1';
     }
 }
+    
 </script>
 </body>
 </html>
