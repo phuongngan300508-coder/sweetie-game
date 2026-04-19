@@ -21661,52 +21661,53 @@ window.removeAccountNickname = async function(stk) {
     }
 };
     
-function selectSavedAccount(stk, name) {
+async function selectSavedAccount(stk, name) {
     const stkInput = document.getElementById('target-stk');
     const ownerDisplay = document.getElementById('target-owner-display');
     
-    // Cấu hình để lấy tên ngân hàng hiển thị
-    const BANK_NAMES = {
-        'sweetie': 'SWEETIE BANK',
-        'honey': 'HONEY BANK',
-        'cloud': 'CLOUD BANK'
+    const BANK_CONFIG = {
+        'sweetie': { name: 'SWEETIE BANK', color: '#ff1493' },
+        'honey': { name: 'HONEY BANK', color: '#f39c12' },
+        'cloud': { name: 'CLOUD BANK', color: '#3498db' }
     };
 
     if (stkInput && ownerDisplay) {
-        // 1. Điền số tài khoản vào ô nhập
+        // 1. Điền số tài khoản
         stkInput.value = stk;
         
-        // 2. Kích hoạt sự kiện input để hệ thống tự tra cứu targetId và BankType
-        // Chúng ta cần dispatch trước để các hàm lắng nghe cập nhật dữ liệu ngân hàng
+        // 2. Kích hoạt sự kiện input (Thêm bubbles:true để chắc chắn logic ngầm nhận được)
         stkInput.dispatchEvent(new Event('input', { bubbles: true }));
 
-        // 3. Hiển thị TÊN CHỦ TK và TÊN NGÂN HÀNG (Không dấu tích)
-        // Đợi một chút siêu ngắn để logic tra cứu kịp trả về thông tin ngân hàng
-        setTimeout(async () => {
-            const query = await db.ref('sweetie_cards').orderByChild('accountNo').equalTo(stk).once('value');
-            if (query.exists()) {
-                const targetData = Object.values(query.val())[0];
-                const bankKey = targetData.bankType || 'sweetie';
-                const bankName = BANK_NAMES[bankKey];
-                
-                ownerDisplay.innerHTML = `
-                    <div style="display: flex; flex-direction: column; line-height: 1.2;">
-                        <span style="color: #2e7d32; font-weight: 800;">${name.toUpperCase()}</span>
-                        <span style="font-size: 0.65rem; color: #888; font-weight: 700;">${bankName}</span>
+        // 3. Truy xuất dữ liệu thật từ Firebase để lấy BankType và Tên gốc
+        const query = await db.ref('sweetie_cards').orderByChild('accountNo').equalTo(stk).once('value');
+        
+        if (query.exists()) {
+            const targetData = Object.values(query.val())[0];
+            const bankKey = targetData.bankType || 'sweetie';
+            const bankInfo = BANK_CONFIG[bankKey];
+
+            // HIỂN THỊ 3 DÒNG TÁCH BIỆT: Biệt danh - Ngân hàng - Tên gốc
+            ownerDisplay.innerHTML = `
+                <div style="display: flex; flex-direction: column; line-height: 1.3; text-align: left; animation: slideUp 0.3s ease;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="color: #2e7d32; font-weight: 900; font-size: 0.95rem;">${name.toUpperCase()}</span>
+                        <span style="font-size: 0.6rem; color: #fff; background: ${bankInfo.color}; padding: 1px 6px; border-radius: 4px; font-weight: 800; letter-spacing: 0.5px;">${bankInfo.name}</span>
                     </div>
-                `;
-            } else {
-                ownerDisplay.innerText = name.toUpperCase();
-            }
-            
-            // Hiệu ứng nháy nhẹ báo hiệu điền xong
-            ownerDisplay.style.animation = "none";
-            ownerDisplay.offsetHeight; // trigger reflow
-            ownerDisplay.style.animation = "pulse 0.4s ease";
-        }, 50);
+                    <div style="font-size: 0.75rem; color: #888; font-weight: 600; margin-top: 2px;">
+                        Tên tài khoản: <span style="color: #444;">${targetData.ownerName.toUpperCase()}</span>
+                    </div>
+                </div>
+            `;
+        } else {
+            ownerDisplay.innerText = name.toUpperCase();
+        }
+        
+        // Hiệu ứng nháy nhẹ
+        ownerDisplay.style.animation = "none";
+        ownerDisplay.offsetHeight; 
+        ownerDisplay.style.animation = "pulse 0.4s ease";
     }
     
-    // 4. Đóng popup danh bạ
     const savedUI = document.getElementById('saved-accounts-ui');
     if (savedUI) savedUI.style.display = 'none';
 }
