@@ -20291,11 +20291,11 @@ function renderCardDashboard(cardId) {
                         <p style="font-size: 0.6rem; color: #bbb; margin-top: 5px; text-align: center;">* Dùng mã này để khôi phục thẻ. Hãy giữ bí mật!</p>
                     </div>
 
-                    <div class="dashboard-column-right" style="width: 100%;">
-                        <div class="card-balance-box" style="padding: 15px; background: #fff; border-radius: 20px; border: 2px dashed ${bank.color}40; width: 100%; box-sizing: border-box; text-align: center;">
-                            <span style="color: #888; font-size: 0.85rem;">Số dư khả dụng</span>
-                            <h2 style="color: ${bank.color}; margin: 5px 0; font-size: 1.6rem;">${(card.balance || 0).toLocaleString()} VNĐ</h2>
-                        </div>
+                    <div class="card-balance-box" style="margin: 20px 0; padding: 15px; background: #fff; border-radius: 20px; border: 2px dashed ${bank.color}40; width: 100%; box-sizing: border-box;">
+                    <span style="color: #888; font-size: 0.85rem;">Số dư khả dụng</span>
+                    <h2 style="color: ${bank.color}; margin: 5px 0; font-size: 1.6rem;">${(card.balance || 0).toLocaleString()} VNĐ</h2>
+                </div>
+
 
                         <div class="card-actions-wrapper" style="width: 100%;">
         <div class="main-actions" style="display: flex; gap: 12px; margin-bottom: 12px;">
