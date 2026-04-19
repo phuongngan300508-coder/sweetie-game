@@ -20218,11 +20218,11 @@ function renderCardDashboard(cardId) {
             <div class="card-dashboard-container" style="animation: fadeIn 0.5s; display: flex; flex-direction: column; align-items: center;">
                 <h3 style="color: ${bankColor}; margin-bottom: 15px; font-weight: 800; width: 100%; text-align: left;">Thẻ của bạn</h3>
                 
-                <div class="sweetie-card-design bank-style" style="margin: 0 auto; background: linear-gradient(135deg, ${bankColor}, #444); border: none; box-shadow: 0 15px 30px ${bankColor}40;">
-                    <div class="card-watermark" style="color: rgba(255, 255, 255, 0.1);">${bankName.toUpperCase()}</div>
+                <div class="sweetie-card-design bank-style" style="margin: 0 auto; background: linear-gradient(135deg, ${bankColor}, #fff); border: 1px solid ${bankColor}20;">
+                    <div class="card-watermark" style="color: rgba(255, 255, 255, 0.25);">${bankName.toUpperCase()}</div>
                     
                     <div class="card-header-row">
-                        <div class="bank-logo" style="color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">
+                        <div class="bank-logo" style="color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.3);">
                             <i class="fas fa-university"></i> ${bankName.toUpperCase()}
                         </div>
                         <div class="card-contactless">
@@ -20230,25 +20230,27 @@ function renderCardDashboard(cardId) {
                         </div>
                     </div>
 
-                    <div class="emv-chip" style="background: linear-gradient(135deg, #ffd700, #b8860b);">
+                    <div class="emv-chip">
                         <div class="chip-line"></div>
                         <div class="chip-line"></div>
                         <div class="chip-line"></div>
                         <div class="chip-line"></div>
                     </div>
 
-                    <div class="card-id-view" style="color: #fff; text-shadow: 0 2px 5px rgba(0,0,0,0.4); font-family: 'Courier New', monospace; letter-spacing: 1px;">
+                    <div class="card-id-view" style="color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,0.4); font-weight: 700;">
                         ${card.accountNo.match(/.{1,4}/g).join(' ')}
                     </div>
 
                     <div class="card-footer-info">
                         <div class="footer-left">
-                            <span class="label" style="color: rgba(255, 255, 255, 0.7); font-size: 0.55rem;">CARD HOLDER</span>
-                            <div class="card-holder-name" style="color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.3); font-weight: 700;">${(card.ownerName || card.owner).toUpperCase()}</div>
+                            <span class="label" style="color: rgba(255, 255, 255, 0.85); font-weight: 600;">CARD HOLDER</span>
+                            <div class="card-holder-name" style="color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.3); font-weight: 700;">
+                                ${(card.ownerName || card.owner).toUpperCase()}
+                            </div>
                         </div>
                         <div class="footer-right">
-                            <span class="label" style="color: rgba(255, 255, 255, 0.7); font-size: 0.55rem;">VALID THRU</span>
-                            <div class="expiry" style="color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.3); font-weight: 700;">12/29</div>
+                            <span class="label" style="color: rgba(255, 255, 255, 0.85); font-weight: 600;">VALID THRU</span>
+                            <div class="expiry" style="color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.3); font-weight: 700;">12/29</div>
                         </div>
                     </div>
                 </div>
@@ -20268,10 +20270,10 @@ function renderCardDashboard(cardId) {
 
                 <div class="card-actions-wrapper" style="width: 100%;">
                     <div class="main-actions" style="display: flex; gap: 10px; margin-bottom: 10px;">
-                        <button onclick="handleCardTransaction('deposit')" class="btn-card-action btn-deposit" style="flex: 1; border-color: ${bankColor}20; color: ${bankColor}">
+                        <button onclick="handleCardTransaction('deposit')" class="btn-card-action" style="flex: 1; background: ${bankColor}; color: #fff; border: none; border-radius: 15px; padding: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; box-shadow: 0 4px 10px ${bankColor}20;">
                             <i class="fas fa-plus-circle"></i> Nạp tiền
                         </button>
-                        <button onclick="handleCardTransaction('withdraw')" class="btn-card-action btn-withdraw" style="flex: 1; border-color: ${bankColor}20; color: ${bankColor}">
+                        <button onclick="handleCardTransaction('withdraw')" class="btn-card-action" style="flex: 1; background: ${bankColor}; color: #fff; border: none; border-radius: 15px; padding: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; box-shadow: 0 4px 10px ${bankColor}20;">
                             <i class="fas fa-minus-circle"></i> Rút tiền
                         </button>
                     </div>
