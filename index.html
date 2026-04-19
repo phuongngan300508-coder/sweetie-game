@@ -13853,6 +13853,35 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const messaging = firebase.messaging();
 
+// --- HÀM LẮNG NGHE THÔNG BÁO NHẬN TIỀN VÀ CẬP NHẬT SỐ DƯ ---
+function listenSystemNotifications() {
+    if (typeof currentUser === 'undefined' || !currentUser) return;
+    
+    const myNotiQueue = db.ref(`notifications_queue/${currentUser}`);
+    
+    myNotiQueue.off(); // Xóa listener cũ
+    myNotiQueue.on('child_added', async (snapshot) => {
+        const noti = snapshot.val();
+        if (!noti) return;
+
+        // 1. Hiển thị vào chuông thông báo của Henry
+        if (typeof addNotification === 'function') {
+            // Nếu là thông báo chuyển khoản (type banking), mình cho màu xanh cho chuyên nghiệp
+            const bgColor = noti.type === 'banking' ? 'linear-gradient(135deg, #00b09b, #96c93d)' : 'linear-gradient(135deg, #ff69b4, #ff1493)';
+            addNotification(noti.title, noti.text, bgColor);
+        }
+
+        // 2. CẬP NHẬT SỐ DƯ REAL-TIME (Cực kỳ quan trọng khi nhận tiền)
+        // Gọi hàm updateUI hoặc hàm load dữ liệu ví của bạn để người dùng thấy tiền nhảy số luôn
+        if (typeof updateUI === 'function') {
+            updateUI(); 
+        }
+
+        // 3. Xóa thông báo đã xử lý khỏi Firebase để tránh hiện lại khi F5
+        myNotiQueue.child(snapshot.key).remove();
+    });
+}
+
 // Đăng ký Service Worker
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', function() {
@@ -13861,6 +13890,9 @@ if ('serviceWorker' in navigator) {
             console.log('✅ PWA: App đã sẵn sàng!');
             
             if (typeof currentUser !== 'undefined' && currentUser) {
+                // KÍCH HOẠT CHUÔNG THÔNG BÁO NGAY KHI APP SẴN SÀNG
+                listenSystemNotifications();
+
                 if (typeof initCallSystem === 'function') {
                     initCallSystem();
                 }
@@ -13891,7 +13923,6 @@ if ('serviceWorker' in navigator) {
 messaging.onMessage((payload) => {
     console.log('📩 Nhận thông báo mới:', payload);
     
-    // Chỉ hiện thông báo nếu người dùng KHÔNG đang mở tab chat
     const chatTab = document.getElementById('tab-global');
     const isChatOpen = chatTab && chatTab.style.display === 'flex';
 
@@ -13902,7 +13933,6 @@ messaging.onMessage((payload) => {
             icon: payload.notification.icon || "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
         };
 
-        // 1. Hiển thị thông báo trình duyệt
         if ("Notification" in window && Notification.permission === "granted") {
             const n = new Notification(notificationTitle, notificationOptions);
             n.onclick = () => {
@@ -13912,7 +13942,6 @@ messaging.onMessage((payload) => {
             };
         }
 
-        // 2. Hiển thị thông báo trong Game (Nếu bạn có hàm addNotification)
         if (typeof addNotification === 'function') {
             addNotification(
                 "💬 " + notificationTitle.toUpperCase(),
@@ -13922,14 +13951,13 @@ messaging.onMessage((payload) => {
         }
     }
 });
-// ------------------------------------------------------------------
 
 let deferredPrompt;
-
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   deferredPrompt = e;
 });
+    
 // Thay vì dùng setTimeout, mình dùng sự kiện click vào màn hình
 window.addEventListener('click', () => {
   if (deferredPrompt) {
@@ -21282,17 +21310,28 @@ function setRpMode(mode) {
             }
         }
 
-        // targetId là ID của người nhận (Firebase UID) mà Henry đã lấy được lúc tra cứu STK
         if (targetId) {
-            const pushNotiRef = db.ref(`notifications_queue/${targetId}`).push();
-            await pushNotiRef.set({
-                title: "💰 BẠN VỪA NHẬN ĐƯỢC TIỀN",
-                text: `${myCardData.ownerName.toUpperCase()} đã chuyển ${amount.toLocaleString()} VNĐ vào thẻ của bạn.`,
-                from: myCardData.ownerName,
-                time: firebase.database.ServerValue.TIMESTAMP,
-                type: "banking" // Để Henry có thể trang trí icon ngân hàng cho thông báo này
-            });
-        }
+    const pushNotiRef = db.ref(`notifications_queue/${targetId}`).push();
+    
+    // Lấy tên ngân hàng để hiển thị trong tin nhắn cho xịn
+    const bankNames = {
+        'sweetie': 'Sweetie Bank',
+        'honey': 'Honey Bank',
+        'cloud': 'Cloud Bank'
+    };
+    const senderBankName = bankNames[myCardData.bankType || 'sweetie'];
+
+    await pushNotiRef.set({
+        title: "💰 BIẾN ĐỘNG SỐ DƯ",
+        // Nội dung hiển thị: Tên chủ thẻ + Số tài khoản chuyển đến
+        text: `Tài khoản ${myCardData.accountNo} (${myCardData.ownerName.toUpperCase()}) vừa chuyển +${amount.toLocaleString()} VNĐ qua ${senderBankName}.`,
+        from: myCardData.ownerName,
+        stk: myCardData.accountNo, // Gửi kèm số tài khoản người gửi
+        amount: amount,
+        time: firebase.database.ServerValue.TIMESTAMP,
+        type: "banking"
+    });
+}
 
         // 4. Hiển thị Bill thành công (Giữ nguyên của Henry)
         showBankingBill({
@@ -21796,32 +21835,5 @@ async function selectSavedAccount(stk, name) {
         if (btnDone) btnDone.style.opacity = '1';
     }
 }
-
-    function listenSystemNotifications() {
-    if (!currentUser) return;
-
-    // Lắng nghe hộp thư chờ của chính mình
-    const myNotiQueue = db.ref(`notifications_queue/${currentUser}`);
-
-    myNotiQueue.on('child_added', (snapshot) => {
-        const noti = snapshot.val();
-        if (!noti) return;
-
-        // 1. Gọi hàm hiển thị thông báo vào chuông của Henry
-        if (typeof addNotification === 'function') {
-            addNotification(noti.title, noti.text);
-        }
-
-        // 2. Tùy chọn: Henry có thể hiện một cái Alert hồng hồng cho "xịn"
-        // alert(`🌸 ${noti.title}\n${noti.text}`);
-
-        // 3. Sau khi đã hiển thị xong, xóa thông báo này khỏi hàng chờ để không bị lặp lại
-        myNotiQueue.child(snapshot.key).remove();
-    });
-}
-
-// Gọi hàm này ngay sau khi currentUser đã được xác định
-// Ví dụ: Trong hàm checkLogin() của Henry
-</script>
 </body>
 </html>
