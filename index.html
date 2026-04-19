@@ -21533,17 +21533,30 @@ function showBankingBill(data) {
 
 // --- HÀM BỔ TRỢ ĐỂ ĐẶT VÀ XÓA BIỆT DANH ---
 
-window.setAccountNickname = function(stk) {
-    const account = userData.savedAccounts.find(a => a.stk === stk);
+window.setAccountNickname = async function(stk) {
+    // 1. Lấy cardId đang liên kết để truy xuất danh bạ chính xác từ Firebase
+    const cardIdSnap = await db.ref(`users/${currentUser}/linkedCard`).once('value');
+    const currentCardId = cardIdSnap.val();
+    
+    if (!currentCardId) return alert("Không tìm thấy thẻ để đặt biệt danh!");
+
+    // 2. Lấy danh sách từ Firebase thay vì dùng userData để tránh lỗi đồng bộ
+    const snap = await db.ref(`sweetie_cards/${currentCardId}/savedAccounts`).once('value');
+    const list = snap.val() || [];
+    const account = list.find(a => a.stk === stk);
+    
     if (!account) return;
 
+    // 3. Khởi tạo hoặc lấy lại popup (Giữ nguyên logic UI của Henry)
     let nickPopup = document.getElementById('nickname-editor-popup');
     if (!nickPopup) {
         nickPopup = document.createElement('div');
         nickPopup.id = 'nickname-editor-popup';
         nickPopup.className = 'sweetie-transaction-overlay';
-        nickPopup.style.zIndex = "10002";
-        document.querySelector('.card-dashboard-container').appendChild(nickPopup);
+        nickPopup.style.zIndex = "100002"; // Đảm bảo nằm trên cùng
+        
+        // Gắn vào body để tránh bị lỗi CSS nếu card-dashboard-container chưa render
+        document.body.appendChild(nickPopup);
     }
 
     nickPopup.style.display = 'flex';
@@ -21581,11 +21594,11 @@ window.setAccountNickname = function(stk) {
     setTimeout(() => document.getElementById('new-nickname-input').focus(), 150);
 };
 
-   window.confirmSetNickname = async function(stk) {
+  window.confirmSetNickname = async function(stk) {
     const input = document.getElementById('new-nickname-input');
     const nick = input.value.trim();
     
-    // Lấy cardId
+    // 1. Lấy cardId (Giữ nguyên)
     const cardIdSnap = await db.ref(`users/${currentUser}/linkedCard`).once('value');
     const cardId = cardIdSnap.val();
     
@@ -21595,12 +21608,26 @@ window.setAccountNickname = function(stk) {
 
     const account = list.find(a => a.stk === stk);
     if (account) {
+        // 2. Cập nhật biệt danh (Giữ nguyên)
         account.nickname = nick || null;
-        await cardSavedRef.set(list); // Lưu lại danh sách đã sửa
+        await cardSavedRef.set(list); // Lưu lại danh sách lên Firebase
         
-        document.getElementById('nickname-editor-popup').style.display = 'none';
-        openSavedAccounts(); // Tải lại giao diện
-        addNotification("🌸 BIỆT DANH", nick ? `Đã đặt biệt danh là: ${nick}` : "Đã xóa biệt danh");
+        // --- PHẦN BỔ SUNG: CẬP NHẬT BIẾN LOCAL USERDATA ---
+        // Điều này giúp biến userData.savedAccounts khớp với Firebase ngay lập tức
+        if (typeof userData !== 'undefined') {
+            userData.savedAccounts = list;
+            if (typeof saveData === 'function') saveData(); 
+        }
+        
+        // 3. Đóng popup và tải lại giao diện (Giữ nguyên)
+        const popup = document.getElementById('nickname-editor-popup');
+        if (popup) popup.style.display = 'none';
+        
+        if (typeof openSavedAccounts === 'function') openSavedAccounts(); 
+        
+        if (typeof addNotification === 'function') {
+            addNotification("🌸 BIỆT DANH", nick ? `Đã đặt biệt danh là: ${nick}` : "Đã xóa biệt danh");
+        }
     }
 };
 
@@ -21637,23 +21664,45 @@ function selectSavedAccount(stk, name) {
     const stkInput = document.getElementById('target-stk');
     const ownerDisplay = document.getElementById('target-owner-display');
     
+    // Cấu hình để lấy tên ngân hàng hiển thị
+    const BANK_NAMES = {
+        'sweetie': 'SWEETIE BANK',
+        'honey': 'HONEY BANK',
+        'cloud': 'CLOUD BANK'
+    };
+
     if (stkInput && ownerDisplay) {
         // 1. Điền số tài khoản vào ô nhập
         stkInput.value = stk;
         
-        // 2. Hiển thị TÊN GỐC (luôn là tên thật của tài khoản)
-        ownerDisplay.innerText = name.toUpperCase();
-        ownerDisplay.style.color = "#2e7d32"; // Chỉnh màu xanh thành công
-        
-        // Hiệu ứng nháy nhẹ để báo hiệu đã điền xong
-        ownerDisplay.style.animation = "none";
-        setTimeout(() => {
-            ownerDisplay.style.animation = "pulse 0.4s ease";
-        }, 10);
+        // 2. Kích hoạt sự kiện input để hệ thống tự tra cứu targetId và BankType
+        // Chúng ta cần dispatch trước để các hàm lắng nghe cập nhật dữ liệu ngân hàng
+        stkInput.dispatchEvent(new Event('input', { bubbles: true })); 
 
-        // 3. Kích hoạt sự kiện input để Firebase tự tìm targetId
-        // Logic này Henry giữ nguyên để hàm executeBankingTransfer không bị lỗi
-        stkInput.dispatchEvent(new Event('input')); 
+        // 3. Hiển thị TÊN CHỦ TK và TÊN NGÂN HÀNG (Không dấu tích)
+        // Đợi một chút siêu ngắn để logic tra cứu kịp trả về thông tin ngân hàng
+        setTimeout(async () => {
+            const query = await db.ref('sweetie_cards').orderByChild('accountNo').equalTo(stk).once('value');
+            if (query.exists()) {
+                const targetData = Object.values(query.val())[0];
+                const bankKey = targetData.bankType || 'sweetie';
+                const bankName = BANK_NAMES[bankKey];
+                
+                ownerDisplay.innerHTML = `
+                    <div style="display: flex; flex-direction: column; line-height: 1.2;">
+                        <span style="color: #2e7d32; font-weight: 800;">${name.toUpperCase()}</span>
+                        <span style="font-size: 0.65rem; color: #888; font-weight: 700;">${bankName}</span>
+                    </div>
+                `;
+            } else {
+                ownerDisplay.innerText = name.toUpperCase();
+            }
+            
+            // Hiệu ứng nháy nhẹ báo hiệu điền xong
+            ownerDisplay.style.animation = "none";
+            ownerDisplay.offsetHeight; // trigger reflow
+            ownerDisplay.style.animation = "pulse 0.4s ease";
+        }, 50);
     }
     
     // 4. Đóng popup danh bạ
