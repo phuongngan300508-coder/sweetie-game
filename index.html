@@ -21834,61 +21834,98 @@ async function selectSavedAccount(stk, name) {
 }
 
     async function showFluctuationPopup(cardId) {
-    // 1. Tắt chấm đỏ khi người dùng đã ấn vào xem
+    // 1. Tắt chấm đỏ và xóa dấu vết thông báo
     const dot = document.getElementById('card-noti-dot');
     if (dot) dot.style.display = 'none';
     localStorage.removeItem(`new_transfer_${currentUser}`);
 
-    // 2. Tạo Overlay
+    // 2. Tạo Overlay (Giữ nguyên logic của Henry)
     let overlay = document.getElementById('fluctuation-overlay');
     if (!overlay) {
         overlay = document.createElement('div');
         overlay.id = 'fluctuation-overlay';
-        overlay.style.cssText = `position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); backdrop-filter:blur(5px); z-index:200000; display:flex; align-items:center; justify-content:center;`;
+        overlay.style.cssText = `position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); backdrop-filter:blur(8px); z-index:200000; display:flex; align-items:center; justify-content:center;`;
         document.body.appendChild(overlay);
     }
     overlay.style.display = 'flex';
 
-    // 3. Lấy dữ liệu 5 giao dịch nhận gần nhất
-    const snap = await db.ref(`card_history/${cardId}`).orderByChild('type').equalTo('transfer_in').limitToLast(5).once('value');
+    // 3. Lấy dữ liệu 10 giao dịch nhận gần nhất (limitToLast(10))
+    // Cần đảm bảo Rules Firebase đã index "type"
+    const snap = await db.ref(`card_history/${cardId}`)
+                        .orderByChild('type')
+                        .equalTo('transfer_in')
+                        .limitToLast(10)
+                        .once('value');
+    
     let htmlContent = "";
 
     if (!snap.exists()) {
-        htmlContent = `<p style="text-align:center; color:#888; margin-top:30px;">Chưa có biến động số dư nào ✨</p>`;
+        htmlContent = `
+            <div style="text-align:center; margin-top:50px;">
+                <i class="fas fa-comment-slash" style="font-size:3rem; color:#ff149320; margin-bottom:15px;"></i>
+                <p style="color:#888; font-size:0.85rem;">Chưa có biến động số dư nào ✨</p>
+            </div>`;
     } else {
         let logs = [];
-        snap.forEach(child => logs.unshift(child.val())); // Đảo ngược để cái mới nhất lên đầu
+        // Lấy dữ liệu và đảo ngược để cái mới nhất (thời gian lớn nhất) lên đầu
+        snap.forEach(child => { logs.unshift(child.val()); });
 
         htmlContent = logs.map(log => {
-            const time = new Date(log.time).toLocaleString('vi-VN');
+            const time = new Date(log.time).toLocaleString('vi-VN', {
+                hour: '2-digit', minute: '2-digit', second: '2-digit',
+                day: '2-digit', month: '2-digit', year: 'numeric'
+            });
+
+            // Xử lý thông tin ngân hàng (Mặc định là SWEETIE BANK nếu không có dữ liệu)
+            const fromBank = (log.fromBank || 'Sweetie Bank').toUpperCase();
+
             return `
-                <div style="background:#fff; border-left:5px solid #ff1493; padding:15px; border-radius:15px; margin-bottom:15px; box-shadow:0 5px 15px rgba(0,0,0,0.05); animation: slideIn 0.3s ease;">
-                    <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
-                        <span style="font-size:0.7rem; color:#ff1493; font-weight:800;">THÔNG BÁO BIẾN ĐỘNG</span>
-                        <span style="font-size:0.65rem; color:#bbb;">${time}</span>
+                <div style="background:#fff; border-radius:20px; padding:18px; margin-bottom:12px; box-shadow:0 8px 20px rgba(255,20,147,0.05); border:1px solid #ff149305; animation: slideUp 0.4s ease forwards;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                        <span style="font-size:0.65rem; color:#ff1493; background:#fff0f5; padding:3px 10px; border-radius:8px; font-weight:800; letter-spacing:0.5px;">+ NHẬN TIỀN</span>
+                        <span style="font-size:0.65rem; color:#bbb; font-weight:600;">${time}</span>
                     </div>
-                    <div style="font-size:0.9rem; font-weight:700; color:#333; margin-bottom:5px;">
-                        Số dư TK ****${cardId.slice(-4)} <span style="color:#2e7d32;">+${log.amount.toLocaleString()}đ</span>
+
+                    <div style="font-size:1.1rem; font-weight:900; color:#2e7d32; margin-bottom:8px;">
+                        +${log.amount.toLocaleString()} <span style="font-size:0.75rem;">VND</span>
                     </div>
-                    <div style="font-size:0.75rem; color:#666; line-height:1.5;">
-                        Nội dung: <b>${log.note || 'Chuyển khoản 24/7'}</b><br>
-                        Từ: <b>${(log.fromUser || 'Ẩn danh').toUpperCase()}</b>
+
+                    <div style="background:#fcfcfc; border-radius:12px; padding:10px; border:1px solid #f0f0f0;">
+                        <div style="font-size:0.75rem; color:#444; margin-bottom:4px;">
+                            <i class="fas fa-user-circle" style="color:#ff1493;"></i> Từ: <b style="color:#333;">${(log.fromUser || 'Ẩn danh').toUpperCase()}</b>
+                        </div>
+                        <div style="font-size:0.75rem; color:#444; margin-bottom:4px;">
+                            <i class="fas fa-university" style="color:#ff1493;"></i> Ngân hàng: <b style="color:#333;">${fromBank}</b>
+                        </div>
+                        <div style="font-size:0.75rem; color:#666; font-style:italic; border-top:1px dashed #eee; margin-top:6px; padding-top:6px;">
+                            "${log.note || 'Không có nội dung'}"
+                        </div>
                     </div>
                 </div>
             `;
         }).join('');
     }
 
+    // Giao diện Popup tổng thể
     overlay.innerHTML = `
-        <div style="width:90%; max-width:380px; background:#fdf2f8; border-radius:30px; padding:25px; max-height:80vh; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,0.3);">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                <h3 style="margin:0; color:#ad1457; font-size:1.1rem; font-weight:900;"><i class="fas fa-history"></i> TIỀN ĐẾN (IN)</h3>
-                <i class="fas fa-times" onclick="document.getElementById('fluctuation-overlay').style.display='none'" style="cursor:pointer; font-size:1.2rem; color:#ffb6c1;"></i>
+        <div style="width:92%; max-width:400px; background:#fff; border-radius:35px; padding:25px; max-height:85vh; display:flex; flex-direction:column; box-shadow:0 30px 100px rgba(0,0,0,0.2); animation: zoomIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:1px solid #f5f5f5; padding-bottom:15px;">
+                <div>
+                    <h3 style="margin:0; color:#ad1457; font-size:1.1rem; font-weight:900;">BIẾN ĐỘNG SỐ DƯ</h3>
+                    <p style="margin:2px 0 0; font-size:0.65rem; color:#bbb; font-weight:700; text-transform:uppercase;">10 Giao dịch mới nhất</p>
+                </div>
+                <div onclick="document.getElementById('fluctuation-overlay').style.display='none'" style="width:35px; height:35px; background:#f5f5f5; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; color:#999;">
+                    <i class="fas fa-times"></i>
+                </div>
             </div>
-            <div style="flex:1; overflow-y:auto; padding-right:5px;" class="hide-scrollbar">
+            
+            <div id="fluctuation-list" style="flex:1; overflow-y:auto; padding-right:5px;" class="hide-scrollbar">
                 ${htmlContent}
             </div>
-            <p style="text-align:center; font-size:0.65rem; color:#ffb6c1; margin-top:15px;">Hệ thống cập nhật tự động 24/7 🌸</p>
+
+            <div style="text-align:center; margin-top:15px; padding-top:10px; border-top:1px solid #f5f5f5;">
+                <p style="font-size:0.65rem; color:#ffb6c1; font-weight:800; letter-spacing:1px;">SWEETIE BANKING SYSTEM 🌸</p>
+            </div>
         </div>
     `;
 }
