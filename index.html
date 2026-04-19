@@ -21263,11 +21263,22 @@ function setRpMode(mode) {
             }
         }
 
-        // 4. Hiển thị Bill thành công (Dùng các biến đã trích xuất an toàn)
+        // targetId là ID của người nhận (Firebase UID) mà Henry đã lấy được lúc tra cứu STK
+        if (targetId) {
+            const pushNotiRef = db.ref(`notifications_queue/${targetId}`).push();
+            await pushNotiRef.set({
+                title: "💰 BẠN VỪA NHẬN ĐƯỢC TIỀN",
+                text: `${myCardData.ownerName.toUpperCase()} đã chuyển ${amount.toLocaleString()} VNĐ vào thẻ của bạn.`,
+                from: myCardData.ownerName,
+                time: firebase.database.ServerValue.TIMESTAMP,
+                type: "banking" // Để Henry có thể trang trí icon ngân hàng cho thông báo này
+            });
+        }
+
+        // 4. Hiển thị Bill thành công (Giữ nguyên của Henry)
         showBankingBill({
             amount: amount,
             sender: myCardData.ownerName,
-            // --- DÒNG QUAN TRỌNG NHẤT: Truyền bankType của bạn để Bill đổi màu ---
             senderBank: myCardData.bankType, 
             receiver: targetOwner,
             receiverBank: elTargetDisplay.dataset.targetBankName,
@@ -21276,6 +21287,7 @@ function setRpMode(mode) {
             transId: "SW" + Date.now().toString().slice(-8)
         });
 
+        // Thông báo cho chính Henry (người gửi)
         addNotification("📤 CHUYỂN KHOẢN THÀNH CÔNG", `Bạn đã chuyển ${amount.toLocaleString()} VNĐ đến STK ${targetStkNum}.`);
 
     } catch (e) {
@@ -21765,7 +21777,6 @@ async function selectSavedAccount(stk, name) {
         if (btnDone) btnDone.style.opacity = '1';
     }
 }
-    
 </script>
 </body>
 </html>
