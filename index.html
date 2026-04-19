@@ -20373,9 +20373,25 @@ async function unlinkCard() {
     }
 }
 
-    function recordCardHistory(cardId, type, amount, extraData = {}) {
+    async function recordCardHistory(cardId, type, amount, extraData = {}) {
     // 1. Bảo vệ nếu thiếu dữ liệu quan trọng
     if (!cardId || !currentUser) return; 
+
+    // --- PHẦN BỔ SUNG: Tự động lấy bankType của người thực hiện để định danh màu sắc sau này ---
+    let senderBankType = 'sweetie'; // Mặc định
+    try {
+        const userSnap = await db.ref(`users/${currentUser}/linkedCard`).once('value');
+        const linkedCardId = userSnap.val();
+        if (linkedCardId) {
+            const cardSnap = await db.ref(`sweetie_cards/${linkedCardId}/bankType`).once('value');
+            if (cardSnap.exists()) {
+                senderBankType = cardSnap.val();
+            }
+        }
+    } catch (e) {
+        console.warn("Không lấy được bankType, sử dụng mặc định.");
+    }
+    // ---------------------------------------------------------------------------------------
 
     // 2. Tạo một bản ghi mới trong node card_history
     const historyRef = db.ref(`card_history/${cardId}`).push();
@@ -20385,6 +20401,8 @@ async function unlinkCard() {
         type: type,
         amount: amount,
         user: currentUser,
+        // Lưu bankType để popup biến động số dư biết nên hiển thị màu gì
+        fromBankType: senderBankType, 
         // Thời gian chính xác từ Server Firebase
         time: firebase.database.ServerValue.TIMESTAMP,
         ...extraData // Gộp thêm toUser, fromUser hoặc bất kỳ thông tin nào khác vào đây
@@ -21910,15 +21928,19 @@ async function selectSavedAccount(stk, name) {
                 day: '2-digit', month: '2-digit', year: 'numeric'
             });
 
-            const fromBank = (log.fromBank || 'Sweetie Bank').toUpperCase();
-            // Tạo mã giao dịch rút gọn giống ngân hàng thật
+            // --- PHẦN THAY ĐỔI: Xác định ngân hàng của từng giao dịch cụ thể ---
+            const senderBankType = log.fromBankType || 'sweetie';
+            const itemBank = BANK_CONFIG[senderBankType] || BANK_CONFIG['sweetie'];
+            const fromBankName = (log.fromBank || itemBank.name).toUpperCase();
+            // -----------------------------------------------------------------
+
             const refNo = `FT${log.key.substring(0, 8).toUpperCase()}`;
 
             return `
-                <div style="background:#fff; border-radius:20px; padding:16px; margin-bottom:14px; border:1px solid ${currentBank.color}10; box-shadow:0 4px 12px rgba(0,0,0,0.03); animation: slideUpItem 0.4s ease forwards ${index * 0.1}s;">
+                <div style="background:#fff; border-radius:20px; padding:16px; margin-bottom:14px; border:1px solid ${itemBank.color}15; box-shadow:0 4px 12px rgba(0,0,0,0.03); animation: slideUpItem 0.4s ease forwards ${index * 0.1}s;">
                     <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
                         <div>
-                            <span style="font-size:0.65rem; color:${currentBank.color}; background:${currentBank.color}10; padding:4px 10px; border-radius:20px; font-weight:700; letter-spacing:0.3px;">+ TIỀN VÀO</span>
+                            <span style="font-size:0.65rem; color:${itemBank.color}; background:${itemBank.color}10; padding:4px 10px; border-radius:20px; font-weight:700; letter-spacing:0.3px;">+ TIỀN VÀO</span>
                             <div style="font-size:0.65rem; color:#94a3b8; margin-top:6px; font-weight:500;">${time}</div>
                         </div>
                         <div style="text-align:right;">
@@ -21929,16 +21951,16 @@ async function selectSavedAccount(stk, name) {
                         </div>
                     </div>
 
-                    <div style="background:${currentBank.bg}; border-radius:14px; padding:12px; border:1px solid ${currentBank.color}05;">
+                    <div style="background:${itemBank.bg}; border-radius:14px; padding:12px; border:1px solid ${itemBank.color}05;">
                         <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
                             <span style="font-size:0.75rem; color:#64748b;">Từ</span>
                             <span style="font-size:0.75rem; color:#1e293b; font-weight:700;">${(log.fromUser || 'Ẩn danh').toUpperCase()}</span>
                         </div>
                         <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
                             <span style="font-size:0.75rem; color:#64748b;">Ngân hàng</span>
-                            <span style="font-size:0.75rem; color:${currentBank.color}; font-weight:700;">${fromBank}</span>
+                            <span style="font-size:0.75rem; color:${itemBank.color}; font-weight:700;">${fromBankName}</span>
                         </div>
-                        <div style="border-top:1px dashed ${currentBank.color}20; margin-top:8px; padding-top:8px;">
+                        <div style="border-top:1px dashed ${itemBank.color}20; margin-top:8px; padding-top:8px;">
                             <div style="font-size:0.65rem; color:#94a3b8; text-transform:uppercase; font-weight:700; margin-bottom:2px;">Nội dung</div>
                             <div style="font-size:0.8rem; color:#475569; line-height:1.4; font-style:italic;">"${log.note || 'Chuyển tiền'}"</div>
                         </div>
