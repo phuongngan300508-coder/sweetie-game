@@ -21316,21 +21316,29 @@ function showBankingBill(data) {
     const dashboard = document.querySelector('.card-dashboard-container');
     let ui = document.getElementById('transaction-ui');
 
-    // Cấu hình màu sắc động cho Bill dựa trên ngân hàng nhận
+    // --- PHẦN SỬA LỖI MÀU SẮC: Chuẩn hóa bankKey để luôn khớp CONFIG ---
+    let rawBank = (data.receiverBank || 'SWEETIE BANK').toUpperCase();
+    // Nếu chỉ có "SWEETIE", tự động thêm " BANK" để khớp với key của BANK_CONFIG
+    let bankKey = rawBank.includes('BANK') ? rawBank : rawBank + ' BANK';
+
     const BANK_CONFIG = {
         'SWEETIE BANK': { color: '#ff1493', gradient: 'linear-gradient(135deg, #ff1493, #ff69b4)', bg: '#fffafa' },
         'HONEY BANK': { color: '#f39c12', gradient: 'linear-gradient(135deg, #f39c12, #f1c40f)', bg: '#fffdf5' },
         'CLOUD BANK': { color: '#3498db', gradient: 'linear-gradient(135deg, #3498db, #85c1e9)', bg: '#f5faff' }
     };
 
-    // Lấy config màu dựa trên tên ngân hàng (data.receiverBank), mặc định là Sweetie
-    const billTheme = BANK_CONFIG[data.receiverBank] || BANK_CONFIG['SWEETIE BANK'];
+    // Lấy config màu dựa trên bankKey đã chuẩn hóa
+    const billTheme = BANK_CONFIG[bankKey] || BANK_CONFIG['SWEETIE BANK'];
 
     // --- LOGIC LỌC TÊN: Chỉ giữ lại tên IN HOA sạch sẽ ---
     let cleanReceiverName = data.receiver || "";
     cleanReceiverName = cleanReceiverName.replace('✓', '').trim();
-    Object.values(BANK_CONFIG).forEach(bank => {
-        cleanReceiverName = cleanReceiverName.replace(bank.name, '');
+    
+    // Lọc sạch tên ngân hàng ra khỏi tên người nhận để tránh trùng lặp
+    Object.keys(BANK_CONFIG).forEach(key => {
+        const pureName = key.replace(' BANK', '');
+        const regex = new RegExp(key + '|' + pureName, 'gi');
+        cleanReceiverName = cleanReceiverName.replace(regex, '');
     });
     cleanReceiverName = cleanReceiverName.trim().toUpperCase();
 
@@ -21360,7 +21368,7 @@ function showBankingBill(data) {
 
         <div id="bill-canvas" class="banking-bill-v2" style="width: 95%; max-width: 360px; max-height: 90vh; background: #fff; border-radius: 35px; overflow: hidden; display: flex; flex-direction: column; animation: zoomIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 25px 70px ${billTheme.color}30; border: 1px solid ${billTheme.color}15; position: relative;">
             
-            <div style="background: ${billTheme.gradient}; padding: 25px 20px; text-align: center; color: #fff; flex-shrink: 0;">
+            <div style="background: ${billTheme.gradient}; padding: 25 pink 20px; padding: 25px 20px; text-align: center; color: #fff; flex-shrink: 0;">
                 <div style="width: 55px; height: 55px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; border: 2px solid #fff;">
                     <i class="fas fa-check" style="font-size: 1.8rem;"></i>
                 </div>
@@ -21370,7 +21378,7 @@ function showBankingBill(data) {
 
             <div class="bill-scroll-content" style="flex: 1; overflow-y: auto; padding: 25px 20px; position: relative; background: #fff;">
                 
-                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-15deg); font-size: 2rem; font-weight: 900; color: ${billTheme.color}08; pointer-events: none; white-space: nowrap; text-transform: uppercase; z-index: 0;">${data.receiverBank || 'SWEETIE BANK'}</div>
+                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-15deg); font-size: 2rem; font-weight: 900; color: ${billTheme.color}08; pointer-events: none; white-space: nowrap; text-transform: uppercase; z-index: 0;">${bankKey}</div>
 
                 <div style="text-align: center; margin-bottom: 25px; position: relative; z-index: 1;">
                     <span style="font-size: 0.8rem; color: #888; font-weight: 600;">Số tiền chuyển</span>
@@ -21384,8 +21392,8 @@ function showBankingBill(data) {
                     </div>
                     
                     <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid ${billTheme.color}08;">
-                        <span style="font-size: 0.75rem; color: #888;">Ngân hàng</span>
-                        <strong style="font-size: 0.8rem; color: ${billTheme.color}; text-align: right;">${data.receiverBank || 'SWEETIE BANK'}</strong>
+                        <span style="font-size: 0.75rem; color: #888;">Ngân hàng thụ hưởng</span>
+                        <strong style="font-size: 0.8rem; color: ${billTheme.color}; text-align: right;">${bankKey}</strong>
                     </div>
 
                     <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid ${billTheme.color}08;">
@@ -21405,7 +21413,7 @@ function showBankingBill(data) {
                 </div>
 
                 <div style="margin-top: 25px; text-align: center; padding-bottom: 10px;">
-                    <p style="font-size: 0.6rem; color: #bbb; margin: 0; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase;">${data.receiverBank || 'SWEETIE BANK'} - TRAO GỬI YÊU THƯƠNG 🌸</p>
+                    <p style="font-size: 0.6rem; color: #bbb; margin: 0; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase;">${bankKey} - TRAO GỬI YÊU THƯƠNG 🌸</p>
                 </div>
             </div>
 
