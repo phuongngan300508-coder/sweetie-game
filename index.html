@@ -21297,7 +21297,10 @@ async function saveBeneficiary(stk, name) {
 }
 
 function showBankingBill(data) {
-    // Cấu hình màu sắc động cho Bill dựa trên ngân hàng nhận
+    const dashboard = document.querySelector('.card-dashboard-container');
+    let ui = document.getElementById('transaction-ui');
+
+    // Cấu hình màu sắc động cho Bill dựa trên ngân hàng thụ hưởng
     const BANK_CONFIG = {
         'SWEETIE BANK': { color: '#ff1493', gradient: 'linear-gradient(135deg, #ff1493, #ff69b4)', bg: '#fffafa' },
         'HONEY BANK': { color: '#f39c12', gradient: 'linear-gradient(135deg, #f39c12, #f1c40f)', bg: '#fffdf5' },
@@ -21307,8 +21310,14 @@ function showBankingBill(data) {
     // Lấy config màu dựa trên tên ngân hàng (data.receiverBank), mặc định là Sweetie
     const billTheme = BANK_CONFIG[data.receiverBank] || BANK_CONFIG['SWEETIE BANK'];
 
-    const dashboard = document.querySelector('.card-dashboard-container');
-    let ui = document.getElementById('transaction-ui');
+    // --- LOGIC LỌC TÊN: Loại bỏ dấu tích và tên ngân hàng nếu lỡ dính vào ---
+    let cleanReceiverName = data.receiver || "";
+    cleanReceiverName = cleanReceiverName.replace('✓', '').trim();
+    // Nếu trong tên có chứa tên ngân hàng thì cắt bỏ (phòng trường hợp truyền nhầm chuỗi innerText)
+    Object.values(BANK_CONFIG).forEach(bank => {
+        cleanReceiverName = cleanReceiverName.replace(bank.name, '');
+    });
+    cleanReceiverName = cleanReceiverName.trim().toUpperCase();
 
     if (!ui) {
         ui = document.createElement('div');
@@ -21340,7 +21349,7 @@ function showBankingBill(data) {
             </div>
 
             <div style="padding: 25px 20px; position: relative; background: #fff;">
-                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-15deg); font-size: 2.5rem; font-weight: 900; color: ${billTheme.color}08; pointer-events: none; white-space: nowrap; text-transform: uppercase;">${data.receiverBank || 'SWEETIE BANK'}</div>
+                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-15deg); font-size: 2.2rem; font-weight: 900; color: ${billTheme.color}08; pointer-events: none; white-space: nowrap; text-transform: uppercase;">${data.receiverBank || 'SWEETIE BANK'}</div>
 
                 <div style="text-align: center; margin-bottom: 25px;">
                     <span style="font-size: 0.8rem; color: #888; font-weight: 600;">Số tiền chuyển</span>
@@ -21350,7 +21359,7 @@ function showBankingBill(data) {
                 <div style="background: ${billTheme.bg}; border-radius: 20px; padding: 15px; border: 1px solid ${billTheme.color}10;">
                     <div class="bill-row-v2" style="display: flex; justify-content: space-between; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid ${billTheme.color}08;">
                         <span style="font-size: 0.75rem; color: #888; font-weight: 500;">Người nhận</span>
-                        <strong style="font-size: 0.8rem; color: #333; text-align: right; max-width: 60%;">${data.receiver.toUpperCase()}</strong>
+                        <strong style="font-size: 0.8rem; color: #333; text-align: right; max-width: 60%;">${cleanReceiverName}</strong>
                     </div>
                     
                     <div class="bill-row-v2" style="display: flex; justify-content: space-between; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid ${billTheme.color}08;">
