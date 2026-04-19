@@ -21844,13 +21844,24 @@ async function selectSavedAccount(stk, name) {
     if (!overlay) {
         overlay = document.createElement('div');
         overlay.id = 'fluctuation-overlay';
-        overlay.style.cssText = `position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); backdrop-filter:blur(8px); z-index:200000; display:flex; align-items:center; justify-content:center;`;
+        // Nâng cấp backdrop-filter cho sang hơn
+        overlay.style.cssText = `position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); z-index:200000; display:flex; align-items:center; justify-content:center; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;`;
         document.body.appendChild(overlay);
     }
     overlay.style.display = 'flex';
 
-    // 3. Lấy dữ liệu 10 giao dịch nhận gần nhất (limitToLast(10))
-    // Cần đảm bảo Rules Firebase đã index "type"
+    // Thêm CSS Animation cho mượt
+    if (!document.getElementById('bank-anim-style')) {
+        const style = document.createElement('style');
+        style.id = 'bank-anim-style';
+        style.innerHTML = `
+            @keyframes slideUpItem { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+            .hide-scrollbar::-webkit-scrollbar { display: none; }
+        `;
+        document.head.appendChild(style);
+    }
+
+    // 3. Lấy dữ liệu 10 giao dịch nhận gần nhất
     const snap = await db.ref(`card_history/${cardId}`)
                         .orderByChild('type')
                         .equalTo('transfer_in')
@@ -21861,44 +21872,57 @@ async function selectSavedAccount(stk, name) {
 
     if (!snap.exists()) {
         htmlContent = `
-            <div style="text-align:center; margin-top:50px;">
-                <i class="fas fa-comment-slash" style="font-size:3rem; color:#ff149320; margin-bottom:15px;"></i>
-                <p style="color:#888; font-size:0.85rem;">Chưa có biến động số dư nào ✨</p>
+            <div style="text-align:center; padding:60px 20px;">
+                <div style="width:80px; height:80px; background:#fdf2f8; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 15px;">
+                    <i class="fas fa-receipt" style="font-size:2rem; color:#f472b6;"></i>
+                </div>
+                <p style="color:#94a3b8; font-size:0.9rem; font-weight:500;">Chưa có biến động số dư nào</p>
             </div>`;
     } else {
         let logs = [];
-        // Lấy dữ liệu và đảo ngược để cái mới nhất (thời gian lớn nhất) lên đầu
-        snap.forEach(child => { logs.unshift(child.val()); });
+        snap.forEach(child => { 
+            let val = child.val();
+            val.key = child.key; // Lấy key làm mã giao dịch
+            logs.unshift(val); 
+        });
 
-        htmlContent = logs.map(log => {
+        htmlContent = logs.map((log, index) => {
             const time = new Date(log.time).toLocaleString('vi-VN', {
-                hour: '2-digit', minute: '2-digit', second: '2-digit',
+                hour: '2-digit', minute: '2-digit',
                 day: '2-digit', month: '2-digit', year: 'numeric'
             });
 
-            // Xử lý thông tin ngân hàng (Mặc định là SWEETIE BANK nếu không có dữ liệu)
             const fromBank = (log.fromBank || 'Sweetie Bank').toUpperCase();
+            // Tạo mã giao dịch rút gọn giống ngân hàng thật
+            const refNo = `FT${log.key.substring(0, 8).toUpperCase()}`;
 
             return `
-                <div style="background:#fff; border-radius:20px; padding:18px; margin-bottom:12px; box-shadow:0 8px 20px rgba(255,20,147,0.05); border:1px solid #ff149305; animation: slideUp 0.4s ease forwards;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                        <span style="font-size:0.65rem; color:#ff1493; background:#fff0f5; padding:3px 10px; border-radius:8px; font-weight:800; letter-spacing:0.5px;">+ NHẬN TIỀN</span>
-                        <span style="font-size:0.65rem; color:#bbb; font-weight:600;">${time}</span>
+                <div style="background:#fff; border-radius:20px; padding:16px; margin-bottom:14px; border:1px solid #f1f5f9; box-shadow:0 4px 12px rgba(0,0,0,0.03); animation: slideUpItem 0.4s ease forwards ${index * 0.1}s;">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
+                        <div>
+                            <span style="font-size:0.65rem; color:#10b981; background:#ecfdf5; padding:4px 10px; border-radius:20px; font-weight:700; letter-spacing:0.3px;">+ TIỀN VÀO</span>
+                            <div style="font-size:0.65rem; color:#94a3b8; margin-top:6px; font-weight:500;">${time}</div>
+                        </div>
+                        <div style="text-align:right;">
+                            <div style="font-size:1.15rem; font-weight:800; color:#059669; letter-spacing:-0.5px;">
+                                +${log.amount.toLocaleString()} <span style="font-size:0.75rem;">VND</span>
+                            </div>
+                            <div style="font-size:0.6rem; color:#cbd5e1; font-weight:600;">Mã: ${refNo}</div>
+                        </div>
                     </div>
 
-                    <div style="font-size:1.1rem; font-weight:900; color:#2e7d32; margin-bottom:8px;">
-                        +${log.amount.toLocaleString()} <span style="font-size:0.75rem;">VND</span>
-                    </div>
-
-                    <div style="background:#fcfcfc; border-radius:12px; padding:10px; border:1px solid #f0f0f0;">
-                        <div style="font-size:0.75rem; color:#444; margin-bottom:4px;">
-                            <i class="fas fa-user-circle" style="color:#ff1493;"></i> Từ: <b style="color:#333;">${(log.fromUser || 'Ẩn danh').toUpperCase()}</b>
+                    <div style="background:#f8fafc; border-radius:14px; padding:12px; border:1px solid #f1f5f9;">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                            <span style="font-size:0.75rem; color:#64748b;">Từ</span>
+                            <span style="font-size:0.75rem; color:#1e293b; font-weight:700;">${(log.fromUser || 'Ẩn danh').toUpperCase()}</span>
                         </div>
-                        <div style="font-size:0.75rem; color:#444; margin-bottom:4px;">
-                            <i class="fas fa-university" style="color:#ff1493;"></i> Ngân hàng: <b style="color:#333;">${fromBank}</b>
+                        <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                            <span style="font-size:0.75rem; color:#64748b;">Ngân hàng</span>
+                            <span style="font-size:0.75rem; color:#1e293b; font-weight:600;">${fromBank}</span>
                         </div>
-                        <div style="font-size:0.75rem; color:#666; font-style:italic; border-top:1px dashed #eee; margin-top:6px; padding-top:6px;">
-                            "${log.note || 'Không có nội dung'}"
+                        <div style="border-top:1px dashed #e2e8f0; margin-top:8px; padding-top:8px;">
+                            <div style="font-size:0.65rem; color:#94a3b8; text-transform:uppercase; font-weight:700; margin-bottom:2px;">Nội dung</div>
+                            <div style="font-size:0.8rem; color:#475569; line-height:1.4; font-style:italic;">"${log.note || 'Chuyển tiền'}"</div>
                         </div>
                     </div>
                 </div>
@@ -21908,23 +21932,28 @@ async function selectSavedAccount(stk, name) {
 
     // Giao diện Popup tổng thể
     overlay.innerHTML = `
-        <div style="width:92%; max-width:400px; background:#fff; border-radius:35px; padding:25px; max-height:85vh; display:flex; flex-direction:column; box-shadow:0 30px 100px rgba(0,0,0,0.2); animation: zoomIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:1px solid #f5f5f5; padding-bottom:15px;">
-                <div>
-                    <h3 style="margin:0; color:#ad1457; font-size:1.1rem; font-weight:900;">BIẾN ĐỘNG SỐ DƯ</h3>
-                    <p style="margin:2px 0 0; font-size:0.65rem; color:#bbb; font-weight:700; text-transform:uppercase;">10 Giao dịch mới nhất</p>
-                </div>
-                <div onclick="document.getElementById('fluctuation-overlay').style.display='none'" style="width:35px; height:35px; background:#f5f5f5; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; color:#999;">
-                    <i class="fas fa-times"></i>
+        <div style="width:92%; max-width:410px; background:#f8fafc; border-radius:32px; overflow:hidden; max-height:85vh; display:flex; flex-direction:column; box-shadow:0 40px 100px rgba(0,0,0,0.3); animation: zoomIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.1);">
+            <div style="background: linear-gradient(135deg, #ad1457 0%, #6a1b9a 100%); padding:24px; color:#fff;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <h3 style="margin:0; font-size:1.2rem; font-weight:800; letter-spacing:0.5px;">Biến động số dư</h3>
+                        <p style="margin:4px 0 0; font-size:0.7rem; opacity:0.8; font-weight:500;">Tài khoản: ****${cardId.toString().slice(-4)}</p>
+                    </div>
+                    <div onclick="document.getElementById('fluctuation-overlay').style.display='none'" style="width:36px; height:36px; background:rgba(255,255,255,0.2); border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
+                        <i class="fas fa-times" style="font-size:1rem;"></i>
+                    </div>
                 </div>
             </div>
             
-            <div id="fluctuation-list" style="flex:1; overflow-y:auto; padding-right:5px;" class="hide-scrollbar">
+            <div id="fluctuation-list" style="flex:1; overflow-y:auto; padding:20px 16px;" class="hide-scrollbar">
                 ${htmlContent}
             </div>
 
-            <div style="text-align:center; margin-top:15px; padding-top:10px; border-top:1px solid #f5f5f5;">
-                <p style="font-size:0.65rem; color:#ffb6c1; font-weight:800; letter-spacing:1px;">SWEETIE BANKING SYSTEM 🌸</p>
+            <div style="background:#fff; padding:16px; text-align:center; border-top:1px solid #f1f5f9;">
+                <div style="display:flex; align-items:center; justify-content:center; gap:8px;">
+                    <div style="width:6px; height:6px; background:#10b981; border-radius:50%;"></div>
+                    <p style="margin:0; font-size:0.7rem; color:#94a3b8; font-weight:800; letter-spacing:1.5px; text-transform:uppercase;">Dữ liệu bảo mật bởi Sweetie Bank</p>
+                </div>
             </div>
         </div>
     `;
