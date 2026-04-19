@@ -15641,24 +15641,6 @@ async function renderFriendsList() {
 
     if (!window.statusListeners) window.statusListeners = {};
 
-    // Lấy danh sách ghim và danh sách lưu trữ từ máy cá nhân
-    let pinnedFriends = JSON.parse(localStorage.getItem(`pinned_${currentUser}`)) || [];
-    let archivedFriends = JSON.parse(localStorage.getItem(`archived_${currentUser}`)) || [];
-
-    // 1. Lắng nghe danh sách bạn bè
-    db.ref('users/' + currentUser + '/friends').on('value', async (snapshot) => {
-        const friends = snapshot.val() || {};
-        const friendNames = Object.keys(friends);
-
-        // 2. Lắng nghe số tin nhắn chưa đọcasync function renderFriendsList() {
-    const container = document.getElementById('friends-list-container');
-    const requestContainer = document.getElementById('request-list-container'); 
-    const requestSection = document.getElementById('message-request-section'); 
-    
-    if (!container || !currentUser) return;
-
-    if (!window.statusListeners) window.statusListeners = {};
-
     let pinnedFriends = JSON.parse(localStorage.getItem(`pinned_${currentUser}`)) || [];
     let archivedFriends = JSON.parse(localStorage.getItem(`archived_${currentUser}`)) || [];
 
