@@ -20343,12 +20343,15 @@ function renderCardDashboard(cardId) {
                                 <i class="fas fa-history"></i> Lịch sử giao dịch
                             </button>
 
-                            <button onclick="showFluctuationPopup('${cardId}')" class="btn-fluctuation" 
-                                style="width: 100%; margin-top: 5px; background: #fff; color: ${bank.color}; border: 1.5px dashed ${bank.color}; padding: 12px; border-radius: 16px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.3s;"
-                                onmouseover="this.style.background='${bank.color}10'"
-                                onmouseout="this.style.background='#fff'">
-                                <i class="fas fa-bell"></i> Biến động số dư
-                            </button>
+<button onclick="showFluctuationPopup('${cardId}')" class="btn-fluctuation" 
+    style="width: 100%; margin-top: 5px; background: #fff; color: ${bank.color}; border: 1.5px dashed ${bank.color}; padding: 12px; border-radius: 16px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.3s; position: relative;"
+    onmouseover="this.style.background='${bank.color}10'"
+    onmouseout="this.style.background='#fff'">
+    
+    <i class="fas fa-bell"></i> Biến động số dư
+
+    <span id="inner-fluctuation-dot" style="display: ${localStorage.getItem(`new_transfer_${currentUser}`) ? 'block' : 'none'}; position: absolute; top: 8px; right: 15px; width: 8px; height: 8px; background: #ff1493; border-radius: 50%; box-shadow: 0 0 5px rgba(255,20,147,0.4);"></span>
+</button>
                         </div>
                     </div>
                 </div>
@@ -21823,6 +21826,10 @@ async function selectSavedAccount(stk, name) {
             // 1. Hiện chấm đỏ ở nút ngoài
             const dot = document.getElementById('card-noti-dot');
             if (dot) dot.style.display = 'block';
+
+            // SỬA TẠI ĐÂY: Hiện thêm chấm đỏ ở nút bên trong Dashboard (nếu đang mở)
+            const innerDot = document.getElementById('inner-fluctuation-dot');
+            if (innerDot) innerDot.style.display = 'block';
             
             // 2. Lưu trạng thái "có tin mới" vào localStorage
             localStorage.setItem(`new_transfer_${currentUser}`, 'true');
@@ -21837,6 +21844,11 @@ async function selectSavedAccount(stk, name) {
     // 1. Tắt chấm đỏ và xóa dấu vết thông báo
     const dot = document.getElementById('card-noti-dot');
     if (dot) dot.style.display = 'none';
+
+    // SỬA TẠI ĐÂY: Tắt thêm chấm đỏ bên trong nút của Dashboard
+    const innerDot = document.getElementById('inner-fluctuation-dot');
+    if (innerDot) innerDot.style.display = 'none';
+
     localStorage.removeItem(`new_transfer_${currentUser}`);
 
     // 2. Tạo Overlay (Giữ nguyên logic của Henry)
