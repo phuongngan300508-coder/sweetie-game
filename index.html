@@ -6732,8 +6732,9 @@ input[type="date"].sweetie-input-style {
             <button onclick="toggleHistoryModal()" class="btn-wallet btn-history">
                 <i class="fas fa-history"></i> Lịch sử
             </button>
-            <button onclick="openSweetieCardModal()" class="btn-wallet" style="background: #fce4ec; color: #ad1457; border: 2px solid #f8bbd0;">
+            <button onclick="openSweetieCardModal()" class="btn-wallet" style="background: #fce4ec; color: #ad1457; border: 2px solid #f8bbd0; position: relative;">
     <i class="fas fa-id-card"></i> Sweetie Card
+    <span id="card-noti-dot" style="display: none; position: absolute; top: -5px; right: -5px; width: 12px; height: 12px; background: #ff1493; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 5px rgba(255,20,147,0.5); animation: pulse 1.5s infinite;"></span>
 </button>
             <button onclick="toggleModal('modal-rules')" class="btn-wallet btn-rules">
                 <i class="fas fa-scroll"></i> Luật
@@ -19623,6 +19624,15 @@ async function openSweetieCardModal() {
         return;
     }
 
+    // --- PHẦN THÊM MỚI: Xử lý chấm đỏ thông báo ---
+    const dot = document.getElementById('card-noti-dot');
+    if (dot) {
+        dot.style.display = 'none'; // Ẩn chấm đỏ khi bắt đầu mở modal
+    }
+    // Xóa dấu vết trong localStorage (nếu có) để lần sau load trang không hiện lại
+    localStorage.removeItem(`new_transfer_${currentUser}`);
+    // ----------------------------------------------
+
     try {
         // 2. Lấy ID thẻ đã liên kết từ Firebase dựa trên currentUser (là tên người dùng)
         const snap = await db.ref(`users/${currentUser}/linkedCard`).once('value');
@@ -19632,6 +19642,11 @@ async function openSweetieCardModal() {
         if (cardId) {
             // Nếu đã có ID thẻ liên kết, hiển thị màn hình chính của thẻ
             renderCardDashboard(cardId);
+            
+            // Kích hoạt lắng nghe biến động ngay khi xác định được cardId (nếu chưa nghe)
+            if (typeof listenToBalanceFluctuations === 'function') {
+                listenToBalanceFluctuations(cardId);
+            }
         } else {
             // Nếu chưa có, hiển thị menu: "Tạo thẻ mới" hoặc "Thêm thẻ đã có"
             renderStartMenu();
@@ -20327,6 +20342,13 @@ function renderCardDashboard(cardId) {
                                 onmouseout="this.style.background='#fff'; this.style.borderColor='${bank.color}30'">
                                 <i class="fas fa-history"></i> Lịch sử giao dịch
                             </button>
+
+                            <button onclick="showFluctuationPopup('${cardId}')" class="btn-fluctuation" 
+                                style="width: 100%; margin-top: 5px; background: #fff; color: ${bank.color}; border: 1.5px dashed ${bank.color}; padding: 12px; border-radius: 16px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.3s;"
+                                onmouseover="this.style.background='${bank.color}10'"
+                                onmouseout="this.style.background='#fff'">
+                                <i class="fas fa-bell"></i> Biến động số dư
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -20668,6 +20690,13 @@ async function processTransfer(amount, pass, myCardId, note) {
             });
         }
 
+        // --- PHẦN THÊM MỚI: KÍCH HOẠT CHẤM ĐỎ CHO ĐỐI PHƯƠNG ---
+        // Gửi một tín hiệu nhỏ vào node thông báo của người nhận để kích hoạt chấm đỏ real-time
+        if (currentChatFriend) {
+            db.ref(`users/${currentChatFriend}/hasNewFluctuation`).set(true);
+        }
+        // ---------------------------------------------------
+
         // --- 5. CHUẨN BỊ DỮ LIỆU TIN NHẮN ---
         const transferData = {
             type: 'bank_transfer',
@@ -20683,7 +20712,7 @@ async function processTransfer(amount, pass, myCardId, note) {
             // Truyền note làm tham số text chính để các hàm hiển thị khác dễ lấy dữ liệu
             await sendMessage(note, transferData); 
             alert(`🌸 Chuyển thành công ${amount.toLocaleString()} VNĐ! Đang chờ đối phương xác nhận.`);
-addNotification("📤 CHUYỂN TIỀN THÀNH CÔNG", `Bạn đã gửi ${amount.toLocaleString()} VNĐ cho ${currentChatFriend}.`);
+            addNotification("📤 CHUYỂN TIỀN THÀNH CÔNG", `Bạn đã gửi ${amount.toLocaleString()} VNĐ cho ${currentChatFriend}.`);
         }
 
     } catch (e) {
@@ -21778,7 +21807,91 @@ async function selectSavedAccount(stk, name) {
         if (btnDone) btnDone.style.opacity = '1';
     }
 }
-    
+
+    function listenToBalanceFluctuations(cardId) {
+    if (!cardId) return;
+
+    // Chỉ lấy giao dịch mới nhất phát sinh từ bây giờ trở đi
+    const now = Date.now();
+    const historyRef = db.ref(`card_history/${cardId}`);
+
+    historyRef.orderByChild('time').startAt(now).on('child_added', (snapshot) => {
+        const data = snapshot.val();
+        
+        // CHỈ LẤY giao dịch nhận tiền (transfer_in)
+        if (data.type === 'transfer_in') {
+            // 1. Hiện chấm đỏ ở nút ngoài
+            const dot = document.getElementById('card-noti-dot');
+            if (dot) dot.style.display = 'block';
+            
+            // 2. Lưu trạng thái "có tin mới" vào localStorage
+            localStorage.setItem(`new_transfer_${currentUser}`, 'true');
+            
+            // 3. Có thể phát một tiếng "ting ting" nhẹ cho xịn
+            // new Audio('path_to_ting_ting_sound.mp3').play();
+        }
+    });
+}
+
+    async function showFluctuationPopup(cardId) {
+    // 1. Tắt chấm đỏ khi người dùng đã ấn vào xem
+    const dot = document.getElementById('card-noti-dot');
+    if (dot) dot.style.display = 'none';
+    localStorage.removeItem(`new_transfer_${currentUser}`);
+
+    // 2. Tạo Overlay
+    let overlay = document.getElementById('fluctuation-overlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'fluctuation-overlay';
+        overlay.style.cssText = `position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); backdrop-filter:blur(5px); z-index:200000; display:flex; align-items:center; justify-content:center;`;
+        document.body.appendChild(overlay);
+    }
+    overlay.style.display = 'flex';
+
+    // 3. Lấy dữ liệu 5 giao dịch nhận gần nhất
+    const snap = await db.ref(`card_history/${cardId}`).orderByChild('type').equalTo('transfer_in').limitToLast(5).once('value');
+    let htmlContent = "";
+
+    if (!snap.exists()) {
+        htmlContent = `<p style="text-align:center; color:#888; margin-top:30px;">Chưa có biến động số dư nào ✨</p>`;
+    } else {
+        let logs = [];
+        snap.forEach(child => logs.unshift(child.val())); // Đảo ngược để cái mới nhất lên đầu
+
+        htmlContent = logs.map(log => {
+            const time = new Date(log.time).toLocaleString('vi-VN');
+            return `
+                <div style="background:#fff; border-left:5px solid #ff1493; padding:15px; border-radius:15px; margin-bottom:15px; box-shadow:0 5px 15px rgba(0,0,0,0.05); animation: slideIn 0.3s ease;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                        <span style="font-size:0.7rem; color:#ff1493; font-weight:800;">THÔNG BÁO BIẾN ĐỘNG</span>
+                        <span style="font-size:0.65rem; color:#bbb;">${time}</span>
+                    </div>
+                    <div style="font-size:0.9rem; font-weight:700; color:#333; margin-bottom:5px;">
+                        Số dư TK ****${cardId.slice(-4)} <span style="color:#2e7d32;">+${log.amount.toLocaleString()}đ</span>
+                    </div>
+                    <div style="font-size:0.75rem; color:#666; line-height:1.5;">
+                        Nội dung: <b>${log.note || 'Chuyển khoản 24/7'}</b><br>
+                        Từ: <b>${(log.fromUser || 'Ẩn danh').toUpperCase()}</b>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    overlay.innerHTML = `
+        <div style="width:90%; max-width:380px; background:#fdf2f8; border-radius:30px; padding:25px; max-height:80vh; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h3 style="margin:0; color:#ad1457; font-size:1.1rem; font-weight:900;"><i class="fas fa-history"></i> TIỀN ĐẾN (IN)</h3>
+                <i class="fas fa-times" onclick="document.getElementById('fluctuation-overlay').style.display='none'" style="cursor:pointer; font-size:1.2rem; color:#ffb6c1;"></i>
+            </div>
+            <div style="flex:1; overflow-y:auto; padding-right:5px;" class="hide-scrollbar">
+                ${htmlContent}
+            </div>
+            <p style="text-align:center; font-size:0.65rem; color:#ffb6c1; margin-top:15px;">Hệ thống cập nhật tự động 24/7 🌸</p>
+        </div>
+    `;
+}
 </script>
 </body>
 </html>
