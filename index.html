@@ -21316,7 +21316,7 @@ function showBankingBill(data) {
     const dashboard = document.querySelector('.card-dashboard-container');
     let ui = document.getElementById('transaction-ui');
 
-    // Cấu hình màu sắc động cho Bill dựa trên ngân hàng thụ hưởng
+    // Cấu hình màu sắc động cho Bill dựa trên ngân hàng nhận
     const BANK_CONFIG = {
         'SWEETIE BANK': { color: '#ff1493', gradient: 'linear-gradient(135deg, #ff1493, #ff69b4)', bg: '#fffafa' },
         'HONEY BANK': { color: '#f39c12', gradient: 'linear-gradient(135deg, #f39c12, #f1c40f)', bg: '#fffdf5' },
@@ -21326,10 +21326,9 @@ function showBankingBill(data) {
     // Lấy config màu dựa trên tên ngân hàng (data.receiverBank), mặc định là Sweetie
     const billTheme = BANK_CONFIG[data.receiverBank] || BANK_CONFIG['SWEETIE BANK'];
 
-    // --- LOGIC LỌC TÊN: Loại bỏ dấu tích và tên ngân hàng nếu lỡ dính vào ---
+    // --- LOGIC LỌC TÊN: Chỉ giữ lại tên IN HOA sạch sẽ ---
     let cleanReceiverName = data.receiver || "";
     cleanReceiverName = cleanReceiverName.replace('✓', '').trim();
-    // Nếu trong tên có chứa tên ngân hàng thì cắt bỏ (phòng trường hợp truyền nhầm chuỗi innerText)
     Object.values(BANK_CONFIG).forEach(bank => {
         cleanReceiverName = cleanReceiverName.replace(bank.name, '');
     });
@@ -21343,72 +21342,80 @@ function showBankingBill(data) {
         else document.body.appendChild(ui);
     }
 
-    ui.style.display = 'flex';
-    ui.style.overflowY = 'auto'; 
-    ui.style.alignItems = 'center'; 
-    ui.style.padding = '20px 0'; 
+    // Thiết lập Overlay để hỗ trợ cuộn
+    Object.assign(ui.style, {
+        display: 'flex',
+        overflowY: 'auto',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '20px 0'
+    });
 
     ui.innerHTML = `
         <style>
             #transaction-ui::-webkit-scrollbar { display: none; }
-            #transaction-ui { -ms-overflow-style: none; scrollbar-width: none; }
+            .bill-scroll-content::-webkit-scrollbar { display: none; }
+            .bill-scroll-content { -ms-overflow-style: none; scrollbar-width: none; }
         </style>
 
-        <div id="bill-canvas" class="banking-bill-v2" style="width: 100%; max-width: 350px; background: #fff; border-radius: 35px; padding: 0; overflow: hidden; animation: zoomIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 20px 60px ${billTheme.color}25; border: 1px solid ${billTheme.color}10; position: relative; flex-shrink: 0; margin: auto;">
+        <div id="bill-canvas" class="banking-bill-v2" style="width: 95%; max-width: 360px; max-height: 90vh; background: #fff; border-radius: 35px; overflow: hidden; display: flex; flex-direction: column; animation: zoomIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 25px 70px ${billTheme.color}30; border: 1px solid ${billTheme.color}15; position: relative;">
             
-            <div style="background: ${billTheme.gradient}; padding: 30px 20px; text-align: center; color: #fff;">
-                <div style="width: 60px; height: 60px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; border: 2px solid #fff;">
-                    <i class="fas fa-check" style="font-size: 2rem;"></i>
+            <div style="background: ${billTheme.gradient}; padding: 25px 20px; text-align: center; color: #fff; flex-shrink: 0;">
+                <div style="width: 55px; height: 55px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; border: 2px solid #fff;">
+                    <i class="fas fa-check" style="font-size: 1.8rem;"></i>
                 </div>
-                <h3 style="margin: 0; font-size: 1.1rem; font-weight: 800; letter-spacing: 0.5px;">GIAO DỊCH THÀNH CÔNG</h3>
+                <h3 style="margin: 0; font-size: 1rem; font-weight: 800; letter-spacing: 0.5px;">GIAO DỊCH THÀNH CÔNG</h3>
                 <p style="margin: 5px 0 0; font-size: 0.7rem; opacity: 0.9;">${new Date().toLocaleString('vi-VN')}</p>
             </div>
 
-            <div style="padding: 25px 20px; position: relative; background: #fff;">
-                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-15deg); font-size: 2.2rem; font-weight: 900; color: ${billTheme.color}08; pointer-events: none; white-space: nowrap; text-transform: uppercase;">${data.receiverBank || 'SWEETIE BANK'}</div>
+            <div class="bill-scroll-content" style="flex: 1; overflow-y: auto; padding: 25px 20px; position: relative; background: #fff;">
+                
+                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-15deg); font-size: 2rem; font-weight: 900; color: ${billTheme.color}08; pointer-events: none; white-space: nowrap; text-transform: uppercase; z-index: 0;">${data.receiverBank || 'SWEETIE BANK'}</div>
 
-                <div style="text-align: center; margin-bottom: 25px;">
+                <div style="text-align: center; margin-bottom: 25px; position: relative; z-index: 1;">
                     <span style="font-size: 0.8rem; color: #888; font-weight: 600;">Số tiền chuyển</span>
-                    <h1 style="color: ${billTheme.color}; margin: 5px 0; font-size: 2.2rem; font-weight: 900;">${data.amount.toLocaleString()}<span style="font-size: 1.2rem; margin-left: 5px;">VND</span></h1>
+                    <h1 style="color: ${billTheme.color}; margin: 5px 0; font-size: 2rem; font-weight: 900;">${data.amount.toLocaleString()}<span style="font-size: 1.1rem; margin-left: 5px;">VND</span></h1>
                 </div>
 
-                <div style="background: ${billTheme.bg}; border-radius: 20px; padding: 15px; border: 1px solid ${billTheme.color}10;">
-                    <div class="bill-row-v2" style="display: flex; justify-content: space-between; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid ${billTheme.color}08;">
-                        <span style="font-size: 0.75rem; color: #888; font-weight: 500;">Người nhận</span>
+                <div style="background: ${billTheme.bg}; border-radius: 20px; padding: 15px; border: 1px solid ${billTheme.color}10; position: relative; z-index: 1;">
+                    <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid ${billTheme.color}08;">
+                        <span style="font-size: 0.75rem; color: #888;">Người nhận</span>
                         <strong style="font-size: 0.8rem; color: #333; text-align: right; max-width: 60%;">${cleanReceiverName}</strong>
                     </div>
                     
-                    <div class="bill-row-v2" style="display: flex; justify-content: space-between; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid ${billTheme.color}08;">
-                        <span style="font-size: 0.75rem; color: #888; font-weight: 500;">Ngân hàng thụ hưởng</span>
+                    <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid ${billTheme.color}08;">
+                        <span style="font-size: 0.75rem; color: #888;">Ngân hàng</span>
                         <strong style="font-size: 0.8rem; color: ${billTheme.color}; text-align: right;">${data.receiverBank || 'SWEETIE BANK'}</strong>
                     </div>
 
-                    <div class="bill-row-v2" style="display: flex; justify-content: space-between; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid ${billTheme.color}08;">
-                        <span style="font-size: 0.75rem; color: #888; font-weight: 500;">Số tài khoản</span>
+                    <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid ${billTheme.color}08;">
+                        <span style="font-size: 0.75rem; color: #888;">Số tài khoản</span>
                         <strong style="font-family: monospace; font-size: 0.9rem; color: #333;">${data.stk.match(/.{1,4}/g).join(' ')}</strong>
                     </div>
-                    <div class="bill-row-v2" style="display: flex; justify-content: space-between; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid ${billTheme.color}08;">
-                        <span style="font-size: 0.75rem; color: #888; font-weight: 500;">Nội dung</span>
-                        <strong style="font-size: 0.8rem; color: #555; text-align: right; max-width: 60%;">${data.note}</strong>
+                    
+                    <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid ${billTheme.color}08;">
+                        <span style="font-size: 0.75rem; color: #888;">Nội dung</span>
+                        <strong style="font-size: 0.8rem; color: #555; text-align: right; max-width: 60%; word-break: break-word;">${data.note}</strong>
                     </div>
-                    <div class="bill-row-v2" style="display: flex; justify-content: space-between; align-items: flex-start; padding: 12px 0;">
-                        <span style="font-size: 0.75rem; color: #888; font-weight: 500;">Mã giao dịch</span>
+                    
+                    <div style="display: flex; justify-content: space-between; padding: 12px 0;">
+                        <span style="font-size: 0.75rem; color: #888;">Mã giao dịch</span>
                         <strong style="font-size: 0.8rem; color: ${billTheme.color};">${data.transId}</strong>
                     </div>
                 </div>
 
-                <div style="margin-top: 25px; text-align: center;">
-                    <p style="font-size: 0.65rem; color: #bbb; margin: 0; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase;">${data.receiverBank || 'SWEETIE BANK'} - TRAO GỬI YÊU THƯƠNG 🌸</p>
+                <div style="margin-top: 25px; text-align: center; padding-bottom: 10px;">
+                    <p style="font-size: 0.6rem; color: #bbb; margin: 0; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase;">${data.receiverBank || 'SWEETIE BANK'} - TRAO GỬI YÊU THƯƠNG 🌸</p>
                 </div>
             </div>
 
-            <div style="padding: 0 20px 25px; display: flex; flex-direction: column; gap: 10px;">
+            <div style="padding: 15px 20px 25px; display: flex; flex-direction: column; gap: 10px; background: #fff; flex-shrink: 0; border-top: 1px solid #f9f9f9;">
                 <button onclick="downloadBill()" 
                     style="width: 100%; padding: 12px; border: 1.5px solid ${billTheme.color}; border-radius: 20px; background: #fff; color: ${billTheme.color}; font-weight: 800; cursor: pointer; transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 8px;">
                     <i class="fas fa-download"></i> LƯU ẢNH BILL
                 </button>
                 <button onclick="document.getElementById('transaction-ui').style.display='none'" 
-                    style="width: 100%; padding: 12px; border: none; border-radius: 20px; background: ${billTheme.color}; color: #fff; font-weight: 800; cursor: pointer; transition: 0.3s;">
+                    style="width: 100%; padding: 12px; border: none; border-radius: 20px; background: ${billTheme.color}; color: #fff; font-weight: 800; cursor: pointer;">
                     HOÀN TẤT
                 </button>
             </div>
