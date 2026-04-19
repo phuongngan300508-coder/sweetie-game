@@ -19645,7 +19645,7 @@ function renderStartMenu() {
             <p class="menu-subtitle">Chọn phương thức để bắt đầu</p>
             
             <div class="menu-options-grid">
-                <div class="menu-card-option create-card" onclick="showCreateStep(1)">
+                <div class="menu-card-option create-card" onclick="renderBankSelection()">
                     <div class="option-icon" style="color: #ff69b4; font-size: 1.5rem;">
                         <i class="fas fa-plus-circle"></i>
                     </div>
@@ -19674,36 +19674,45 @@ function renderStartMenu() {
         </div>`;
 }
 
-    function renderBankSelection() {
+   function renderBankSelection() {
     const flow = document.getElementById('card-app-flow');
+    
+    // Định nghĩa lại cấu hình màu sắc để render bảng chọn
+    const BANK_CONFIG = {
+        'sweetie': { name: 'SWEETIE BANK', color: '#ff1493', gradient: 'linear-gradient(135deg, #ff1493, #ff69b4)' },
+        'honey': { name: 'HONEY BANK', color: '#f39c12', gradient: 'linear-gradient(135deg, #f39c12, #f1c40f)' },
+        'cloud': { name: 'CLOUD BANK', color: '#3498db', gradient: 'linear-gradient(135deg, #3498db, #85c1e9)' }
+    };
+
     flow.innerHTML = `
-        <div class="bank-selection-container" style="animation: fadeIn 0.5s;">
-            <h3 class="step-title">Chọn ngân hàng</h3>
-            <p class="step-desc">Hãy chọn phong cách thẻ mà bạn yêu thích nhất 🌸</p>
+        <div class="bank-selection-container" style="animation: fadeIn 0.4s; padding: 10px;">
+            <h3 style="color: #ff69b4; font-weight: 800; margin-bottom: 5px;">Chọn Ngân hàng</h3>
+            <p style="font-size: 0.8rem; color: #888; margin-bottom: 20px;">Hãy chọn hệ thống ngân hàng bạn muốn mở thẻ</p>
             
-            <div style="display: flex; flex-direction: column; gap: 15px; margin-top: 25px;">
+            <div style="display: flex; flex-direction: column; gap: 12px;">
                 ${Object.keys(BANK_CONFIG).map(key => `
-                    <div class="bank-choice-card" onclick="selectBankType('${key}')" 
-                         style="background: ${BANK_CONFIG[key].gradient}; padding: 22px; border-radius: 25px; color: #fff; cursor: pointer; text-align: left; transition: 0.3s; box-shadow: 0 8px 15px rgba(0,0,0,0.1); position: relative; overflow: hidden;">
-                        <div style="font-weight: 800; font-size: 1.1rem; letter-spacing: 1px;">
+                    <div onclick="selectBankType('${key}')" 
+                         style="background: ${BANK_CONFIG[key].gradient}; padding: 20px; border-radius: 20px; color: #fff; cursor: pointer; text-align: left; transition: 0.3s; box-shadow: 0 5px 15px rgba(0,0,0,0.1); position: relative;">
+                        <div style="font-weight: 800; font-size: 1rem; letter-spacing: 0.5px;">
                             <i class="fas fa-university"></i> ${BANK_CONFIG[key].name}
                         </div>
-                        <div style="font-size: 0.7rem; opacity: 0.8; margin-top: 5px;">Hệ thống thanh toán bảo mật 24/7</div>
-                        <i class="fas fa-chevron-right" style="position: absolute; right: 20px; top: 50%; transform: translateY(-50%); opacity: 0.6;"></i>
+                        <div style="font-size: 0.65rem; opacity: 0.8; margin-top: 4px;">Dịch vụ ngân hàng số thế hệ mới</div>
+                        <i class="fas fa-chevron-right" style="position: absolute; right: 20px; top: 45%; opacity: 0.5;"></i>
                     </div>
                 `).join('')}
             </div>
-            
-            <button onclick="renderStartMenu()" class="btn-back-link" style="margin-top: 20px; color: #bbb; border: none; background: none; cursor: pointer;">
-                <i class="fas fa-arrow-left"></i> Quay lại menu chính
+
+            <button onclick="renderStartMenu()" style="margin-top: 20px; background: none; border: none; color: #bbb; cursor: pointer; font-size: 0.8rem;">
+                <i class="fas fa-arrow-left"></i> Quay lại
             </button>
         </div>
     `;
 }
 
+// Hàm bổ trợ để lưu lựa chọn và chuyển sang Bước 1
 function selectBankType(type) {
-    cardDraft.bankType = type; // Lưu loại ngân hàng vào bản nháp
-    showCreateStep(1); // Chuyển sang bước nhập tên chủ thẻ
+    cardDraft.bankType = type; // Lưu vào cardDraft
+    showCreateStep(1); // Chuyển sang nhập tên chủ thẻ
 }
     
    function showCreateStep(step) {
