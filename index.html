@@ -20244,6 +20244,15 @@ function renderCardDashboard(cardId) {
         'cloud': { name: 'CLOUD BANK', color: '#3498db', gradient: 'linear-gradient(135deg, #3498db, #85c1e9)', shadow: 'rgba(52, 152, 219, 0.2)' }
     };
 
+    // --- LOGIC SAO CHÉP NHANH (MỚI THÊM) ---
+    window.copyAccountNumber = (stk) => {
+        navigator.clipboard.writeText(stk).then(() => {
+            const statusToast = document.getElementById('copy-toast');
+            statusToast.style.opacity = '1';
+            setTimeout(() => statusToast.style.opacity = '0', 2000);
+        });
+    };
+
     cardRef.off(); 
 
     cardRef.on('value', async (snapshot) => {
@@ -20260,18 +20269,18 @@ function renderCardDashboard(cardId) {
             return; 
         }
 
-        // Lấy cấu hình ngân hàng (mặc định là sweetie nếu chưa có type)
         const bank = BANK_CONFIG[card.bankType || 'sweetie'];
         const originalID = card.id || cardId;
 
         flow.innerHTML = `
-    
             <div class="card-dashboard-container" style="animation: fadeIn 0.5s; display: flex; flex-direction: column; align-items: center; width: 100%;">
                 <h3 style="color: ${bank.color}; margin-bottom: 20px; font-weight: 800; width: 100%; text-align: left;">Thẻ của bạn</h3>
                 
                 <div class="sweetie-dashboard-grid">
                     <div class="dashboard-column-left" style="margin-bottom: 20px;">
-                        <div class="sweetie-card-design bank-style" style="margin: 0 auto; background: ${bank.gradient}; border: none; box-shadow: 0 15px 30px ${bank.shadow}; position: relative; overflow: hidden;">
+                        <div class="sweetie-card-design bank-style" onclick="copyAccountNumber('${card.accountNo}')" title="Chạm để sao chép số tài khoản"
+                             style="margin: 0 auto; background: ${bank.gradient}; border: none; box-shadow: 0 15px 30px ${bank.shadow}; position: relative; overflow: hidden; cursor: pointer;">
+                            
                             <div style="position: absolute; top: 0; left: -20%; width: 60%; height: 100%; background: linear-gradient(to right, transparent, rgba(255,255,255,0.2), rgba(255,255,255,0.4), rgba(255,255,255,0.2), transparent); transform: skewX(-20deg); pointer-events: none;"></div>
                             <div class="card-watermark" style="color: rgba(255,255,255,0.1);">${bank.name} ${bank.name}</div>
                             
@@ -20284,8 +20293,9 @@ function renderCardDashboard(cardId) {
                                 <div class="chip-line"></div><div class="chip-line"></div><div class="chip-line"></div><div class="chip-line"></div>
                             </div>
 
-                            <div class="card-id-view" style="color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,0.1); position: relative; z-index: 2;">
+                            <div class="card-id-view" style="color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,0.1); position: relative; z-index: 2; display: flex; align-items: center; gap: 10px;">
                                 ${card.accountNo.match(/.{1,4}/g).join(' ')}
+                                <i class="fas fa-copy" style="font-size: 0.9rem; opacity: 0.7;"></i>
                             </div>
 
                             <div class="card-footer-info" style="color: #fff; position: relative; z-index: 2;">
@@ -20300,7 +20310,11 @@ function renderCardDashboard(cardId) {
                             </div>
                         </div>
 
-                        <div class="original-id-security-box" style="margin-top: 15px; background: ${bank.color}05; padding: 10px 20px; border-radius: 12px; border: 1px dashed ${bank.color}50; display: flex; align-items: center; gap: 8px; width: 100%; box-sizing: border-box; justify-content: center;">
+                        <div id="copy-toast" style="text-align: center; margin-top: 10px; font-size: 0.7rem; color: ${bank.color}; font-weight: 800; opacity: 0; transition: 0.3s; pointer-events: none;">
+                             <i class="fas fa-check-circle"></i> ĐÃ SAO CHÉP SỐ TÀI KHOẢN
+                        </div>
+
+                        <div class="original-id-security-box" style="margin-top: 5px; background: ${bank.color}05; padding: 10px 20px; border-radius: 12px; border: 1px dashed ${bank.color}50; display: flex; align-items: center; gap: 8px; width: 100%; box-sizing: border-box; justify-content: center;">
                             <i class="fas fa-shield-alt" style="color: ${bank.color}; font-size: 0.8rem;"></i>
                             <span style="font-size: 0.75rem; color: ${bank.color}; font-weight: 800; letter-spacing: 0.5px;">
                                 ID GỐC CỦA THẺ: <span style="font-family: monospace; font-size: 0.95rem; color: #333;">${originalID}</span>
