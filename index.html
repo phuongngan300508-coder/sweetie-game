@@ -14345,6 +14345,10 @@ async function sendMessage(overrideText = null, transferData = null) {
         messageData.senderCard = transferData.senderCard;
         // DÒNG QUAN TRỌNG NHẤT: Lưu lời nhắn vào messageData
         messageData.note = transferData.note; 
+
+        // --- SỬA TẠI ĐÂY: LƯU THÊM NGÂN HÀNG NGƯỜI GỬI VÀO TIN NHẮN ---
+        // Phải lưu vào đây thì ô tin nhắn bên phía đối phương mới biết Henry dùng bank gì để đổi màu
+        messageData.senderBankType = transferData.senderBankType || 'sweetie';
     }
 
     if (replyingTo) {
