@@ -14746,75 +14746,65 @@ function renderSingleMessage(msgId, msg, position = 'bottom', targetContainer = 
 
     let bodyContentHtml = `<div class="text-content">${finalMsgText}</div>`;
     
-    // --- PHẦN XỬ LÝ Ô TIN NHẮN CHUYỂN TIỀN (CẬP NHẬT ĐỘNG THEO NGÂN HÀNG) ---
-    if (msg.type === 'bank_transfer') {
-        const amount = msg.amount || 0;
-        const status = msg.status || 'pending';
-        const note = msg.note || "Chuyển tiền qua Sweetie Bank"; 
-        
-        // Cấu hình hiển thị theo loại ngân hàng người gửi
-        const BANK_CONFIG = {
-            'sweetie': { name: 'Sweetie Bank', color: '#ff1493', gradient: 'linear-gradient(135deg, #ff4081, #d81b60)', bgLight: '#ffb2d1' },
-            'honey': { name: 'Honey Bank', color: '#f39c12', gradient: 'linear-gradient(135deg, #f39c12, #d35400)', bgLight: '#f9e79f' },
-            'cloud': { name: 'Cloud Bank', color: '#3498db', gradient: 'linear-gradient(135deg, #3498db, #2980b9)', bgLight: '#aed6f1' }
-        };
+    // --- PHẦN XỬ LÝ Ô TIN NHẮN CHUYỂN TIỀN (WECHAT STYLE - PINK EDITION) ---
+if (msg.type === 'bank_transfer') {
+    const amount = msg.amount || 0;
+    const status = msg.status || 'pending';
+    const note = msg.note || "Chuyển tiền qua Sweetie Bank"; 
+    
+    let statusLabel = "Sweetie Bank Transfer";
+    let subLabel = "Nhấn để nhận tiền ✨";
+    let cardOpacity = 1;
+    let bgColor = "linear-gradient(135deg, #ff4081, #d81b60)"; // Màu mặc định chưa nhận
+    let iconColor = "#fff";
 
-        // Lấy thông tin ngân hàng từ tin nhắn (mặc định sweetie nếu thiếu)
-        const bank = BANK_CONFIG[msg.senderBankType || 'sweetie'];
-        
-        let statusLabel = `${bank.name} Transfer`;
-        let subLabel = "Nhấn để nhận tiền ✨";
-        let cardOpacity = 1;
-        let bgColor = bank.gradient;
-        let iconColor = "#fff";
-
-        if (status === 'accepted') {
-            statusLabel = "Đã nhận tiền";
-            subLabel = "Giao dịch thành công ✅";
-            cardOpacity = 0.8;
-            bgColor = `linear-gradient(135deg, ${bank.bgLight}, #e1e1e1)`; 
-        } else if (status === 'refused') {
-            statusLabel = "Giao dịch đã hoàn";
-            subLabel = "Đã từ chối/hoàn tiền ❌";
-            cardOpacity = 0.8;
-            bgColor = "#e0e0e0"; 
-        }
-
-        bodyContentHtml = `
-            <div class="wechat-pay-card" style="width: 240px; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1); opacity: ${cardOpacity}; font-family: sans-serif; cursor: default;">
-                <div style="background: ${bgColor}; padding: 15px; display: flex; align-items: center; gap: 15px;">
-                    <div style="width: 42px; height: 42px; background: rgba(255,255,255,0.25); border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                        <i class="fas fa-hand-holding-usd" style="color: ${iconColor}; font-size: 1.4rem;"></i>
-                    </div>
-                    <div style="display: flex; flex-direction: column; overflow: hidden;">
-                        <span style="font-size: 0.95rem; color: ${status === 'accepted' ? '#333' : 'white'}; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                            ${amount.toLocaleString()} VNĐ
-                        </span>
-                        <span style="font-size: 0.75rem; color: ${status === 'accepted' ? '#666' : 'rgba(255,255,255,0.85)'}; font-weight: 500;">
-                            ${note}
-                        </span>
-                    </div>
-                </div>
-                
-                <div style="background: white; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(0,0,0,0.05);">
-                    <span style="font-size: 0.65rem; color: #888; font-weight: bold; letter-spacing: 0.3px; text-transform: uppercase;">${statusLabel}</span>
-                    <span style="font-size: 0.65rem; color: ${bank.color}; font-weight: bold;">${subLabel}</span>
-                </div>
-
-                ${(!isMe && status === 'pending') ? `
-                    <div style="display: flex; background: white; padding: 0 10px 10px 10px; gap: 8px;">
-                        <button onclick="handleTransferAction('${msgId}', 'accept', ${amount}, '${msg.senderCard}')" 
-                                style="flex: 2; padding: 8px; background: ${bank.color}; border: none; color: white; border-radius: 6px; font-size: 0.75rem; font-weight: 800; cursor: pointer; transition: 0.2s; box-shadow: 0 2px 6px rgba(0,0,0,0.1);"
-                                onmouseover="this.style.filter='brightness(1.1)'" onmouseout="this.style.filter='none'">NHẬN TIỀN</button>
-                        <button onclick="handleTransferAction('${msgId}', 'refuse', ${amount}, '${msg.senderCard}')" 
-                                style="flex: 1; padding: 8px; background: #fff; border: 1.5px solid ${bank.color}50; color: ${bank.color}; border-radius: 6px; font-size: 0.75rem; font-weight: 800; cursor: pointer; transition: 0.2s;"
-                                onmouseover="this.style.background='${bank.color}05'" onmouseout="this.style.background='#fff'">TỪ CHỐI</button>
-                    </div>
-                ` : ''}
-            </div>`;
+    if (status === 'accepted') {
+        statusLabel = "Đã nhận tiền";
+        subLabel = "Giao dịch thành công ✅";
+        cardOpacity = 0.8;
+        bgColor = "linear-gradient(135deg, #ffb2d1, #f48fb1)"; // Màu hồng nhạt khi đã nhận
+    } else if (status === 'refused') {
+        statusLabel = "Giao dịch đã hoàn";
+        subLabel = "Đã từ chối/hoàn tiền ❌";
+        cardOpacity = 0.8;
+        bgColor = "#e0e0e0"; // Màu xám khi từ chối
     }
+
+    bodyContentHtml = `
+        <div class="wechat-pay-card" style="width: 240px; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1); opacity: ${cardOpacity}; font-family: sans-serif; cursor: default;">
+            <div style="background: ${bgColor}; padding: 15px; display: flex; align-items: center; gap: 15px;">
+                <div style="width: 42px; height: 42px; background: rgba(255,255,255,0.25); border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <i class="fas fa-hand-holding-usd" style="color: ${iconColor}; font-size: 1.4rem;"></i>
+                </div>
+                <div style="display: flex; flex-direction: column; overflow: hidden;">
+                    <span style="font-size: 0.95rem; color: white; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                        ${amount.toLocaleString()} VNĐ
+                    </span>
+                    <span style="font-size: 0.75rem; color: rgba(255,255,255,0.85); font-weight: 500;">
+                        ${note}
+                    </span>
+                </div>
+            </div>
+            
+            <div style="background: white; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(0,0,0,0.05);">
+                <span style="font-size: 0.65rem; color: #888; font-weight: bold; letter-spacing: 0.3px; text-transform: uppercase;">${statusLabel}</span>
+                <span style="font-size: 0.65rem; color: #ff1493; font-weight: bold;">${subLabel}</span>
+            </div>
+
+            ${(!isMe && status === 'pending') ? `
+                <div style="display: flex; background: white; padding: 0 10px 10px 10px; gap: 8px;">
+                    <button onclick="handleTransferAction('${msgId}', 'accept', ${amount}, '${msg.senderCard}')" 
+                            style="flex: 2; padding: 8px; background: #ff1493; border: none; color: white; border-radius: 6px; font-size: 0.75rem; font-weight: 800; cursor: pointer; transition: 0.2s; box-shadow: 0 2px 6px rgba(255, 20, 147, 0.3);"
+                            onmouseover="this.style.filter='brightness(1.1)'" onmouseout="this.style.filter='none'">NHẬN TIỀN</button>
+                    <button onclick="handleTransferAction('${msgId}', 'refuse', ${amount}, '${msg.senderCard}')" 
+                            style="flex: 1; padding: 8px; background: #fff; border: 1.5px solid #ffb6c1; color: #ff1493; border-radius: 6px; font-size: 0.75rem; font-weight: 800; cursor: pointer; transition: 0.2s;"
+                            onmouseover="this.style.background='#fff0f5'" onmouseout="this.style.background='#fff'">TỪ CHỐI</button>
+                </div>
+            ` : ''}
+        </div>`;
+}
         
-    // --- CÁC LOGIC CŨ GIỮ NGUYÊN ---
+    // --- CÁC LOGIC CŨ CỦA HENRY (GIỮ NGUYÊN) ---
     else if (msg.type === 'call_system') {
         const callIcon = msg.text.includes('video') ? 'fas fa-video' : 'fas fa-phone';
         const themeColor = isMe ? '#ffffff' : (area.style.getPropertyValue('--theme-main-color') || '#ff69b4');
@@ -14858,13 +14848,21 @@ function renderSingleMessage(msgId, msg, position = 'bottom', targetContainer = 
         }
     }
 
-   // --- 5. TEMPLATE HTML (GIỮ NGUYÊN) ---
+   // --- 5. TEMPLATE HTML (CHỈNH SỬA ĐỂ CARD CHUYỂN TIỀN CÓ KHỐI RIÊNG) ---
     const isSticker = msg.type === 'sticker';
     const isTransfer = msg.type === 'bank_transfer';
     
     let pinMarkerHtml = msg.isPinned ? `<div class="pin-marker" style="font-size: 0.8em; color: #ff1493; margin-bottom: 3px;"><i class="fas fa-thumbtack"></i></div>` : "";
     
-    let bubbleClass = isSticker ? "msg-sticker" : (isTransfer ? "msg-transfer-card" : (isMe ? "msg-me" : "msg-friend"));
+    // Xác định Class cho bong bóng tin nhắn
+    let bubbleClass = "";
+    if (isSticker) {
+        bubbleClass = "msg-sticker"; // Henry có thể định nghĩa CSS riêng cho Sticker
+    } else if (isTransfer) {
+        bubbleClass = "msg-transfer-card"; // Class riêng cho chuyển tiền (Không trong suốt)
+    } else {
+        bubbleClass = isMe ? "msg-me" : "msg-friend"; // Tin nhắn thường
+    }
 
     const msgHtml = `
     <div class="msg-wrapper ${isMe ? 'msg-me-wrap' : 'msg-friend-wrap'}" id="msg-${msgId}"
@@ -14923,7 +14921,7 @@ function renderSingleMessage(msgId, msg, position = 'bottom', targetContainer = 
         ` : ''}
     </div>`;
 
-    // --- 6. PHẦN RENDER ---
+    // --- 6. PHẦN RENDER (GIỮ NGUYÊN 100%) ---
     if (targetContainer) {
         targetContainer.innerHTML = msgHtml;
     } else {
@@ -20409,29 +20407,21 @@ async function unlinkCard() {
     // 1. Bảo vệ nếu thiếu dữ liệu quan trọng
     if (!cardId || !currentUser) return; 
 
-    // --- PHẦN TỐI ƯU: Xác định bankType chính xác (MỚI) ---
-    let finalBankType = 'sweetie';
-
-    // Ưu tiên 1: Nếu extraData đã có sẵn fromBankType (do hàm nhận tiền từ chat truyền vào)
-    if (extraData && extraData.fromBankType) {
-        finalBankType = extraData.fromBankType;
-    } 
-    // Ưu tiên 2: Nếu chưa có, mới tự đi lấy bankType của currentUser (dành cho nạp/rút/chuyển đi)
-    else {
-        try {
-            const userSnap = await db.ref(`users/${currentUser}/linkedCard`).once('value');
-            const linkedCardId = userSnap.val();
-            if (linkedCardId) {
-                const cardSnap = await db.ref(`sweetie_cards/${linkedCardId}/bankType`).once('value');
-                if (cardSnap.exists()) {
-                    finalBankType = cardSnap.val();
-                }
+    // --- PHẦN BỔ SUNG: Tự động lấy bankType của người thực hiện để định danh màu sắc sau này ---
+    let senderBankType = 'sweetie'; // Mặc định
+    try {
+        const userSnap = await db.ref(`users/${currentUser}/linkedCard`).once('value');
+        const linkedCardId = userSnap.val();
+        if (linkedCardId) {
+            const cardSnap = await db.ref(`sweetie_cards/${linkedCardId}/bankType`).once('value');
+            if (cardSnap.exists()) {
+                senderBankType = cardSnap.val();
             }
-        } catch (e) {
-            console.warn("Không lấy được bankType, sử dụng mặc định.");
         }
+    } catch (e) {
+        console.warn("Không lấy được bankType, sử dụng mặc định.");
     }
-    // ----------------------------------------------------
+    // ---------------------------------------------------------------------------------------
 
     // 2. Tạo một bản ghi mới trong node card_history
     const historyRef = db.ref(`card_history/${cardId}`).push();
@@ -20441,11 +20431,11 @@ async function unlinkCard() {
         type: type,
         amount: amount,
         user: currentUser,
-        // Sử dụng finalBankType đã được phân loại ở trên
-        fromBankType: finalBankType, 
+        // Lưu bankType để popup biến động số dư biết nên hiển thị màu gì
+        fromBankType: senderBankType, 
         // Thời gian chính xác từ Server Firebase
         time: firebase.database.ServerValue.TIMESTAMP,
-        ...extraData // Gộp thêm toUser, fromUser, note...
+        ...extraData // Gộp thêm toUser, fromUser hoặc bất kỳ thông tin nào khác vào đây
     };
 
     historyRef.set(historyData).then(() => {
@@ -20454,7 +20444,7 @@ async function unlinkCard() {
         console.error("Lỗi ghi lịch sử Sweetie Bank:", err);
     });
 }
-    
+
     async function showCardHistory(cardId) {
     const oldOverlay = document.getElementById('history-overlay');
     if (oldOverlay) oldOverlay.remove();
@@ -20716,7 +20706,7 @@ async function processTransfer(amount, pass, myCardId, note, myBankType) {
     const cardRef = db.ref(`sweetie_cards/${myCardId}`);
     
     try {
-        // 2. Lấy dữ liệu thẻ mới nhất (Giữ nguyên)
+        // 2. Lấy dữ liệu thẻ mới nhất để kiểm tra mật khẩu và số dư (Giữ nguyên)
         const cardSnap = await cardRef.once('value');
         if (!cardSnap.exists()) return alert("Lỗi: Không tìm thấy thông tin thẻ!");
         
@@ -20746,19 +20736,16 @@ async function processTransfer(amount, pass, myCardId, note, myBankType) {
             return;
         }
 
-        // --- XÁC ĐỊNH NGÂN HÀNG GỬI (Đảm bảo luôn có giá trị) ---
-        const finalBankType = myBankType || cardData.bankType || 'sweetie';
-
         // --- 4. GHI LỊCH SỬ GIAO DỊCH (CẬP NHẬT: Lưu thêm fromBankType) ---
         if (typeof recordCardHistory === 'function') {
             recordCardHistory(myCardId, 'transfer_out', amount, { 
                 toUser: currentChatFriend,
                 note: note,
-                fromBankType: finalBankType // Lưu bankType của Henry để đối phương thấy màu
+                fromBankType: myBankType || cardData.bankType || 'sweetie' // Lưu bankType của Henry
             });
         }
 
-        // --- PHẦN THÊM MỚI: KÍCH HOẠT CHẤM ĐỎ CHO ĐỐI PHƯƠNG (Giữ nguyên) ---
+        // --- PHẦN THÊM MỚI: KÍCH HOẠT CHẤM ĐỎ CHO ĐỐI PHƯƠNG ---
         if (currentChatFriend) {
             db.ref(`users/${currentChatFriend}/hasNewFluctuation`).set(true);
         }
@@ -20770,7 +20757,7 @@ async function processTransfer(amount, pass, myCardId, note, myBankType) {
             note: note || "Đã chuyển tiền cho bạn",
             status: 'pending', 
             senderCard: myCardId,
-            senderBankType: finalBankType, // Đính kèm loại ngân hàng vào tin nhắn chat
+            senderBankType: myBankType || cardData.bankType || 'sweetie', // Gửi thông tin ngân hàng đi
             timestamp: firebase.database.ServerValue.TIMESTAMP
         };
 
@@ -20803,7 +20790,7 @@ async function processTransfer(amount, pass, myCardId, note, myBankType) {
             // 1. Hoàn tiền thật về thẻ của người gửi
             await db.ref(`sweetie_cards/${senderCardId}/balance`).transaction(val => (val || 0) + amount);
             
-            // 2. Ghi loại là 'refund'
+            // 2. Ghi loại là 'refund' để hiện icon Hoàn tiền trong lịch sử
             recordCardHistory(senderCardId, 'refund', amount, { 
                 note: "Tiền bị từ chối nhận" 
             });
@@ -20811,7 +20798,7 @@ async function processTransfer(amount, pass, myCardId, note, myBankType) {
             // 3. Cập nhật trạng thái tin nhắn
             await chatRef.child('status').set('refused');
 
-            // --- THÔNG BÁO HOÀN TIỀN CHO ĐỐI PHƯƠNG ---
+            // --- THÊM THÔNG BÁO HOÀN TIỀN CHO ĐỐI PHƯƠNG (NGƯỜI GỬI) ---
             db.ref(`notifications_queue/${currentChatFriend}`).push({
                 title: "🔄 TIỀN ĐÃ HOÀN LẠI",
                 from: "Hệ thống",
@@ -20829,38 +20816,32 @@ async function processTransfer(amount, pass, myCardId, note, myBankType) {
     const myCardSnap = await db.ref(`users/${currentUser}/linkedCard`).once('value');
     if (!myCardSnap.exists()) {
         alert("🌸 Bạn ơi, bạn cần có thẻ Sweetie Bank mới nhận được tiền nhé!");
-        if (typeof openSweetieCardModal === 'function') openSweetieCardModal(); 
+        openSweetieCardModal(); 
         return;
     }
 
     const myCardId = myCardSnap.val();
     try {
-        // --- CẬP NHẬT: Lấy bankType của người gửi từ transferData trong tin nhắn ---
+        // --- PHẦN CẬP NHẬT: Lấy thông tin ngân hàng người gửi từ tin nhắn ---
         const msgSnap = await chatRef.once('value');
         const msgData = msgSnap.val();
-        
-        // Kiểm tra kỹ cấu trúc transferData để lấy senderBankType
-        let senderBankType = 'sweetie';
-        if (msgData && msgData.transferData && msgData.transferData.senderBankType) {
-            senderBankType = msgData.transferData.senderBankType;
-        }
+        // Lấy bankType của người gửi đã lưu trong transferData, mặc định là sweetie
+        const senderBankType = (msgData && msgData.transferData && msgData.transferData.senderBankType) 
+                               ? msgData.transferData.senderBankType : 'sweetie';
 
         // 1. Cộng tiền vào thẻ người nhận
         await db.ref(`sweetie_cards/${myCardId}/balance`).transaction(val => (val || 0) + amount);
         
-        // 2. Ghi lịch sử (QUAN TRỌNG: fromBankType dùng để Popup hiện đúng màu ngân hàng đối phương)
-        if (typeof recordCardHistory === 'function') {
-            recordCardHistory(myCardId, 'transfer_in', amount, { 
-                fromUser: currentChatFriend,
-                fromBankType: senderBankType,
-                note: msgData.transferData.note || "Nhận tiền từ chat"
-            });
-        }
+        // 2. Ghi rõ loại nhận tiền, người gửi và NGÂN HÀNG của người gửi
+        recordCardHistory(myCardId, 'transfer_in', amount, { 
+            fromUser: currentChatFriend,
+            fromBankType: senderBankType // Đảm bảo biến động số dư hiện đúng màu ngân hàng đối phương
+        });
         
         // 3. Cập nhật trạng thái tin nhắn
         await chatRef.child('status').set('accepted');
         
-        // --- THÔNG BÁO CHO NGƯỜI NHẬN ---
+        // --- THÔNG BÁO CHO NGƯỜI NHẬN (LÀ CHÍNH BẠN) ---
         if (typeof addNotification === 'function') {
             addNotification("📥 NHẬN TIỀN THÀNH CÔNG", `Bạn đã nhận ${amount.toLocaleString()} VNĐ từ ${currentChatFriend} vào thẻ.`);
         }
@@ -20871,7 +20852,7 @@ async function processTransfer(amount, pass, myCardId, note, myBankType) {
         console.error(e);
     }
 }
-    
+
     // --- QUẢN LÝ GIAO DIỆN TẠO LÌ XÌ ---
 function toggleRedPacketMenu() {
     const menu = document.getElementById('chat-extra-menu');
@@ -21988,7 +21969,7 @@ async function selectSavedAccount(stk, name) {
                 day: '2-digit', month: '2-digit', year: 'numeric'
             });
 
-            // --- PHẦN THAY ĐỔI: Xác định ngân hàng của từng giao dịch cụ thể để đổi màu ---
+            // --- PHẦN THAY ĐỔI: Xác định ngân hàng của từng giao dịch cụ thể ---
             const senderBankType = log.fromBankType || 'sweetie';
             const itemBank = BANK_CONFIG[senderBankType] || BANK_CONFIG['sweetie'];
             const fromBankName = (log.fromBank || itemBank.name).toUpperCase();
@@ -21997,7 +21978,7 @@ async function selectSavedAccount(stk, name) {
             const refNo = `FT${log.key.substring(0, 8).toUpperCase()}`;
 
             return `
-                <div style="background:#fff; border-radius:20px; padding:16px; margin-bottom:14px; border:1px solid ${itemBank.color}25; box-shadow:0 4px 12px rgba(0,0,0,0.03); animation: slideUpItem 0.4s ease forwards ${index * 0.1}s;">
+                <div style="background:#fff; border-radius:20px; padding:16px; margin-bottom:14px; border:1px solid ${itemBank.color}15; box-shadow:0 4px 12px rgba(0,0,0,0.03); animation: slideUpItem 0.4s ease forwards ${index * 0.1}s;">
                     <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
                         <div>
                             <span style="font-size:0.65rem; color:${itemBank.color}; background:${itemBank.color}10; padding:4px 10px; border-radius:20px; font-weight:700; letter-spacing:0.3px;">+ TIỀN VÀO</span>
@@ -22011,16 +21992,16 @@ async function selectSavedAccount(stk, name) {
                         </div>
                     </div>
 
-                    <div style="background:${itemBank.bg}; border-radius:14px; padding:12px; border:1px solid ${itemBank.color}10;">
+                    <div style="background:${itemBank.bg}; border-radius:14px; padding:12px; border:1px solid ${itemBank.color}05;">
                         <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
                             <span style="font-size:0.75rem; color:#64748b;">Từ</span>
                             <span style="font-size:0.75rem; color:#1e293b; font-weight:700;">${(log.fromUser || 'Ẩn danh').toUpperCase()}</span>
                         </div>
                         <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
                             <span style="font-size:0.75rem; color:#64748b;">Ngân hàng</span>
-                            <span style="font-size:0.75rem; color:${itemBank.color}; font-weight:800;">${fromBankName}</span>
+                            <span style="font-size:0.75rem; color:${itemBank.color}; font-weight:700;">${fromBankName}</span>
                         </div>
-                        <div style="border-top:1px dashed ${itemBank.color}30; margin-top:8px; padding-top:8px;">
+                        <div style="border-top:1px dashed ${itemBank.color}20; margin-top:8px; padding-top:8px;">
                             <div style="font-size:0.65rem; color:#94a3b8; text-transform:uppercase; font-weight:700; margin-bottom:2px;">Nội dung</div>
                             <div style="font-size:0.8rem; color:#475569; line-height:1.4; font-style:italic;">"${log.note || 'Chuyển tiền'}"</div>
                         </div>
