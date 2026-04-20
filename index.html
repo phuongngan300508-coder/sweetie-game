@@ -20571,96 +20571,103 @@ async function unlinkCard() {
     const currentBalance = cardData.balance || 0;
     const targetName = document.getElementById('chat-target-name').innerText;
 
+    // --- CẬP NHẬT GIAO DIỆN THEO NGÂN HÀNG CỦA THẺ (MỚI) ---
+    const BANK_CONFIG = {
+        'sweetie': { name: 'SWEETIE BANK', color: '#ff1493', gradient: 'linear-gradient(135deg, #ff1493, #ff69b4)', bg: '#fdf2f8' },
+        'honey': { name: 'HONEY BANK', color: '#f39c12', gradient: 'linear-gradient(135deg, #f39c12, #f1c40f)', bg: '#fffdf5' },
+        'cloud': { name: 'CLOUD BANK', color: '#3498db', gradient: 'linear-gradient(135deg, #3498db, #85c1e9)', bg: '#f5faff' }
+    };
+    
+    // Lấy config dựa trên bankType của thẻ, mặc định là sweetie
+    const myBank = BANK_CONFIG[cardData.bankType || 'sweetie'];
+
     // 2. Xóa popup cũ nếu lỡ còn tồn tại trên màn hình
     const existing = document.getElementById('transfer-popup-overlay');
     if (existing) existing.remove();
 
- // 3. Tạo cấu trúc HTML (Nâng cấp giao diện Bank chuyên nghiệp)
-const transferOverlay = document.createElement('div');
-transferOverlay.id = 'transfer-popup-overlay'; 
+    // 3. Tạo cấu trúc HTML
+    const transferOverlay = document.createElement('div');
+    transferOverlay.id = 'transfer-popup-overlay'; 
 
-transferOverlay.innerHTML = `
-<div class="transfer-popup-content banking-style"> 
-    <div style="text-align: center; margin-bottom: 25px;">
-        <div style="background: #fff0f5; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px;">
-            <i class="fas fa-university" style="color: #ff1493; font-size: 1.5rem;"></i>
+    transferOverlay.innerHTML = `
+    <div class="transfer-popup-content banking-style"> 
+        <div style="text-align: center; margin-bottom: 25px;">
+            <div style="background: ${myBank.color}10; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px;">
+                <i class="fas fa-university" style="color: ${myBank.color}; font-size: 1.5rem;"></i>
+            </div>
+            <h3 style="color: #333; margin: 0; font-size: 1rem; font-weight: 800; letter-spacing: 1px;">${myBank.name}</h3>
+            <p style="font-size: 0.65rem; color: #aaa; margin: 2px 0 0;">Giao dịch chuyển tiền an toàn</p>
         </div>
-        <h3 style="color: #333; margin: 0; font-size: 1rem; font-weight: 800; letter-spacing: 1px;">SWEETIE BANKING</h3>
-        <p style="font-size: 0.65rem; color: #aaa; margin: 2px 0 0;">Giao dịch chuyển tiền an toàn</p>
-    </div>
 
-    <div style="background: #fdf2f8; border-radius: 20px; padding: 15px; margin-bottom: 20px; position: relative; border: 1px solid #ff149310;">
-        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
-            <div style="width: 35px; height: 22px; background: linear-gradient(135deg, #ff1493, #ff69b4); border-radius: 4px; box-shadow: 0 2px 5px rgba(255,20,147,0.3);"></div>
-            <div>
-                <div style="font-size: 0.6rem; color: #888; text-transform: uppercase;">Từ tài khoản</div>
-                <div style="font-size: 0.85rem; font-weight: 700; color: #333;">**** ${myCardId.slice(-4)} <span style="font-weight: 400; color: #ff1493;">(${currentBalance.toLocaleString()}đ)</span></div>
+        <div style="background: ${myBank.bg}; border-radius: 20px; padding: 15px; margin-bottom: 20px; position: relative; border: 1px solid ${myBank.color}10;">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+                <div style="width: 35px; height: 22px; background: ${myBank.gradient}; border-radius: 4px; box-shadow: 0 2px 5px ${myBank.color}30;"></div>
+                <div>
+                    <div style="font-size: 0.6rem; color: #888; text-transform: uppercase;">Từ tài khoản</div>
+                    <div style="font-size: 0.85rem; font-weight: 700; color: #333;">**** ${myCardId.slice(-4)} <span style="font-weight: 400; color: ${myBank.color};">(${currentBalance.toLocaleString()}đ)</span></div>
+                </div>
+            </div>
+
+            <div style="position: absolute; left: 31px; top: 37px; height: 20px; border-left: 2px dashed ${myBank.color}50;"></div>
+
+            <div style="display: flex; align-items: center; gap: 10px; margin-top: 15px;">
+                <div style="width: 35px; height: 35px; background: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 1px solid ${myBank.color}30;">
+                    <i class="fas fa-user-check" style="color: ${myBank.color}; font-size: 0.9rem;"></i>
+                </div>
+                <div>
+                    <div style="font-size: 0.6rem; color: #888; text-transform: uppercase;">Đến người nhận</div>
+                    <div style="font-size: 0.9rem; font-weight: 800; color: #333;">${targetName}</div>
+                </div>
             </div>
         </div>
 
-        <div style="position: absolute; left: 31px; top: 37px; height: 20px; border-left: 2px dashed #ffb6c1;"></div>
-
-        <div style="display: flex; align-items: center; gap: 10px; margin-top: 15px;">
-            <div style="width: 35px; height: 35px; background: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 1px solid #ff149330;">
-                <i class="fas fa-user-check" style="color: #ff1493; font-size: 0.9rem;"></i>
+        <div class="banking-input-group">
+            <div class="bank-field">
+                <span class="bank-label" style="color: ${myBank.color}">SỐ TIỀN CHUYỂN</span>
+                <div style="display: flex; align-items: baseline; border-bottom: 2px solid #eee; transition: 0.3s;" onfocusin="this.parentElement.style.borderBottomColor='${myBank.color}'" onfocusout="this.parentElement.style.borderBottomColor='#eee'">
+                    <input type="number" id="transfer-amount-in" placeholder="0" autocomplete="off" inputmode="numeric" style="width: 100%; border: none; outline: none; padding: 10px 0; font-size: 1.5rem; font-weight: 800; color: #333; background: transparent;">
+                    <span style="font-weight: 800; color: ${myBank.color};">VND</span>
+                </div>
             </div>
-            <div>
-                <div style="font-size: 0.6rem; color: #888; text-transform: uppercase;">Đến người nhận</div>
-                <div style="font-size: 0.9rem; font-weight: 800; color: #d81b60;">${targetName}</div>
-            </div>
-        </div>
-    </div>
 
-    <div class="banking-input-group">
-        <div class="bank-field">
-            <span class="bank-label">SỐ TIỀN CHUYỂN</span>
-            <div style="display: flex; align-items: baseline; border-bottom: 2px solid #eee; transition: 0.3s;" onfocusin="this.parentElement.style.borderBottomColor='#ff1493'" onfocusout="this.parentElement.style.borderBottomColor='#eee'">
-                <input type="number" id="transfer-amount-in" placeholder="0" autocomplete="off" inputmode="numeric" style="width: 100%; border: none; outline: none; padding: 10px 0; font-size: 1.5rem; font-weight: 800; color: #333; background: transparent;">
-                <span style="font-weight: 800; color: #ff1493;">VND</span>
+            <div class="bank-field" style="margin-top: 15px;">
+                <span class="bank-label" style="color: ${myBank.color}">NỘI DUNG</span>
+                <input type="text" id="transfer-note-in" placeholder="Gửi lời yêu thương..." maxlength="50" autocomplete="off" style="width: 100%; border: none; border-bottom: 1px solid #eee; outline: none; padding: 8px 0; font-size: 0.85rem; background: transparent;">
+            </div>
+
+            <div class="bank-field" style="margin-top: 15px;">
+                <span class="bank-label" style="color: ${myBank.color}">MÃ PIN XÁC THỰC</span>
+                <input type="password" id="transfer-pass-in" placeholder="Nhập mật khẩu thẻ của bạn" autocomplete="new-password" style="width: 100%; border: none; border-bottom: 1px solid #eee; outline: none; padding: 8px 0; font-size: 1.1rem; color: #333; background: transparent;">
             </div>
         </div>
 
-        <div class="bank-field" style="margin-top: 15px;">
-            <span class="bank-label">NỘI DUNG</span>
-            <input type="text" id="transfer-note-in" placeholder="Gửi lời yêu thương..." maxlength="50" autocomplete="off" style="width: 100%; border: none; border-bottom: 1px solid #eee; outline: none; padding: 8px 0; font-size: 0.85rem; background: transparent;">
+        <div style="display: flex; gap: 10px; margin-top: 25px;">
+            <button onclick="this.closest('#transfer-popup-overlay').remove()" style="flex: 1; padding: 12px; border-radius: 15px; border: none; background: #f5f5f5; color: #888; font-weight: 700; cursor: pointer;">HỦY</button>
+            <button id="btn-confirm-transfer" style="flex: 2; padding: 12px; border-radius: 15px; border: none; background: ${myBank.color}; color: #fff; font-weight: 800; cursor: pointer; box-shadow: 0 5px 15px ${myBank.color}40;">TIẾP TỤC</button>
         </div>
-
-        <div class="bank-field" style="margin-top: 15px;">
-    <span class="bank-label">MÃ PIN XÁC THỰC</span>
-    <input type="password" id="transfer-pass-in" 
-        placeholder="Nhập mật khẩu thẻ của bạn" 
-        autocomplete="new-password" 
-        style="width: 100%; border: none; border-bottom: 1px solid #eee; outline: none; padding: 8px 0; font-size: 1.1rem; color: #333; background: transparent;">
-</div>
     </div>
 
-    <div style="display: flex; gap: 10px; margin-top: 25px;">
-        <button onclick="this.closest('#transfer-popup-overlay').remove()" style="flex: 1; padding: 12px; border-radius: 15px; border: none; background: #f5f5f5; color: #888; font-weight: 700; cursor: pointer;">HỦY</button>
-        <button id="btn-confirm-transfer" style="flex: 2; padding: 12px; border-radius: 15px; border: none; background: #ff1493; color: #fff; font-weight: 800; cursor: pointer; box-shadow: 0 5px 15px rgba(255,20,147,0.3);">TIẾP TỤC</button>
-    </div>
-</div>
-
-<style>
-    #transfer-popup-overlay {
-        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(0, 0, 0, 0.4);
-        backdrop-filter: blur(8px);
-        display: flex; align-items: center; justify-content: center; z-index: 10000;
-        animation: fadeIn 0.3s ease;
-    }
-    .transfer-popup-content.banking-style {
-        background: #fff; width: 90%; max-width: 350px; border-radius: 30px;
-        padding: 30px 25px; box-shadow: 0 20px 50px rgba(0,0,0,0.2);
-        position: relative; animation: slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    }
-    .bank-label { font-size: 0.6rem; color: #ff69b4; font-weight: 800; letter-spacing: 0.5px; }
-    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-    @keyframes slideUp { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-    #transfer-amount-in::-webkit-inner-spin-button, 
-    #transfer-amount-in::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-</style>
-`;
-      
+    <style>
+        #transfer-popup-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(8px);
+            display: flex; align-items: center; justify-content: center; z-index: 10000;
+            animation: fadeIn 0.3s ease;
+        }
+        .transfer-popup-content.banking-style {
+            background: #fff; width: 90%; max-width: 350px; border-radius: 30px;
+            padding: 30px 25px; box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+            position: relative; animation: slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .bank-label { font-size: 0.6rem; font-weight: 800; letter-spacing: 0.5px; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        #transfer-amount-in::-webkit-inner-spin-button, 
+        #transfer-amount-in::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    </style>
+    `;
+    
     document.body.appendChild(transferOverlay);
     
     const amountInput = document.getElementById('transfer-amount-in');
@@ -20671,7 +20678,6 @@ transferOverlay.innerHTML = `
         const amount = parseInt(document.getElementById('transfer-amount-in').value);
         const pass = document.getElementById('transfer-pass-in').value;
         
-        // Lấy lời nhắn, nếu trống thì dùng mặc định: [Tên chủ thẻ] + đã chuyển tiền cho bạn
         let note = document.getElementById('transfer-note-in').value.trim();
         if (!note) {
             const owner = cardData.ownerName || cardData.owner || currentUser;
@@ -20685,15 +20691,15 @@ transferOverlay.innerHTML = `
         this.disabled = true;
         this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ĐANG XỬ LÝ...';
 
-        // Truyền thêm biến note vào hàm xử lý tiếp theo
-        await processTransfer(amount, pass, myCardId, note);
+        // TRUYỀN THÊM bankType VÀO HÀM XỬ LÝ TIẾP THEO
+        await processTransfer(amount, pass, myCardId, note, cardData.bankType || 'sweetie');
         
         transferOverlay.remove();
     };
 }
     
 // Thêm tham số note vào hàm
-async function processTransfer(amount, pass, myCardId, note) {
+async function processTransfer(amount, pass, myCardId, note, myBankType) {
     // 1. Kiểm tra đầu vào cơ bản (Giữ nguyên)
     if (!amount || amount <= 0 || !myCardId) return;
 
@@ -20730,34 +20736,33 @@ async function processTransfer(amount, pass, myCardId, note) {
             return;
         }
 
-        // --- 4. GHI LỊCH SỬ GIAO DỊCH (CẬP NHẬT THÊM NOTE) ---
+        // --- 4. GHI LỊCH SỬ GIAO DỊCH (CẬP NHẬT: Lưu thêm fromBankType) ---
         if (typeof recordCardHistory === 'function') {
             recordCardHistory(myCardId, 'transfer_out', amount, { 
                 toUser: currentChatFriend,
-                note: note // Lưu lời nhắn vào lịch sử giao dịch của thẻ
+                note: note,
+                fromBankType: myBankType || cardData.bankType || 'sweetie' // Lưu bankType của Henry
             });
         }
 
         // --- PHẦN THÊM MỚI: KÍCH HOẠT CHẤM ĐỎ CHO ĐỐI PHƯƠNG ---
-        // Gửi một tín hiệu nhỏ vào node thông báo của người nhận để kích hoạt chấm đỏ real-time
         if (currentChatFriend) {
             db.ref(`users/${currentChatFriend}/hasNewFluctuation`).set(true);
         }
-        // ---------------------------------------------------
 
-        // --- 5. CHUẨN BỊ DỮ LIỆU TIN NHẮN ---
+        // --- 5. CHUẨN BỊ DỮ LIỆU TIN NHẮN (CẬP NHẬT: Đính kèm senderBankType) ---
         const transferData = {
             type: 'bank_transfer',
             amount: amount,
-            note: note || "Đã chuyển tiền cho bạn", // Đảm bảo note không bao giờ bị null/empty
+            note: note || "Đã chuyển tiền cho bạn",
             status: 'pending', 
             senderCard: myCardId,
+            senderBankType: myBankType || cardData.bankType || 'sweetie', // Gửi thông tin ngân hàng đi
             timestamp: firebase.database.ServerValue.TIMESTAMP
         };
 
         // Gửi tin nhắn
         if (typeof sendMessage === 'function') {
-            // Truyền note làm tham số text chính để các hàm hiển thị khác dễ lấy dữ liệu
             await sendMessage(note, transferData); 
             alert(`🌸 Chuyển thành công ${amount.toLocaleString()} VNĐ! Đang chờ đối phương xác nhận.`);
             addNotification("📤 CHUYỂN TIỀN THÀNH CÔNG", `Bạn đã gửi ${amount.toLocaleString()} VNĐ cho ${currentChatFriend}.`);
@@ -20794,15 +20799,13 @@ async function processTransfer(amount, pass, myCardId, note) {
             await chatRef.child('status').set('refused');
 
             // --- THÊM THÔNG BÁO HOÀN TIỀN CHO ĐỐI PHƯƠNG (NGƯỜI GỬI) ---
-            // Vì người gửi đang không on máy lúc này hoặc ở máy khác, ta bắn vào queue của họ
-            // --- TRONG PHẦN XỬ LÝ REFUSE ---
-db.ref(`notifications_queue/${currentChatFriend}`).push({
-    title: "🔄 TIỀN ĐÃ HOÀN LẠI",
-    from: "Hệ thống", // Thêm dòng này để không bị undefined
-    text: `Giao dịch ${amount.toLocaleString()} VNĐ bị từ chối. Tiền đã được hoàn về thẻ của bạn.`,
-    time: Date.now(),
-    type: "system" // Loại hệ thống
-});
+            db.ref(`notifications_queue/${currentChatFriend}`).push({
+                title: "🔄 TIỀN ĐÃ HOÀN LẠI",
+                from: "Hệ thống",
+                text: `Giao dịch ${amount.toLocaleString()} VNĐ bị từ chối. Tiền đã được hoàn về thẻ của bạn.`,
+                time: Date.now(),
+                type: "system"
+            });
 
             alert("🌸 Đã hoàn tiền lại cho đối phương!");
         } catch (e) { console.error("Lỗi hoàn tiền:", e); }
@@ -20819,12 +20822,20 @@ db.ref(`notifications_queue/${currentChatFriend}`).push({
 
     const myCardId = myCardSnap.val();
     try {
+        // --- PHẦN CẬP NHẬT: Lấy thông tin ngân hàng người gửi từ tin nhắn ---
+        const msgSnap = await chatRef.once('value');
+        const msgData = msgSnap.val();
+        // Lấy bankType của người gửi đã lưu trong transferData, mặc định là sweetie
+        const senderBankType = (msgData && msgData.transferData && msgData.transferData.senderBankType) 
+                               ? msgData.transferData.senderBankType : 'sweetie';
+
         // 1. Cộng tiền vào thẻ người nhận
         await db.ref(`sweetie_cards/${myCardId}/balance`).transaction(val => (val || 0) + amount);
         
-        // 2. Ghi rõ loại nhận tiền và người gửi
+        // 2. Ghi rõ loại nhận tiền, người gửi và NGÂN HÀNG của người gửi
         recordCardHistory(myCardId, 'transfer_in', amount, { 
-            fromUser: currentChatFriend 
+            fromUser: currentChatFriend,
+            fromBankType: senderBankType // Đảm bảo biến động số dư hiện đúng màu ngân hàng đối phương
         });
         
         // 3. Cập nhật trạng thái tin nhắn
