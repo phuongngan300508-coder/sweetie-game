@@ -14750,15 +14750,15 @@ function renderSingleMessage(msgId, msg, position = 'bottom', targetContainer = 
 
     let bodyContentHtml = `<div class="text-content">${finalMsgText}</div>`;
     
-    // --- PHẦN XỬ LÝ Ô TIN NHẮN CHUYỂN TIỀN (WECHAT STYLE - PINK EDITION) ---
+   // --- PHẦN XỬ LÝ Ô TIN NHẮN CHUYỂN TIỀN (CẬP NHẬT THEO BANK NGƯỜI GỬI) ---
 if (msg.type === 'bank_transfer') {
     const amount = msg.amount || 0;
     const status = msg.status || 'pending';
     const note = msg.note || "Chuyển tiền qua Sweetie Bank"; 
 
-    // --- CẬP NHẬT: Lấy loại ngân hàng từ người gửi (senderBankType) ---
-    // Mặc định là sweetie nếu không tìm thấy dữ liệu
-    const sBankType = (msg.transferData && msg.transferData.senderBankType) ? msg.transferData.senderBankType : 'sweetie';
+    // --- SỬA TẠI ĐÂY: Henry lấy trực tiếp từ msg.senderBankType ---
+    // Vì trong hàm sendMessage Henry lưu là: messageData.senderBankType = ...
+    const sBankType = msg.senderBankType || 'sweetie';
 
     const BANK_THEMES = {
         'sweetie': { name: 'SWEETIE BANK', color1: '#ff4081', color2: '#d81b60', soft1: '#ffb2d1', soft2: '#f48fb1' },
