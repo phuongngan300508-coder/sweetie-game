@@ -21385,8 +21385,8 @@ function showBankingBill(data) {
     const dashboard = document.querySelector('.card-dashboard-container');
     let ui = document.getElementById('transaction-ui');
 
-    // --- PHẦN SỬA LỖI MÀU SẮC: Ưu tiên lấy màu theo ngân hàng NGƯỜI GỬI (senderBank) ---
-    // Điều này đảm bảo Henry dùng thẻ màu gì thì Bill sẽ hiện màu đó
+    // --- CẬP NHẬT LOGIC MÀU SẮC: Ưu tiên tuyệt đối ngân hàng NGƯỜI GỬI ---
+    // Nếu có senderBank thì lấy senderBank, nếu không mới xét receiverBank
     let rawBank = (data.senderBank || data.receiverBank || 'SWEETIE BANK').toUpperCase();
     let bankKey = rawBank.includes('BANK') ? rawBank : rawBank + ' BANK';
 
@@ -21398,7 +21398,7 @@ function showBankingBill(data) {
 
     const billTheme = BANK_CONFIG[bankKey] || BANK_CONFIG['SWEETIE BANK'];
 
-    // --- LOGIC LỌC TÊN: Chỉ giữ lại tên IN HOA sạch sẽ (Giữ nguyên 100%) ---
+    // --- LOGIC LỌC TÊN: Giữ nguyên 100% ---
     let cleanReceiverName = data.receiver || "";
     cleanReceiverName = cleanReceiverName.replace('✓', '').trim();
     
