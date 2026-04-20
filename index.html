@@ -21969,7 +21969,7 @@ async function selectSavedAccount(stk, name) {
                 day: '2-digit', month: '2-digit', year: 'numeric'
             });
 
-            // --- PHẦN THAY ĐỔI: Xác định ngân hàng của từng giao dịch cụ thể ---
+            // --- PHẦN THAY ĐỔI: Xác định ngân hàng của từng giao dịch cụ thể để đổi màu ---
             const senderBankType = log.fromBankType || 'sweetie';
             const itemBank = BANK_CONFIG[senderBankType] || BANK_CONFIG['sweetie'];
             const fromBankName = (log.fromBank || itemBank.name).toUpperCase();
@@ -21978,7 +21978,7 @@ async function selectSavedAccount(stk, name) {
             const refNo = `FT${log.key.substring(0, 8).toUpperCase()}`;
 
             return `
-                <div style="background:#fff; border-radius:20px; padding:16px; margin-bottom:14px; border:1px solid ${itemBank.color}15; box-shadow:0 4px 12px rgba(0,0,0,0.03); animation: slideUpItem 0.4s ease forwards ${index * 0.1}s;">
+                <div style="background:#fff; border-radius:20px; padding:16px; margin-bottom:14px; border:1px solid ${itemBank.color}25; box-shadow:0 4px 12px rgba(0,0,0,0.03); animation: slideUpItem 0.4s ease forwards ${index * 0.1}s;">
                     <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
                         <div>
                             <span style="font-size:0.65rem; color:${itemBank.color}; background:${itemBank.color}10; padding:4px 10px; border-radius:20px; font-weight:700; letter-spacing:0.3px;">+ TIỀN VÀO</span>
@@ -21992,16 +21992,16 @@ async function selectSavedAccount(stk, name) {
                         </div>
                     </div>
 
-                    <div style="background:${itemBank.bg}; border-radius:14px; padding:12px; border:1px solid ${itemBank.color}05;">
+                    <div style="background:${itemBank.bg}; border-radius:14px; padding:12px; border:1px solid ${itemBank.color}10;">
                         <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
                             <span style="font-size:0.75rem; color:#64748b;">Từ</span>
                             <span style="font-size:0.75rem; color:#1e293b; font-weight:700;">${(log.fromUser || 'Ẩn danh').toUpperCase()}</span>
                         </div>
                         <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
                             <span style="font-size:0.75rem; color:#64748b;">Ngân hàng</span>
-                            <span style="font-size:0.75rem; color:${itemBank.color}; font-weight:700;">${fromBankName}</span>
+                            <span style="font-size:0.75rem; color:${itemBank.color}; font-weight:800;">${fromBankName}</span>
                         </div>
-                        <div style="border-top:1px dashed ${itemBank.color}20; margin-top:8px; padding-top:8px;">
+                        <div style="border-top:1px dashed ${itemBank.color}30; margin-top:8px; padding-top:8px;">
                             <div style="font-size:0.65rem; color:#94a3b8; text-transform:uppercase; font-weight:700; margin-bottom:2px;">Nội dung</div>
                             <div style="font-size:0.8rem; color:#475569; line-height:1.4; font-style:italic;">"${log.note || 'Chuyển tiền'}"</div>
                         </div>
