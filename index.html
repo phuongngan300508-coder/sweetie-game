@@ -20244,7 +20244,7 @@ function renderCardDashboard(cardId) {
         'cloud': { name: 'CLOUD BANK', color: '#3498db', gradient: 'linear-gradient(135deg, #3498db, #85c1e9)', shadow: 'rgba(52, 152, 219, 0.2)' }
     };
 
-    // --- LOGIC SAO CHÉP NHANH (GIỮ NGUYÊN) ---
+    // --- LOGIC SAO CHÉP NHANH (MỚI THÊM) ---
     window.copyAccountNumber = (stk) => {
         navigator.clipboard.writeText(stk).then(() => {
             const statusToast = document.getElementById('copy-toast');
@@ -20292,17 +20292,12 @@ function renderCardDashboard(cardId) {
                         <div class="chip-line"></div><div class="chip-line"></div><div class="chip-line"></div><div class="chip-line"></div>
                     </div>
 
-                    <div class="card-id-view" style="color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,0.1); position: relative; z-index: 2; display: flex; align-items: center; justify-content: space-between; padding: 0 15px;">
-                        
-                        <div style="width: 30px; flex-shrink: 0;"></div>
-
-                        <span style="letter-spacing: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 1.1rem;">
-                            ${card.accountNo.match(/.{1,4}/g).join(' ')}
-                        </span>
+                    <div class="card-id-view" style="color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,0.1); position: relative; z-index: 2; display: flex; align-items: center; justify-content: center;">
+                        <span style="letter-spacing: 1px;">${card.accountNo.match(/.{1,4}/g).join(' ')}</span>
                         
                         <div onclick="copyAccountNumber('${card.accountNo}')" 
                              title="Sao chép số tài khoản"
-                             style="cursor: pointer; opacity: 0.8; transition: 0.3s; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.1); border-radius: 50%; flex-shrink: 0;"
+                             style="position: absolute; right: 10px; cursor: pointer; opacity: 0.8; transition: 0.3s; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.1); border-radius: 50%;"
                              onmouseover="this.style.opacity='1'; this.style.background='rgba(255,255,255,0.2)'"
                              onmouseout="this.style.opacity='0.8'; this.style.background='rgba(255,255,255,0.1)'">
                             <i class="fas fa-copy" style="font-size: 0.85rem;"></i>
@@ -20338,50 +20333,60 @@ function renderCardDashboard(cardId) {
                 </div>
             </div>
 
-            <div class="dashboard-column-right" style="width: 100%;">
-                <div class="card-balance-box" style="margin-bottom: 25px; padding: 15px; background: #fff; border-radius: 20px; border: 2px dashed ${bank.color}40; width: 100%; box-sizing: border-box; text-align: center;">
-                    <span style="color: #888; font-size: 0.85rem; font-weight: 600;">Số dư khả dụng</span>
-                    <h2 style="color: ${bank.color}; margin: 8px 0; font-size: 1.7rem; font-weight: 900;">${(card.balance || 0).toLocaleString()} VNĐ</h2>
-                </div>
+                    <div class="dashboard-column-right" style="width: 100%;">
+                        <div class="card-balance-box" style="margin-bottom: 25px; padding: 15px; background: #fff; border-radius: 20px; border: 2px dashed ${bank.color}40; width: 100%; box-sizing: border-box; text-align: center;">
+                            <span style="color: #888; font-size: 0.85rem; font-weight: 600;">Số dư khả dụng</span>
+                            <h2 style="color: ${bank.color}; margin: 8px 0; font-size: 1.7rem; font-weight: 900;">${(card.balance || 0).toLocaleString()} VNĐ</h2>
+                        </div>
 
-                <div class="card-actions-wrapper" style="width: 100%; display: flex; flex-direction: column; gap: 15px;">
-                    <div class="main-actions" style="display: flex; gap: 12px;">
-                        <button onclick="handleCardTransaction('deposit')" class="btn-card-action" 
-                            style="flex: 1; background: ${bank.gradient}; color: #fff; border: none; border-radius: 16px; padding: 14px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; 
-                            box-shadow: 0 4px 10px ${bank.shadow}, inset 0 -4px 0 rgba(0,0,0,0.1); transition: all 0.2s active; outline: none;">
-                            <i class="fas fa-plus-circle"></i> Nạp tiền
-                        </button>
+                        <div class="card-actions-wrapper" style="width: 100%; display: flex; flex-direction: column; gap: 15px;">
+                            <div class="main-actions" style="display: flex; gap: 12px;">
+                                <button onclick="handleCardTransaction('deposit')" class="btn-card-action" 
+                                    style="flex: 1; background: ${bank.gradient}; color: #fff; border: none; border-radius: 16px; padding: 14px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; 
+                                    box-shadow: 0 4px 10px ${bank.shadow}, inset 0 -4px 0 rgba(0,0,0,0.1); transition: all 0.2s active; outline: none;"
+                                    onmousedown="this.style.transform='translateY(2px)'; this.style.boxShadow='0 2px 5px ${bank.shadow}, inset 0 -1px 0 rgba(0,0,0,0.1)'"
+                                    onmouseup="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 10px ${bank.shadow}, inset 0 -4px 0 rgba(0,0,0,0.1)'">
+                                    <i class="fas fa-plus-circle"></i> Nạp tiền
+                                </button>
 
-                        <button onclick="handleCardTransaction('withdraw')" class="btn-card-action" 
-                            style="flex: 1; background: ${bank.gradient}; color: #fff; border: none; border-radius: 16px; padding: 14px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; 
-                            box-shadow: 0 4px 10px ${bank.shadow}, inset 0 -4px 0 rgba(0,0,0,0.1); transition: all 0.2s; outline: none;">
-                            <i class="fas fa-minus-circle"></i> Rút tiền
-                        </button>
+                                <button onclick="handleCardTransaction('withdraw')" class="btn-card-action" 
+                                    style="flex: 1; background: ${bank.gradient}; color: #fff; border: none; border-radius: 16px; padding: 14px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; 
+                                    box-shadow: 0 4px 10px ${bank.shadow}, inset 0 -4px 0 rgba(0,0,0,0.1); transition: all 0.2s; outline: none;"
+                                    onmousedown="this.style.transform='translateY(2px)'; this.style.boxShadow='0 2px 5px ${bank.shadow}, inset 0 -1px 0 rgba(0,0,0,0.1)'"
+                                    onmouseup="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 10px ${bank.shadow}, inset 0 -4px 0 rgba(0,0,0,0.1)'">
+                                    <i class="fas fa-minus-circle"></i> Rút tiền
+                                </button>
+                            </div>
+                            
+                            <button onclick="openBankingTransfer('${cardId}')" class="btn-transfer-main" 
+                                style="width: 100%; background: ${bank.gradient}; color: #fff; border: none; border-radius: 18px; padding: 16px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; 
+                                box-shadow: 0 6px 20px ${bank.shadow}, inset 0 -4px 0 rgba(0,0,0,0.15); transition: all 0.2s; outline: none;"
+                                onmousedown="this.style.transform='translateY(2px)'; this.style.boxShadow='0 3px 10px ${bank.shadow}, inset 0 -1px 0 rgba(0,0,0,0.15)'"
+                                onmouseup="this.style.transform='translateY(0)'; this.style.boxShadow='0 6px 20px ${bank.shadow}, inset 0 -4px 0 rgba(0,0,0,0.15)'">
+                                <i class="fas fa-paper-plane"></i> Chuyển khoản ngay
+                            </button>
+                            
+                            <button onclick="showCardHistory('${cardId}')" class="btn-history-soft" 
+                                style="width: 100%; color: ${bank.color}; border: 2px solid ${bank.color}30; background: #fff; padding: 12px; border-radius: 16px; font-weight: 800; cursor: pointer; transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 8px;"
+                                onmouseover="this.style.background='${bank.color}05'; this.style.borderColor='${bank.color}50'"
+                                onmouseout="this.style.background='#fff'; this.style.borderColor='${bank.color}30'">
+                                <i class="fas fa-history"></i> Lịch sử giao dịch
+                            </button>
+
+                            <button onclick="showFluctuationPopup('${cardId}')" class="btn-fluctuation" 
+                                style="width: 100%; margin-top: 5px; background: #fff; color: ${bank.color}; border: 1.5px dashed ${bank.color}; padding: 12px; border-radius: 16px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.3s;"
+                                onmouseover="this.style.background='${bank.color}10'"
+                                onmouseout="this.style.background='#fff'">
+                                <i class="fas fa-bell"></i> Biến động số dư
+                            </button>
+                        </div>
                     </div>
-                    
-                    <button onclick="openBankingTransfer('${cardId}')" class="btn-transfer-main" 
-                        style="width: 100%; background: ${bank.gradient}; color: #fff; border: none; border-radius: 18px; padding: 16px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; 
-                        box-shadow: 0 6px 20px ${bank.shadow}, inset 0 -4px 0 rgba(0,0,0,0.15); transition: all 0.2s; outline: none;">
-                        <i class="fas fa-paper-plane"></i> Chuyển khoản ngay
-                    </button>
-                    
-                    <button onclick="showCardHistory('${cardId}')" class="btn-history-soft" 
-                        style="width: 100%; color: ${bank.color}; border: 2px solid ${bank.color}30; background: #fff; padding: 12px; border-radius: 16px; font-weight: 800; cursor: pointer; transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                        <i class="fas fa-history"></i> Lịch sử giao dịch
-                    </button>
-
-                    <button onclick="showFluctuationPopup('${cardId}')" class="btn-fluctuation" 
-                        style="width: 100%; margin-top: 5px; background: #fff; color: ${bank.color}; border: 1.5px dashed ${bank.color}; padding: 12px; border-radius: 16px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.3s;">
-                        <i class="fas fa-bell"></i> Biến động số dư
-                    </button>
                 </div>
+                
+                <button onclick="unlinkCard()" style="margin-top: 30px; background: none; border: none; color: #bbb; cursor: pointer; font-size: 0.75rem; text-decoration: underline; font-weight: 600;">
+                    Gỡ liên kết thẻ
+                </button>
             </div>
-        </div>
-        
-        <button onclick="unlinkCard()" style="margin-top: 30px; background: none; border: none; color: #bbb; cursor: pointer; font-size: 0.75rem; text-decoration: underline; font-weight: 600;">
-            Gỡ liên kết thẻ
-        </button>
-    </div>
         `;
     });
 }
