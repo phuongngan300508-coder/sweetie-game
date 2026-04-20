@@ -20849,19 +20849,18 @@ async function processTransfer(amount, pass, myCardId, note, myBankType) {
         const msgSnap = await chatRef.once('value');
         const msgData = msgSnap.val();
         
-        // SỬA TẠI ĐÂY: Lấy chính xác senderBankType từ transferData bên trong tin nhắn
-        // Nếu không tìm thấy (tin nhắn cũ) thì mới mặc định là 'sweetie'
-        const senderBankType = (msgData && msgData.transferData && msgData.transferData.senderBankType) 
-                               ? msgData.transferData.senderBankType : 'sweetie';
+        // --- PHẦN SỬA LỖI ĐƯỜNG DẪN DỮ LIỆU ---
+        // Henry lấy trực tiếp từ msgData.senderBankType vì bạn lưu ngang hàng với 'text'
+        const senderBankType = msgData.senderBankType || (msgData.transferData ? msgData.transferData.senderBankType : 'sweetie');
 
         // 2. Cộng tiền vào thẻ người nhận (Giữ nguyên)
         await db.ref(`sweetie_cards/${myCardId}/balance`).transaction(val => (val || 0) + amount);
         
         // 3. Ghi lịch sử giao dịch với ngân hàng của NGƯỜI GỬI
-        // Việc truyền senderBankType vào đây giúp Popup Biến động số dư biết phải hiện màu gì
+        // Truyền senderBankType chuẩn vào đây để Popup Biến động số dư đổi màu
         recordCardHistory(myCardId, 'transfer_in', amount, { 
             fromUser: currentChatFriend,
-            fromBankType: senderBankType // Đã cập nhật theo ngân hàng người gửi
+            fromBankType: senderBankType 
         });
         
         // 4. Cập nhật trạng thái tin nhắn (Giữ nguyên)
@@ -20878,7 +20877,7 @@ async function processTransfer(amount, pass, myCardId, note, myBankType) {
         console.error(e);
     }
 }
-
+    
     // --- QUẢN LÝ GIAO DIỆN TẠO LÌ XÌ ---
 function toggleRedPacketMenu() {
     const menu = document.getElementById('chat-extra-menu');
