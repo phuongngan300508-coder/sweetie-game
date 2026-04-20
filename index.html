@@ -20419,19 +20419,27 @@ async function unlinkCard() {
     // 1. Bảo vệ nếu thiếu dữ liệu quan trọng
     if (!cardId || !currentUser) return; 
 
-    // --- PHẦN BỔ SUNG: Tự động lấy bankType của người thực hiện để định danh màu sắc sau này ---
+    // --- PHẦN SỬA ĐỔI: Ưu tiên lấy bankType từ extraData trước khi tự tìm ---
     let senderBankType = 'sweetie'; // Mặc định
-    try {
-        const userSnap = await db.ref(`users/${currentUser}/linkedCard`).once('value');
-        const linkedCardId = userSnap.val();
-        if (linkedCardId) {
-            const cardSnap = await db.ref(`sweetie_cards/${linkedCardId}/bankType`).once('value');
-            if (cardSnap.exists()) {
-                senderBankType = cardSnap.val();
+
+    // NẾU extraData đã có sẵn fromBankType (do hàm nhận tiền truyền sang), dùng luôn cái đó
+    if (extraData.fromBankType) {
+        senderBankType = extraData.fromBankType;
+    } 
+    // NẾU KHÔNG CÓ (như nạp/rút), mới tự động lấy bankType của người thực hiện
+    else {
+        try {
+            const userSnap = await db.ref(`users/${currentUser}/linkedCard`).once('value');
+            const linkedCardId = userSnap.val();
+            if (linkedCardId) {
+                const cardSnap = await db.ref(`sweetie_cards/${linkedCardId}/bankType`).once('value');
+                if (cardSnap.exists()) {
+                    senderBankType = cardSnap.val();
+                }
             }
+        } catch (e) {
+            console.warn("Không lấy được bankType, sử dụng mặc định.");
         }
-    } catch (e) {
-        console.warn("Không lấy được bankType, sử dụng mặc định.");
     }
     // ---------------------------------------------------------------------------------------
 
@@ -20443,11 +20451,11 @@ async function unlinkCard() {
         type: type,
         amount: amount,
         user: currentUser,
-        // Lưu bankType để popup biến động số dư biết nên hiển thị màu gì
+        // Lưu bankType chuẩn để popup biến động số dư biết nên hiển thị màu gì
         fromBankType: senderBankType, 
         // Thời gian chính xác từ Server Firebase
         time: firebase.database.ServerValue.TIMESTAMP,
-        ...extraData // Gộp thêm toUser, fromUser hoặc bất kỳ thông tin nào khác vào đây
+        ...extraData // Gộp thêm toUser, fromUser...
     };
 
     historyRef.set(historyData).then(() => {
@@ -20456,7 +20464,7 @@ async function unlinkCard() {
         console.error("Lỗi ghi lịch sử Sweetie Bank:", err);
     });
 }
-
+    
     async function showCardHistory(cardId) {
     const oldOverlay = document.getElementById('history-overlay');
     if (oldOverlay) oldOverlay.remove();
