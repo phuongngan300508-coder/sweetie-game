@@ -20748,33 +20748,38 @@ async function processTransfer(amount, pass, myCardId, note, myBankType) {
             return;
         }
 
-        // --- 4. GHI LỊCH SỬ GIAO DỊCH (CẬP NHẬT: Lưu thêm fromBankType) ---
+        // --- 4. GHI LỊCH SỬ GIAO DỊCH (CẬP NHẬT: Ưu tiên lấy bankType từ cardData) ---
+        // Lấy bankType trực tiếp từ server để đảm bảo chính xác tuyệt đối
+        const finalBankType = cardData.bankType || myBankType || 'sweetie';
+
         if (typeof recordCardHistory === 'function') {
             recordCardHistory(myCardId, 'transfer_out', amount, { 
                 toUser: currentChatFriend,
                 note: note,
-                fromBankType: myBankType || cardData.bankType || 'sweetie' // Lưu bankType của Henry
+                fromBankType: finalBankType 
             });
         }
 
-        // --- PHẦN THÊM MỚI: KÍCH HOẠT CHẤM ĐỎ CHO ĐỐI PHƯƠNG ---
+        // --- PHẦN THÊM MỚI: KÍCH HOẠT CHẤM ĐỎ CHO ĐỐI PHƯƠNG (Giữ nguyên) ---
         if (currentChatFriend) {
             db.ref(`users/${currentChatFriend}/hasNewFluctuation`).set(true);
         }
 
-        // --- 5. CHUẨN BỊ DỮ LIỆU TIN NHẮN (CẬP NHẬT: Đính kèm senderBankType) ---
+        // --- 5. CHUẨN BỊ DỮ LIỆU TIN NHẮN (QUAN TRỌNG: Đính kèm senderBankType) ---
         const transferData = {
             type: 'bank_transfer',
             amount: amount,
             note: note || "Đã chuyển tiền cho bạn",
             status: 'pending', 
             senderCard: myCardId,
-            senderBankType: myBankType || cardData.bankType || 'sweetie', // Gửi thông tin ngân hàng đi
+            // Đây là dòng quyết định màu sắc bên phía người nhận
+            senderBankType: finalBankType, 
             timestamp: firebase.database.ServerValue.TIMESTAMP
         };
 
         // Gửi tin nhắn
         if (typeof sendMessage === 'function') {
+            // Khi sendMessage chạy, transferData này sẽ được đẩy lên Firebase của phòng chat
             await sendMessage(note, transferData); 
             alert(`🌸 Chuyển thành công ${amount.toLocaleString()} VNĐ! Đang chờ đối phương xác nhận.`);
             addNotification("📤 CHUYỂN TIỀN THÀNH CÔNG", `Bạn đã gửi ${amount.toLocaleString()} VNĐ cho ${currentChatFriend}.`);
