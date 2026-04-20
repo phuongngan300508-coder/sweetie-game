@@ -14751,23 +14751,35 @@ if (msg.type === 'bank_transfer') {
     const amount = msg.amount || 0;
     const status = msg.status || 'pending';
     const note = msg.note || "Chuyển tiền qua Sweetie Bank"; 
+
+    // --- CẬP NHẬT: Lấy loại ngân hàng từ người gửi (senderBankType) ---
+    // Mặc định là sweetie nếu không tìm thấy dữ liệu
+    const sBankType = (msg.transferData && msg.transferData.senderBankType) ? msg.transferData.senderBankType : 'sweetie';
+
+    const BANK_THEMES = {
+        'sweetie': { name: 'SWEETIE BANK', color1: '#ff4081', color2: '#d81b60', soft1: '#ffb2d1', soft2: '#f48fb1' },
+        'honey':   { name: 'HONEY BANK',   color1: '#f39c12', color2: '#e67e22', soft1: '#f9e3b4', soft2: '#f39c1280' },
+        'cloud':   { name: 'CLOUD BANK',   color1: '#3498db', color2: '#2980b9', soft1: '#b3d9ff', soft2: '#3498db80' }
+    };
+
+    const theme = BANK_THEMES[sBankType] || BANK_THEMES['sweetie'];
     
-    let statusLabel = "Sweetie Bank Transfer";
+    let statusLabel = `${theme.name} Transfer`;
     let subLabel = "Nhấn để nhận tiền ✨";
     let cardOpacity = 1;
-    let bgColor = "linear-gradient(135deg, #ff4081, #d81b60)"; // Màu mặc định chưa nhận
+    let bgColor = `linear-gradient(135deg, ${theme.color1}, ${theme.color2})`; // Màu theo ngân hàng gửi
     let iconColor = "#fff";
 
     if (status === 'accepted') {
         statusLabel = "Đã nhận tiền";
         subLabel = "Giao dịch thành công ✅";
         cardOpacity = 0.8;
-        bgColor = "linear-gradient(135deg, #ffb2d1, #f48fb1)"; // Màu hồng nhạt khi đã nhận
+        bgColor = `linear-gradient(135deg, ${theme.soft1}, ${theme.soft2})`; // Màu nhạt theo ngân hàng gửi
     } else if (status === 'refused') {
         statusLabel = "Giao dịch đã hoàn";
         subLabel = "Đã từ chối/hoàn tiền ❌";
         cardOpacity = 0.8;
-        bgColor = "#e0e0e0"; // Màu xám khi từ chối
+        bgColor = "#e0e0e0"; // Màu xám khi từ chối (giữ nguyên)
     }
 
     bodyContentHtml = `
@@ -14788,17 +14800,17 @@ if (msg.type === 'bank_transfer') {
             
             <div style="background: white; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(0,0,0,0.05);">
                 <span style="font-size: 0.65rem; color: #888; font-weight: bold; letter-spacing: 0.3px; text-transform: uppercase;">${statusLabel}</span>
-                <span style="font-size: 0.65rem; color: #ff1493; font-weight: bold;">${subLabel}</span>
+                <span style="font-size: 0.65rem; color: ${status === 'pending' ? theme.color1 : '#888'}; font-weight: bold;">${subLabel}</span>
             </div>
 
             ${(!isMe && status === 'pending') ? `
                 <div style="display: flex; background: white; padding: 0 10px 10px 10px; gap: 8px;">
                     <button onclick="handleTransferAction('${msgId}', 'accept', ${amount}, '${msg.senderCard}')" 
-                            style="flex: 2; padding: 8px; background: #ff1493; border: none; color: white; border-radius: 6px; font-size: 0.75rem; font-weight: 800; cursor: pointer; transition: 0.2s; box-shadow: 0 2px 6px rgba(255, 20, 147, 0.3);"
+                            style="flex: 2; padding: 8px; background: ${theme.color1}; border: none; color: white; border-radius: 6px; font-size: 0.75rem; font-weight: 800; cursor: pointer; transition: 0.2s; box-shadow: 0 2px 6px ${theme.color1}4d;"
                             onmouseover="this.style.filter='brightness(1.1)'" onmouseout="this.style.filter='none'">NHẬN TIỀN</button>
                     <button onclick="handleTransferAction('${msgId}', 'refuse', ${amount}, '${msg.senderCard}')" 
-                            style="flex: 1; padding: 8px; background: #fff; border: 1.5px solid #ffb6c1; color: #ff1493; border-radius: 6px; font-size: 0.75rem; font-weight: 800; cursor: pointer; transition: 0.2s;"
-                            onmouseover="this.style.background='#fff0f5'" onmouseout="this.style.background='#fff'">TỪ CHỐI</button>
+                            style="flex: 1; padding: 8px; background: #fff; border: 1.5px solid ${theme.soft1}; color: ${theme.color1}; border-radius: 6px; font-size: 0.75rem; font-weight: 800; cursor: pointer; transition: 0.2s;"
+                            onmouseover="this.style.background='${theme.bg || '#fff0f5'}'" onmouseout="this.style.background='#fff'">TỪ CHỐI</button>
                 </div>
             ` : ''}
         </div>`;
@@ -20774,7 +20786,7 @@ async function processTransfer(amount, pass, myCardId, note, myBankType) {
     }
 }
     
-   async function handleTransferAction(msgId, action, amount, senderCardId) {
+  async function handleTransferAction(msgId, action, amount, senderCardId) {
     // TỰ ĐỘNG TẠO LẠI ID PHÒNG CHAT THẬT (Giữ nguyên)
     if (!currentChatFriend) {
         alert("Lỗi: Không xác định được người bạn đang chat!");
@@ -20784,21 +20796,15 @@ async function processTransfer(amount, pass, myCardId, note, myBankType) {
     const realChatId = [currentUser, currentChatFriend].sort().join('_');
     const chatRef = db.ref(`chats/${realChatId}/messages/${msgId}`);
 
-    // --- TRƯỜNG HỢP: TỪ CHỐI ---
+    // --- TRƯỜNG HỢP: TỪ CHỐI (Giữ nguyên 100%) ---
     if (action === 'refuse') {
         try {
-            // 1. Hoàn tiền thật về thẻ của người gửi
             await db.ref(`sweetie_cards/${senderCardId}/balance`).transaction(val => (val || 0) + amount);
-            
-            // 2. Ghi loại là 'refund' để hiện icon Hoàn tiền trong lịch sử
             recordCardHistory(senderCardId, 'refund', amount, { 
                 note: "Tiền bị từ chối nhận" 
             });
-            
-            // 3. Cập nhật trạng thái tin nhắn
             await chatRef.child('status').set('refused');
 
-            // --- THÊM THÔNG BÁO HOÀN TIỀN CHO ĐỐI PHƯƠNG (NGƯỜI GỬI) ---
             db.ref(`notifications_queue/${currentChatFriend}`).push({
                 title: "🔄 TIỀN ĐÃ HOÀN LẠI",
                 from: "Hệ thống",
@@ -20822,26 +20828,29 @@ async function processTransfer(amount, pass, myCardId, note, myBankType) {
 
     const myCardId = myCardSnap.val();
     try {
-        // --- PHẦN CẬP NHẬT: Lấy thông tin ngân hàng người gửi từ tin nhắn ---
+        // 1. Lấy dữ liệu tin nhắn để truy xuất ngân hàng của người gửi
         const msgSnap = await chatRef.once('value');
         const msgData = msgSnap.val();
-        // Lấy bankType của người gửi đã lưu trong transferData, mặc định là sweetie
+        
+        // SỬA TẠI ĐÂY: Lấy chính xác senderBankType từ transferData bên trong tin nhắn
+        // Nếu không tìm thấy (tin nhắn cũ) thì mới mặc định là 'sweetie'
         const senderBankType = (msgData && msgData.transferData && msgData.transferData.senderBankType) 
                                ? msgData.transferData.senderBankType : 'sweetie';
 
-        // 1. Cộng tiền vào thẻ người nhận
+        // 2. Cộng tiền vào thẻ người nhận (Giữ nguyên)
         await db.ref(`sweetie_cards/${myCardId}/balance`).transaction(val => (val || 0) + amount);
         
-        // 2. Ghi rõ loại nhận tiền, người gửi và NGÂN HÀNG của người gửi
+        // 3. Ghi lịch sử giao dịch với ngân hàng của NGƯỜI GỬI
+        // Việc truyền senderBankType vào đây giúp Popup Biến động số dư biết phải hiện màu gì
         recordCardHistory(myCardId, 'transfer_in', amount, { 
             fromUser: currentChatFriend,
-            fromBankType: senderBankType // Đảm bảo biến động số dư hiện đúng màu ngân hàng đối phương
+            fromBankType: senderBankType // Đã cập nhật theo ngân hàng người gửi
         });
         
-        // 3. Cập nhật trạng thái tin nhắn
+        // 4. Cập nhật trạng thái tin nhắn (Giữ nguyên)
         await chatRef.child('status').set('accepted');
         
-        // --- THÔNG BÁO CHO NGƯỜI NHẬN (LÀ CHÍNH BẠN) ---
+        // 5. Thông báo (Giữ nguyên)
         if (typeof addNotification === 'function') {
             addNotification("📥 NHẬN TIỀN THÀNH CÔNG", `Bạn đã nhận ${amount.toLocaleString()} VNĐ từ ${currentChatFriend} vào thẻ.`);
         }
