@@ -20325,6 +20325,11 @@ function renderCardDashboard(cardId) {
                     <span style="font-size: 0.75rem; color: ${bank.color}; font-weight: 800; letter-spacing: 0.5px;">
                         ID GỐC CỦA THẺ: <span style="font-family: monospace; font-size: 0.95rem; color: #333;">${originalID}</span>
                     </span>
+                    <i class="fas fa-copy" onclick="copyAccountNumber('${originalID}')" 
+                       style="cursor: pointer; font-size: 0.8rem; color: ${bank.color}; opacity: 0.6; padding: 5px; transition: 0.3s;"
+                       onmouseover="this.style.opacity='1'" 
+                       onmouseout="this.style.opacity='0.6'"
+                       title="Sao chép ID gốc"></i>
                 </div>
             </div>
 
