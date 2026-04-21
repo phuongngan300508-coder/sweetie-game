@@ -21996,6 +21996,14 @@ async function selectSavedAccount(stk, name) {
             if (innerDot) innerDot.style.display = 'block';
             // -----------------------------------------------------------
             
+            // --- PHẦN THÊM MỚI: Thông báo vào chuông ---
+            if (typeof addNotification === 'function') {
+                const amount = data.amount ? data.amount.toLocaleString() : "0";
+                const sender = data.fromUser || "Ai đó";
+                addNotification("🔔 BIẾN ĐỘNG SỐ DƯ", `Bạn vừa nhận được +${amount}đ từ ${sender}. Check ngay! 🌸`);
+            }
+            // ------------------------------------------
+
             // 2. Lưu trạng thái "có tin mới" vào localStorage
             localStorage.setItem(`new_transfer_${currentUser}`, 'true');
             
