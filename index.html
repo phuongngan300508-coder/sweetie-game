@@ -20467,14 +20467,14 @@ function renderCardDashboard(cardId) {
                             </button>
 
                             <button onclick="showFluctuationPopup('${cardId}')" class="btn-fluctuation" 
-    style="width: 100%; margin-top: 5px; background: #fff; color: ${bank.color}; border: 1.5px dashed ${bank.color}; padding: 12px; border-radius: 16px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.3s; position: relative;"
-    onmouseover="this.style.background='${bank.color}10'"
-    onmouseout="this.style.background='#fff'">
-    
-    <i class="fas fa-bell"></i> Biến động số dư
+                                style="width: 100%; margin-top: 5px; background: #fff; color: ${bank.color}; border: 1.5px dashed ${bank.color}; padding: 12px; border-radius: 16px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.3s; position: relative;"
+                                onmouseover="this.style.background='${bank.color}10'"
+                                onmouseout="this.style.background='#fff'">
+                                
+                                <i class="fas fa-bell"></i> Biến động số dư
 
-    <span id="inner-fluctuation-dot" style="display: ${localStorage.getItem(`new_transfer_${currentUser}`) ? 'block' : 'none'}; position: absolute; top: 10px; right: 10px; width: 10px; height: 10px; background: #ff0000; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 5px rgba(255,0,0,0.5);"></span>
-</button>
+                                <span id="inner-fluctuation-dot" style="display: ${localStorage.getItem(`new_transfer_${currentUser}`) ? 'block' : 'none'}; position: absolute; top: 10px; right: 10px; width: 10px; height: 10px; background: #ff0000; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 5px rgba(255,0,0,0.5);"></span>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -21975,7 +21975,7 @@ async function selectSavedAccount(stk, name) {
     }
 }
 
-    function listenToBalanceFluctuations(cardId) {
+   function listenToBalanceFluctuations(cardId) {
     if (!cardId) return;
 
     // Chỉ lấy giao dịch mới nhất phát sinh từ bây giờ trở đi
@@ -21987,7 +21987,11 @@ async function selectSavedAccount(stk, name) {
         
         // CHỈ LẤY giao dịch nhận tiền (transfer_in)
         if (data.type === 'transfer_in') {
-            // 1. Hiện chấm đỏ ở nút ngoài (Sweetie Card icon trên giao diện chính)
+            // 1. Lưu trạng thái "có tin mới" vào localStorage (ĐƯA LÊN ĐẦU)
+            // Việc lưu trước giúp Dashboard khi render sau này luôn thấy chấm đỏ
+            localStorage.setItem(`new_transfer_${currentUser}`, 'true');
+
+            // 2. Hiện chấm đỏ ở nút ngoài (Sweetie Card icon trên giao diện chính)
             const dot = document.getElementById('card-noti-dot');
             if (dot) dot.style.display = 'block';
 
@@ -22004,9 +22008,6 @@ async function selectSavedAccount(stk, name) {
             }
             // ------------------------------------------
 
-            // 2. Lưu trạng thái "có tin mới" vào localStorage
-            localStorage.setItem(`new_transfer_${currentUser}`, 'true');
-            
             // 3. Có thể phát một tiếng "ting ting" nhẹ cho xịn
             // new Audio('path_to_ting_ting_sound.mp3').play();
         }
@@ -22014,6 +22015,7 @@ async function selectSavedAccount(stk, name) {
 }
     
     async function showFluctuationPopup(cardId) {
+    // --- PHẦN SỬA ĐỔI: XỬ LÝ CHẤM ĐỎ NGAY LẬP TỨC ---
     // 1. Tắt chấm đỏ ngoài (Nút chính của App)
     const dot = document.getElementById('card-noti-dot');
     if (dot) dot.style.display = 'none';
@@ -22022,10 +22024,12 @@ async function selectSavedAccount(stk, name) {
     const innerDot = document.getElementById('inner-fluctuation-dot');
     if (innerDot) innerDot.style.display = 'none';
 
-    // Xóa dấu vết trong localStorage để khi load trang lại không hiện chấm đỏ
+    // 3. Xóa dấu vết trong localStorage (Quan trọng nhất để load lại trang không hiện lại)
     localStorage.removeItem(`new_transfer_${currentUser}`);
+    // ------------------------------------------------
 
-    // --- PHẦN BỔ SUNG: Lấy dữ liệu thẻ để xác định màu sắc ngân hàng ---
+    // --- GIỮ NGUYÊN 100% LOGIC VÀ THIẾT KẾ CÒN LẠI ---
+    // Lấy dữ liệu thẻ để xác định màu sắc ngân hàng
     const cardSnap = await db.ref(`sweetie_cards/${cardId}`).once('value');
     const cardData = cardSnap.val();
     if (!cardData) return;
@@ -22036,9 +22040,8 @@ async function selectSavedAccount(stk, name) {
         'cloud': { name: 'CLOUD BANK', color: '#3498db', gradient: 'linear-gradient(135deg, #3498db 0%, #85c1e9 100%)', bg: '#f5faff' }
     };
     const currentBank = BANK_CONFIG[cardData.bankType || 'sweetie'];
-    // -------------------------------------------------------------
 
-    // 3. Tạo Overlay (Giữ nguyên logic của Henry)
+    // Tạo Overlay
     let overlay = document.getElementById('fluctuation-overlay');
     if (!overlay) {
         overlay = document.createElement('div');
@@ -22048,7 +22051,7 @@ async function selectSavedAccount(stk, name) {
     }
     overlay.style.display = 'flex';
 
-    // Thêm CSS Animation cho mượt
+    // Thêm CSS Animation
     if (!document.getElementById('bank-anim-style')) {
         const style = document.createElement('style');
         style.id = 'bank-anim-style';
@@ -22059,7 +22062,7 @@ async function selectSavedAccount(stk, name) {
         document.head.appendChild(style);
     }
 
-    // 4. Lấy dữ liệu 10 giao dịch nhận gần nhất
+    // Lấy dữ liệu 10 giao dịch nhận gần nhất
     const snap = await db.ref(`card_history/${cardId}`)
                         .orderByChild('type')
                         .equalTo('transfer_in')
