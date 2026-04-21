@@ -20803,7 +20803,7 @@ async function processTransfer(amount, pass, myCardId, note, myBankType) {
     }
 }
     
-  async function handleTransferAction(msgId, action, amount, senderCardId) {
+ async function handleTransferAction(msgId, action, amount, senderCardId) {
     // TỰ ĐỘNG TẠO LẠI ID PHÒNG CHAT THẬT (Giữ nguyên)
     if (!currentChatFriend) {
         alert("Lỗi: Không xác định được người bạn đang chat!");
@@ -20845,22 +20845,25 @@ async function processTransfer(amount, pass, myCardId, note, myBankType) {
 
     const myCardId = myCardSnap.val();
     try {
-        // 1. Lấy dữ liệu tin nhắn để truy xuất ngân hàng của người gửi
+        // 1. Lấy dữ liệu tin nhắn để truy xuất thông tin từ đoạn chat
         const msgSnap = await chatRef.once('value');
         const msgData = msgSnap.val();
         
-        // --- PHẦN SỬA LỖI ĐƯỜNG DẪN DỮ LIỆU ---
-        // Henry lấy trực tiếp từ msgData.senderBankType vì bạn lưu ngang hàng với 'text'
+        // --- CẬP NHẬT: Lấy BankType và Note (Lời nhắn) để khớp với Popup ---
+        // Lấy ngân hàng người gửi (đã sửa đường dẫn theo sendMessage)
         const senderBankType = msgData.senderBankType || (msgData.transferData ? msgData.transferData.senderBankType : 'sweetie');
+        
+        // Lấy lời nhắn thật từ tin nhắn (để Popup hiện đúng nội dung chat)
+        const transferNote = msgData.note || (msgData.transferData ? msgData.transferData.note : "Nhận tiền từ chat");
 
         // 2. Cộng tiền vào thẻ người nhận (Giữ nguyên)
         await db.ref(`sweetie_cards/${myCardId}/balance`).transaction(val => (val || 0) + amount);
         
-        // 3. Ghi lịch sử giao dịch với ngân hàng của NGƯỜI GỬI
-        // Truyền senderBankType chuẩn vào đây để Popup Biến động số dư đổi màu
+        // 3. Ghi lịch sử giao dịch: Truyền cả ngân hàng VÀ lời nhắn chuẩn
         recordCardHistory(myCardId, 'transfer_in', amount, { 
             fromUser: currentChatFriend,
-            fromBankType: senderBankType 
+            fromBankType: senderBankType, // Giúp Popup đổi màu (Honey/Cloud/Sweetie)
+            note: transferNote           // Giúp Popup hiện đúng nội dung "Tặng bồ...", "Tiền cafe..."
         });
         
         // 4. Cập nhật trạng thái tin nhắn (Giữ nguyên)
@@ -20871,7 +20874,7 @@ async function processTransfer(amount, pass, myCardId, note, myBankType) {
             addNotification("📥 NHẬN TIỀN THÀNH CÔNG", `Bạn đã nhận ${amount.toLocaleString()} VNĐ từ ${currentChatFriend} vào thẻ.`);
         }
 
-        alert("🌸 Bạn đã nhận tiền thành công! Kiểm tra số dư thẻ nhé.");
+        alert("🌸 Bạn đã nhận tiền thành công! Kiểm tra biến động số dư nhé.");
     } catch (e) {
         alert("Lỗi khi nhận tiền!");
         console.error(e);
