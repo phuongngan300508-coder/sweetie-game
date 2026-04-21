@@ -21559,8 +21559,8 @@ function showBankingBill(data) {
     const dashboard = document.querySelector('.card-dashboard-container');
     let ui = document.getElementById('transaction-ui');
 
-    // --- CẬP NHẬT LOGIC MÀU SẮC: Ưu tiên tuyệt đối ngân hàng NGƯỜI GỬI ---
-    // Nếu có senderBank thì lấy senderBank, nếu không mới xét receiverBank
+    // --- CẬP NHẬT LOGIC MÀU SẮC: Ưu tiên tuyệt đối ngân hàng NGƯỜI GỬI (CHỦ BILL) ---
+    // Bill xuất ra phải theo màu ngân hàng của người thực hiện giao dịch
     let rawBank = (data.senderBank || data.receiverBank || 'SWEETIE BANK').toUpperCase();
     let bankKey = rawBank.includes('BANK') ? rawBank : rawBank + ' BANK';
 
@@ -21633,7 +21633,7 @@ function showBankingBill(data) {
                     
                     <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid ${billTheme.color}08;">
                         <span style="font-size: 0.75rem; color: #888;">Ngân hàng thụ hưởng</span>
-                        <strong style="font-size: 0.8rem; color: ${billTheme.color}; text-align: right;">${(data.receiverBank || 'SWEETIE BANK').toUpperCase()}</strong>
+                        <strong style="font-size: 0.8rem; color: ${BANK_CONFIG[(data.receiverBank || 'SWEETIE BANK').toUpperCase()]?.color || billTheme.color}; text-align: right;">${(data.receiverBank || 'SWEETIE BANK').toUpperCase()}</strong>
                     </div>
 
                     <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid ${billTheme.color}08;">
