@@ -21504,12 +21504,12 @@ async function saveBeneficiary(stk, name) {
     if (!cardId) return;
 
     // --- SỬA ĐỔI: LỌC TÊN SIÊU SẠCH (Chỉ lấy tên chủ thẻ, bỏ ngân hàng dính kèm) ---
+    // Loại bỏ dấu tích và các cụm từ ngân hàng nếu bị dính vào chuỗi name truyền vào
     let cleanName = name.replace('✓', '').trim();
-    // Loại bỏ các cụm từ ngân hàng nếu bị dính vào tên để lưu dữ liệu "nguyên bản"
     cleanName = cleanName.replace(/SWEETIE BANK|HONEY BANK|CLOUD BANK/gi, '').trim();
 
     // --- BỔ SUNG: TRA CỨU NGÂN HÀNG GỐC CỦA TÀI KHOẢN ĐÓ ---
-    // Việc này giúp lưu trường bankType riêng biệt, không lo bị mất khi đổi biệt danh
+    // Truy vấn trực tiếp từ hệ thống để lấy bankType thật, đảm bảo danh bạ luôn đúng ngân hàng
     let targetBankType = 'sweetie'; // Mặc định
     try {
         const query = await db.ref('sweetie_cards').orderByChild('accountNo').equalTo(stk).once('value');
@@ -21527,7 +21527,7 @@ async function saveBeneficiary(stk, name) {
     const isExist = list.find(acc => acc.stk === stk);
     if (!isExist) {
         // --- THAY ĐỔI: LƯU CẤU TRÚC 3 TRƯỜNG ĐỘC LẬP ---
-        // name: Tên thật, bankType: Ngân hàng thật, stk: Số tài khoản
+        // Lưu trữ tách biệt để khi Henry đặt biệt danh (nickname) sẽ không bị mất dữ liệu gốc
         list.push({ 
             stk: stk, 
             name: cleanName, 
@@ -21705,7 +21705,8 @@ function showBankingBill(data) {
                 <p style="color: #ccc; font-size: 0.8rem;">Không tìm thấy kết quả nào ✨</p>
             </div>
         ` : filteredAccounts.map(acc => {
-            // --- PHẦN THAY ĐỔI: XỬ LÝ HIỂN THỊ 3 THÔNG TIN TÁCH BIỆT ---
+            // --- SỬA TẠI ĐÂY: LẤY ĐÚNG NGÂN HÀNG CỦA NGƯỜI NHẬN ---
+            // Sử dụng acc.bankType để lấy cấu hình ngân hàng riêng của từng người trong danh bạ
             const targetBank = BANK_CONFIG[acc.bankType || 'sweetie'];
             const displayName = acc.nickname || acc.name;
             const initial = displayName.charAt(0).toUpperCase();
