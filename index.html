@@ -21495,36 +21495,48 @@ function setRpMode(mode) {
     
 // Hàm phụ để lưu vào userData (Henry đảm bảo hàm này tồn tại nhé)
 async function saveBeneficiary(stk, name) {
-    // 1. Lấy ID thẻ đang liên kết
+    // 1. Lấy ID thẻ đang liên kết (Giữ nguyên)
     const cardIdSnap = await db.ref(`users/${currentUser}/linkedCard`).once('value');
     const cardId = cardIdSnap.val();
     if (!cardId) return;
 
-    // --- BỔ SUNG: LỌC BỎ DẤU TÍCH TRƯỚC KHI LƯU ---
-    // Nếu tên bắt đầu bằng "✓ " (dấu tích và khoảng trắng) thì cắt bỏ để lấy tên sạch
-    let cleanName = name;
-    if (name.startsWith("✓ ")) {
-        cleanName = name.substring(2); 
-    } else if (name.includes("✓")) {
-        cleanName = name.replace("✓", "").trim();
-    }
+    // --- SỬA ĐỔI: LỌC TÊN SIÊU SẠCH (Chỉ lấy tên chủ thẻ, bỏ ngân hàng dính kèm) ---
+    let cleanName = name.replace('✓', '').trim();
+    // Loại bỏ các cụm từ ngân hàng nếu bị dính vào tên để lưu dữ liệu "nguyên bản"
+    cleanName = cleanName.replace(/SWEETIE BANK|HONEY BANK|CLOUD BANK/gi, '').trim();
+
+    // --- BỔ SUNG: TRA CỨU NGÂN HÀNG GỐC CỦA TÀI KHOẢN ĐÓ ---
+    // Việc này giúp lưu trường bankType riêng biệt, không lo bị mất khi đổi biệt danh
+    let targetBankType = 'sweetie'; // Mặc định
+    try {
+        const query = await db.ref('sweetie_cards').orderByChild('accountNo').equalTo(stk).once('value');
+        if (query.exists()) {
+            const targetData = Object.values(query.val())[0];
+            targetBankType = targetData.bankType || 'sweetie';
+        }
+    } catch (e) { console.error("Lỗi tra cứu bankType:", e); }
 
     const cardSavedRef = db.ref(`sweetie_cards/${cardId}/savedAccounts`);
     const snap = await cardSavedRef.once('value');
     let list = snap.val() || [];
 
-    // 2. Kiểm tra trùng STK
+    // 2. Kiểm tra trùng STK (Giữ nguyên logic)
     const isExist = list.find(acc => acc.stk === stk);
     if (!isExist) {
-        // Lưu cleanName thay vì name gốc có dấu tích
-        list.push({ stk: stk, name: cleanName });
+        // --- THAY ĐỔI: LƯU CẤU TRÚC 3 TRƯỜNG ĐỘC LẬP ---
+        // name: Tên thật, bankType: Ngân hàng thật, stk: Số tài khoản
+        list.push({ 
+            stk: stk, 
+            name: cleanName, 
+            bankType: targetBankType 
+        });
         
-        // 3. Cập nhật lên Firebase của thẻ
+        // 3. Cập nhật lên Firebase của thẻ (Giữ nguyên)
         await cardSavedRef.set(list);
-        console.log("🌸 Sweetie Bank: Đã lưu tên sạch vào danh bạ: " + cleanName);
+        console.log(`🌸 Sweetie Bank: Đã lưu danh bạ chuẩn: ${cleanName} | ${targetBankType.toUpperCase()}`);
     }
 }
-
+    
 function showBankingBill(data) {
     const dashboard = document.querySelector('.card-dashboard-container');
     let ui = document.getElementById('transaction-ui');
@@ -21642,14 +21654,14 @@ function showBankingBill(data) {
 }
 
    async function openSavedAccounts() {
-    // Cấu hình màu sắc cho 3 ngân hàng để đồng bộ giao diện
+    // Cấu hình màu sắc cho 3 ngân hàng để đồng bộ giao diện (Giữ nguyên)
     const BANK_CONFIG = {
         'sweetie': { name: 'SWEETIE BANK', color: '#ff1493', gradient: 'linear-gradient(135deg, #ff1493, #ff69b4)', bg: '#fffafb', itemHover: '#fdf2f8' },
         'honey': { name: 'HONEY BANK', color: '#f39c12', gradient: 'linear-gradient(135deg, #f39c12, #f1c40f)', bg: '#fffdf5', itemHover: '#fff9e6' },
         'cloud': { name: 'CLOUD BANK', color: '#3498db', gradient: 'linear-gradient(135deg, #3498db, #85c1e9)', bg: '#f5faff', itemHover: '#e6f4ff' }
     };
 
-    // 1. Khởi tạo/Lấy overlay (Giữ nguyên logic của Henry)
+    // 1. Khởi tạo/Lấy overlay (Giữ nguyên)
     let savedUI = document.getElementById('saved-accounts-ui');
     if (!savedUI) {
         savedUI = document.createElement('div');
@@ -21663,7 +21675,6 @@ function showBankingBill(data) {
         document.body.appendChild(savedUI);
     }
 
-    // --- PHẦN THAY ĐỔI: LẤY BANK TYPE ĐỂ ĐỔI MÀU ĐỒNG BỘ ---
     const cardIdSnap = await db.ref(`users/${currentUser}/linkedCard`).once('value');
     const currentCardId = cardIdSnap.val();
 
@@ -21672,7 +21683,6 @@ function showBankingBill(data) {
         return;
     }
 
-    // Lấy thông tin thẻ để xác định loại ngân hàng
     const cardSnap = await db.ref(`sweetie_cards/${currentCardId}`).once('value');
     const cardInfo = cardSnap.val() || {};
     const myBank = BANK_CONFIG[cardInfo.bankType || 'sweetie'];
@@ -21692,44 +21702,49 @@ function showBankingBill(data) {
                 <p style="color: #ccc; font-size: 0.8rem;">Không tìm thấy kết quả nào ✨</p>
             </div>
         ` : filteredAccounts.map(acc => {
+            // --- PHẦN THAY ĐỔI: XỬ LÝ HIỂN THỊ 3 THÔNG TIN TÁCH BIỆT ---
+            const targetBank = BANK_CONFIG[acc.bankType || 'sweetie'];
             const displayName = acc.nickname || acc.name;
             const initial = displayName.charAt(0).toUpperCase();
-            
-            // Tìm đoạn này trong hàm renderList của openSavedAccounts và thay thế:
-return `
-<div style="display: flex; align-items: center; gap: 10px; padding: 10px 15px; border-radius: 18px; margin-bottom: 5px; transition: 0.3s;" onmouseover="this.style.background='${myBank.itemHover}'" onmouseout="this.style.background='transparent'">
-    
-    <div onclick="selectSavedAccount('${acc.stk}', \`${displayName}\`)" style="display: flex; align-items: center; gap: 15px; flex: 1; cursor: pointer;">
-        <div style="width: 45px; height: 45px; background: ${myBank.color}10; color: ${myBank.color}; border-radius: 15px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.1rem; border: 1px solid ${myBank.color}10; flex-shrink: 0;">
-            ${initial}
-        </div>
 
-        <div style="flex: 1; text-align: left;">
-            <div style="font-weight: 800; color: #333; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.3px;">${displayName}</div>
-            <div style="color: ${myBank.color}; font-size: 0.75rem; font-family: monospace; margin-top: 2px;">
-                <i class="fas fa-id-card" style="font-size: 0.6rem; margin-right: 4px; opacity: 0.7;"></i> ${acc.stk.match(/.{1,4}/g).join(' ')}
+            return `
+            <div style="display: flex; align-items: center; gap: 10px; padding: 12px 15px; border-radius: 18px; margin-bottom: 8px; transition: 0.3s;" onmouseover="this.style.background='${myBank.itemHover}'" onmouseout="this.style.background='transparent'">
+                
+                <div onclick="selectSavedAccount('${acc.stk}', \`${displayName}\`)" style="display: flex; align-items: center; gap: 15px; flex: 1; cursor: pointer;">
+                    <div style="width: 48px; height: 48px; background: ${targetBank.color}15; color: ${targetBank.color}; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 1.1rem; border: 1.5px solid ${targetBank.color}10; flex-shrink: 0;">
+                        ${initial}
+                    </div>
+
+                    <div style="flex: 1; text-align: left;">
+                        <div style="font-weight: 800; color: #333; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.3px; display: flex; align-items: center; gap: 6px;">
+                            ${displayName}
+                            ${acc.nickname ? `<span style="font-size: 0.65rem; color: #bbb; font-weight: 500; text-transform: none;">(${acc.name})</span>` : ''}
+                        </div>
+                        
+                        <div style="display: flex; align-items: center; gap: 6px; margin-top: 4px;">
+                            <span style="font-size: 0.55rem; color: #fff; background: ${targetBank.color}; padding: 1px 6px; border-radius: 4px; font-weight: 900; letter-spacing: 0.5px;">${targetBank.name}</span>
+                            <span style="color: #888; font-size: 0.75rem; font-family: monospace; letter-spacing: -0.5px;">
+                                ${acc.stk.match(/.{1,4}/g).join(' ')}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <i class="fas fa-edit" onclick="setAccountNickname('${acc.stk}')" style="color: ${myBank.color}80; cursor: pointer; padding: 8px; font-size: 0.9rem; transition: 0.2s;" onmouseover="this.style.color='${myBank.color}'"></i>
+                
+                ${acc.nickname ? `<i class="fas fa-eraser" onclick="removeAccountNickname('${acc.stk}')" style="color: #ffcccc; cursor: pointer; padding: 8px; font-size: 0.9rem;" title="Xóa biệt danh"></i>` : ''}
             </div>
-        </div>
-    </div>
-
-    <i class="fas fa-edit" onclick="setAccountNickname('${acc.stk}')" style="color: ${myBank.color}80; cursor: pointer; padding: 5px; font-size: 0.9rem;" title="Đặt biệt danh"></i>
-    
-    ${acc.nickname ? `<i class="fas fa-eraser" onclick="removeAccountNickname('${acc.stk}')" style="color: #ffcccc; cursor: pointer; padding: 5px; font-size: 0.9rem;" title="Xóa biệt danh"></i>` : ''}
-    
-    <i class="fas fa-chevron-right" style="color: ${myBank.color}20; font-size: 0.8rem; margin-left: 5px;"></i>
-</div>
-`;
+            `;
         }).join('');
     };
 
+    // --- PHẦN UI MODAL (Giữ nguyên) ---
     savedUI.innerHTML = `
     <div class="saved-accounts-modal" style="width: 90%; max-width: 380px; max-height: 80vh; background: #fff; border-radius: 35px; overflow: hidden; display: flex; flex-direction: column; animation: slideUp 0.4s ease; box-shadow: 0 25px 50px rgba(0,0,0,0.2);">
-        
         <div style="background: ${myBank.gradient}; padding: 25px 20px; color: #fff; text-align: center; position: relative; flex-shrink: 0;">
             <h4 style="margin: 0; font-size: 1.1rem; font-weight: 800; letter-spacing: 1px;">DANH SÁCH TÀI KHOẢN</h4>
             <p style="margin: 5px 0 0; font-size: 0.7rem; opacity: 0.8;">Chọn tài khoản để chuyển tiền nhanh</p>
-            <i class="fas fa-times" onclick="document.getElementById('saved-accounts-ui').style.display='none'" 
-               style="position: absolute; right: 20px; top: 25px; cursor: pointer; font-size: 1.2rem;"></i>
+            <i class="fas fa-times" onclick="document.getElementById('saved-accounts-ui').style.display='none'" style="position: absolute; right: 20px; top: 25px; cursor: pointer; font-size: 1.2rem;"></i>
         </div>
 
         <div style="padding: 15px 20px; background: ${myBank.bg}; flex-shrink: 0;">
@@ -21756,7 +21771,7 @@ return `
         renderList(filtered);
     };
 }
-
+    
 // --- HÀM BỔ TRỢ ĐỂ ĐẶT VÀ XÓA BIỆT DANH ---
 
 window.setAccountNickname = async function(stk) {
@@ -21897,13 +21912,14 @@ async function selectSavedAccount(stk, name) {
     };
 
     if (stkInput && ownerDisplay) {
-        // 1. Điền số tài khoản
+        // 1. Điền số tài khoản (Giữ nguyên)
         stkInput.value = stk;
         
-        // 2. Kích hoạt sự kiện input (Thêm bubbles:true để chắc chắn logic ngầm nhận được)
+        // 2. Kích hoạt sự kiện input để các logic ngầm nhận biết (Giữ nguyên)
         stkInput.dispatchEvent(new Event('input', { bubbles: true }));
 
-        // 3. Truy xuất dữ liệu thật từ Firebase để lấy BankType và Tên gốc
+        // 3. Truy xuất dữ liệu thật từ Firebase để lấy BankType và Tên gốc chuẩn
+        // Việc này đảm bảo dù Henry có đặt biệt danh là gì, tên thật và ngân hàng vẫn hiện ra chính xác
         const query = await db.ref('sweetie_cards').orderByChild('accountNo').equalTo(stk).once('value');
         
         if (query.exists()) {
@@ -21911,28 +21927,37 @@ async function selectSavedAccount(stk, name) {
             const bankKey = targetData.bankType || 'sweetie';
             const bankInfo = BANK_CONFIG[bankKey];
 
-            // HIỂN THỊ 3 DÒNG TÁCH BIỆT: Biệt danh - Ngân hàng - Tên gốc
+            // --- CẬP NHẬT HIỂN THỊ: Tách biệt Biệt danh - Ngân hàng - Tên gốc ---
             ownerDisplay.innerHTML = `
                 <div style="display: flex; flex-direction: column; line-height: 1.3; text-align: left; animation: slideUp 0.3s ease;">
                     <div style="display: flex; align-items: center; gap: 8px;">
                         <span style="color: #2e7d32; font-weight: 900; font-size: 0.95rem;">${name.toUpperCase()}</span>
+                        
                         <span style="font-size: 0.6rem; color: #fff; background: ${bankInfo.color}; padding: 1px 6px; border-radius: 4px; font-weight: 800; letter-spacing: 0.5px;">${bankInfo.name}</span>
                     </div>
+                    
                     <div style="font-size: 0.75rem; color: #888; font-weight: 600; margin-top: 2px;">
                         Tên tài khoản: <span style="color: #444;">${targetData.ownerName.toUpperCase()}</span>
                     </div>
                 </div>
             `;
+
+            // Lưu thêm ID thẻ vào dataset để các hàm execute sau này sử dụng (nếu cần)
+            ownerDisplay.dataset.targetId = Object.keys(query.val())[0];
+            ownerDisplay.dataset.targetBankName = bankInfo.name;
+
         } else {
+            // Trường hợp không tìm thấy dữ liệu (Phòng hờ)
             ownerDisplay.innerText = name.toUpperCase();
         }
         
-        // Hiệu ứng nháy nhẹ
+        // Hiệu ứng nháy nhẹ (Giữ nguyên logic của Henry)
         ownerDisplay.style.animation = "none";
         ownerDisplay.offsetHeight; 
         ownerDisplay.style.animation = "pulse 0.4s ease";
     }
     
+    // Đóng danh bạ sau khi chọn
     const savedUI = document.getElementById('saved-accounts-ui');
     if (savedUI) savedUI.style.display = 'none';
 }
