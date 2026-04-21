@@ -10227,6 +10227,9 @@ function doCheckin() {
         return;
     }
 
+    // --- DÒNG THÊM MỚI: Tích lũy tổng ngày điểm danh vĩnh viễn cho danh hiệu ---
+    userData.totalCheckinDays = (userData.totalCheckinDays || 0) + 1;
+
     // Thêm ngày hiện tại vào lịch sử điểm danh tuần
     userData.checkinHistory.push(today);
     
@@ -10263,7 +10266,7 @@ function doCheckin() {
     saveData();
     updateUI(); // Cập nhật lại giao diện (số dư, trạng thái nút)
 }
-
+    
 function checkDailyCheckinReminder() {
     if (!userData || !userData.hasAccess) return;
 
@@ -11602,6 +11605,9 @@ function finalizeReward() {
     
     addNotification(notiTitle, notiMsg);
 
+    // --- DÒNG THÊM MỚI: Tích lũy vĩnh viễn số lượt đã hoàn thành cho danh hiệu ---
+    userData.totalGamesFinished = (userData.totalGamesFinished || 0) + 1;
+
     userData.balance += actualReward;
     
     userData.history.push({
@@ -11660,12 +11666,12 @@ function finalizeReward() {
 
     // --- ĐOẠN THÊM MỚI: KÍCH HOẠT ƯU ĐÃI NGAY LẬP TỨC ---
     if (activeGame.id === 'cuaHangNhanGiong' && !notifiedUuDaiInThisLoad) {
-        addNotification(
-            "🎁 ƯU ĐÃI LIÊN KẾT", 
-            "Chúc mừng! Bạn đã sở hữu Cửa Hàng Nhân Giống. Phí vào khu Thỏ Phiêu Lưu đã được GIẢM GIÁ ngay bây giờ!"
-        );
-        notifiedUuDaiInThisLoad = true;
-    }
+        addNotification(
+            "🎁 ƯU ĐÃI LIÊN KẾT", 
+            "Chúc mừng! Bạn đã sở hữu Cửa Hàng Nhân Giống. Phí vào khu Thỏ Phiêu Lưu đã được GIẢM GIÁ ngay bây giờ!"
+        );
+        notifiedUuDaiInThisLoad = true;
+    }
 
     alert(message);
     toggleModal('modal-finish');
@@ -13670,9 +13676,9 @@ function saveProfileChanges() {
 }
 
 const ACHIEVEMENTS_CONFIG = {
-    1: { id: 1, name: "Công Chúa Kẹo Cầu Vồng", icon: "🍬", desc: "Điểm danh đủ 7 ngày đầu tiên băng bảng điểm danh hàng tuần", goal: 7, unit: "ngày" },
+    1: { id: 1, name: "Công Chúa Kẹo Cầu Vồng", icon: "🍬", desc: "Tích lũy đủ 7 ngày điểm danh trong lịch sử (không cần liên tiếp)", goal: 7, unit: "ngày" },
     2: { id: 2, name: "Đại Phú Hào", icon: "💰", desc: "Số dư ví chính đạt trên 500.000đ", goal: 500000, unit: "đ" },
-    3: { id: 3, name: "Cỗ Máy Chiến Game", icon: "🕹️", desc: "Chơi tổng cộng 100 lượt game", goal: 100, unit: "lượt" },
+    3: { id: 3, name: "Cỗ Máy Chiến Game", icon: "🕹️", desc: "Hoàn thành quyết toán tổng cộng 100 lượt game bất kỳ", goal: 100, unit: "lượt" },
     4: { id: 4, name: "Thần Bài Casino", icon: "🃏", desc: "Tổng tiền lời (sau khi trừ phí) từ Casino đạt 200.000đ", goal: 200000, unit: "đ" },
     5: { id: 5, name: "Kẻ Săn Sự Kiện", icon: "🎡", desc: "Nhận thưởng thành công 20 lần tại Khu Sự Kiện Đặc Biệt", goal: 20, unit: "lần" },
     6: { id: 6, name: "Bậc Thầy Tiết Kiệm", icon: "🐷", desc: "Số dư Hũ Hồng trên 200.000đ", goal: 200000, unit: "đ" },
@@ -13693,17 +13699,14 @@ function getAchievementProgress(id) {
 
     let current = 0;
     switch(id) {
-        case 1: current = (userData.checkinHistory || []).length; break;
+        // CASE 1: SỬA LẠI - Tính tổng ngày điểm danh tích lũy vĩnh viễn (không dùng checkinHistory vì nó bị reset theo tuần)
+        case 1: current = userData.totalCheckinDays || 0; break;
+        
         case 2: current = userData.balance || 0; break;
-        case 3: 
-            let totalLaps = 0;
-            if (userData.gamePlays) {
-                for (const gId in userData.gamePlays) {
-                    totalLaps += Math.max(0, userData.gamePlays[gId].count || 0);
-                }
-            }
-            current = totalLaps;
-            break;
+        
+        // CASE 3: SỬA LẠI - Tính tổng số game đã quyết toán xong tích lũy vĩnh viễn (không dùng gamePlays vì nó có thể bị reset năm)
+        case 3: current = userData.totalGamesFinished || 0; break;
+        
         case 4: current = userData.casinoNetProfit || 0; break;
         case 5: current = userData.eventWinsCount || 0; break;
         case 6: current = userData.piggyBank ? userData.piggyBank.balance : 0; break;
