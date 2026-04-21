@@ -21437,7 +21437,7 @@ function setRpMode(mode) {
     const elNote = document.getElementById('transfer-note');
     const elPin = document.getElementById('transfer-pin');
     const elStk = document.getElementById('target-stk');
-    const elSaveCheck = document.getElementById('save-account-check'); // Lấy ô checkbox lưu danh bạ
+    const elSaveCheck = document.getElementById('save-account-check'); 
 
     // Nếu thiếu bất kỳ ô nào, dừng lại để không bị lỗi "reading value"
     if (!elTargetDisplay || !elAmount || !elPin || !elStk) {
@@ -21449,21 +21449,20 @@ function setRpMode(mode) {
     const amount = parseInt(elAmount.value);
     const pin = elPin.value;
     const targetOwner = elTargetDisplay.innerText;
-    // Lấy nội dung, nếu ô note không có thì dùng mặc định
     const note = (elNote ? elNote.value.trim() : "") || `${myCardData.ownerName.toUpperCase()} chuyển tiền`;
     const targetStkNum = elStk.value;
 
-    // 3. KIỂM TRA ĐIỀU KIỆN (Giữ nguyên logic của Henry)
+    // 3. KIỂM TRA ĐIỀU KIỆN
     if (!targetId) return alert("Vui lòng nhập đúng số tài khoản người nhận!");
     if (isNaN(amount) || amount <= 0) return alert("Số tiền không hợp lệ!");
     if (amount > myCardData.balance) return alert("Số dư thẻ không đủ!");
     if (pin !== myCardData.password) return alert("Mã PIN không chính xác!");
 
     try {
-        // 4. THỰC HIỆN GIAO DỊCH (Giữ nguyên logic an toàn của Henry)
+        // 4. THỰC HIỆN GIAO DỊCH
         const subtractResult = await db.ref(`sweetie_cards/${myCardId}/balance`).transaction(c => {
             if (c === null) return 0;
-            if (c < amount) return; // Hủy transaction nếu không đủ tiền
+            if (c < amount) return; 
             return c - amount;
         });
 
@@ -21472,30 +21471,26 @@ function setRpMode(mode) {
             return;
         }
 
-        // 2. Nếu đã trừ tiền thành công, mới tiến hành CỘNG TIỀN cho người nhận
         await db.ref(`sweetie_cards/${targetId}/balance`).transaction(c => (c || 0) + amount);
 
-        // 3. Ghi lịch sử
         await Promise.all([
             recordCardHistory(myCardId, 'transfer_out', amount, { toUser: targetOwner, note: note }),
             recordCardHistory(targetId, 'transfer_in', amount, { fromUser: myCardData.ownerName, note: note })
         ]);
 
-        // --- SỬA TẠI ĐÂY: LOGIC LƯU DANH BẠ THỤ HƯỞNG (LỌC DẤU TÍCH) ---
         if (elSaveCheck && elSaveCheck.checked) {
             if (typeof saveBeneficiary === 'function') {
-                // Loại bỏ dấu ✓ và khoảng trắng thừa trước khi lưu vào danh bạ
                 const cleanOwnerName = targetOwner.replace('✓', '').trim();
                 saveBeneficiary(targetStkNum, cleanOwnerName);
             }
         }
 
-        // 4. Hiển thị Bill thành công (Dùng các biến đã trích xuất an toàn)
+        // --- PHẦN THAY ĐỔI: TRUYỀN SENDER BANK ĐỂ BILL CẬP NHẬT MÀU ---
         showBankingBill({
             amount: amount,
             sender: myCardData.ownerName,
-            // --- DÒNG QUAN TRỌNG NHẤT: Truyền bankType của bạn để Bill đổi màu ---
-            senderBank: myCardData.bankType, 
+            // Sử dụng bankType của chính Henry để làm màu chủ đạo cho Bill
+            senderBank: myCardData.bankType || 'sweetie', 
             receiver: targetOwner,
             receiverBank: elTargetDisplay.dataset.targetBankName,
             note: note,
@@ -21560,7 +21555,7 @@ function showBankingBill(data) {
     let ui = document.getElementById('transaction-ui');
 
     // --- CẬP NHẬT LOGIC MÀU SẮC: Ưu tiên tuyệt đối ngân hàng NGƯỜI GỬI (CHỦ BILL) ---
-    let rawBank = (data.senderBank || data.receiverBank || 'SWEETIE BANK').toUpperCase();
+    let rawBank = (data.senderBank || data.receiverBank || 'SWEETIE').toUpperCase();
     let bankKey = rawBank.includes('BANK') ? rawBank : rawBank + ' BANK';
 
     const BANK_CONFIG = {
@@ -21603,11 +21598,24 @@ function showBankingBill(data) {
             #transaction-ui::-webkit-scrollbar { display: none; }
             .bill-scroll-content::-webkit-scrollbar { display: none; }
             .bill-scroll-content { -ms-overflow-style: none; scrollbar-width: none; }
+            @keyframes zoomIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+            
+            /* CSS tạo hiệu ứng chữ in chìm lặp lại (Watermark) */
+            .bill-watermark-overlay {
+                position: absolute;
+                top: 0; left: 0; width: 100%; height: 100%;
+                display: flex; flex-wrap: wrap; justify-content: center; align-content: center;
+                gap: 40px; pointer-events: none; opacity: 0.04; z-index: 0; overflow: hidden;
+            }
+            .watermark-text {
+                font-weight: 900; font-size: 0.75rem; transform: rotate(-25deg);
+                white-space: nowrap; color: ${billTheme.color};
+            }
         </style>
 
         <div id="bill-canvas" class="banking-bill-v2" style="width: 95%; max-width: 360px; max-height: 90vh; background: #fff; border-radius: 35px; overflow: hidden; display: flex; flex-direction: column; animation: zoomIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 25px 70px ${billTheme.color}30; border: 1px solid ${billTheme.color}15; position: relative;">
             
-            <div style="background: ${billTheme.gradient}; padding: 25px 20px; text-align: center; color: #fff; flex-shrink: 0;">
+            <div style="background: ${billTheme.gradient}; padding: 25px 20px; text-align: center; color: #fff; flex-shrink: 0; position: relative; z-index: 1;">
                 <div style="width: 55px; height: 55px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; border: 2px solid #fff;">
                     <i class="fas fa-check" style="font-size: 1.8rem;"></i>
                 </div>
@@ -21617,19 +21625,8 @@ function showBankingBill(data) {
 
             <div class="bill-scroll-content" style="flex: 1; overflow-y: auto; padding: 25px 20px; position: relative; background: #fff;">
                 
-                <div style="position: absolute; 
-                            top: 50%; 
-                            left: 50%; 
-                            transform: translate(-50%, -50%) rotate(-25deg); 
-                            font-size: 2.5rem; 
-                            font-weight: 900; 
-                            color: ${billTheme.color}08; 
-                            pointer-events: none; 
-                            white-space: nowrap; 
-                            text-transform: uppercase; 
-                            z-index: 0;
-                            letter-spacing: 2px;">
-                    ${bankKey}
+                <div class="bill-watermark-overlay">
+                    ${Array(15).fill(`<div class="watermark-text">${bankKey}</div>`).join('')}
                 </div>
 
                 <div style="text-align: center; margin-bottom: 25px; position: relative; z-index: 1;">
@@ -21664,12 +21661,12 @@ function showBankingBill(data) {
                     </div>
                 </div>
 
-                <div style="margin-top: 25px; text-align: center; padding-bottom: 10px;">
+                <div style="margin-top: 25px; text-align: center; padding-bottom: 10px; position: relative; z-index: 1;">
                     <p style="font-size: 0.6rem; color: #bbb; margin: 0; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase;">${bankKey} - TRAO GỬI YÊU THƯƠNG 🌸</p>
                 </div>
             </div>
 
-            <div style="padding: 15px 20px 25px; display: flex; flex-direction: column; gap: 10px; background: #fff; flex-shrink: 0; border-top: 1px solid #f9f9f9;">
+            <div style="padding: 15px 20px 25px; display: flex; flex-direction: column; gap: 10px; background: #fff; flex-shrink: 0; border-top: 1px solid #f9f9f9; position: relative; z-index: 1;">
                 <button onclick="downloadBill()" 
                     style="width: 100%; padding: 12px; border: 1.5px solid ${billTheme.color}; border-radius: 20px; background: #fff; color: ${billTheme.color}; font-weight: 800; cursor: pointer; transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 8px;">
                     <i class="fas fa-download"></i> LƯU ẢNH BILL
@@ -21682,7 +21679,7 @@ function showBankingBill(data) {
         </div>
     `;
 }
-
+    
    async function openSavedAccounts() {
     // Cấu hình màu sắc cho 3 ngân hàng (Giữ nguyên)
     const BANK_CONFIG = {
@@ -22319,43 +22316,108 @@ async function selectSavedAccount(stk, name) {
 }
 
     async function handleChangePassword(cardId) {
-    // Tạm đóng popup cài đặt để không bị chồng lấp Prompt
-    document.getElementById('card-settings-overlay').style.display = 'none';
+    // 1. Lấy thông tin thẻ để xác định màu ngân hàng (giống logic Dashboard)
+    const cardSnap = await db.ref(`sweetie_cards/${cardId}`).once('value');
+    const cardData = cardSnap.val();
+    if (!cardData) return;
 
-    // 1. Xác thực bằng ID Gốc
-    const originalIdInput = prompt("🔑 Để bảo mật, vui lòng nhập chính xác ID GỐC của thẻ:");
-    if (!originalIdInput) return;
+    const BANK_CONFIG = {
+        'sweetie': { name: 'SWEETIE BANK', color: '#ff1493', gradient: 'linear-gradient(135deg, #ff1493, #ff69b4)', bg: '#fffafa' },
+        'honey': { name: 'HONEY BANK', color: '#f39c12', gradient: 'linear-gradient(135deg, #f39c12, #f1c40f)', bg: '#fffdf5' },
+        'cloud': { name: 'CLOUD BANK', color: '#3498db', gradient: 'linear-gradient(135deg, #3498db, #85c1e9)', bg: '#f5faff' }
+    };
+    const myBank = BANK_CONFIG[cardData.bankType || 'sweetie'];
 
-    if (originalIdInput.trim() !== cardId) {
-        alert("❌ ID GỐC không chính xác! Bạn không có quyền thay đổi mật khẩu của thẻ này.");
-        return;
+    // 2. Đóng popup cài đặt cũ
+    const settingOverlay = document.getElementById('card-settings-overlay');
+    if (settingOverlay) settingOverlay.style.display = 'none';
+
+    // 3. Tạo Overlay mới cho giao diện đổi mật khẩu
+    let passOverlay = document.getElementById('password-change-overlay');
+    if (!passOverlay) {
+        passOverlay = document.createElement('div');
+        passOverlay.id = 'password-change-overlay';
+        passOverlay.style.cssText = `position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); backdrop-filter:blur(10px); z-index:200003; display:flex; align-items:center; justify-content:center;`;
+        document.body.appendChild(passOverlay);
     }
+    passOverlay.style.display = 'flex';
 
-    // 2. Nhập mật khẩu mới (Chấp nhận mọi loại ký tự)
-    const newPass = prompt("💎 Nhập mật khẩu mới (Không giới hạn chữ, số, kí tự):");
-    if (!newPass || newPass.trim().length === 0) {
-        alert("❌ Mật khẩu không được để trống!");
-        return;
+    passOverlay.innerHTML = `
+        <div style="width:90%; max-width:350px; background:#fff; border-radius:35px; overflow:hidden; animation: zoomIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow:0 30px 60px rgba(0,0,0,0.3);">
+            <div style="background:${myBank.gradient}; padding:30px 20px; color:#fff; text-align:center;">
+                <div style="width:55px; height:55px; background:rgba(255,255,255,0.2); border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 10px; border:2px solid #fff;">
+                    <i class="fas fa-shield-alt" style="font-size:1.5rem;"></i>
+                </div>
+                <h4 style="margin:0; font-size:1rem; font-weight:800; letter-spacing:1px;">THAY ĐỔI MẬT KHẨU</h4>
+                <p style="margin:5px 0 0; font-size:0.65rem; opacity:0.8;">Hệ thống bảo mật ${myBank.name}</p>
+            </div>
+
+            <div style="padding:25px; background:${myBank.bg};">
+                <div style="margin-bottom:15px;">
+                    <label style="font-size:0.65rem; color:${myBank.color}; font-weight:800; display:block; margin-bottom:8px;">XÁC THỰC ID GỐC</label>
+                    <input type="text" id="pass_verify_id" placeholder="Nhập 8 số ID thẻ..." 
+                        style="width:100%; padding:14px; border-radius:15px; border:1.5px solid #eee; outline:none; font-weight:700; transition:0.3s; box-sizing:border-box;"
+                        onfocus="this.style.borderColor='${myBank.color}'; this.style.boxShadow='0 0 10px ${myBank.color}20'">
+                </div>
+
+                <div style="margin-bottom:15px;">
+                    <label style="font-size:0.65rem; color:${myBank.color}; font-weight:800; display:block; margin-bottom:8px;">MẬT KHẨU MỚI</label>
+                    <input type="password" id="pass_new" placeholder="Nhập mã PIN mới..." 
+                        style="width:100%; padding:14px; border-radius:15px; border:1.5px solid #eee; outline:none; font-weight:700; transition:0.3s; box-sizing:border-box;"
+                        onfocus="this.style.borderColor='${myBank.color}'">
+                </div>
+
+                <div style="margin-bottom:25px;">
+                    <label style="font-size:0.65rem; color:${myBank.color}; font-weight:800; display:block; margin-bottom:8px;">XÁC NHẬN MẬT KHẨU</label>
+                    <input type="password" id="pass_confirm" placeholder="Nhập lại mã PIN mới..." 
+                        style="width:100%; padding:14px; border-radius:15px; border:1.5px solid #eee; outline:none; font-weight:700; transition:0.3s; box-sizing:border-box;"
+                        onfocus="this.style.borderColor='${myBank.color}'">
+                </div>
+
+                <div style="display:flex; gap:12px;">
+                    <button onclick="document.getElementById('password-change-overlay').style.display='none'" 
+                        style="flex:1; padding:15px; border:none; border-radius:18px; background:#f5f5f5; color:#999; font-weight:700; cursor:pointer;">HỦY</button>
+                    <button onclick="confirmChangePassword('${cardId}')" 
+                        style="flex:2; padding:15px; border:none; border-radius:18px; background:${myBank.gradient}; color:#fff; font-weight:800; cursor:pointer; box-shadow:0 10px 20px ${myBank.color}30;">CẬP NHẬT</button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+    async function confirmChangePassword(cardId) {
+    const inputId = document.getElementById('pass_verify_id').value.trim();
+    const newPass = document.getElementById('pass_new').value;
+    const confirmPass = document.getElementById('pass_confirm').value;
+
+    // Kiểm tra dữ liệu
+    if (inputId !== cardId) {
+        return alert("❌ ID GỐC không chính xác! Vui lòng kiểm tra lại trên mặt thẻ.");
     }
-
-    const confirmPass = prompt("💎 Nhập lại mật khẩu mới để xác nhận:");
+    if (!newPass) {
+        return alert("❌ Bạn chưa nhập mật khẩu mới nè.");
+    }
     if (newPass !== confirmPass) {
-        alert("❌ Mật khẩu xác nhận không khớp!");
-        return;
+        return alert("❌ Mật khẩu xác nhận không khớp, bồ kiểm tra lại nhé!");
     }
 
-    // 3. Tiến hành cập nhật lên Firebase
     try {
+        // Cập nhật lên Firebase
         await db.ref(`sweetie_cards/${cardId}/password`).set(newPass);
-        
-        // Hiển thị thông báo thành công xịn xò
+
+        // Thông báo
         if (typeof addNotification === 'function') {
-            addNotification("🛡️ BẢO MẬT", "Mật khẩu thẻ của bạn đã được thay đổi thành công! Mật khẩu cũ đã bị hủy bỏ. 🌸");
+            addNotification("🛡️ BẢO MẬT", "Mật khẩu thẻ của bạn đã được thay đổi thành công.");
         }
-        alert("✅ Chúc mừng! Mật khẩu mới đã được áp dụng thành công.");
+        
+        alert("✅ Chúc mừng! Mật khẩu mới đã được áp dụng.");
+        
+        // Đóng popup
+        document.getElementById('password-change-overlay').style.display = 'none';
+        
     } catch (error) {
-        console.error("Lỗi đổi mật khẩu:", error);
-        alert("❌ Đã có lỗi xảy ra khi lưu mật khẩu mới.");
+        console.error(error);
+        alert("❌ Đã có lỗi xảy ra, bồ kiểm tra lại mạng nhé!");
     }
 }
 
