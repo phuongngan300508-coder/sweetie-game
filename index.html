@@ -20470,32 +20470,35 @@ function renderCardDashboard(cardId) {
                             </button>
 
                             <button onclick="showFluctuationPopup('${cardId}')" class="btn-fluctuation" 
-    style="width: 100%; margin-top: 5px; background: #fff; color: ${bank.color}; border: 1.5px dashed ${bank.color}; padding: 12px; border-radius: 16px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.3s; position: relative;"
-    onmouseover="this.style.background='${bank.color}10'"
-    onmouseout="this.style.background='#fff'">
-    
-    <i class="fas fa-bell"></i> Biến động số dư
+                                style="width: 100%; margin-top: 5px; background: #fff; color: ${bank.color}; border: 1.5px dashed ${bank.color}; padding: 12px; border-radius: 16px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.3s; position: relative;"
+                                onmouseover="this.style.background='${bank.color}10'"
+                                onmouseout="this.style.background='#fff'">
+                                
+                                <i class="fas fa-bell"></i> Biến động số dư
 
-    <span id="inner-fluctuation-dot" 
-        style="display: ${localStorage.getItem(`new_transfer_${currentUser}`) ? 'block' : 'none'}; 
-               position: absolute; 
-               top: -4px; 
-               right: -4px; 
-               width: 12px; 
-               height: 12px; 
-               background: #ff4d4f; 
-               border-radius: 50%; 
-               border: 2px solid #fff; 
-               box-shadow: 0 2px 4px rgba(255,77,79,0.3);
-               z-index: 10;">
-    </span>
-</button>
+                                <span id="inner-fluctuation-dot" 
+                                    style="display: ${localStorage.getItem(`new_transfer_${currentUser}`) ? 'block' : 'none'}; 
+                                           position: absolute; 
+                                           top: -4px; 
+                                           right: -4px; 
+                                           width: 12px; 
+                                           height: 12px; 
+                                           background: #ff4d4f; 
+                                           border-radius: 50%; 
+                                           border: 2px solid #fff; 
+                                           box-shadow: 0 2px 4px rgba(255,77,79,0.3);
+                                           z-index: 10;">
+                                </span>
+                            </button>
                         </div>
                     </div>
                 </div>
                 
-                <button onclick="unlinkCard()" style="margin-top: 30px; background: none; border: none; color: #bbb; cursor: pointer; font-size: 0.75rem; text-decoration: underline; font-weight: 600;">
-                    Gỡ liên kết thẻ
+                <button onclick="openCardSettings('${cardId}')" 
+                    style="width: 100%; margin-top: 25px; background: #f8fafc; color: #64748b; border: 1px solid #e2e8f0; padding: 12px; border-radius: 16px; font-size: 0.8rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.3s;"
+                    onmouseover="this.style.background='#f1f5f9'; this.style.color='#334155'"
+                    onmouseout="this.style.background='#f8fafc'; this.style.color='#64748b'">
+                    <i class="fas fa-cog"></i> Cài đặt thẻ
                 </button>
             </div>
         `;
@@ -22200,6 +22203,100 @@ async function selectSavedAccount(stk, name) {
             </div>
         </div>
     `;
+}
+
+    function openCardSettings(cardId) {
+    let settingOverlay = document.getElementById('card-settings-overlay');
+    if (!settingOverlay) {
+        settingOverlay = document.createElement('div');
+        settingOverlay.id = 'card-settings-overlay';
+        settingOverlay.style.cssText = `position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); z-index:200002; display:flex; align-items:center; justify-content:center; font-family: 'Segoe UI', sans-serif;`;
+        document.body.appendChild(settingOverlay);
+    }
+    settingOverlay.style.display = 'flex';
+
+    settingOverlay.innerHTML = `
+        <div style="width:88%; max-width:340px; background:#fff; border-radius:30px; overflow:hidden; animation: slideUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow:0 25px 50px rgba(0,0,0,0.2);">
+            <div style="padding:25px 20px; text-align:center; background: #f8fafc; border-bottom:1px solid #f1f5f9;">
+                <div style="width:50px; height:50px; background:#fff; border-radius:15px; display:flex; align-items:center; justify-content:center; margin:0 auto 10px; box-shadow:0 5px 15px rgba(0,0,0,0.05);">
+                    <i class="fas fa-shield-alt" style="color:#6366f1; font-size:1.5rem;"></i>
+                </div>
+                <h4 style="margin:0; color:#1e293b; font-size:1.1rem; font-weight:800;">Quản lý thẻ</h4>
+            </div>
+            
+            <div style="padding:15px;">
+                <div onclick="handleChangePassword('${cardId}')" style="display:flex; align-items:center; gap:14px; padding:16px; cursor:pointer; border-radius:20px; transition:0.2s;" onmouseover="this.style.background='#f0f9ff'">
+                    <div style="width:40px; height:40px; background:#e0f2fe; color:#0ea5e9; border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:1.1rem;">
+                        <i class="fas fa-key"></i>
+                    </div>
+                    <div style="flex:1;">
+                        <div style="font-size:0.95rem; font-weight:700; color:#334155;">Đổi mật khẩu</div>
+                        <div style="font-size:0.7rem; color:#94a3b8;">Hỗ trợ chữ, số và ký tự đặc biệt</div>
+                    </div>
+                </div>
+
+                <div onclick="handleUnlinkCard()" style="display:flex; align-items:center; gap:14px; padding:16px; cursor:pointer; border-radius:20px; transition:0.2s; margin-top:5px;" onmouseover="this.style.background='#fff1f2'">
+                    <div style="width:40px; height:40px; background:#fff1f2; color:#f43f5e; border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:1.1rem;">
+                        <i class="fas fa-unlink"></i>
+                    </div>
+                    <div style="flex:1;">
+                        <div style="font-size:0.95rem; font-weight:700; color:#e11d48;">Gỡ liên kết thẻ</div>
+                        <div style="font-size:0.7rem; color:#fda4af;">Hủy liên kết với tài khoản này</div>
+                    </div>
+                </div>
+            </div>
+
+            <button onclick="document.getElementById('card-settings-overlay').style.display='none'" style="width:100%; padding:18px; border:none; background:#fff; color:#94a3b8; font-weight:700; font-size:0.9rem; cursor:pointer; border-top:1px solid #f1f5f9; transition:0.2s;" onmouseover="this.style.color='#64748b'">Đóng</button>
+        </div>
+    `;
+}
+
+    async function handleChangePassword(cardId) {
+    // Tạm đóng popup cài đặt để không bị chồng lấp Prompt
+    document.getElementById('card-settings-overlay').style.display = 'none';
+
+    // 1. Xác thực bằng ID Gốc
+    const originalIdInput = prompt("🔑 Để bảo mật, vui lòng nhập chính xác ID GỐC của thẻ:");
+    if (!originalIdInput) return;
+
+    if (originalIdInput.trim() !== cardId) {
+        alert("❌ ID GỐC không chính xác! Bạn không có quyền thay đổi mật khẩu của thẻ này.");
+        return;
+    }
+
+    // 2. Nhập mật khẩu mới (Chấp nhận mọi loại ký tự)
+    const newPass = prompt("💎 Nhập mật khẩu mới (Không giới hạn chữ, số, kí tự):");
+    if (!newPass || newPass.trim().length === 0) {
+        alert("❌ Mật khẩu không được để trống!");
+        return;
+    }
+
+    const confirmPass = prompt("💎 Nhập lại mật khẩu mới để xác nhận:");
+    if (newPass !== confirmPass) {
+        alert("❌ Mật khẩu xác nhận không khớp!");
+        return;
+    }
+
+    // 3. Tiến hành cập nhật lên Firebase
+    try {
+        await db.ref(`sweetie_cards/${cardId}/password`).set(newPass);
+        
+        // Hiển thị thông báo thành công xịn xò
+        if (typeof addNotification === 'function') {
+            addNotification("🛡️ BẢO MẬT", "Mật khẩu thẻ của bạn đã được thay đổi thành công! Mật khẩu cũ đã bị hủy bỏ. 🌸");
+        }
+        alert("✅ Chúc mừng! Mật khẩu mới đã được áp dụng thành công.");
+    } catch (error) {
+        console.error("Lỗi đổi mật khẩu:", error);
+        alert("❌ Đã có lỗi xảy ra khi lưu mật khẩu mới.");
+    }
+}
+
+    function handleUnlinkCard() {
+    if (confirm("⚠️ Bạn có chắc chắn muốn gỡ liên kết thẻ này khỏi tài khoản không?")) {
+        document.getElementById('card-settings-overlay').style.display = 'none';
+        unlinkCard(); // Gọi lại hàm unlinkCard hiện tại của cậu
+    }
 }
 </script>
 </body>
