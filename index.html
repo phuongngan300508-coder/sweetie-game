@@ -19715,14 +19715,17 @@ function closeMediaLibrary() {
     
 let cardDraft = {}; // Lưu dữ liệu tạm khi đang tạo
 
+// Thêm một biến cờ hiệu bên ngoài hàm để kiểm tra xem đã lắng nghe chưa
+let isListeningToFluctuations = false;
+
 async function openSweetieCardModal() {
-    // 1. Kiểm tra xem Henry đã đăng nhập chưa bằng biến currentUser của bạn
+    // 1. Kiểm tra xem Henry đã đăng nhập chưa bằng biến currentUser của bạn (Giữ nguyên)
     if (typeof currentUser === 'undefined' || !currentUser) {
         alert("🌸 Vui lòng đăng nhập để sử dụng tính năng Sweetie Card!");
         return;
     }
 
-    // --- PHẦN THÊM MỚI: Xử lý chấm đỏ thông báo ---
+    // --- PHẦN THÊM MỚI: Xử lý chấm đỏ thông báo (Giữ nguyên nội dung của cậu) ---
     const dot = document.getElementById('card-noti-dot');
     if (dot) {
         dot.style.display = 'none'; // Ẩn chấm đỏ khi bắt đầu mở modal
@@ -19732,28 +19735,28 @@ async function openSweetieCardModal() {
     // ----------------------------------------------
 
     try {
-        // 2. Lấy ID thẻ đã liên kết từ Firebase dựa trên currentUser (là tên người dùng)
+        // 2. Lấy ID thẻ đã liên kết từ Firebase (Giữ nguyên)
         const snap = await db.ref(`users/${currentUser}/linkedCard`).once('value');
         const cardId = snap.val();
 
-        // 3. Kiểm tra và điều hướng giao diện
+        // 3. Kiểm tra và điều hướng giao diện (Giữ nguyên)
         if (cardId) {
             // Nếu đã có ID thẻ liên kết, hiển thị màn hình chính của thẻ
             renderCardDashboard(cardId);
             
-            // Kích hoạt lắng nghe biến động ngay khi xác định được cardId (nếu chưa nghe)
-            if (typeof listenToBalanceFluctuations === 'function') {
+            // --- SỬA TẠI ĐÂY: Chỉ kích hoạt lắng nghe NẾU chưa từng lắng nghe trước đó ---
+            if (typeof listenToBalanceFluctuations === 'function' && !isListeningToFluctuations) {
                 listenToBalanceFluctuations(cardId);
+                isListeningToFluctuations = true; // Đánh dấu đã bắt đầu lắng nghe
             }
         } else {
             // Nếu chưa có, hiển thị menu: "Tạo thẻ mới" hoặc "Thêm thẻ đã có"
             renderStartMenu();
         }
 
-        // 4. Mở Popup
+        // 4. Mở Popup (Giữ nguyên thiết kế Flex)
         const modal = document.getElementById('modal-sweetie');
         if (modal) {
-            // SỬA TẠI ĐÂY: Dùng 'flex' để kết hợp với CSS căn giữa và co giãn
             modal.style.display = 'flex'; 
         }
     } catch (error) {
@@ -22006,6 +22009,9 @@ async function selectSavedAccount(stk, name) {
     // Chỉ lấy giao dịch mới nhất phát sinh từ bây giờ trở đi
     const now = Date.now();
     const historyRef = db.ref(`card_history/${cardId}`);
+
+    // --- PHẦN SỬA ĐỔI QUAN TRỌNG: Gỡ bỏ listener cũ để tránh trùng lặp thông báo ---
+    historyRef.off(); 
 
     historyRef.orderByChild('time').startAt(now).on('child_added', (snapshot) => {
         const data = snapshot.val();
