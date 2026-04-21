@@ -21600,16 +21600,25 @@ function showBankingBill(data) {
             .bill-scroll-content { -ms-overflow-style: none; scrollbar-width: none; }
             @keyframes zoomIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
             
-            /* CSS tạo hiệu ứng chữ in chìm lặp lại (Watermark) */
+            /* CSS NÂNG CẤP: Chữ in chìm to và chuyên nghiệp hơn */
             .bill-watermark-overlay {
                 position: absolute;
                 top: 0; left: 0; width: 100%; height: 100%;
                 display: flex; flex-wrap: wrap; justify-content: center; align-content: center;
-                gap: 40px; pointer-events: none; opacity: 0.04; z-index: 0; overflow: hidden;
+                gap: 20px 30px; /* Khoảng cách giữa các dòng chữ to */
+                pointer-events: none; 
+                opacity: 0.05; /* Tăng nhẹ độ đậm để chữ to nhìn rõ hơn */
+                z-index: 0; 
+                overflow: hidden;
             }
             .watermark-text {
-                font-weight: 900; font-size: 0.75rem; transform: rotate(-25deg);
-                white-space: nowrap; color: ${billTheme.color};
+                font-weight: 900; 
+                font-size: 1.1rem; /* PHÓNG TO: Từ 0.75rem lên 1.1rem */
+                transform: rotate(-25deg);
+                white-space: nowrap; 
+                color: ${billTheme.color};
+                text-transform: uppercase;
+                letter-spacing: 1px;
             }
         </style>
 
@@ -21626,7 +21635,7 @@ function showBankingBill(data) {
             <div class="bill-scroll-content" style="flex: 1; overflow-y: auto; padding: 25px 20px; position: relative; background: #fff;">
                 
                 <div class="bill-watermark-overlay">
-                    ${Array(15).fill(`<div class="watermark-text">${bankKey}</div>`).join('')}
+                    ${Array(20).fill(`<div class="watermark-text">${bankKey}</div>`).join('')}
                 </div>
 
                 <div style="text-align: center; margin-bottom: 25px; position: relative; z-index: 1;">
