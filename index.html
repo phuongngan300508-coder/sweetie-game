@@ -21560,7 +21560,6 @@ function showBankingBill(data) {
     let ui = document.getElementById('transaction-ui');
 
     // --- CẬP NHẬT LOGIC MÀU SẮC: Ưu tiên tuyệt đối ngân hàng NGƯỜI GỬI (CHỦ BILL) ---
-    // Bill xuất ra phải theo màu ngân hàng của người thực hiện giao dịch
     let rawBank = (data.senderBank || data.receiverBank || 'SWEETIE BANK').toUpperCase();
     let bankKey = rawBank.includes('BANK') ? rawBank : rawBank + ' BANK';
 
@@ -21618,7 +21617,20 @@ function showBankingBill(data) {
 
             <div class="bill-scroll-content" style="flex: 1; overflow-y: auto; padding: 25px 20px; position: relative; background: #fff;">
                 
-                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-15deg); font-size: 2rem; font-weight: 900; color: ${billTheme.color}08; pointer-events: none; white-space: nowrap; text-transform: uppercase; z-index: 0;">${bankKey}</div>
+                <div style="position: absolute; 
+                            top: 50%; 
+                            left: 50%; 
+                            transform: translate(-50%, -50%) rotate(-25deg); 
+                            font-size: 2.5rem; 
+                            font-weight: 900; 
+                            color: ${billTheme.color}08; 
+                            pointer-events: none; 
+                            white-space: nowrap; 
+                            text-transform: uppercase; 
+                            z-index: 0;
+                            letter-spacing: 2px;">
+                    ${bankKey}
+                </div>
 
                 <div style="text-align: center; margin-bottom: 25px; position: relative; z-index: 1;">
                     <span style="font-size: 0.8rem; color: #888; font-weight: 600;">Số tiền chuyển</span>
