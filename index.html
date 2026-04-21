@@ -10049,12 +10049,18 @@ function confirmDeposit() {
         date: getVietnamTime().toLocaleString('vi-VN') 
     });
     
+    // --- CHỦ ĐỘNG KIỂM TRA DANH HIỆU ---
+    // Gọi sau khi đã cộng balance để hệ thống nhận diện được mốc 500k ngay lập tức
+    if (typeof checkAllAchievementsActive === 'function') {
+        checkAllAchievementsActive();
+    }
+    
     saveData();
     updateUI();
     closeFinanceModal('modal-deposit');
     alert(`🎉 Đã nạp thành công ${amount.toLocaleString('vi-VN')} VNĐ!`);
 }
-
+    
 // --- 2. XỬ LÝ RÚT TIỀN ---
 function handleSimpleWithdraw() {
     const balance = userData.balance || 0;
@@ -10089,13 +10095,19 @@ function confirmWithdraw() {
         amount: `-${amount.toLocaleString('vi-VN')} VNĐ`, 
         date: getVietnamTime().toLocaleString('vi-VN') 
     });
+
+    // --- CHỦ ĐỘNG KIỂM TRA DANH HIỆU ---
+    // Gọi sau khi trừ balance và cập nhật lịch sử để đảm bảo dữ liệu đồng bộ
+    if (typeof checkAllAchievementsActive === 'function') {
+        checkAllAchievementsActive();
+    }
     
     saveData();
     updateUI();
     closeFinanceModal('modal-withdraw');
     alert(`✅ Đã rút thành công ${amount.toLocaleString('vi-VN')} VNĐ!`);
 }
-
+    
 // Hàm đóng Modal chung
 function closeFinanceModal(id) {
     document.getElementById(id).style.display = 'none';
@@ -10227,7 +10239,7 @@ function doCheckin() {
         return;
     }
 
-    // --- DÒNG THÊM MỚI: Tích lũy tổng ngày điểm danh vĩnh viễn cho danh hiệu ---
+    // --- Tích lũy tổng ngày điểm danh vĩnh viễn cho danh hiệu ---
     userData.totalCheckinDays = (userData.totalCheckinDays || 0) + 1;
 
     // Thêm ngày hiện tại vào lịch sử điểm danh tuần
@@ -10262,7 +10274,13 @@ function doCheckin() {
         // Thông báo cho các ngày thường
         alert("✅ Điểm danh thành công! Đừng quên quay lại vào ngày mai nhé.");
     }
-    
+
+    // --- CHỦ ĐỘNG KIỂM TRA DANH HIỆU ---
+    // Gọi ở cuối để đảm bảo các dữ liệu trên đã được nạp vào userData xong
+    if (typeof checkAllAchievementsActive === 'function') {
+        checkAllAchievementsActive();
+    }
+
     saveData();
     updateUI(); // Cập nhật lại giao diện (số dư, trạng thái nút)
 }
@@ -11605,7 +11623,7 @@ function finalizeReward() {
     
     addNotification(notiTitle, notiMsg);
 
-    // --- DÒNG THÊM MỚI: Tích lũy vĩnh viễn số lượt đã hoàn thành cho danh hiệu ---
+    // --- Cập nhật các chỉ số tích lũy vĩnh viễn ---
     userData.totalGamesFinished = (userData.totalGamesFinished || 0) + 1;
 
     userData.balance += actualReward;
@@ -11621,12 +11639,10 @@ function finalizeReward() {
         userData.gamePlays[activeGame.id] = { count: 0, firstPlayDate: null };
     }
     
-    // Nếu là lượt chơi đầu tiên trong chu kỳ, ghi lại ngày bắt đầu
     if (userData.gamePlays[activeGame.id].count === 0) {
         userData.gamePlays[activeGame.id].firstPlayDate = getVietnamTime().getTime();
     }
     
-    // --- CHỈNH SỬA: Không tăng count nếu là Gacha Emerald để giữ vô tận lượt ---
     if (activeGame.id !== 'gachaEmerald') {
         userData.gamePlays[activeGame.id].count += 1;
     }
@@ -11635,14 +11651,10 @@ function finalizeReward() {
 
     // --- LOGIC TÍCH LŨY TIỀN LỜI CASINO CHUẨN (THƯỞNG - PHÍ) ---
     const casinoGames = ['dayXu', 'xiDach', 'tienLen', 'taiXiu'];
-
     if (casinoGames.includes(activeGame.id)) {
         if (userData.casinoNetProfit === undefined) userData.casinoNetProfit = 0;
         const netProfitOfThisTurn = rewardVal - activeGame.fee;
         userData.casinoNetProfit += netProfitOfThisTurn;
-        
-        console.log(`Game: ${activeGame.name} | Thưởng: ${rewardVal} | Phí: ${activeGame.fee} | Lời: ${netProfitOfThisTurn}`);
-        console.log(`Tổng tích lũy Thần Bài: ${userData.casinoNetProfit}`);
     }
 
     // --- LOGIC TÍCH LŨY CHO DANH HIỆU KẺ SĂN SỰ KIỆN ---
@@ -11655,7 +11667,12 @@ function finalizeReward() {
     if (dacBietGames.includes(activeGame.id) && rewardVal > 0) {
         if (userData.eventWinsCount === undefined) userData.eventWinsCount = 0;
         userData.eventWinsCount += 1; 
-        console.log(`Khu Đặc Biệt: Đã thắng ván thứ ${userData.eventWinsCount} tại ${activeGame.name}`);
+    }
+
+    // --- KIỂM TRA DANH HIỆU CHỦ ĐỘNG ---
+    // Gọi hàm kiểm tra ở đây để quét sạch: Cỗ máy chiến game, Thần bài Casino, Kẻ săn sự kiện
+    if (typeof checkAllAchievementsActive === 'function') {
+        checkAllAchievementsActive();
     }
 
     saveData();
@@ -11664,7 +11681,6 @@ function finalizeReward() {
     updateFloatingButton(); 
     checkMinigameStatus(); 
 
-    // --- ĐOẠN THÊM MỚI: KÍCH HOẠT ƯU ĐÃI NGAY LẬP TỨC ---
     if (activeGame.id === 'cuaHangNhanGiong' && !notifiedUuDaiInThisLoad) {
         addNotification(
             "🎁 ƯU ĐÃI LIÊN KẾT", 
@@ -11752,6 +11768,12 @@ function handleZonePayment(zoneId) {
             expiry: expiryDate,
             paidDate: vnNow
         };
+
+        // --- DÒNG THÊM MỚI: Kiểm tra danh hiệu ngay khi vừa cập nhật zoneAccess ---
+        // Việc này giúp chuông báo ngay lập tức nếu đây là khu vực thứ 7
+        if (typeof checkAllAchievementsActive === "function") {
+            checkAllAchievementsActive();
+        }
 
         // --- LOGIC VIP: Kiểm tra thăng cấp ngay lập tức ---
         const newVipLevel = getVipLevel(userData.totalSpent);
@@ -13699,12 +13721,12 @@ function getAchievementProgress(id) {
 
     let current = 0;
     switch(id) {
-        // CASE 1: SỬA LẠI - Tính tổng ngày điểm danh tích lũy vĩnh viễn (không dùng checkinHistory vì nó bị reset theo tuần)
+        // CASE 1: Tích lũy vĩnh viễn (đã sửa theo ý Henry)
         case 1: current = userData.totalCheckinDays || 0; break;
         
         case 2: current = userData.balance || 0; break;
         
-        // CASE 3: SỬA LẠI - Tính tổng số game đã quyết toán xong tích lũy vĩnh viễn (không dùng gamePlays vì nó có thể bị reset năm)
+        // CASE 3: Tích lũy vĩnh viễn (đã sửa theo ý Henry)
         case 3: current = userData.totalGamesFinished || 0; break;
         
         case 4: current = userData.casinoNetProfit || 0; break;
@@ -13722,18 +13744,45 @@ function getAchievementProgress(id) {
             break;
     }
 
-    // KIỂM TRA MỞ KHÓA MỚI (CHỐT CHẶN VĨNH VIỄN)
+    // --- LOGIC KIỂM TRA VÀ THÔNG BÁO CHỦ ĐỘNG ---
     if (current >= ACHIEVEMENTS_CONFIG[id].goal) {
         if (!userData.unlockedAchievements.includes(id)) {
             userData.unlockedAchievements.push(id);
-            addNotification("🏆 DANH HIỆU MỚI", `Chúc mừng! Bạn đã đạt danh hiệu vĩnh viễn: [${ACHIEVEMENTS_CONFIG[id].name}]`);
+            
+            // Bắn thông báo ngay lập tức vào chuông
+            addNotification(
+                "🏆 DANH HIỆU MỚI", 
+                `Chúc mừng! Bạn đã đạt danh hiệu vĩnh viễn: [${ACHIEVEMENTS_CONFIG[id].name}]`,
+                false // false để phát tiếng chuông Ting nếu Henry có cài đặt
+            );
+            
+            // Ép hệ thống cập nhật số đỏ trên icon chuông ngay lập tức
+            if (typeof updateNotiBadge === 'function') {
+                updateNotiBadge();
+            }
+
             saveData();
         }
     }
 
     return current;
 }
+    // Hàm kiểm tra và tự động kích hoạt danh hiệu ngay lập tức
+function checkAllAchievementsActive() {
+    if (!userData.unlockedAchievements) userData.unlockedAchievements = [];
 
+    Object.values(ACHIEVEMENTS_CONFIG).forEach(ach => {
+        // Chỉ kiểm tra những danh hiệu chưa mở khóa
+        if (!userData.unlockedAchievements.includes(ach.id)) {
+            const current = getAchievementProgress(ach.id);
+            
+            // Nếu đạt điều kiện, getAchievementProgress đã có sẵn logic 
+            // addNotification và push vào unlockedAchievements rồi.
+            // Việc gọi hàm ở đây sẽ kích hoạt logic đó ngay lập tức.
+        }
+    });
+}
+    
 // Hàm mở Modal Danh hiệu
 function openAchievementModal() {
     const list = document.getElementById('achievement-list-content');
