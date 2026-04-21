@@ -10927,6 +10927,12 @@ function checkPiggyInterest() {
             pb.balance += interest;
             pb.lastInterestDate = vnNow; // Reset ngày tính lãi về hiện tại
             
+            // --- CHỦ ĐỘNG KIỂM TRA DANH HIỆU ---
+            // Gọi ngay khi lãi vừa cộng vào để quét xem tổng số dư hũ đã đủ mốc danh hiệu chưa
+            if (typeof checkAllAchievementsActive === 'function') {
+                checkAllAchievementsActive();
+            }
+
             // --- DÒNG THÊM MỚI ĐỂ HIỆN THÔNG BÁO Ở CHUÔNG ---
             addNotification("🐷 LÃI TIẾT KIỆM", `Hũ hồng vừa sinh lãi thêm ${interest.toLocaleString('vi-VN')} VNĐ cho bạn!`);
 
@@ -10961,6 +10967,11 @@ function handlePiggyDeposit() {
     userData.balance -= amount;
     userData.piggyBank.balance += amount;
     
+    // --- DÒNG THÊM MỚI: Kiểm tra danh hiệu ngay khi số dư hũ vừa thay đổi ---
+    if (typeof checkAllAchievementsActive === 'function') {
+        checkAllAchievementsActive();
+    }
+    
     // --- THÊM THÔNG BÁO CHUÔNG ---
     addNotification("🐷 GỬI TIẾT KIỆM", `Bạn đã bỏ ${amount.toLocaleString('vi-VN')} VNĐ vào hũ hồng thành công.`);
 
@@ -10978,7 +10989,7 @@ function handlePiggyDeposit() {
     updateUI();
     updatePiggyUI();
 }
-
+    
 // 4. Rút tiền từ hũ
 function handlePiggyWithdraw() {
     const pb = userData.piggyBank;
@@ -12893,6 +12904,13 @@ function handleStreakCheckin(index) {
     if (sd.currentCount >= reward.days) {
         userData.balance += reward.money;
         sd.isFinished = true;
+
+        // --- CHỦ ĐỘNG KIỂM TRA DANH HIỆU ---
+        // Gọi ngay khi isFinished vừa chuyển thành true để quét mốc 45 ngày
+        if (typeof checkAllAchievementsActive === 'function') {
+            checkAllAchievementsActive();
+        }
+
         addNotification("💖 CHUỖI HOÀN TẤT", `Chuỗi #${index + 1} hoàn tất! Bạn nhận được ${reward.money.toLocaleString()} VNĐ.`);
         alert(`🥳 CHÚC MỪNG! Trái tim #${index + 1} đã đầy, bạn nhận được ${reward.money.toLocaleString()}đ!`);
     } else {
@@ -12906,7 +12924,7 @@ function handleStreakCheckin(index) {
     toggleModal('modal-profile');
     toggleModal('modal-profile');
 }
-
+    
 // Hàm kiểm tra đứt chuỗi (Chạy khi vừa vào web)
 function verifyStreak() {
     // Nếu chưa có mảng dữ liệu thì thoát
@@ -13714,30 +13732,32 @@ function getAchievementProgress(id) {
     if (!userData) return 0;
     if (!userData.unlockedAchievements) userData.unlockedAchievements = [];
 
-    // Nếu danh hiệu này ĐÃ được mở khóa trước đó, mặc định trả về goal (để luôn hiện 100%)
+    // --- TỐI ƯU: Nếu đã mở khóa, trả về mục tiêu ngay lập tức để tiết kiệm tài nguyên ---
+    const goal = ACHIEVEMENTS_CONFIG[id].goal;
     if (userData.unlockedAchievements.includes(id)) {
-        return ACHIEVEMENTS_CONFIG[id].goal;
+        return goal;
     }
 
     let current = 0;
     switch(id) {
-        // CASE 1: Tích lũy vĩnh viễn (đã sửa theo ý Henry)
         case 1: current = userData.totalCheckinDays || 0; break;
-        
         case 2: current = userData.balance || 0; break;
-        
-        // CASE 3: Tích lũy vĩnh viễn (đã sửa theo ý Henry)
         case 3: current = userData.totalGamesFinished || 0; break;
-        
         case 4: current = userData.casinoNetProfit || 0; break;
         case 5: current = userData.eventWinsCount || 0; break;
         case 6: current = userData.piggyBank ? userData.piggyBank.balance : 0; break;
-        case 7: current = (userData.streakDataArray || []).filter(s => s.isFinished && STREAK_REWARDS[s.chosenReward]?.days >= 45).length; break;
+        case 7: 
+            current = (userData.streakDataArray || []).filter(s => 
+                s.isFinished && 
+                STREAK_REWARDS[s.chosenReward] && 
+                STREAK_REWARDS[s.chosenReward].days >= 45
+            ).length; 
+            break;
         case 8: current = Object.keys(userData.zoneAccess || {}).length; break;
         case 9: current = getVipLevel(userData.totalSpent || 0); break;
         case 10: 
             let count = 0;
-            for(let i=1; i<=9; i++) {
+            for(let i = 1; i <= 9; i++) {
                 if (userData.unlockedAchievements.includes(i)) count++;
             }
             current = count;
@@ -13745,42 +13765,47 @@ function getAchievementProgress(id) {
     }
 
     // --- LOGIC KIỂM TRA VÀ THÔNG BÁO CHỦ ĐỘNG ---
-    if (current >= ACHIEVEMENTS_CONFIG[id].goal) {
+    if (current >= goal) {
+        // Chỉ thực hiện đẩy dữ liệu và thông báo nếu chưa có trong mảng
         if (!userData.unlockedAchievements.includes(id)) {
             userData.unlockedAchievements.push(id);
             
-            // Bắn thông báo ngay lập tức vào chuông
+            // Thông báo chuông ngay lập tức
             addNotification(
                 "🏆 DANH HIỆU MỚI", 
                 `Chúc mừng! Bạn đã đạt danh hiệu vĩnh viễn: [${ACHIEVEMENTS_CONFIG[id].name}]`,
-                false // false để phát tiếng chuông Ting nếu Henry có cài đặt
+                false 
             );
             
-            // Ép hệ thống cập nhật số đỏ trên icon chuông ngay lập tức
+            // Cập nhật icon chuông ngay để Henry thấy số đỏ
             if (typeof updateNotiBadge === 'function') {
                 updateNotiBadge();
             }
 
             saveData();
         }
+        return goal;
     }
 
     return current;
 }
+    
     // Hàm kiểm tra và tự động kích hoạt danh hiệu ngay lập tức
 function checkAllAchievementsActive() {
     if (!userData.unlockedAchievements) userData.unlockedAchievements = [];
 
+    // Lượt 1: Kiểm tra và mở khóa các danh hiệu dựa trên chỉ số (ID từ 1-9)
     Object.values(ACHIEVEMENTS_CONFIG).forEach(ach => {
-        // Chỉ kiểm tra những danh hiệu chưa mở khóa
-        if (!userData.unlockedAchievements.includes(ach.id)) {
-            const current = getAchievementProgress(ach.id);
-            
-            // Nếu đạt điều kiện, getAchievementProgress đã có sẵn logic 
-            // addNotification và push vào unlockedAchievements rồi.
-            // Việc gọi hàm ở đây sẽ kích hoạt logic đó ngay lập tức.
+        if (ach.id !== 10 && !userData.unlockedAchievements.includes(ach.id)) {
+            getAchievementProgress(ach.id);
         }
     });
+
+    // Lượt 2: Kiểm tra riêng cho danh hiệu cuối cùng (ID 10)
+    // Nếu lượt 1 vừa giúp Henry đủ 9 danh hiệu, lượt này sẽ kích hoạt danh hiệu Trùm ngay lập tức
+    if (!userData.unlockedAchievements.includes(10)) {
+        getAchievementProgress(10);
+    }
 }
     
 // Hàm mở Modal Danh hiệu
