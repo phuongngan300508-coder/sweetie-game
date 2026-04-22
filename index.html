@@ -9182,6 +9182,23 @@ input[type="date"].sweetie-input-style {
         </button>
     </div>
 </div>
+
+    <div id="piggy-prompt" class="modal-overlay" style="display: none; z-index: 9999;">
+    <div class="modal-content" style="max-width: 350px; text-align: center; border: 3px solid #fbc02d;">
+        <div id="prompt-header" style="background: #fbc02d; color: #8b6d00; padding: 10px; font-weight: bold;">
+            <i class="fas fa-edit"></i> XÁC NHẬN GIAO DỊCH
+        </div>
+        <div class="modal-body" style="padding: 20px;">
+            <p id="prompt-message" style="margin-bottom: 15px; font-weight: 500;"></p>
+            <input type="number" id="prompt-input" placeholder="Nhập số tiền..." 
+                   style="width: 100%; padding: 12px; border-radius: 8px; border: 2px solid #eee; font-size: 1.1em; text-align: center; outline: none;">
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button onclick="closePiggyPrompt()" style="flex: 1; padding: 10px; border-radius: 8px; border: none; background: #eee;">Hủy</button>
+                <button id="prompt-confirm-btn" style="flex: 1; padding: 10px; border-radius: 8px; border: none; background: #fbc02d; color: #8b6d00; font-weight: bold;">Xác nhận</button>
+            </div>
+        </div>
+    </div>
+</div>
 <script>
   let replyingTo = null; // Lưu tin nhắn đang được trả lời {id, text, sender}
   // Biến cờ để đảm bảo mỗi máy chỉ "nghe" Firebase đúng 1 lần duy nhất
@@ -10964,80 +10981,98 @@ function checkPiggyInterest() {
     }
 }
 
-// 3. Nạp tiền vào hũ
-function handlePiggyDeposit() {
-    const amountStr = prompt("Nhập số tiền muốn bỏ vào hũ (Tối thiểu 1.000 VNĐ):", "1000");
-    const amount = parseInt(amountStr);
+// Biến trung gian để xử lý callback cho prompt
+let promptCallback = null;
 
-    if (isNaN(amount) || amount < 1000) {
-        alert("Số tiền không hợp lệ (Tối thiểu 1.000 VNĐ)!");
-        return;
-    }
+function openPiggyPrompt(message, defaultValue, callback) {
+    const promptModal = document.getElementById('piggy-prompt');
+    const promptInput = document.getElementById('prompt-input');
+    const promptMessage = document.getElementById('prompt-message');
+    const confirmBtn = document.getElementById('prompt-confirm-btn');
 
-    if (userData.balance < amount) {
-        alert("Số dư tài khoản không đủ!");
-        return;
-    }
+    promptMessage.innerText = message;
+    promptInput.value = defaultValue;
+    promptModal.style.display = 'flex';
+    promptInput.focus();
 
-    userData.balance -= amount;
-    userData.piggyBank.balance += amount;
-    
-    // --- DÒNG THÊM MỚI: Kiểm tra danh hiệu ngay khi số dư hũ vừa thay đổi ---
-    if (typeof checkAllAchievementsActive === 'function') {
-        checkAllAchievementsActive();
-    }
-    
-    // --- THÊM THÔNG BÁO CHUÔNG ---
-    addNotification("🐷 GỬI TIẾT KIỆM", `Bạn đã bỏ ${amount.toLocaleString('vi-VN')} VNĐ vào hũ hồng thành công.`);
-
-    if (!userData.piggyBank.lastInterestDate || userData.piggyBank.balance === amount) {
-        userData.piggyBank.lastInterestDate = getVietnamTime().getTime();
-    }
-
-    userData.piggyBank.history.push({
-        date: getVietnamTime().toLocaleString('vi-VN'),
-        action: 'Nạp vào hũ',
-        amount: `+${amount.toLocaleString('vi-VN')} VNĐ`
-    });
-
-    saveData();
-    updateUI();
-    updatePiggyUI();
+    confirmBtn.onclick = () => {
+        const value = parseInt(promptInput.value);
+        callback(value);
+        closePiggyPrompt();
+    };
 }
-    
-// 4. Rút tiền từ hũ
+
+function closePiggyPrompt() {
+    document.getElementById('piggy-prompt').style.display = 'none';
+}
+
+// 3. Nạp tiền vào hũ (Đã sửa lại giao diện)
+function handlePiggyDeposit() {
+    openPiggyPrompt("Nhập số tiền muốn bỏ vào hũ (Tối thiểu 1.000 VNĐ):", 1000, (amount) => {
+        if (isNaN(amount) || amount < 1000) {
+            alert("❌ Số tiền không hợp lệ (Tối thiểu 1.000 VNĐ)!");
+            return;
+        }
+
+        // Kiểm tra giới hạn 500k
+        if (userData.piggyBank.balance + amount > 500000) {
+            alert("⚠️ Không thể nạp! Số dư hũ sẽ vượt quá giới hạn 500.000 VNĐ.");
+            return;
+        }
+
+        if (userData.balance < amount) {
+            alert("❌ Số dư tài khoản không đủ!");
+            return;
+        }
+
+        userData.balance -= amount;
+        userData.piggyBank.balance += amount;
+
+        if (typeof checkAllAchievementsActive === 'function') checkAllAchievementsActive();
+        addNotification("🐷 GỬI TIẾT KIỆM", `Đã bỏ ${amount.toLocaleString('vi-VN')} VNĐ vào hũ.`);
+
+        if (!userData.piggyBank.lastInterestDate || userData.piggyBank.balance === amount) {
+            userData.piggyBank.lastInterestDate = getVietnamTime().getTime();
+        }
+
+        userData.piggyBank.history.push({
+            date: getVietnamTime().toLocaleString('vi-VN'),
+            action: 'Nạp vào hũ',
+            amount: `+${amount.toLocaleString('vi-VN')} VNĐ`
+        });
+
+        saveData(); updateUI(); updatePiggyUI();
+    });
+}
+
+// 4. Rút tiền từ hũ (Đã sửa lại giao diện)
 function handlePiggyWithdraw() {
     const pb = userData.piggyBank;
     if (pb.balance <= 0) {
-        alert("Hũ đang trống, không có tiền để rút!");
+        alert("Hũ đang trống!");
         return;
     }
 
-    const amountStr = prompt(`Bạn muốn rút bao nhiêu? (Hiện có: ${pb.balance.toLocaleString('vi-VN')} VNĐ)`, pb.balance);
-    const amount = parseInt(amountStr);
+    openPiggyPrompt(`Rút bao nhiêu từ hũ? (Hiện có: ${pb.balance.toLocaleString('vi-VN')} VNĐ)`, pb.balance, (amount) => {
+        if (isNaN(amount) || amount <= 0 || amount > pb.balance) {
+            alert("❌ Số tiền rút không hợp lệ!");
+            return;
+        }
 
-    if (isNaN(amount) || amount <= 0 || amount > pb.balance) {
-        alert("Số tiền rút không hợp lệ!");
-        return;
-    }
+        userData.balance += amount;
+        pb.balance -= amount;
 
-    userData.balance += amount;
-    pb.balance -= amount;
+        addNotification("💸 RÚT TIỀN HŨ", `Đã rút ${amount.toLocaleString('vi-VN')} VNĐ từ hũ.`);
 
-    // --- THÊM THÔNG BÁO CHUÔNG ---
-    addNotification("💸 RÚT TIỀN HŨ", `Bạn đã rút ${amount.toLocaleString('vi-VN')} VNĐ từ hũ về ví chính.`);
+        pb.history.push({
+            date: getVietnamTime().toLocaleString('vi-VN'),
+            action: 'Rút về ví',
+            amount: `-${amount.toLocaleString('vi-VN')} VNĐ`
+        });
 
-    pb.history.push({
-        date: getVietnamTime().toLocaleString('vi-VN'),
-        action: 'Rút về ví',
-        amount: `-${amount.toLocaleString('vi-VN')} VNĐ`
+        saveData(); updateUI(); updatePiggyUI();
     });
-
-    saveData();
-    updateUI();
-    updatePiggyUI();
 }
-
 // Cập nhật hàm toggleModal cũ để hỗ trợ cập nhật Hũ
 const oldToggleModal = toggleModal;
 toggleModal = function(id) {
