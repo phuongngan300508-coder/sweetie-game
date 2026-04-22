@@ -20454,7 +20454,15 @@ function renderCardDashboard(cardId) {
 
         flow.innerHTML = `
     <div class="card-dashboard-container" style="animation: fadeIn 0.5s; display: flex; flex-direction: column; align-items: center; width: 100%;">
-        <h3 style="color: ${bank.color}; margin-bottom: 20px; font-weight: 800; width: 100%; text-align: left;">Thẻ của bạn</h3>
+        <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; margin-bottom: 20px;">
+            <h3 style="color: ${bank.color}; margin: 0; font-weight: 800;">Thẻ của bạn</h3>
+            <i class="fas fa-question-circle" 
+               onclick="openSweetieHelp('${card.bankType || 'sweetie'}')" 
+               style="color: ${bank.color}; cursor: pointer; font-size: 1.2rem; opacity: 0.7; transition: 0.3s;"
+               onmouseover="this.style.opacity='1'" 
+               onmouseout="this.style.opacity='0.7'">
+            </i>
+        </div>
         
         <div class="sweetie-dashboard-grid">
             <div class="dashboard-column-left" style="margin-bottom: 20px;">
@@ -22523,6 +22531,80 @@ async function selectSavedAccount(stk, name) {
         document.getElementById('card-settings-overlay').style.display = 'none';
         unlinkCard(); // Gọi lại hàm unlinkCard hiện tại của cậu
     }
+}
+
+    function openSweetieHelp(bankType) {
+    const BANK_CONFIG = {
+        'sweetie': { name: 'SWEETIE BANK', color: '#ff1493', gradient: 'linear-gradient(135deg, #ff1493, #ff69b4)', bg: '#fffafa' },
+        'honey': { name: 'HONEY BANK', color: '#f39c12', gradient: 'linear-gradient(135deg, #f39c12, #f1c40f)', bg: '#fffdf5' },
+        'cloud': { name: 'CLOUD BANK', color: '#3498db', gradient: 'linear-gradient(135deg, #3498db, #85c1e9)', bg: '#f5faff' }
+    };
+
+    const bank = BANK_CONFIG[bankType] || BANK_CONFIG['sweetie'];
+
+    let helpOverlay = document.getElementById('sweetie-help-overlay');
+    if (!helpOverlay) {
+        helpOverlay = document.createElement('div');
+        helpOverlay.id = 'sweetie-help-overlay';
+        helpOverlay.style.cssText = `position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); backdrop-filter:blur(10px); z-index:300000; display:flex; align-items:center; justify-content:center; padding:20px;`;
+        document.body.appendChild(helpOverlay);
+    }
+
+    helpOverlay.style.display = 'flex';
+    helpOverlay.innerHTML = `
+        <div style="width:100%; max-width:400px; background:#fff; border-radius:35px; overflow:hidden; animation: slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow:0 30px 60px rgba(0,0,0,0.2); display:flex; flex-direction:column; max-height:85vh;">
+            <div style="background:${bank.gradient}; padding:25px; color:#fff; text-align:center; position:relative;">
+                <h4 style="margin:0; font-size:1.1rem; font-weight:800; letter-spacing:1px;">KHÁM PHÁ ${bank.name}</h4>
+                <p style="margin:5px 0 0; font-size:0.7rem; opacity:0.9;">Hệ thống tài chính ảo dành cho Henry & Bạn bè</p>
+                <i class="fas fa-times" onclick="document.getElementById('sweetie-help-overlay').style.display='none'" style="position:absolute; right:20px; top:25px; cursor:pointer; opacity:0.8;"></i>
+            </div>
+
+            <div style="flex:1; overflow-y:auto; padding:25px; background:${bank.bg};" class="hide-scrollbar">
+                <div style="margin-bottom:20px;">
+                    <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+                        <i class="fas fa-heart" style="color:${bank.color}"></i>
+                        <strong style="color:#333; font-size:0.9rem;">Ý nghĩa của thẻ</strong>
+                    </div>
+                    <p style="font-size:0.8rem; color:#666; line-height:1.5; margin:0;">
+                        ${bank.name} không chỉ là một thẻ game, mà là cầu nối tài chính giúp bạn quản lý ngân sách ảo trong <strong>Sweetie Game World</strong>. Nó thể hiện sự chuyên nghiệp và định danh cá nhân của mỗi người dùng.
+                    </p>
+                </div>
+
+                <div style="margin-bottom:20px;">
+                    <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+                        <i class="fas fa-cog" style="color:${bank.color}"></i>
+                        <strong style="color:#333; font-size:0.9rem;">Cơ chế & Tính ứng dụng</strong>
+                    </div>
+                    <ul style="margin:0; padding-left:18px; font-size:0.75rem; color:#666; line-height:1.6;">
+                        <li><strong>Số tài khoản (12 số):</strong> Định danh duy nhất để nhận tiền từ bất kỳ ai trong hệ thống.</li>
+                        <li><strong>Bảo mật PIN:</strong> Mọi giao dịch rút tiền hoặc chuyển khoản đều cần mã PIN 6 số do bạn thiết lập.</li>
+                        <li><strong>Ví liên kết:</strong> Tiền có thể luân chuyển giữa Ví chính (tài khoản game) và Thẻ ngân hàng.</li>
+                    </ul>
+                </div>
+
+                <div style="background:#fff; border-radius:20px; padding:15px; border:1px solid ${bank.color}15;">
+                    <div style="font-size:0.75rem; font-weight:800; color:${bank.color}; margin-bottom:10px; text-transform:uppercase;">Tính năng đặc sắc</div>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                        <div style="font-size:0.7rem; color:#444;"><i class="fas fa-check-circle" style="color:#10b981;"></i> Chuyển tiền 24/7</div>
+                        <div style="font-size:0.7rem; color:#444;"><i class="fas fa-check-circle" style="color:#10b981;"></i> Biến động số dư</div>
+                        <div style="font-size:0.7rem; color:#444;"><i class="fas fa-check-circle" style="color:#10b981;"></i> Lưu danh bạ</div>
+                        <div style="font-size:0.7rem; color:#444;"><i class="fas fa-check-circle" style="color:#10b981;"></i> Xuất Bill ảnh</div>
+                    </div>
+                </div>
+                
+                <p style="margin-top:20px; font-size:0.65rem; color:#aaa; text-align:center; font-style:italic;">
+                    * Lưu ý: Đây là hệ thống tiền ảo, không có giá trị quy đổi thành tiền mặt thực tế.
+                </p>
+            </div>
+
+            <div style="padding:20px; background:#fff; border-top:1px solid #f1f5f9;">
+                <button onclick="document.getElementById('sweetie-help-overlay').style.display='none'" 
+                        style="width:100%; padding:14px; border:none; border-radius:18px; background:${bank.gradient}; color:#fff; font-weight:800; cursor:pointer; box-shadow:0 8px 15px ${bank.color}30;">
+                    ĐÃ HIỂU
+                </button>
+            </div>
+        </div>
+    `;
 }
 </script>
 </body>
