@@ -22547,14 +22547,29 @@ async function selectSavedAccount(stk, name) {
     if (!helpOverlay) {
         helpOverlay = document.createElement('div');
         helpOverlay.id = 'sweetie-help-overlay';
-        helpOverlay.style.cssText = `position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); backdrop-filter:blur(10px); z-index:300000; display:flex; align-items:center; justify-content:center; padding:20px;`;
+        // SỬA: Dùng flex-direction column và padding để đảm bảo luôn căn giữa trên mobile
+        helpOverlay.style.cssText = `
+            position: fixed; 
+            top: 0; left: 0; 
+            width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.5); 
+            backdrop-filter: blur(10px); 
+            -webkit-backdrop-filter: blur(10px);
+            z-index: 300000; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            padding: 15px;
+            box-sizing: border-box;
+        `;
         document.body.appendChild(helpOverlay);
     }
 
     helpOverlay.style.display = 'flex';
+    // SỬA: max-width là 400px nhưng width là 100% để tự co lại trên màn hình nhỏ
     helpOverlay.innerHTML = `
-        <div style="width:100%; max-width:400px; background:#fff; border-radius:35px; overflow:hidden; animation: slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow:0 30px 60px rgba(0,0,0,0.2); display:flex; flex-direction:column; max-height:85vh;">
-            <div style="background:${bank.gradient}; padding:25px; color:#fff; text-align:center; position:relative;">
+        <div style="width: 100%; max-width: 400px; background: #fff; border-radius: 35px; overflow: hidden; animation: slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 30px 60px rgba(0,0,0,0.2); display: flex; flex-direction: column; max-height: 90vh;">
+            <div style="background:${bank.gradient}; padding:25px; color:#fff; text-align:center; position:relative; flex-shrink: 0;">
                 <h4 style="margin:0; font-size:1.1rem; font-weight:800; letter-spacing:1px;">KHÁM PHÁ ${bank.name}</h4>
                 <p style="margin:5px 0 0; font-size:0.7rem; opacity:0.9;">Hệ thống tài chính ảo dành cho Cư dân & Bạn bè</p>
                 <i class="fas fa-times" onclick="document.getElementById('sweetie-help-overlay').style.display='none'" style="position:absolute; right:20px; top:25px; cursor:pointer; opacity:0.8;"></i>
@@ -22599,7 +22614,7 @@ async function selectSavedAccount(stk, name) {
                 </p>
             </div>
 
-            <div style="padding:20px; background:#fff; border-top:1px solid #f1f5f9;">
+            <div style="padding:20px; background:#fff; border-top:1px solid #f1f5f9; flex-shrink: 0;">
                 <button onclick="document.getElementById('sweetie-help-overlay').style.display='none'" 
                         style="width:100%; padding:14px; border:none; border-radius:18px; background:${bank.gradient}; color:#fff; font-weight:800; cursor:pointer; box-shadow:0 8px 15px ${bank.color}30;">
                     ĐÃ HIỂU
