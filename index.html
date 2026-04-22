@@ -11063,7 +11063,7 @@ function handlePiggyDeposit() {
         userData.piggyBank.balance += amount;
 
         if (typeof checkAllAchievementsActive === 'function') checkAllAchievementsActive();
-        addNotification("🐷 GỬI TIẾT KIỆM", `Đã bỏ ${amount.toLocaleString('vi-VN')} VNĐ vào hũ.`);
+        addNotification("🐷 GỬI TIẾT KIỆM", `Đã bỏ ${amount.toLocaleString('vi-VN')} VNĐ vào hũ thành công.`);
 
         if (!userData.piggyBank.lastInterestDate || userData.piggyBank.balance === amount) {
             userData.piggyBank.lastInterestDate = getVietnamTime().getTime();
@@ -11096,7 +11096,7 @@ function handlePiggyWithdraw() {
         userData.balance += amount;
         pb.balance -= amount;
 
-        addNotification("💸 RÚT TIỀN HŨ", `Đã rút ${amount.toLocaleString('vi-VN')} VNĐ từ hũ.`);
+        addNotification("💸 RÚT TIỀN HŨ", `Đã rút ${amount.toLocaleString('vi-VN')} VNĐ từ hũ về ví chính.`);
 
         pb.history.push({
             date: getVietnamTime().toLocaleString('vi-VN'),
