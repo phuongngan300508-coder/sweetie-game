@@ -6709,6 +6709,14 @@ input[type="date"].sweetie-input-style {
         margin-bottom: 0 !important;
     }
 }
+
+    /* Đảm bảo nội dung bên trong nút bấm luôn ở giữa */
+.btn-wallet.btn-deposit {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px; /* Khoảng cách giữa icon và chữ */
+}
 </style>
 </head>
 <body>
@@ -9365,20 +9373,21 @@ input[type="date"].sweetie-input-style {
                         </div>
                     </div>
 
-                    <p style="font-size: 0.75em; color: #b191b1; margin: 0 0 10px 0; font-weight: 700; line-height: 1.4;">
+                    <p style="font-size: 0.75em; color: #b191b1; margin: 0 0 10px 0; font-weight: 700; line-height: 1.4; text-align: center;">
                         * Tiền phụ thu được áp dụng riêng cho từng nhóm game.<br>
                         Toàn bộ số tiền sẽ được tích lũy vào chi tiêu VIP của bạn.
                     </p>
                 </div>
 
-            </div> </div>
+            </div> 
+        </div>
 
         <div style="padding: 15px 20px 25px 20px; flex-shrink: 0;">
             <div style="display: flex; gap: 15px; justify-content: center;">
-                <button onclick="closeExtraConfirmModal()" style="flex: 1; background: #fdf2f5; color: #ff69b4; border: 2px solid #ffb6c1; padding: 12px; border-radius: 50px; cursor: pointer; font-weight: 700; font-size: 0.9em; transition: 0.3s;">
+                <button onclick="closeExtraConfirmModal()" style="flex: 1; background: #fdf2f5; color: #ff69b4; border: 2px solid #ffb6c1; padding: 12px; border-radius: 50px; cursor: pointer; font-weight: 700; font-size: 0.9em; transition: 0.3s; text-align: center;">
                     HỦY BỎ
                 </button>
-                <button id="btn-confirm-purchase" class="btn-wallet btn-deposit" style="flex: 2; padding: 12px; font-size: 1em; border-radius: 50px; box-shadow: 0 5px 15px rgba(255, 20, 147, 0.4);">
+                <button id="btn-confirm-purchase" class="btn-wallet btn-deposit" style="flex: 2; padding: 12px; font-size: 1em; border-radius: 50px; box-shadow: 0 5px 15px rgba(255, 20, 147, 0.4); display: flex; align-items: center; justify-content: center; gap: 8px;">
                     <i class="fas fa-check-circle"></i> XÁC NHẬN THANH TOÁN
                 </button>
             </div>
