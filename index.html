@@ -13534,24 +13534,23 @@ window.onclick = function(event) {
 
 // 1. Cấu hình bảng giá linh hoạt
 const EXTRA_TURN_PRICES = {
-    // NHÓM MẶC ĐỊNH (5k/9k)
-    default: { p1: 5000, p2: 9000 },
-    // NHÓM TRUNG (10k/18k)
+    // NHÓM MẶC ĐỊNH (Phổ thông)
+    default: { p1: 5000, p2: 9000, extra: 3000 },
+    // NHÓM TRUNG (Tích lũy)
     mid: {
         ids: ["veCaoNgotNgao", "nongTraiNho", "thuThachBanThan", "nganHangThamVong", "emeraldQuest"],
-        p1: 10000, p2: 18000
+        p1: 10000, p2: 18000, extra: 5000
     },
-    // NHÓM CAO (20k/38k)
+    // NHÓM CAO (Cao cấp)
     high: {
         ids: ["cuaHangBanCa", "dayXu"],
-        p1: 20000, p2: 38000
+        p1: 20000, p2: 38000, extra: 6000
     },
-    // NHÓM VIP (40k/78k)
+    // NHÓM VIP (Pro max)
     vip: {
         ids: ["dapChuột", "biAnHonNhan", "tramDungLinhHon"],
-        p1: 40000, p2: 78000
+        p1: 40000, p2: 78000, extra: 10000
     },
-    // DANH SÁCH CẤM MUA
     forbidden: [
         "sweetBrewManager", "santaWorkshop", "nguachien", "valentineQuest", 
         "suKienNoel", "goldenCrustBakery", "vongQuaySieuHoi", "gachaEmerald", 
@@ -13585,11 +13584,17 @@ function updatePriceDisplay() {
         return;
     }
 
-    const p1 = getPriceForGame(gameId, 1);
-    const p2 = getPriceForGame(gameId, 2);
+    // Tìm nhóm để lấy giá gốc và phụ thu
+    let group = EXTRA_TURN_PRICES.default;
+    if (EXTRA_TURN_PRICES.mid.ids.includes(gameId)) group = EXTRA_TURN_PRICES.mid;
+    else if (EXTRA_TURN_PRICES.high.ids.includes(gameId)) group = EXTRA_TURN_PRICES.high;
+    else if (EXTRA_TURN_PRICES.vip.ids.includes(gameId)) group = EXTRA_TURN_PRICES.vip;
 
-    price1.innerText = `(${p1.toLocaleString()}đ)`;
-    price2.innerText = `(${p2.toLocaleString()}đ)`;
+    const total1 = group.p1 + (group.extra * 1);
+    const total2 = group.p2 + (group.extra * 2);
+
+    price1.innerText = `(${total1.toLocaleString()}đ)`;
+    price2.innerText = `(${total2.toLocaleString()}đ)`;
 }
 
 // 4. Hàm thực hiện mua lượt
@@ -13597,53 +13602,62 @@ function buyExtraTurn(amount) {
     const gameId = document.getElementById('extra-game-select').value;
     if (!gameId) { alert("Vui lòng chọn một trò chơi!"); return; }
 
-    const price = getPriceForGame(gameId, amount);
+    // 1. Xác định nhóm game và giá trị tương ứng
+    let group = EXTRA_TURN_PRICES.default;
+    if (EXTRA_TURN_PRICES.mid.ids.includes(gameId)) group = EXTRA_TURN_PRICES.mid;
+    else if (EXTRA_TURN_PRICES.high.ids.includes(gameId)) group = EXTRA_TURN_PRICES.high;
+    else if (EXTRA_TURN_PRICES.vip.ids.includes(gameId)) group = EXTRA_TURN_PRICES.vip;
+
+    const basePrice = (amount === 1) ? group.p1 : group.p2;
+    const totalExtra = group.extra * amount; // Phụ thu cộng dồn theo số lượt
+    const finalTotal = basePrice + totalExtra;
+    
     const gameName = document.getElementById('extra-game-select').options[document.getElementById('extra-game-select').selectedIndex].text;
 
-    if (userData.balance < price) {
-        alert(`Số dư không đủ! Nhóm game này yêu cầu ${price.toLocaleString()}đ.`);
+    // 2. Bước thông báo phụ thu trước
+    alert(`📢 THÔNG BÁO PHỤ THU:\nTrò chơi [${gameName}] thuộc nhóm có phí phụ thu là ${group.extra.toLocaleString()}đ/lượt.\nTổng tiền phụ thu cho ${amount} lượt là: ${totalExtra.toLocaleString()}đ.`);
+
+    // 3. Kiểm tra số dư tổng
+    if (userData.balance < finalTotal) {
+        alert(`❌ Số dư không đủ!\nTổng chi phí (Gốc + Phụ thu) là: ${finalTotal.toLocaleString()}đ.\nBạn còn thiếu ${(finalTotal - userData.balance).toLocaleString()}đ.`);
         return;
     }
 
-    if (confirm(`Xác nhận dùng ${price.toLocaleString()}đ để thêm ${amount} lượt cho [${gameName}]?`)) {
-        // 1. Lưu cấp VIP cũ để so sánh
+    // 4. Xác nhận thanh toán cuối cùng
+    if (confirm(`XÁC NHẬN THANH TOÁN:\n- Giá gốc: ${basePrice.toLocaleString()}đ\n- Phụ thu: ${totalExtra.toLocaleString()}đ\n--------------------------\n=> TỔNG CỘNG: ${finalTotal.toLocaleString()}đ\n\nBạn đồng ý tiếp tế ${amount} lượt cho [${gameName}]?`)) {
+        
         const oldVipLevel = getVipLevel(userData.totalSpent || 0);
 
-        // 2. Trừ tiền và tích lũy chi tiêu nâng VIP
-        userData.balance -= price;
-        userData.totalSpent = (Number(userData.totalSpent) || 0) + price;
+        // Trừ tiền và tích lũy VIP
+        userData.balance -= finalTotal;
+        userData.totalSpent = (Number(userData.totalSpent) || 0) + finalTotal;
 
-        // 3. Xử lý hồi lượt chơi
+        // Hồi lượt chơi
         if (!userData.gamePlays[gameId]) {
             userData.gamePlays[gameId] = { count: 0, firstPlayDate: null };
         }
-        // Trừ count để hồi lượt (Logic của Henry)
         userData.gamePlays[gameId].count -= amount;
 
-        // 4. Kiểm tra thăng cấp VIP ngay lập tức
+        // Kiểm tra thăng cấp VIP
         const newVipLevel = getVipLevel(userData.totalSpent);
         if (newVipLevel > oldVipLevel) {
             const vipName = VIP_CONFIG[newVipLevel].label;
             addNotification("🎊 THĂNG CẤP VIP", `Tiếp tế lượt chơi đã giúp bạn thăng hạng lên [${vipName}].`);
-            
-            if (newVipLevel === 5) {
-                addNotification("🎁 ĐẶC QUYỀN HOÀNG GIA", "Bạn đã mở khóa slot nuôi Trái Tim thứ 2 vĩnh viễn!");
-            }
         }
 
-        // 5. Ghi lịch sử và thông báo
+        // Ghi lịch sử
         userData.history.push({
-            type: `Mua thêm lượt: ${gameName}`,
-            amount: `-${price.toLocaleString()} VNĐ`,
+            type: `Mua tiếp tế: ${gameName} (${amount} lượt)`,
+            amount: `-${finalTotal.toLocaleString()} VNĐ`,
             date: getVietnamTime().toLocaleString('vi-VN')
         });
 
-        addNotification("🎫 TIẾP TẾ LƯỢT CHƠI", `Đã cộng thành công ${amount} lượt cho game [${gameName}].`);
+        addNotification("🎫 TIẾP TẾ LƯỢT CHƠI", `Đã tiếp tế ${amount} lượt cho [${gameName}] (Gồm ${totalExtra.toLocaleString()}đ phụ thu).`);
         
         saveData();
         updateUI();
         updateGameLimitsUI();
-        alert(`✨ Thành công! [${gameName}] đã được cộng thêm lượt.`);
+        alert(`✨ Thành công! [${gameName}] đã sẵn sàng để bạn chơi tiếp.`);
     }
 }
 
