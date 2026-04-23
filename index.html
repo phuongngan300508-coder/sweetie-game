@@ -13992,54 +13992,63 @@ function executeExtraPurchase() {
 }
     
 // Hàm lưu hóa đơn thành hình ảnh
-function downloadInvoice(btn) {
+async function downloadInvoice(btn) {
     const area = document.getElementById('invoice-capture-area');
-    const originalText = btn.innerHTML;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ĐANG XỬ LÝ...';
+    if (!area) return;
 
-    // 1. Chuẩn bị: Đảm bảo mọi hình ảnh/font đã tải xong
-    // 2. Chụp với cấu hình tối ưu để tránh khoảng trắng
-    html2canvas(area, {
-        backgroundColor: "#ffffff",
-        scale: 2, 
-        useCORS: true, 
-        allowTaint: false,
-        logging: false,
-        // Ép html2canvas chụp toàn bộ chiều cao nội dung (scrollHeight)
-        height: area.scrollHeight,
-        windowHeight: area.scrollHeight,
-        // Xử lý trước khi chụp để gỡ bỏ giới hạn thanh cuộn trong bản sao
-        onclone: (clonedDoc) => {
-            const clonedArea = clonedDoc.getElementById('invoice-capture-area');
-            const clonedScroll = clonedArea.querySelector('.hide-scrollbar');
-            
-            if (clonedScroll) {
-                clonedScroll.style.maxHeight = 'none'; // Gỡ bỏ giới hạn chiều cao
-                clonedScroll.style.overflow = 'visible'; // Hiện toàn bộ nội dung
-                clonedScroll.style.paddingBottom = '20px'; 
+    // 1. Hiệu ứng chờ và tạm ẩn các nút bấm để ảnh đẹp 100%
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ĐANG TẠO...';
+    btn.disabled = true;
+
+    // Lấy container chứa các nút để ẩn đi khi chụp
+    const btnContainer = btn.parentElement; 
+    if (btnContainer) btnContainer.style.opacity = '0';
+
+    try {
+        // 2. Sử dụng cấu trúc async giống hàm ngân hàng để đợi render
+        const canvas = await html2canvas(area, {
+            backgroundColor: "#ffffff",
+            scale: 3,           // Tăng độ nét cực cao (3x) giống bill ngân hàng
+            useCORS: true,      // Hỗ trợ icon/vân giấy từ link ngoài
+            allowTaint: false,
+            logging: false,
+            // Ép chụp theo chiều cao thực tế của sớ hóa đơn (scrollHeight)
+            height: area.scrollHeight,
+            windowHeight: area.scrollHeight,
+            onclone: (clonedDoc) => {
+                // Xử lý bản sao ngầm để hiện toàn bộ nội dung bị cuộn
+                const clonedArea = clonedDoc.getElementById('invoice-capture-area');
+                const clonedScroll = clonedArea.querySelector('.hide-scrollbar');
+                
+                if (clonedArea) {
+                    clonedArea.style.maxHeight = 'none';
+                    clonedArea.style.height = 'auto';
+                }
+                
+                if (clonedScroll) {
+                    clonedScroll.style.maxHeight = 'none'; // Phá bỏ giới hạn cuộn
+                    clonedScroll.style.overflow = 'visible'; // Hiện toàn bộ nội dung
+                    clonedScroll.style.height = 'auto';
+                }
             }
-            // Đảm bảo răng cưa dưới vẫn nằm đúng vị trí cuối cùng
-            clonedArea.style.height = 'auto';
-        }
-    }).then(canvas => {
-        // 3. Chuyển đổi thành hình ảnh và tải về
-        try {
-            const imgData = canvas.toDataURL("image/png");
-            const link = document.createElement('a');
-            link.download = `Sweetie_Invoice_${Date.now()}.png`;
-            link.href = imgData;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        } catch (err) {
-            console.error("Lỗi lưu hình:", err);
-            alert("❌ Lỗi lưu hình: Bạn thử chụp màn hình thủ công nhé!");
-        }
+        });
+
+        // 3. Chuyển đổi và tải về
+        const link = document.createElement('a');
+        link.download = `Sweetie_Invoice_${Date.now()}.png`;
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+
+    } catch (err) {
+        console.error("Lỗi lưu biên lai:", err);
+        alert("❌ Lỗi lưu hình: Bạn thử chụp màn hình thủ công nhé!");
+    } finally {
+        // 4. Hoàn tất: Hiện lại nút và khôi phục trạng thái
         btn.innerHTML = originalText;
-    }).catch(err => {
-        console.error("Lỗi Canvas:", err);
-        btn.innerHTML = originalText;
-    });
+        btn.disabled = false;
+        if (btnContainer) btnContainer.style.opacity = '1';
+    }
 }
     
 function closeInvoiceModal() {
