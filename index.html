@@ -9223,6 +9223,72 @@ input[type="date"].sweetie-input-style {
         </div>
     </div>
 </div>
+
+    <div id="modal-extra-confirm" class="modal-overlay" style="display: none; z-index: 10000;">
+    <div class="modal-content animate__animated animate__bounceIn" style="border: 4px solid #ff69b4; background: #fffafb; max-width: 420px; padding: 0; overflow: hidden; border-radius: 30px; box-shadow: 0 15px 50px rgba(255, 20, 147, 0.4);">
+        
+        <div style="background: linear-gradient(135deg, #ff1493 0%, #ff69b4 100%); color: white; padding: 20px; text-align: center; position: relative;">
+            <div style="position: absolute; top: 10px; right: 15px; font-size: 1.2em; cursor: pointer; opacity: 0.8;" onclick="closeExtraConfirmModal()">✕</div>
+            <h2 style="margin: 0; font-family: 'Quicksand', sans-serif; font-weight: 900; font-size: 1.5em; text-transform: uppercase; letter-spacing: 1px;">
+                <i class="fas fa-ticket-alt"></i> QUẦY TIẾP TẾ LƯỢT
+            </h2>
+            <p style="margin: 5px 0 0 0; font-size: 0.85em; opacity: 0.9; font-weight: 600;">Xác nhận hóa đơn thanh toán</p>
+        </div>
+
+        <div style="padding: 25px 20px; text-align: center;">
+            
+            <div style="font-size: 3.5em; color: #ff1493; margin-bottom: 15px;" class="animate__animated animate__pulse animate__infinite">
+                <i class="fas fa-cart-plus"></i>
+            </div>
+
+            <h3 id="confirm-game-name" style="color: #5d3d5d; margin: 0 0 20px 0; font-family: 'Quicksand'; font-size: 1.3em; font-weight: 800;">
+                Tên Trò Chơi
+            </h3>
+
+            <div style="background: white; border: 2px solid #ffc0cb; border-radius: 20px; padding: 15px; text-align: left; margin-bottom: 20px; box-shadow: inset 0 2px 10px rgba(0,0,0,0.05);">
+                
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #ffeef2;">
+                    <span style="color: #7d4f7d; font-weight: 700;">
+                        <i class="fas fa-tag"></i> Vé gốc (<span id="confirm-amount-label">1</span> lượt)
+                    </span>
+                    <span id="confirm-base-price" style="color: #ff69b4; font-weight: 800; font-size: 1.1em;">
+                        0 VNĐ
+                    </span>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; background: #fff5f5; padding: 10px; border-radius: 10px; border: 1px solid #ffb6c1; margin-bottom: 15px;">
+                    <span style="color: #ff1493; font-weight: 800; font-size: 0.95em;">
+                        <i class="fas fa-exclamation-triangle"></i> Phụ thu đặc biệt:
+                    </span>
+                    <span id="confirm-extra-fee" style="color: #ff0000; font-weight: 900; font-size: 1.2em; text-decoration: underline;">
+                        +0 VNĐ
+                    </span>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; background: #fff0f5; padding: 15px; border-radius: 15px; border: 2px solid #ff1493;">
+                    <span style="color: #d63384; font-weight: 900; font-size: 1.1em;">TỔNG THANH TOÁN:</span>
+                    <span id="confirm-total-final" style="color: #ff1493; font-weight: 1000; font-size: 1.7em; font-family: 'Quicksand'; text-shadow: 0 2px 5px rgba(255, 20, 147, 0.3);">
+                        0 VNĐ
+                    </span>
+                </div>
+            </div>
+
+            <p style="font-size: 0.75em; color: #b191b1; margin: 0 0 20px 0; font-weight: 700; line-height: 1.4;">
+                * Tiền phụ thu được áp dụng riêng cho từng nhóm game.<br>
+                Toàn bộ số tiền sẽ được tích lũy vào chi tiêu VIP của bạn.
+            </p>
+
+            <div style="display: flex; gap: 15px; justify-content: center;">
+                <button onclick="closeExtraConfirmModal()" style="flex: 1; background: #fdf2f5; color: #ff69b4; border: 2px solid #ffb6c1; padding: 12px; border-radius: 50px; cursor: pointer; font-weight: 700; font-size: 0.9em; transition: 0.3s;">
+                    HỦY BỎ
+                </button>
+                <button id="btn-confirm-purchase" class="btn-wallet btn-deposit" style="flex: 2; padding: 12px; font-size: 1em; border-radius: 50px; box-shadow: 0 5px 15px rgba(255, 20, 147, 0.4);">
+                    <i class="fas fa-check-circle"></i> XÁC NHẬN THANH TOÁN
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 <script>
   let replyingTo = null; // Lưu tin nhắn đang được trả lời {id, text, sender}
   // Biến cờ để đảm bảo mỗi máy chỉ "nghe" Firebase đúng 1 lần duy nhất
@@ -13598,67 +13664,116 @@ function updatePriceDisplay() {
 }
 
 // 4. Hàm thực hiện mua lượt
-function buyExtraTurn(amount) {
-    const gameId = document.getElementById('extra-game-select').value;
-    if (!gameId) { alert("Vui lòng chọn một trò chơi!"); return; }
+// Biến tạm để lưu dữ liệu thanh toán khi chờ xác nhận
+let pendingExtraPurchase = null;
 
-    // 1. Xác định nhóm game và giá trị tương ứng
+// 1. Hàm mở Modal xác nhận đẹp
+function openExtraConfirmModal(gameId, amount) {
+    // A. Xác định nhóm game và giá trị tương ứng
     let group = EXTRA_TURN_PRICES.default;
     if (EXTRA_TURN_PRICES.mid.ids.includes(gameId)) group = EXTRA_TURN_PRICES.mid;
     else if (EXTRA_TURN_PRICES.high.ids.includes(gameId)) group = EXTRA_TURN_PRICES.high;
     else if (EXTRA_TURN_PRICES.vip.ids.includes(gameId)) group = EXTRA_TURN_PRICES.vip;
 
+    // B. Tính toán các chi phí
     const basePrice = (amount === 1) ? group.p1 : group.p2;
     const totalExtra = group.extra * amount; // Phụ thu cộng dồn theo số lượt
     const finalTotal = basePrice + totalExtra;
     
-    const gameName = document.getElementById('extra-game-select').options[document.getElementById('extra-game-select').selectedIndex].text;
+    // C. Lấy thông tin game
+    const gameSelect = document.getElementById('extra-game-select');
+    const gameName = gameSelect.options[gameSelect.selectedIndex].text;
 
-    // 2. Bước thông báo phụ thu trước
-    alert(`📢 THÔNG BÁO PHỤ THU:\nTrò chơi [${gameName}] thuộc nhóm có phí phụ thu là ${group.extra.toLocaleString()}đ/lượt.\nTổng tiền phụ thu cho ${amount} lượt là: ${totalExtra.toLocaleString()}đ.`);
-
-    // 3. Kiểm tra số dư tổng
+    // D. Kiểm tra số dư tổng trước khi mở modal
     if (userData.balance < finalTotal) {
         alert(`❌ Số dư không đủ!\nTổng chi phí (Gốc + Phụ thu) là: ${finalTotal.toLocaleString()}đ.\nBạn còn thiếu ${(finalTotal - userData.balance).toLocaleString()}đ.`);
         return;
     }
 
-    // 4. Xác nhận thanh toán cuối cùng
-    if (confirm(`XÁC NHẬN THANH TOÁN:\n- Giá gốc: ${basePrice.toLocaleString()}đ\n- Phụ thu: ${totalExtra.toLocaleString()}đ\n--------------------------\n=> TỔNG CỘNG: ${finalTotal.toLocaleString()}đ\n\nBạn đồng ý tiếp tế ${amount} lượt cho [${gameName}]?`)) {
-        
-        const oldVipLevel = getVipLevel(userData.totalSpent || 0);
+    // E. Lưu dữ liệu vào biến tạm để dùng khi xác nhận
+    pendingExtraPurchase = {
+        gameId: gameId,
+        gameName: gameName,
+        amount: amount,
+        extraFee: totalExtra,
+        totalCost: finalTotal
+    };
 
-        // Trừ tiền và tích lũy VIP
-        userData.balance -= finalTotal;
-        userData.totalSpent = (Number(userData.totalSpent) || 0) + finalTotal;
+    // F. Cập nhật dữ liệu lên giao diện Modal
+    document.getElementById('confirm-game-name').innerText = gameName;
+    document.getElementById('confirm-amount-label').innerText = amount;
+    document.getElementById('confirm-base-price').innerText = `${basePrice.toLocaleString()} VNĐ`;
+    document.getElementById('confirm-extra-fee').innerText = `+${totalExtra.toLocaleString()} VNĐ`;
+    document.getElementById('confirm-total-final').innerText = `${finalTotal.toLocaleString()} VNĐ`;
 
-        // Hồi lượt chơi
-        if (!userData.gamePlays[gameId]) {
-            userData.gamePlays[gameId] = { count: 0, firstPlayDate: null };
-        }
-        userData.gamePlays[gameId].count -= amount;
+    // G. Gán sự kiện cho nút xác nhận
+    document.getElementById('btn-confirm-purchase').onclick = executeExtraPurchase;
 
-        // Kiểm tra thăng cấp VIP
-        const newVipLevel = getVipLevel(userData.totalSpent);
-        if (newVipLevel > oldVipLevel) {
-            const vipName = VIP_CONFIG[newVipLevel].label;
-            addNotification("🎊 THĂNG CẤP VIP", `Tiếp tế lượt chơi đã giúp bạn thăng hạng lên [${vipName}].`);
-        }
+    // H. Hiển thị Modal
+    document.getElementById('modal-extra-confirm').style.display = 'flex';
+}
 
-        // Ghi lịch sử
-        userData.history.push({
-            type: `Mua tiếp tế: ${gameName} (${amount} lượt)`,
-            amount: `-${finalTotal.toLocaleString()} VNĐ`,
-            date: getVietnamTime().toLocaleString('vi-VN')
-        });
+// 2. Hàm thực thi việc mua lượt (Khi nhấn nút xác nhận trên modal)
+function executeExtraPurchase() {
+    if (!pendingExtraPurchase) return;
 
-        addNotification("🎫 TIẾP TẾ LƯỢT CHƠI", `Đã tiếp tế ${amount} lượt cho [${gameName}] (Gồm ${totalExtra.toLocaleString()}đ phụ thu).`);
-        
-        saveData();
-        updateUI();
-        updateGameLimitsUI();
-        alert(`✨ Thành công! [${gameName}] đã sẵn sàng để bạn chơi tiếp.`);
+    const data = pendingExtraPurchase;
+    const vnNow = getVietnamTime().toLocaleString('vi-VN');
+
+    // --- Thực hiện giao dịch ---
+    // Lưu cấp VIP cũ để so sánh
+    const oldVipLevel = getVipLevel(userData.totalSpent || 0);
+
+    // Trừ tiền tổng (Gốc + Phụ thu) và tích lũy chi tiêu nâng VIP
+    userData.balance -= data.totalCost;
+    userData.totalSpent = (Number(userData.totalSpent) || 0) + data.totalCost;
+
+    // Hồi lượt chơi
+    if (!userData.gamePlays[data.gameId]) {
+        userData.gamePlays[data.gameId] = { count: 0, firstPlayDate: null };
     }
+    userData.gamePlays[data.gameId].count -= data.amount;
+
+    // Kiểm tra thăng cấp VIP
+    const newVipLevel = getVipLevel(userData.totalSpent);
+    if (newVipLevel > oldVipLevel) {
+        const vipName = VIP_CONFIG[newVipLevel].label;
+        addNotification("🎊 THĂNG CẤP VIP", `Chúc mừng cư dân ưu tú! Tiếp tế lượt chơi đã giúp bạn thăng hạng lên [${vipName}].`, false);
+    }
+
+    // Ghi lịch sử giao dịch (Hiển thị rõ tổng tiền)
+    userData.history.push({
+        type: `Mua tiếp tế: ${data.gameName} (${data.amount} lượt)`,
+        amount: `-${data.totalCost.toLocaleString()} VNĐ`,
+        date: vnNow
+    });
+
+    // Thông báo chuông (silent để Henry mau chóng quay lại chơi)
+    addNotification("🎫 TIẾP TẾ LƯỢT CHƠI", `Cấp lượt cho [${data.gameName}] thành công. (Gồm ${data.extraFee.toLocaleString()}đ phụ thu)`, true);
+    
+    // Lưu dữ liệu và cập nhật giao diện sảnh
+    saveData();
+    updateUI();
+    updateGameLimitsUI();
+    
+    // Đóng modal và reset
+    closeExtraConfirmModal();
+    alert(`✨ TIẾP TẾ THÀNH CÔNG!\n[${data.gameName}] đã được cộng ${data.amount} lượt. Chiến ngay Henry ơi!`);
+}
+
+// 3. Hàm đóng Modal
+function closeExtraConfirmModal() {
+    document.getElementById('modal-extra-confirm').style.display = 'none';
+    pendingExtraPurchase = null; // Xóa dữ liệu tạm
+}
+
+// 4. CẬP NHẬT HÀM CŨ: buyExtraTurn (Bây giờ chỉ làm nhiệm vụ mở Modal)
+function buyExtraTurn(amount) {
+    const gameId = document.getElementById('extra-game-select').value;
+    if (!gameId) { alert("Vui lòng chọn một trò chơi Henry ơi!"); return; }
+    
+    // Mở Modal đẹp thay vì hiện alert mặc định
+    openExtraConfirmModal(gameId, amount);
 }
 
 // 5. Hàm lọc danh sách hiển thị ban đầu
