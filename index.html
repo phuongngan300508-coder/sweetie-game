@@ -6644,6 +6644,35 @@ input[type="date"].sweetie-input-style {
 .hidden-scroll::-webkit-scrollbar {
     display: none;             /* Chrome, Safari và Edge mới */
 }
+
+    /* Tùy chỉnh thêm cho bảng giá chuyên nghiệp */
+.pro-price-table th {
+    background: #ff69b4;
+    color: white;
+    padding: 12px 8px;
+    font-size: 0.85em;
+    text-align: center;
+}
+
+.price-cell {
+    text-align: center;
+    font-family: 'Quicksand', sans-serif;
+    font-weight: 700;
+    font-size: 0.9em;
+}
+
+.price-cell small {
+    font-size: 0.7em;
+    font-weight: normal;
+    opacity: 0.8;
+    display: block;
+    margin-top: -3px;
+}
+
+/* Hiệu ứng sọc cho hàng để dễ nhìn */
+.pro-price-table tbody tr:nth-child(even):not(.tier-header-row) {
+    background: #fffafb;
+}
 </style>
 </head>
 <body>
@@ -6812,6 +6841,12 @@ input[type="date"].sweetie-input-style {
                 </button>
             </div>
         </div>
+    <div style="margin-top: 12px; padding: 10px; background: #fff5f8; border-radius: 15px; border: 1.5px solid #ffb6c1; display: flex; align-items: flex-start; gap: 10px;">
+            <i class="fas fa-concierge-bell" style="color: #ff1493; margin-top: 2px;"></i>
+            <span style="font-size: 0.82em; color: #5d3d5d; font-weight: 600; line-height: 1.4; text-align: left;">
+                <b style="color: #ff1493;">DỊCH VỤ CÓ PHỤ PHÍ:</b> Hệ thống sẽ tính thêm phí phụ thu cố định cho mỗi lượt tiếp tế. Vui lòng kiểm tra kỹ hóa đơn trước khi xác nhận.
+            </span>
+        </div>
     </div>
     
     <p class="extra-note">* Lượt thêm chỉ có giá trị sử dụng, không ảnh hưởng đến chu kỳ reset năm của lượt gốc.</p>
@@ -6824,90 +6859,101 @@ input[type="date"].sweetie-input-style {
 </div>
 
 <div id="modal-extra-price" class="modal-overlay" style="display: none;">
-    <div class="modal-content animate__animated animate__zoomIn" style="max-width: 550px; padding: 0; overflow: hidden; border-radius: 20px;">
+    <div class="modal-content animate__animated animate__zoomIn" style="max-width: 600px; padding: 0; overflow: hidden; border-radius: 20px; border: 3px solid #ff69b4;">
         <div style="background: linear-gradient(to right, #ff69b4, #ff1493); padding: 20px; color: white; position: relative;">
-            <h3 style="margin: 0; font-size: 1.3em;"><i class="fas fa-list-ul"></i> BẢNG BÁO GIÁ CHI TIẾT</h3>
-            <p style="margin: 5px 0 0 0; font-size: 0.8em; opacity: 0.9;">Hệ thống tiếp tế lượt chơi - Sweetie Game World</p>
+            <h3 style="margin: 0; font-size: 1.3em;"><i class="fas fa-file-invoice-dollar"></i> BẢNG BÁO GIÁ TIẾP TẾ CHI TIẾT</h3>
+            <p style="margin: 5px 0 0 0; font-size: 0.8em; opacity: 0.9;">Hệ thống phí niêm yết & Phụ thu dịch vụ</p>
             <div style="position: absolute; top: 15px; right: 20px; cursor: pointer; font-size: 1.2em;" onclick="toggleModal('modal-extra-price')">✕</div>
         </div>
 
         <div style="padding: 20px;">
-            <div class="price-scroll-container" style="max-height: 400px; overflow-y: auto;">
+            <div style="background: #fff5f5; border: 1px dashed #ff4d4d; padding: 12px; border-radius: 15px; margin-bottom: 15px; font-size: 0.85em; color: #d63031; text-align: left; line-height: 1.4;">
+                <i class="fas fa-info-circle"></i> <b>LƯU Ý VỀ PHỤ THU:</b> Phí phụ thu được tính <b>trên mỗi lượt mua</b> và cộng dồn.<br>
+                <i>Ví dụ: Mua 2 lượt = (Giá gốc 2 lượt) + (Phí phụ thu x 2).</i>
+            </div>
+
+            <div class="price-scroll-container hide-scrollbar" style="max-height: 400px; overflow-y: auto;">
                 <table class="pro-price-table">
-    <thead>
-        <tr>
-            <th>Tên Trò Chơi</th>
-            <th style="width: 100px;">+1 Lượt</th>
-            <th style="width: 100px;">+2 Lượt</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr class="tier-header-row"><td colspan="3">💎 NHÓM PHỔ THÔNG (MẶC ĐỊNH)</td></tr>
-        <tr>
-            <td class="game-list-cell">
-                <ul class="bullet-list">
-                    <li>Tìm Điểm Khác Nhau</li> <li>Xếp Hình</li> <li>Kebab Chef</li>
-                    <li>Flappy Pink</li> <li>Trò Đoán Cốc</li> <li>Lô Tô Tết</li>
-                    <li>Búng Nắp Tri Thức</li> <li>Sweetie Ludo</li> <li>Minigame Câu Cá</li>
-                    <li>Minigame Hub</li> <li>Thỏ Phiêu Lưu Vô Tận</li> <li>Xì Dách</li>
-                    <li>Tiến Lên Miền Nam</li> <li>Tài Xỉu</li> <li>Cửa Hàng Nhân Giống</li>
-                </ul>
-            </td>
-            <td class="price-cell">5.000đ</td>
-            <td class="price-cell">9.000đ</td>
-        </tr>
-        
-        <tr class="tier-header-row"><td colspan="3">🌟 NHÓM TÍCH LŨY</td></tr>
-        <tr>
-            <td class="game-list-cell">
-                <ul class="bullet-list">
-                    <li>Vé Cào Ngọt Ngào</li> <li>Nông Trại Nhỏ</li> 
-                    <li>Thử Thách Bản Thân</li> <li>Ngân Hàng Tham Vọng</li> 
-                    <li>Emerald Quest</li>
-                </ul>
-            </td>
-            <td class="price-cell">10.000đ</td>
-            <td class="price-cell">18.000đ</td>
-        </tr>
+                    <thead>
+                        <tr>
+                            <th>Tên Trò Chơi</th>
+                            <th style="width: 85px;">+1 Lượt</th>
+                            <th style="width: 85px;">+2 Lượt</th>
+                            <th style="width: 95px; background: #fff0f0; color: #e74c3c;">Phụ thu</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="tier-header-row"><td colspan="4">💎 NHÓM PHỔ THÔNG (MẶC ĐỊNH)</td></tr>
+                        <tr>
+                            <td class="game-list-cell">
+                                <ul class="bullet-list">
+                                    <li>Tìm Điểm Khác Nhau</li> <li>Xếp Hình</li> <li>Kebab Chef</li>
+                                    <li>Flappy Pink</li> <li>Trò Đoán Cốc</li> <li>Lô Tô Tết</li>
+                                    <li>Búng Nắp Tri Thức</li> <li>Sweetie Ludo</li> <li>Minigame Câu Cá</li>
+                                    <li>Minigame Hub</li> <li>Thỏ Phiêu Lưu Vô Tận</li> <li>Xì Dách</li>
+                                    <li>Tiến Lên Miền Nam</li> <li>Tài Xỉu</li> <li>Cửa Hàng Nhân Giống</li>
+                                </ul>
+                            </td>
+                            <td class="price-cell">5.000đ</td>
+                            <td class="price-cell">9.000đ</td>
+                            <td class="price-cell" style="color: #e17055; font-weight: 800;">+3.000đ<br><small style="font-weight: 400; opacity: 0.8;">/lượt</small></td>
+                        </tr>
+                        
+                        <tr class="tier-header-row"><td colspan="4">🌟 NHÓM TÍCH LŨY</td></tr>
+                        <tr>
+                            <td class="game-list-cell">
+                                <ul class="bullet-list">
+                                    <li>Vé Cào Ngọt Ngào</li> <li>Nông Trại Nhỏ</li> 
+                                    <li>Thử Thách Bản Thân</li> <li>Ngân Hàng Tham Vọng</li> 
+                                    <li>Emerald Quest</li>
+                                </ul>
+                            </td>
+                            <td class="price-cell">10.000đ</td>
+                            <td class="price-cell">18.000đ</td>
+                            <td class="price-cell" style="color: #e17055; font-weight: 800;">+5.000đ<br><small style="font-weight: 400; opacity: 0.8;">/lượt</small></td>
+                        </tr>
 
-        <tr class="tier-header-row"><td colspan="3">🔥 NHÓM CAO CẤP</td></tr>
-        <tr>
-            <td class="game-list-cell">
-                <ul class="bullet-list">
-                    <li>Cửa Hàng Bán Cá</li> <li>Đẩy Xu (Coin Pusher)</li>
-                </ul>
-            </td>
-            <td class="price-cell">20.000đ</td>
-            <td class="price-cell">38.000đ</td>
-        </tr>
+                        <tr class="tier-header-row"><td colspan="4">🔥 NHÓM CAO CẤP</td></tr>
+                        <tr>
+                            <td class="game-list-cell">
+                                <ul class="bullet-list">
+                                    <li>Cửa Hàng Bán Cá</li> <li>Đẩy Xu (Coin Pusher)</li>
+                                </ul>
+                            </td>
+                            <td class="price-cell">20.000đ</td>
+                            <td class="price-cell">38.000đ</td>
+                            <td class="price-cell" style="color: #e17055; font-weight: 800;">+6.000đ<br><small style="font-weight: 400; opacity: 0.8;">/lượt</small></td>
+                        </tr>
 
-        <tr class="tier-header-row"><td colspan="3">👑 NHÓM VIP (PRO MAX)</td></tr>
-        <tr class="vip-highlight">
-            <td class="game-list-cell">
-                <ul class="bullet-list">
-                    <li>Trò Đập Chuột</li> <li>Bí Ẩn Sau Hôn Nhân</li> 
-                    <li>Trạm Dừng Chân Linh Hồn</li>
-                </ul>
-            </td>
-            <td class="price-cell">40.000đ</td>
-            <td class="price-cell">78.000đ</td>
-        </tr>
+                        <tr class="tier-header-row"><td colspan="4">👑 NHÓM VIP (PRO MAX)</td></tr>
+                        <tr class="vip-highlight">
+                            <td class="game-list-cell">
+                                <ul class="bullet-list">
+                                    <li>Trò Đập Chuột</li> <li>Bí Ẩn Sau Hôn Nhân</li> 
+                                    <li>Trạm Dừng Chân Linh Hồn</li>
+                                </ul>
+                            </td>
+                            <td class="price-cell">40.000đ</td>
+                            <td class="price-cell">78.000đ</td>
+                            <td class="price-cell" style="color: #e17055; font-weight: 800;">+10.000đ<br><small style="font-weight: 400; opacity: 0.8;">/lượt</small></td>
+                        </tr>
 
-        <tr class="tier-header-row forbidden-header"><td colspan="3">🚫 KHÔNG HỖ TRỢ MUA THÊM</td></tr>
-        <tr class="forbidden-row">
-            <td class="game-list-cell">
-                <ul class="bullet-list">
-                    <li>Sweet Brew Manager</li> <li>Santa Workshop</li> <li>Ngựa Chiến May Mắn</li>
-                    <li>Valentine Quest</li> <li>Sự Kiện Noel</li> <li>Golden Crust Bakery</li>
-                    <li>Vòng Quay "Siêu hời"</li> <li>Gacha Emerald</li> <li>Truy Tìm Kho Báu</li>
-                    <li>Lì Xì Năm Mới</li> <li>Đào vàng</li> <li>Saogle Quiz</li>
-                </ul>
-            </td>
-            <td class="price-cell forbidden-icon"><i class="fas fa-ban"></i></td>
-            <td class="price-cell forbidden-icon"><i class="fas fa-ban"></i></td>
-        </tr>
-    </tbody>
-</table>
+                        <tr class="tier-header-row forbidden-header"><td colspan="4">🚫 KHÔNG HỖ TRỢ MUA THÊM</td></tr>
+                        <tr class="forbidden-row">
+                            <td class="game-list-cell">
+                                <ul class="bullet-list">
+                                    <li>Sweet Brew Manager</li> <li>Santa Workshop</li> <li>Ngựa Chiến May Mắn</li>
+                                    <li>Valentine Quest</li> <li>Sự Kiện Noel</li> <li>Golden Crust Bakery</li>
+                                    <li>Vòng Quay "Siêu hời"</li> <li>Gacha Emerald</li> <li>Truy Tìm Kho Báu</li>
+                                    <li>Lì Xì Năm Mới</li> <li>Đào vàng</li> <li>Saogle Quiz</li>
+                                </ul>
+                            </td>
+                            <td class="price-cell forbidden-icon"><i class="fas fa-ban"></i></td>
+                            <td class="price-cell forbidden-icon"><i class="fas fa-ban"></i></td>
+                            <td class="price-cell forbidden-icon"><i class="fas fa-ban"></i></td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
 
