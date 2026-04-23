@@ -6673,6 +6673,32 @@ input[type="date"].sweetie-input-style {
 .pro-price-table tbody tr:nth-child(even):not(.tier-header-row) {
     background: #fffafb;
 }
+
+    /* Container lưới cho nội dung xác nhận */
+.confirm-grid-layout {
+    display: grid;
+    grid-template-columns: 1fr; /* 1 cột trên điện thoại */
+    gap: 15px;
+    align-items: center;
+}
+
+/* Khi màn hình rộng hơn 768px (Máy tính/Tablet) */
+@media (min-width: 768px) {
+    #modal-extra-confirm .modal-content {
+        max-width: 650px !important; /* Mở rộng chiều ngang trên PC */
+    }
+    
+    .confirm-grid-layout {
+        grid-template-columns: 150px 1fr; /* Chia cột: Trái (Icon), Phải (Bảng giá) */
+        text-align: left !important;
+    }
+
+    .confirm-icon-box {
+        margin-bottom: 0 !important;
+        border-right: 2px dashed #ffc0cb;
+        padding-right: 15px;
+    }
+}
 </style>
 </head>
 <body>
@@ -9284,10 +9310,10 @@ input[type="date"].sweetie-input-style {
 </div>
 
     <div id="modal-extra-confirm" class="modal-overlay" style="display: none; z-index: 10000; align-items: center; justify-content: center;">
-    <div class="modal-content animate__animated animate__bounceIn" style="border: 4px solid #ff69b4; background: #fffafb; max-width: 420px; width: 90%; padding: 0; overflow: hidden; border-radius: 30px; box-shadow: 0 15px 50px rgba(255, 20, 147, 0.4); display: flex; flex-direction: column;">
+    <div class="modal-content animate__animated animate__bounceIn" style="border: 4px solid #ff69b4; background: #fffafb; max-width: 420px; width: 90%; padding: 0; overflow: hidden; border-radius: 30px; box-shadow: 0 15px 50px rgba(255, 20, 147, 0.4); display: flex; flex-direction: column; transition: max-width 0.3s ease;">
         
         <div style="background: linear-gradient(135deg, #ff1493 0%, #ff69b4 100%); color: white; padding: 25px 20px; text-align: center; position: relative; border-bottom: 3px solid rgba(255,255,255,0.3); flex-shrink: 0;">
-            <div style="position: absolute; top: 12px; right: 18px; font-size: 1.2em; cursor: pointer; background: rgba(0,0,0,0.1); width: 28px; height: 28px; border-radius: 50%; line-height: 26px; transition: 0.3s;" onclick="closeExtraConfirmModal()">✕</div>
+            <div style="position: absolute; top: 12px; right: 18px; font-size: 1.2em; cursor: pointer; background: rgba(0,0,0,0.1); width: 28px; height: 28px; border-radius: 50%; line-height: 26px;" onclick="closeExtraConfirmModal()">✕</div>
             <h2 style="margin: 0; font-family: 'Quicksand', sans-serif; font-weight: 1000; font-size: 1.6em; text-transform: uppercase; letter-spacing: 1.5px; color: #ffffff; text-shadow: 2px 2px 0px #d63384, 4px 4px 10px rgba(0, 0, 0, 0.2); -webkit-text-stroke: 0.5px #ffffff;">
                 <i class="fas fa-ticket-alt" style="margin-right: 8px;"></i>QUẦY TIẾP TẾ LƯỢT
             </h2>
@@ -9295,50 +9321,55 @@ input[type="date"].sweetie-input-style {
         </div>
 
         <div class="hidden-scroll" style="max-height: 60vh; padding: 25px 20px 10px 20px;">
-            <div style="text-align: center;">
-                <div style="font-size: 3.5em; color: #ff1493; margin-bottom: 15px;" class="animate__animated animate__pulse animate__infinite">
-                    <i class="fas fa-cart-plus"></i>
-                </div>
-
-                <h3 id="confirm-game-name" style="color: #5d3d5d; margin: 0 0 20px 0; font-family: 'Quicksand'; font-size: 1.3em; font-weight: 800;">
-                    Tên Trò Chơi
-                </h3>
-
-                <div style="background: white; border: 2px solid #ffc0cb; border-radius: 20px; padding: 15px; text-align: left; margin-bottom: 20px; box-shadow: inset 0 2px 10px rgba(0,0,0,0.05);">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #ffeef2;">
-    <span style="color: #7d4f7d; font-weight: 700;">
-        <i class="fas fa-tag"></i> Giá vé niêm yết (<span id="confirm-amount-label">1</span> lượt)
-    </span>
-    <span id="confirm-base-price" style="color: #ff69b4; font-weight: 800; font-size: 1.1em;">
-        0 VNĐ
-    </span>
-</div>
-
-                    <div style="display: flex; justify-content: space-between; align-items: center; background: #fff5f5; padding: 10px; border-radius: 10px; border: 1px solid #ffb6c1; margin-bottom: 15px;">
-                        <span style="color: #ff1493; font-weight: 800; font-size: 0.95em;"><i class="fas fa-exclamation-triangle"></i> Phụ thu đặc biệt:</span>
-                        <span id="confirm-extra-fee" style="color: #ff0000; font-weight: 900; font-size: 1.2em; text-decoration: underline;">+0 VNĐ</span>
+            <div class="confirm-grid-layout">
+                
+                <div class="confirm-icon-box" style="text-align: center; margin-bottom: 15px;">
+                    <div style="font-size: 4em; color: #ff1493;" class="animate__animated animate__pulse animate__infinite">
+                        <i class="fas fa-cart-plus"></i>
                     </div>
-
-                    <div style="display: flex; justify-content: space-between; align-items: center; background: #fff0f5; padding: 15px; border-radius: 15px; border: 2px solid #ff1493;">
-                        <span style="color: #d63384; font-weight: 900; font-size: 1.1em;">TỔNG THANH TOÁN:</span>
-                        <span id="confirm-total-final" style="color: #ff1493; font-weight: 1000; font-size: 1.7em; font-family: 'Quicksand'; text-shadow: 0 2px 5px rgba(255, 20, 147, 0.3);">0 VNĐ</span>
+                    <div style="margin-top: 10px; color: #ff69b4; font-weight: 800; font-size: 0.8em; text-transform: uppercase; letter-spacing: 1px;" class="pc-only-text">
+                        Thanh Toán
                     </div>
                 </div>
 
-                <p style="font-size: 0.75em; color: #b191b1; margin: 0 0 10px 0; font-weight: 700; line-height: 1.4;">
-                    * Tiền phụ thu được áp dụng riêng cho từng nhóm game.<br>
-                    Toàn bộ số tiền sẽ được tích lũy vào chi tiêu VIP của bạn.
-                </p>
+                <div>
+                    <h3 id="confirm-game-name" style="color: #5d3d5d; margin: 0 0 15px 0; font-family: 'Quicksand'; font-size: 1.3em; font-weight: 800;">
+                        Tên Trò Chơi
+                    </h3>
+
+                    <div style="background: white; border: 2px solid #ffc0cb; border-radius: 20px; padding: 15px; text-align: left; margin-bottom: 10px; box-shadow: inset 0 2px 10px rgba(0,0,0,0.05);">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #ffeef2;">
+                            <span style="color: #7d4f7d; font-weight: 700; font-size: 0.9em;">
+                                <i class="fas fa-tag"></i> Giá vé niêm yết (<span id="confirm-amount-label">1</span> lượt)
+                            </span>
+                            <span id="confirm-base-price" style="color: #ff69b4; font-weight: 800; font-size: 1.1em;">0 VNĐ</span>
+                        </div>
+
+                        <div style="display: flex; justify-content: space-between; align-items: center; background: #fff5f5; padding: 10px; border-radius: 10px; border: 1px solid #ffb6c1; margin-bottom: 10px;">
+                            <span style="color: #ff1493; font-weight: 800; font-size: 0.9em;"><i class="fas fa-exclamation-triangle"></i> Phụ thu:</span>
+                            <span id="confirm-extra-fee" style="color: #ff0000; font-weight: 900; text-decoration: underline;">+0 VNĐ</span>
+                        </div>
+
+                        <div style="display: flex; justify-content: space-between; align-items: center; background: #fff0f5; padding: 15px; border-radius: 15px; border: 2px solid #ff1493;">
+                            <span style="color: #d63384; font-weight: 900; font-size: 1.1em;">TỔNG:</span>
+                            <span id="confirm-total-final" style="color: #ff1493; font-weight: 1000; font-size: 1.6em; font-family: 'Quicksand'; text-shadow: 0 2px 5px rgba(255, 20, 147, 0.3);">0 VNĐ</span>
+                        </div>
+                    </div>
+                </div>
             </div>
+
+            <p style="font-size: 0.7em; color: #b191b1; margin: 15px 0 10px 0; font-weight: 700; line-height: 1.4; text-align: center;">
+                * Phụ thu áp dụng riêng theo nhóm game. Tích lũy trực tiếp vào VIP.
+            </p>
         </div>
 
-        <div style="padding: 15px 20px 25px 20px; flex-shrink: 0;">
+        <div style="padding: 15px 20px 25px 20px; flex-shrink: 0; background: white; border-top: 1px solid #ffeef2;">
             <div style="display: flex; gap: 15px; justify-content: center;">
-                <button onclick="closeExtraConfirmModal()" style="flex: 1; background: #fdf2f5; color: #ff69b4; border: 2px solid #ffb6c1; padding: 12px; border-radius: 50px; cursor: pointer; font-weight: 700; font-size: 0.9em; transition: 0.3s;">
+                <button onclick="closeExtraConfirmModal()" style="flex: 1; background: #fdf2f5; color: #ff69b4; border: 2px solid #ffb6c1; padding: 12px; border-radius: 50px; cursor: pointer; font-weight: 700; font-size: 0.9em;">
                     HỦY BỎ
                 </button>
-                <button id="btn-confirm-purchase" class="btn-wallet btn-deposit" style="flex: 2; padding: 12px; font-size: 1em; border-radius: 50px; box-shadow: 0 5px 15px rgba(255, 20, 147, 0.4);">
-                    <i class="fas fa-check-circle"></i> XÁC NHẬN THANH TOÁN
+                <button id="btn-confirm-purchase" class="btn-wallet btn-deposit" style="flex: 2; padding: 12px; font-size: 1em; border-radius: 50px;">
+                    <i class="fas fa-check-circle"></i> XÁC NHẬN
                 </button>
             </div>
         </div>
