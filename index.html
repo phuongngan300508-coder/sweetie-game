@@ -13993,14 +13993,32 @@ function executeExtraPurchase() {
     
 // Hàm lưu hóa đơn thành hình ảnh
 function downloadInvoice(btn) {
+    // Vùng chứa toàn bộ tờ biên lai (bao gồm cả phần bị khuất)
     const area = document.getElementById('invoice-capture-area');
+    const scrollArea = area.querySelector('.hide-scrollbar'); // Lấy vùng đang chứa thanh cuộn
+    
     const originalText = btn.innerHTML;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ĐANG TẠO...';
-    
+
+    // Kỹ thuật chụp trọn vẹn: 
+    // Trước khi chụp, chúng ta tính toán toàn bộ chiều cao thực tế (scrollHeight)
     html2canvas(area, {
-        backgroundColor: null,
-        scale: 2, // Tăng chất lượng ảnh khi lưu
-        logging: false
+        backgroundColor: "#ffffff", // Đảm bảo nền trắng sạch sẽ
+        scale: 3,                   // Tăng độ nét lên mức cực cao (3x)
+        logging: false,
+        useCORS: true,              // Hỗ trợ nếu Henry có dùng ảnh từ link ngoài
+        allowTaint: true,
+        // Cấu hình quan trọng để chụp xuyên thanh cuộn:
+        height: area.scrollHeight,  
+        windowHeight: area.scrollHeight,
+        onclone: (clonedDoc) => {
+            // Khi clone để chụp, chúng ta ép vùng cuộn phải hiển thị hết
+            const clonedScrollArea = clonedDoc.querySelector('.hide-scrollbar');
+            if (clonedScrollArea) {
+                clonedScrollArea.style.maxHeight = 'none';
+                clonedScrollArea.style.overflow = 'visible';
+            }
+        }
     }).then(canvas => {
         const link = document.createElement('a');
         link.download = `Sweetie_Invoice_${Date.now()}.png`;
