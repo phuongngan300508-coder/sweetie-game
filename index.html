@@ -9394,6 +9394,68 @@ input[type="date"].sweetie-input-style {
         </div>
     </div>
 </div>
+
+    <div id="modal-invoice-success" class="modal-overlay" style="display: none; z-index: 11000; align-items: center; justify-content: center; background: rgba(255, 192, 203, 0.85); backdrop-filter: blur(5px);">
+    <div class="modal-content animate__animated animate__jackInTheBox" style="background: transparent; box-shadow: none; width: 100%; max-width: 380px; padding: 0;">
+        
+        <div id="invoice-capture-area" style="background: #ffffff; padding: 30px; border-radius: 2px; position: relative; color: #5d3d5d; font-family: 'Courier New', Courier, monospace; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
+            
+            <div style="position: absolute; top: -10px; left: 0; width: 100%; height: 10px; background-image: radial-gradient(circle, transparent 70%, #ffffff 70%); background-size: 20px 20px; transform: rotate(180deg);"></div>
+
+            <div style="text-align: center; border-bottom: 2px dashed #ffc0cb; padding-bottom: 15px; margin-bottom: 15px;">
+                <h2 style="margin: 0; color: #ff1493; font-weight: 900; font-family: 'Quicksand';">SWEETIE GAME WORLD</h2>
+                <p style="font-size: 0.85em; margin: 5px 0; font-weight: bold;">BIÊN LAI TIẾP TẾ LƯỢT</p>
+                <p id="invoice-date" style="font-size: 0.75em; opacity: 0.8;">Ngày: --/--/2026</p>
+            </div>
+
+            <div style="margin: 20px 0; line-height: 1.8; font-size: 0.9em;">
+                <div style="display: flex; justify-content: space-between;">
+                    <span>TRÒ CHƠI:</span>
+                    <b id="invoice-game-name">--</b>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                    <span>SỐ LƯỢNG:</span>
+                    <b id="invoice-amount">+0 Lượt</b>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                    <span>MÃ GD:</span>
+                    <b style="font-size: 0.9em;">#SWT-<span id="invoice-id">0000</span></b>
+                </div>
+            </div>
+
+            <div style="border-top: 1px solid #eee; padding-top: 10px; margin-top: 10px;">
+                <div style="display: flex; justify-content: space-between;">
+                    <span>Giá vé gốc:</span>
+                    <span id="invoice-base-price">0 VNĐ</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; color: #ff0000;">
+                    <span>Phụ phí:</span>
+                    <span id="invoice-extra-fee">+0 VNĐ</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-top: 15px; padding: 12px; background: #fff0f5; border: 1px solid #ff69b4; border-radius: 8px; font-size: 1.2em; font-weight: 900; color: #ff1493;">
+                    <span>TỔNG CỘNG:</span>
+                    <span id="invoice-total">0 VNĐ</span>
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-top: 30px; border-top: 2px dashed #ffc0cb; padding-top: 15px;">
+                <p style="font-size: 0.7em; font-style: italic;">"Cảm ơn Henry đã tin dùng dịch vụ!"</p>
+                <div style="margin: 10px 0; font-size: 1.4em; letter-spacing: 4px; opacity: 0.6;">|||| || | |||| ||</div>
+            </div>
+
+            <div style="position: absolute; bottom: -10px; left: 0; width: 100%; height: 10px; background-image: radial-gradient(circle, transparent 70%, #ffffff 70%); background-size: 20px 20px;"></div>
+        </div>
+
+        <div style="margin-top: 25px; display: flex; gap: 10px; justify-content: center;">
+            <button onclick="downloadInvoice(this)" style="flex: 1; background: #ff1493; color: white; border: none; padding: 12px; border-radius: 50px; font-weight: 800; cursor: pointer; box-shadow: 0 5px 15px rgba(255, 20, 147, 0.3);">
+                <i class="fas fa-download"></i> LƯU HÓA ĐƠN
+            </button>
+            <button onclick="closeInvoiceModal()" style="flex: 1; background: white; color: #ff1493; border: 2px solid #ff1493; padding: 12px; border-radius: 50px; font-weight: 800; cursor: pointer;">
+                ĐÓNG
+            </button>
+        </div>
+    </div>
+</div>
 <script>
   let replyingTo = null; // Lưu tin nhắn đang được trả lời {id, text, sender}
   // Biến cờ để đảm bảo mỗi máy chỉ "nghe" Firebase đúng 1 lần duy nhất
@@ -13826,47 +13888,70 @@ function executeExtraPurchase() {
     const data = pendingExtraPurchase;
     const vnNow = getVietnamTime().toLocaleString('vi-VN');
 
-    // --- Thực hiện giao dịch ---
-    // Lưu cấp VIP cũ để so sánh
+    // --- 1. Thực hiện giao dịch (Giữ nguyên 100% logic của Henry) ---
     const oldVipLevel = getVipLevel(userData.totalSpent || 0);
-
-    // Trừ tiền tổng (Gốc + Phụ thu) và tích lũy chi tiêu nâng VIP
     userData.balance -= data.totalCost;
     userData.totalSpent = (Number(userData.totalSpent) || 0) + data.totalCost;
 
-    // Hồi lượt chơi
     if (!userData.gamePlays[data.gameId]) {
         userData.gamePlays[data.gameId] = { count: 0, firstPlayDate: null };
     }
     userData.gamePlays[data.gameId].count -= data.amount;
 
-    // Kiểm tra thăng cấp VIP
     const newVipLevel = getVipLevel(userData.totalSpent);
     if (newVipLevel > oldVipLevel) {
         const vipName = VIP_CONFIG[newVipLevel].label;
         addNotification("🎊 THĂNG CẤP VIP", `Chúc mừng cư dân ưu tú! Tiếp tế lượt chơi đã giúp bạn thăng hạng lên [${vipName}].`, false);
     }
 
-    // Ghi lịch sử giao dịch (Hiển thị rõ tổng tiền)
     userData.history.push({
         type: `Mua tiếp tế: ${data.gameName} (${data.amount} lượt)`,
         amount: `-${data.totalCost.toLocaleString()} VNĐ`,
         date: vnNow
     });
 
-    // Thông báo chuông (silent để Henry mau chóng quay lại chơi)
     addNotification("🎫 TIẾP TẾ LƯỢT CHƠI", `Cấp lượt cho [${data.gameName}] thành công. (Gồm ${data.extraFee.toLocaleString()}đ phụ thu)`, true);
     
-    // Lưu dữ liệu và cập nhật giao diện sảnh
     saveData();
     updateUI();
     updateGameLimitsUI();
     
-    // Đóng modal và reset
-    closeExtraConfirmModal();
-    alert(`✨ TIẾP TẾ THÀNH CÔNG!\n[${data.gameName}] đã được cộng ${data.amount} lượt. Chiến ngay Henry ơi!`);
+    // --- 2. Cập nhật nội dung cho Popup Hóa Đơn ---
+    document.getElementById('invoice-date').innerText = `Ngày: ${vnNow}`;
+    document.getElementById('invoice-game-name').innerText = data.gameName;
+    document.getElementById('invoice-amount').innerText = `+${data.amount} Lượt`;
+    document.getElementById('invoice-id').innerText = Math.floor(1000 + Math.random() * 9000);
+    document.getElementById('invoice-base-price').innerText = `${(data.totalCost - data.extraFee).toLocaleString()} VNĐ`;
+    document.getElementById('invoice-extra-fee').innerText = `+${data.extraFee.toLocaleString()} VNĐ`;
+    document.getElementById('invoice-total').innerText = `${data.totalCost.toLocaleString()} VNĐ`;
+
+    // --- 3. Hiển thị hóa đơn thành công ---
+    closeExtraConfirmModal(); // Đóng modal chọn mua
+    document.getElementById('modal-invoice-success').style.display = 'flex';
 }
 
+// Hàm lưu hóa đơn thành hình ảnh
+function downloadInvoice(btn) {
+    const area = document.getElementById('invoice-capture-area');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ĐANG TẠO...';
+    
+    html2canvas(area, {
+        backgroundColor: null,
+        scale: 2, // Tăng chất lượng ảnh khi lưu
+        logging: false
+    }).then(canvas => {
+        const link = document.createElement('a');
+        link.download = `Sweetie_Invoice_${Date.now()}.png`;
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+        btn.innerHTML = originalText;
+    });
+}
+
+function closeInvoiceModal() {
+    document.getElementById('modal-invoice-success').style.display = 'none';
+}
 // 3. Hàm đóng Modal
 function closeExtraConfirmModal() {
     document.getElementById('modal-extra-confirm').style.display = 'none';
