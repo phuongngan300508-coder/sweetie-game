@@ -13993,41 +13993,55 @@ function executeExtraPurchase() {
     
 // Hàm lưu hóa đơn thành hình ảnh
 function downloadInvoice(btn) {
-    // Vùng chứa toàn bộ tờ biên lai (bao gồm cả phần bị khuất)
     const area = document.getElementById('invoice-capture-area');
-    const scrollArea = area.querySelector('.hide-scrollbar'); // Lấy vùng đang chứa thanh cuộn
-    
     const originalText = btn.innerHTML;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ĐANG TẠO...';
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ĐANG XỬ LÝ...';
 
-    // Kỹ thuật chụp trọn vẹn: 
-    // Trước khi chụp, chúng ta tính toán toàn bộ chiều cao thực tế (scrollHeight)
+    // 1. Chuẩn bị: Đảm bảo mọi hình ảnh/font đã tải xong
+    // 2. Chụp với cấu hình tối ưu để tránh khoảng trắng
     html2canvas(area, {
-        backgroundColor: "#ffffff", // Đảm bảo nền trắng sạch sẽ
-        scale: 3,                   // Tăng độ nét lên mức cực cao (3x)
+        backgroundColor: "#ffffff",
+        scale: 2, 
+        useCORS: true, 
+        allowTaint: false,
         logging: false,
-        useCORS: true,              // Hỗ trợ nếu Henry có dùng ảnh từ link ngoài
-        allowTaint: true,
-        // Cấu hình quan trọng để chụp xuyên thanh cuộn:
-        height: area.scrollHeight,  
+        // Ép html2canvas chụp toàn bộ chiều cao nội dung (scrollHeight)
+        height: area.scrollHeight,
         windowHeight: area.scrollHeight,
+        // Xử lý trước khi chụp để gỡ bỏ giới hạn thanh cuộn trong bản sao
         onclone: (clonedDoc) => {
-            // Khi clone để chụp, chúng ta ép vùng cuộn phải hiển thị hết
-            const clonedScrollArea = clonedDoc.querySelector('.hide-scrollbar');
-            if (clonedScrollArea) {
-                clonedScrollArea.style.maxHeight = 'none';
-                clonedScrollArea.style.overflow = 'visible';
+            const clonedArea = clonedDoc.getElementById('invoice-capture-area');
+            const clonedScroll = clonedArea.querySelector('.hide-scrollbar');
+            
+            if (clonedScroll) {
+                clonedScroll.style.maxHeight = 'none'; // Gỡ bỏ giới hạn chiều cao
+                clonedScroll.style.overflow = 'visible'; // Hiện toàn bộ nội dung
+                clonedScroll.style.paddingBottom = '20px'; 
             }
+            // Đảm bảo răng cưa dưới vẫn nằm đúng vị trí cuối cùng
+            clonedArea.style.height = 'auto';
         }
     }).then(canvas => {
-        const link = document.createElement('a');
-        link.download = `Sweetie_Invoice_${Date.now()}.png`;
-        link.href = canvas.toDataURL("image/png");
-        link.click();
+        // 3. Chuyển đổi thành hình ảnh và tải về
+        try {
+            const imgData = canvas.toDataURL("image/png");
+            const link = document.createElement('a');
+            link.download = `Sweetie_Invoice_${Date.now()}.png`;
+            link.href = imgData;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } catch (err) {
+            console.error("Lỗi lưu hình:", err);
+            alert("❌ Lỗi lưu hình: Bạn thử chụp màn hình thủ công nhé!");
+        }
+        btn.innerHTML = originalText;
+    }).catch(err => {
+        console.error("Lỗi Canvas:", err);
         btn.innerHTML = originalText;
     });
 }
-
+    
 function closeInvoiceModal() {
     document.getElementById('modal-invoice-success').style.display = 'none';
 }
