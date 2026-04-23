@@ -6718,23 +6718,23 @@ input[type="date"].sweetie-input-style {
     gap: 8px; /* Khoảng cách giữa icon và chữ */
 }
 
-    /* Hiệu ứng mã vạch in nhiệt */
+   /* Container mã vạch */
 .barcode-container {
     width: 100%;
-    height: 50px;
-    margin: 15px 0 5px 0;
-    /* Tạo vân giấy in nhiệt nhẹ cho mã vạch */
-    filter: contrast(150%) brightness(90%);
-    display: flex;
+    display: flex; /* Kích hoạt flexbox */
+    flex-direction: column;
+    align-items: center; /* Căn giữa theo chiều ngang */
     justify-content: center;
+    margin: 15px 0 5px 0;
 }
 
+/* Vùng vẽ mã vạch */
 #invoice-barcode-pixel {
-    width: 80%;
-    height: 100%;
-    /* Gradient này sẽ được thay đổi bằng JS */
-    background: #333; 
-    mask-image: linear-gradient(to right, #000 70%, transparent 70%);
+    width: 180px; /* Độ rộng cố định của mã vạch */
+    height: 45px;
+    /* Hiệu ứng in nhiệt nhòe nhẹ */
+    filter: contrast(180%) blur(0.2px);
+    transition: all 0.5s ease; /* Hiệu ứng đổi mã mượt mà */
 }
 </style>
 </head>
@@ -9468,7 +9468,7 @@ input[type="date"].sweetie-input-style {
         <div id="invoice-barcode-pixel"></div>
     </div>
     <div style="font-size: 0.6em; letter-spacing: 3px; opacity: 0.5; font-weight: bold; margin-bottom: 10px;">
-        * SWT-<span id="invoice-id-barcode">0000</span> *
+        SWT-<span id="invoice-id-barcode">0000</span>
     </div>
 </div>
                 </div> 
@@ -13949,37 +13949,41 @@ function executeExtraPurchase() {
     
     // --- 2. Cập nhật nội dung cho Popup Hóa Đơn ---
     const invoiceId = Math.floor(1000 + Math.random() * 9000); // Tạo ID giao dịch
+    const idStr = invoiceId.toString();
 
     document.getElementById('invoice-date').innerText = `Ngày: ${vnNow}`;
     document.getElementById('invoice-game-name').innerText = data.gameName;
     document.getElementById('invoice-amount').innerText = `+${data.amount} Lượt`;
     document.getElementById('invoice-id').innerText = invoiceId;
+    document.getElementById('invoice-id-barcode').innerText = invoiceId; // Cập nhật text dưới mã vạch
     document.getElementById('invoice-base-price').innerText = `${(data.totalCost - data.extraFee).toLocaleString()} VNĐ`;
     document.getElementById('invoice-extra-fee').innerText = `+${data.extraFee.toLocaleString()} VNĐ`;
     document.getElementById('invoice-total').innerText = `${data.totalCost.toLocaleString()} VNĐ`;
 
-    // --- LOGIC TẠO MÃ VẠCH "THẬT" THEO MÃ GIAO DỊCH ---
-    // Sử dụng các con số trong ID để tạo độ thưa dày khác nhau
-    const s1 = (invoiceId % 4) + 1;  // Vạch đen 1
-    const s2 = (invoiceId % 3) + 2;  // Khoảng trắng
-    const s3 = (invoiceId % 5) + 1;  // Vạch đen 2
-    const s4 = (invoiceId % 2) + 1;  // Khoảng trắng nhỏ
+    // --- LOGIC TẠO MÃ VẠCH "THẬT" KẾT NỐI VỚI ID GIAO DỊCH ---
+    // Băm nhỏ ID để tạo các thông số độ dày (s) và khoảng cách (k)
+    const s1 = (parseInt(idStr[0]) % 3) + 1;
+    const k1 = (parseInt(idStr[1]) % 2) + 1;
+    const s2 = (parseInt(idStr[2]) % 4) + 1;
+    const k2 = (parseInt(idStr[3]) % 2) + 1;
     
     const barcodeArea = document.getElementById('invoice-barcode-pixel');
     if (barcodeArea) {
+        // Căn giữa mã vạch bằng cách dùng margin auto trong style
+        barcodeArea.style.margin = "0 auto";
         barcodeArea.style.background = `repeating-linear-gradient(
             90deg,
-            #222 0px,
-            #222 ${s1}px,
+            #111 0px,
+            #111 ${s1}px,
             transparent ${s1}px,
-            transparent ${s1 + s2}px,
-            #222 ${s1 + s2}px,
-            #222 ${s1 + s2 + s3}px,
-            transparent ${s1 + s2 + s3}px,
-            transparent ${s1 + s2 + s3 + s4}px
+            transparent ${s1 + k1}px,
+            #111 ${s1 + k1}px,
+            #111 ${s1 + k1 + s2}px,
+            transparent ${s1 + k1 + s2}px,
+            transparent ${s1 + k1 + s2 + k2}px
         )`;
-        // Thêm độ tương phản cao để trông giống mực in nhiệt
-        barcodeArea.style.filter = "contrast(200%) grayscale(100%)";
+        // Độ tương phản cao để giống mực nhiệt bám giấy
+        barcodeArea.style.filter = "contrast(150%) grayscale(100%) blur(0.2px)";
     }
 
     // --- 3. Hiển thị hóa đơn thành công ---
