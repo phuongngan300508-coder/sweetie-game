@@ -6962,11 +6962,35 @@ input[type="date"].sweetie-input-style {
     margin-top: 10px;
 }
 
+/* Khống chế độ cao và ẩn thanh cuộn cho danh sách bình luận */
+[id^="comments-list-"] {
+    max-height: 200px;         /* Giới hạn độ cao tối đa (khoảng 3-4 bình luận) */
+    overflow-y: auto;          /* Cho phép cuộn dọc khi vượt quá độ cao */
+    padding-right: 5px;
+    margin-bottom: 10px;
+    
+    /* Ẩn thanh cuộn cho Firefox */
+    scrollbar-width: none; 
+    /* Ẩn thanh cuộn cho IE và Edge cũ */
+    -ms-overflow-style: none; 
+}
+
+/* Ẩn thanh cuộn cho Chrome, Safari và Edge mới */
+[id^="comments-list-"]::-webkit-scrollbar {
+    display: none;
+    width: 0 !important;
+    height: 0 !important;
+}
+
+/* Căn chỉnh lại từng mục bình luận cho xinh */
 .comment-item {
-    font-size: 0.85rem;
-    margin-bottom: 5px;
-    padding: 5px;
-    border-bottom: 1px dashed #ffd1dc;
+    font-size: 0.8rem;
+    margin-bottom: 6px;
+    padding: 8px 12px;
+    background: #fff3f5;      /* Màu hồng cực nhạt */
+    border-radius: 12px;      /* Bo góc tròn trịa */
+    line-height: 1.4;
+    word-break: break-word;   /* Tránh việc văn bản quá dài làm tràn khung */
 }
 
 .comment-user { font-weight: bold; color: #d81b60; margin-right: 5px; }
@@ -23437,7 +23461,7 @@ function listenToPosts() {
                 if (post.comments) {
                     Object.values(post.comments).forEach(c => {
                         commentsHTML += `
-                            <div class="comment-item" style="font-size:0.8rem; margin-bottom:5px; padding:5px; background:#fff3f5; border-radius:10px;">
+                            <div class="comment-item" style="font-size:0.8rem; margin-bottom:5px; padding:8px 12px; background:#fff3f5; border-radius:12px; line-height:1.4;">
                                 <strong style="color:#d81b60;">${c.username}:</strong> ${c.text}
                             </div>`;
                     });
@@ -23465,12 +23489,19 @@ function listenToPosts() {
                         </div>
 
                         <div class="comment-section" style="background: #fff9fa; border-radius: 10px; padding: 8px; margin-top: 5px;">
-                            <div id="comments-list-${post.id}">${commentsHTML}</div>
+                            <div id="comments-list-${post.id}" style="max-height: 180px; overflow-y: auto; scrollbar-width: none; -ms-overflow-style: none;">
+                                ${commentsHTML}
+                            </div>
+                            
+                            <style>
+                                #comments-list-${post.id}::-webkit-scrollbar { display: none; }
+                            </style>
+
                             <div class="comment-input-group" style="display:flex; gap:5px; margin-top:8px;">
                                 <input type="text" id="comment-input-${post.id}" placeholder="Viết bình luận..." 
                                     style="flex:1; border:1px solid #ffc1cc; border-radius:15px; padding:5px 12px; font-size:0.8rem; outline:none;">
                                 <button onclick="submitComment('${post.id}')" 
-                                    style="background:#ff8fab; color:white; border:none; border-radius:15px; padding:4px 12px; font-size:0.75rem; cursor:pointer;">
+                                    style="background:#ff8fab; color:white; border:none; border-radius:15px; padding:4px 12px; font-size:0.75rem; cursor:pointer; font-weight:bold;">
                                     Gửi
                                 </button>
                             </div>
