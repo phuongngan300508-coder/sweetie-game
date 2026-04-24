@@ -23480,7 +23480,8 @@ async function selectSavedAccount(stk, name) {
     }
 }
     
-// 1. Hàm Đăng Bài
+// 1. Hàm Đăng Bài (Đã sửa đổi phần render comment để hỗ trợ đa cấp)
+// 1. Hàm Đăng Bài (Đã cập nhật cơ chế giới hạn thụt lề đa cấp)
 let isListingPosts = false; 
 
 function listenToPosts() {
@@ -23519,58 +23520,59 @@ function listenToPosts() {
                 const reactionCount = post.reactions ? Object.keys(post.reactions).length : 0;
                 const hasLiked = post.reactions && post.reactions[myUid];
                 
-                let commentsHTML = "";
-                if (post.comments) {
-                    Object.keys(post.comments).forEach(commentId => {
-                        const c = post.comments[commentId];
+                // --- HÀM ĐỆ QUY NỘI BỘ ĐỂ RENDER COMMENT ĐA CẤP ---
+                const renderNestedComments = (allComments, parentId = null, level = 0) => {
+                    let html = "";
+                    if (!allComments) return html;
+
+                    const children = Object.keys(allComments)
+                        .map(id => ({ id, ...allComments[id] }))
+                        .filter(c => (parentId === null ? !c.parentId : c.parentId === parentId))
+                        .sort((a, b) => a.timestamp - b.timestamp);
+
+                    children.forEach(c => {
                         const isMyComment = c.uid === myUid;
+
+                        // TÍNH TOÁN THỤT LỀ: Giới hạn tối đa thụt lề ở level 3 (tương đương 60px)
+                        // Nếu level > 0 thì mới bắt đầu tính thụt lề (margin-left: 20px)
+                        const marginLeft = (level > 0 && level <= 3) ? 20 : 0;
                         
-                        // --- XỬ LÝ REPLY (PHẢN HỒI) ---
-                        let repliesHTML = "";
-                        if (c.replies) {
-                            Object.keys(c.replies).forEach(replyId => {
-                                const r = c.replies[replyId];
-                                const isMyReply = r.uid === myUid;
-                                repliesHTML += `
-                                    <div class="reply-item" style="font-size:0.75rem; margin-top:5px; padding:6px 10px; background:#fff; border-radius:10px; border-left:3px solid #ffb3c1; position:relative;">
-                                        <strong style="color:#d81b60;">${r.username}:</strong> ${r.text}
-                                        <div style="margin-top:4px; display:flex; gap:10px;">
-                                            <span onclick="showReplyInput('${commentId}', '${r.username}')" style="color:#ff8fab; cursor:pointer; font-weight:bold;">Trả lời</span>
-                                            ${isMyReply ? `<i class="fas fa-trash" onclick="deleteReply('${post.id}', '${commentId}', '${replyId}')" style="position:absolute; right:8px; top:8px; color:#ffc1cc; cursor:pointer; font-size:0.6rem;"></i>` : ''}
-                                        </div>
-                                    </div>`;
-                            });
-                        }
-                        
-                        commentsHTML += `
-                            <div class="comment-wrapper" style="margin-bottom:12px;">
-                                <div class="comment-item" style="font-size:0.8rem; padding:8px 12px; background:#fff3f5; border-radius:12px; line-height:1.4; position:relative; display:flex; justify-content:space-between; align-items:flex-start;">
+                        // Đường kẻ chỉ hiện từ level 1 đến level 3
+                        const borderLeft = (level > 0 && level <= 3) ? "1px dashed #ffc1cc" : "none";
+                        const paddingLeft = (level > 0 && level <= 3) ? 10 : 0;
+
+                        html += `
+                            <div class="comment-wrapper" style="margin-left:${marginLeft}px; margin-top:8px; border-left:${borderLeft}; padding-left:${paddingLeft}px;">
+                                <div class="comment-item" style="font-size:0.8rem; padding:8px 12px; background:${level === 0 ? '#fff3f5' : '#fff'}; border-radius:12px; line-height:1.4; position:relative; display:flex; justify-content:space-between; align-items:flex-start; border: ${level > 0 ? '1px solid #fff3f5' : 'none'}">
                                     <div style="flex:1;">
                                         <strong style="color:#d81b60;">${c.username}:</strong> <span>${c.text}</span>
                                         <div style="margin-top:4px;">
-                                            <span onclick="showReplyInput('${commentId}', '${c.username}')" style="color:#ff8fab; font-size:0.7rem; cursor:pointer; font-weight:bold; text-decoration:underline;">Trả lời</span>
+                                            <span onclick="showReplyInput('${c.id}', '${c.username}')" style="color:#ff8fab; font-size:0.7rem; cursor:pointer; font-weight:bold; text-decoration:underline;">Trả lời</span>
                                         </div>
                                     </div>
                                     ${isMyComment ? `
                                         <div class="status-dropdown" style="margin-left:5px;">
-                                            <i class="fas fa-ellipsis-h" onclick="toggleStatusMenu(event, 'menu-comm-${commentId}')" style="color:#ffb3c1; cursor:pointer; font-size:0.7rem; padding:2px;"></i>
-                                            <div id="menu-comm-${commentId}" class="status-menu-content" style="display:none; position:absolute; right:0; background:white; box-shadow:0 2px 10px rgba(0,0,0,0.1); border-radius:8px; z-index:100; min-width:80px;">
-                                                <div onclick="editComment('${post.id}', '${commentId}', \`${c.text.replace(/`/g, '\\`').replace(/\n/g, '\\n')}\`)" style="padding:8px 12px; cursor:pointer; color:#444; font-size:0.7rem; border-bottom:1px solid #fff3f5;"><i class="fas fa-edit"></i> Sửa</div>
-                                                <div onclick="deleteComment('${post.id}', '${commentId}')" style="padding:8px 12px; cursor:pointer; color:#ff4d4d; font-size:0.7rem;"><i class="fas fa-trash"></i> Xóa</div>
+                                            <i class="fas fa-ellipsis-h" onclick="toggleStatusMenu(event, 'menu-comm-${c.id}')" style="color:#ffb3c1; cursor:pointer; font-size:0.7rem; padding:2px;"></i>
+                                            <div id="menu-comm-${c.id}" class="status-menu-content" style="display:none; position:absolute; right:0; background:white; box-shadow:0 2px 10px rgba(0,0,0,0.1); border-radius:8px; z-index:100; min-width:80px;">
+                                                <div onclick="editComment('${post.id}', '${c.id}', \`${c.text.replace(/`/g, '\\`').replace(/\n/g, '\\n')}\`)" style="padding:8px 12px; cursor:pointer; color:#444; font-size:0.7rem; border-bottom:1px solid #fff3f5;"><i class="fas fa-edit"></i> Sửa</div>
+                                                <div onclick="deleteComment('${post.id}', '${c.id}')" style="padding:8px 12px; cursor:pointer; color:#ff4d4d; font-size:0.7rem;"><i class="fas fa-trash"></i> Xóa</div>
                                             </div>
                                         </div>` : ''}
                                 </div>
-                                
-                                <div class="replies-list" style="margin-left:25px; border-left: 1px dashed #ffc1cc; padding-left:10px;">
-                                    ${repliesHTML}
-                                    <div id="reply-box-${commentId}" style="display:none; margin-top:5px; gap:5px;">
-                                        <input type="text" id="input-reply-${commentId}" placeholder="Viết phản hồi..." style="flex:1; border:1px solid #ffe4e8; border-radius:10px; padding:4px 10px; font-size:0.7rem; outline:none;">
-                                        <button onclick="submitReply('${post.id}', '${commentId}')" style="background:#ff8fab; color:white; border:none; border-radius:10px; padding:2px 8px; font-size:0.7rem; cursor:pointer;">Gửi</button>
-                                    </div>
+                                <div id="reply-box-${c.id}" style="display:none; margin-top:5px; gap:5px; margin-left:10px;">
+                                    <input type="text" id="input-reply-${c.id}" placeholder="Viết phản hồi..." style="flex:1; border:1px solid #ffe4e8; border-radius:10px; padding:4px 10px; font-size:0.7rem; outline:none;">
+                                    <button onclick="submitReply('${post.id}', '${c.id}')" style="background:#ff8fab; color:white; border:none; border-radius:10px; padding:2px 8px; font-size:0.7rem; cursor:pointer;">Gửi</button>
+                                </div>
+                                <div class="replies-container">
+                                    ${renderNestedComments(allComments, c.id, level + 1)}
                                 </div>
                             </div>`;
                     });
-                }
+                    return html;
+                };
+
+                const commentsHTML = renderNestedComments(post.comments);
+                // --- KẾT THÚC PHẦN XỬ LÝ COMMENT ---
 
                 const isMyPost = post.uid === myUid;
 
@@ -23606,7 +23608,7 @@ function listenToPosts() {
                             </button>
                         </div>
                         <div class="comment-section" style="background: #fff9fa; border-radius: 10px; padding: 8px; margin-top: 5px;">
-                            <div id="comments-list-${post.id}" style="max-height: 180px; overflow-y: auto; scrollbar-width: none; -ms-overflow-style: none;">
+                            <div id="comments-list-${post.id}" style="max-height: 350px; overflow-y: auto; scrollbar-width: none; -ms-overflow-style: none;">
                                 ${commentsHTML}
                             </div>
                             <style>#comments-list-${post.id}::-webkit-scrollbar { display: none; }</style>
@@ -23622,7 +23624,7 @@ function listenToPosts() {
         });
     });
 }
-
+    
    // Hiện/Ẩn ô nhập phản hồi và tự động tag tên cư dân
 function showReplyInput(commentId, tagUser) {
     // 1. Tìm khung chứa ô nhập (đã đồng bộ ID với hàm listenToPosts)
@@ -23662,42 +23664,43 @@ function showReplyInput(commentId, tagUser) {
     }
 }
 
-// Gửi phản hồi
-// Gửi phản hồi
+// Gửi phản hồi (Đã sửa để hỗ trợ đa cấp lồng nhau)
 async function submitReply(postId, commentId) {
     const replyInput = document.getElementById(`input-reply-${commentId}`);
-    if (!replyInput) return; // Bảo vệ nếu không tìm thấy input
+    if (!replyInput) return; 
 
     const text = replyInput.value.trim();
     if (!text) return;
 
+    // Cấu trúc dữ liệu mới: Thêm parentId thay vì lồng sâu vào replies
     const replyData = {
         uid: userData.profile.uid,
         username: userData.profile.name,
         text: text,
+        parentId: commentId, // Quan trọng: Đánh dấu comment này là con của commentId
         timestamp: firebase.database.ServerValue.TIMESTAMP
     };
 
     try {
-        // Gửi dữ liệu lên Firebase
-        await firebase.database().ref(`posts/${postId}/comments/${commentId}/replies`).push(replyData);
+        // Gửi dữ liệu lên thẳng nút 'comments' (không dùng nút 'replies' cũ)
+        await firebase.database().ref(`posts/${postId}/comments`).push(replyData);
         
         // Xóa nội dung ô nhập sau khi gửi thành công
         replyInput.value = "";
         
-        // SỬA TẠI ĐÂY: Đổi từ reply-input-box thành reply-box cho khớp với HTML
+        // Đóng khung nhập phản hồi
         const box = document.getElementById(`reply-box-${commentId}`);
         if (box) {
             box.style.display = 'none';
         }
         
-        console.log("Đã gửi phản hồi thành công! ✨");
+        console.log("Đã gửi phản hồi đa cấp thành công! ✨");
     } catch (e) {
         console.error("Lỗi khi phản hồi:", e);
         alert("Lỗi khi phản hồi: " + e.message);
     }
 }
-
+    
 // Xóa phản hồi
 function deleteReply(postId, commentId, replyId) {
     if (confirm("Xóa phản hồi này nhé? 💖")) {
