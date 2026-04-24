@@ -23504,8 +23504,10 @@ function listenToPosts() {
                         <div class="post-header" style="position:relative; display:flex; justify-content:space-between; align-items:flex-start;">
                             <div>
                                 <div class="post-user">💖 ${post.username}</div>
-                                <div class="post-time">${new Date(post.timestamp).toLocaleString('vi-VN')}</div>
-                                <span class="post-privacy-icon">${getPrivacyIcon(post.privacy)}</span>
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <div class="post-time" style="margin-bottom: 0;">${new Date(post.timestamp).toLocaleString('vi-VN')}</div>
+                                    <span class="post-privacy-icon" style="font-size: 0.75rem; color: #ffb3c1;">${getPrivacyIcon(post.privacy)}</span>
+                                </div>
                             </div>
                             
                             ${isMyPost ? `
@@ -23556,7 +23558,7 @@ function listenToPosts() {
         });
     });
 }
-
+    
 // --- HÀM BỔ TRỢ CHO MENU ---
 function toggleStatusMenu(event, menuId) {
     event.stopPropagation();
