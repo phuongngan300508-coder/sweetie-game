@@ -23495,9 +23495,13 @@ function listenToPosts() {
 
         postsContainer.innerHTML = ""; 
         
+        // --- SỬA LOGIC LẤY BẠN BÈ ĐỂ KHỚP VỚI HÀM ACCEPTFRIEND ---
+        const myUsername = userData.profile.name; 
         const myUid = userData.profile.uid;
-        const myFriendsSnap = await firebase.database().ref(`friendships/${myUid}`).once('value');
-        const myFriends = myFriendsSnap.val() || {};
+        
+        // Lấy danh sách bạn bè từ nhánh users theo đúng logic của hàm acceptFriend
+        const myFriendsSnap = await firebase.database().ref(`users/${myUsername}/friends`).once('value');
+        const myFriends = myFriendsSnap.val() || {}; 
 
         const postsArray = [];
         snapshot.forEach((child) => {
@@ -23507,7 +23511,7 @@ function listenToPosts() {
         postsArray.reverse().forEach((post) => {
             let showThisPost = false;
 
-            // --- LOGIC KIỂM TRA QUYỀN XEM BÀI VIẾT ---
+            // --- LOGIC KIỂM TRA QUYỀN XEM BÀI VIẾT (ĐÃ FIX CHO BẠN BÈ) ---
             if (post.privacy === 'public') {
                 showThisPost = true;
             } 
@@ -23515,8 +23519,8 @@ function listenToPosts() {
                 showThisPost = true;
             } 
             else if (post.privacy === 'friends') {
-                // Chỉ hiện nếu UID của người đăng nằm trong danh sách bạn bè của tôi
-                if (myFriends && myFriends[post.uid]) {
+                // Kiểm tra xem username của người đăng có nằm trong danh sách bạn bè của mình không
+                if (myFriends && myFriends[post.username]) {
                     showThisPost = true;
                 }
             }
