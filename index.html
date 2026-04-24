@@ -23204,8 +23204,17 @@ async function handlePostStatus() {
     const text = document.getElementById('status-text').value;
     const privacy = document.getElementById('status-privacy').value;
     
-    // Giả sử bạn đã lưu thông tin user trong biến global currentUser
-    if(!currentUser || !text.trim()) return;
+    // Kiểm tra xem đã đăng nhập chưa và biến currentUser có tồn tại không
+    // Lưu ý: Hãy đảm bảo bạn dùng đúng tên biến người dùng của app bạn (ví dụ: userData)
+    if (!currentUser || !currentUser.uid) {
+        alert("Bạn cần đăng nhập để thực hiện tính năng này! 💖");
+        return;
+    }
+
+    if (!text.trim()) {
+        alert("Nội dung không được để trống nè!");
+        return;
+    }
 
     const newPost = {
         uid: currentUser.uid,
@@ -23220,7 +23229,8 @@ async function handlePostStatus() {
         document.getElementById('status-text').value = "";
         alert("Đã đăng bài thành công! ✨");
     } catch (e) {
-        console.error(e);
+        console.error("Lỗi đăng bài:", e);
+        alert("Có lỗi xảy ra, thử lại sau nhé!");
     }
 }
 
