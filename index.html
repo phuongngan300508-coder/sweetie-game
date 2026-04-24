@@ -6872,16 +6872,21 @@ input[type="date"].sweetie-input-style {
 
 /* Phần nội dung bài đăng có thể cuộn */
 .status-scrollable-content {
-    flex-grow: 1; /* Chiếm toàn bộ phần còn lại của màn hình */
-    overflow-y: auto; /* Kích hoạt cuộn dọc */
+    flex-grow: 1;
+    overflow-y: auto; /* Vẫn cho phép cuộn dọc */
     padding-bottom: 20px;
-    /* Làm mượt thanh cuộn trên mobile */
-    -webkit-overflow-scrolling: touch; 
+    -webkit-overflow-scrolling: touch; /* Giúp cuộn mượt trên iPhone/Android */
+    
+    /* Ẩn thanh cuộn cho trình duyệt Chrome, Safari và các trình duyệt dùng Webkit */
+    scrollbar-width: none; /* Cho Firefox */
+    -ms-overflow-style: none; /* Cho Internet Explorer và Edge cũ */
 }
 
-/* Tùy chỉnh thanh cuộn cho đẹp (hồng pastel) */
+/* Ẩn thanh cuộn cụ thể cho Chrome/Safari/Edge mới */
 .status-scrollable-content::-webkit-scrollbar {
-    width: 5px;
+    display: none;
+    width: 0 !important;
+    height: 0 !important;
 }
 .status-scrollable-content::-webkit-scrollbar-thumb {
     background: #ffb3c1;
