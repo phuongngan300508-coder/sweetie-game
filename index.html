@@ -6844,6 +6844,49 @@ input[type="date"].sweetie-input-style {
 .post-user { font-weight: bold; color: #d81b60; }
 .post-time { font-size: 0.7rem; color: #aaa; }
 .post-privacy-icon { font-size: 0.75rem; color: #ff8fab; margin-left: 5px; }
+
+    /* Thiết lập cho Tab Status thành một khối chứa toàn màn hình */
+#tab-status.active {
+    display: flex !important;
+    flex-direction: column;
+    height: calc(100vh - 70px); /* Trừ đi chiều cao của thanh bottom-nav của bạn */
+    overflow: hidden; /* Ngăn toàn bộ tab bị cuộn */
+}
+
+/* Phần cố định phía trên */
+.status-fixed-header {
+    flex-shrink: 0; /* Không cho phép phần này bị co lại */
+    background: var(--bg-color); /* Màu nền app của bạn */
+    z-index: 10;
+}
+
+/* Tiêu đề ngăn cách nhỏ */
+.status-divider {
+    text-align: center;
+    font-size: 0.8rem;
+    color: #ff8fab;
+    padding: 10px 0;
+    font-weight: bold;
+    background: linear-gradient(to right, transparent, #ffe4e8, transparent);
+}
+
+/* Phần nội dung bài đăng có thể cuộn */
+.status-scrollable-content {
+    flex-grow: 1; /* Chiếm toàn bộ phần còn lại của màn hình */
+    overflow-y: auto; /* Kích hoạt cuộn dọc */
+    padding-bottom: 20px;
+    /* Làm mượt thanh cuộn trên mobile */
+    -webkit-overflow-scrolling: touch; 
+}
+
+/* Tùy chỉnh thanh cuộn cho đẹp (hồng pastel) */
+.status-scrollable-content::-webkit-scrollbar {
+    width: 5px;
+}
+.status-scrollable-content::-webkit-scrollbar-thumb {
+    background: #ffb3c1;
+    border-radius: 10px;
+}
 </style>
 </head>
 <body>
@@ -7411,26 +7454,31 @@ input[type="date"].sweetie-input-style {
 </section>
 
 <main>
-  <div id="tab-status" class="tab-content" style="display:none;">
-    <div class="status-container">
-        <div class="status-card composer">
-            <div class="composer-header">
-                <i class="fas fa-pen-nib"></i> Đăng trạng thái mới
-            </div>
-            <textarea id="status-text" placeholder="Bạn đang nghĩ gì thế?"></textarea>
-            <div class="composer-footer">
-                <select id="status-privacy" class="status-select">
-                    <option value="public">🌎 Công khai</option>
-                    <option value="friends">👥 Bạn bè</option>
-                    <option value="private">🔒 Riêng tư</option>
-                </select>
-                <button onclick="handlePostStatus()" class="btn-send-status">
-                    <i class="fas fa-paper-plane"></i> Đăng
-                </button>
+  <div id="tab-status" class="tab-content" style="display:none; height: 100vh; flex-direction: column;">
+    <div class="status-fixed-header">
+        <div class="status-container" style="padding-bottom: 0;">
+            <div class="status-card composer">
+                <div class="composer-header">
+                    <i class="fas fa-pen-nib"></i> Đăng trạng thái mới
+                </div>
+                <textarea id="status-text" placeholder="Bạn đang nghĩ gì thế?"></textarea>
+                <div class="composer-footer">
+                    <select id="status-privacy" class="status-select">
+                        <option value="public">🌎 Công khai</option>
+                        <option value="friends">👥 Bạn bè</option>
+                        <option value="private">🔒 Riêng tư</option>
+                    </select>
+                    <button onclick="handlePostStatus()" class="btn-send-status">
+                        <i class="fas fa-paper-plane"></i> Đăng
+                    </button>
+                </div>
             </div>
         </div>
+        <div class="status-divider">Bản tin cư dân ✨</div>
+    </div>
 
-        <div id="status-list">
+    <div class="status-scrollable-content">
+        <div class="status-container" id="status-list">
             </div>
     </div>
 </div>
@@ -23206,35 +23254,27 @@ async function selectSavedAccount(stk, name) {
     `;
 }
 
-// 1. Hàm Đăng Bài
-async function handlePostStatus() {
-    // Thêm dòng này vào đầu hàm handlePostStatus
-const postBtn = document.querySelector('.btn-send-status');
-if (postBtn.disabled) return; // Nếu đang gửi thì không làm gì cả
-postBtn.disabled = true;
-postBtn.innerText = "Đang đăng...";
-
-// Sau khi push thành công hoặc thất bại thì trả lại nút:
-postBtn.disabled = false;
-postBtn.innerText = "Đăng";
-    
+    async function handlePostStatus() {
     const statusInput = document.getElementById('status-text');
+    const postBtn = document.querySelector('.btn-send-status');
     const text = statusInput.value.trim();
     const privacy = document.getElementById('status-privacy').value;
     
-    // 1. Kiểm tra đăng nhập (Sử dụng cấu trúc userData.profile.uid của bạn)
     if (!userData || !userData.profile || !userData.profile.uid) {
         alert("Bạn cần đăng nhập để thực hiện tính năng này! 💖");
         return;
     }
 
-    // 2. Kiểm tra nội dung trống
     if (!text) {
         alert("Nội dung không được để trống nè! ✨");
         return;
     }
 
-    // 3. Tạo cấu trúc dữ liệu bài đăng
+    // Khóa nút ngay lập tức
+    postBtn.disabled = true;
+    const originalText = postBtn.innerText;
+    postBtn.innerText = "Đang đăng...";
+
     const newPost = {
         uid: userData.profile.uid,
         username: userData.profile.name || "Cư dân Sweetie",
@@ -23244,44 +23284,41 @@ postBtn.innerText = "Đăng";
     };
 
     try {
-        // Vô hiệu hóa nút tạm thời để tránh bấm đăng 2 lần (spam)
-        const postBtn = document.querySelector('.btn-send-status');
-        if(postBtn) postBtn.disabled = true;
-
-        // 4. Đẩy dữ liệu lên Firebase
         await firebase.database().ref('posts').push(newPost);
-        
-        // 5. Thành công: Xóa khung nhập và thông báo
         statusInput.value = "";
-        alert("Đã đăng trạng thái thành công! ✨💖");
-
-        if(postBtn) postBtn.disabled = false;
-        
+        // Không cần gọi lại listenToPosts() ở đây vì hàm .on('value') ở dưới sẽ tự cập nhật khi có data mới
     } catch (e) {
         console.error("Lỗi đăng bài:", e);
-        alert("Có lỗi xảy ra khi kết nối Firebase, thử lại sau nhé!");
-        
-        const postBtn = document.querySelector('.btn-send-status');
-        if(postBtn) postBtn.disabled = false;
+        alert("Có lỗi xảy ra, thử lại sau nhé!");
+    } finally {
+        // Luôn mở lại nút dù thành công hay thất bại
+        postBtn.disabled = false;
+        postBtn.innerText = originalText;
     }
 }
+    
+// 1. Hàm Đăng Bài
+let isListingPosts = false; // Biến cờ toàn cục đặt ngoài hàm
 
-// 2. Hàm Lắng nghe và Hiển thị bài đăng (Realtime)
 function listenToPosts() {
+    // Nếu đang lắng nghe rồi thì không tạo thêm bộ lắng nghe nữa
+    if (isListingPosts) return; 
+
     const postsRef = firebase.database().ref('posts');
     
-    // Ngắt kết nối cũ (nếu có) để không bị nhận dữ liệu trùng lặp
-    postsRef.off(); 
+    // Đánh dấu đã bắt đầu lắng nghe
+    isListingPosts = true;
 
-    // Lắng nghe dữ liệu mới nhất (giới hạn 50 bài để app mượt hơn)
+    // Chỉ dùng 1 bộ lắng nghe duy nhất cho suốt phiên làm việc
     postsRef.orderByChild('timestamp').limitToLast(50).on('value', async (snapshot) => {
         const postsContainer = document.getElementById('status-list');
         if (!postsContainer) return;
 
-        postsContainer.innerHTML = ""; // Xóa sạch danh sách cũ trước khi render
+        // Xóa sạch để vẽ lại, tránh bị nhân đôi bài đăng cũ
+        postsContainer.innerHTML = ""; 
         
-        // Lấy danh sách bạn bè (nếu cần cho logic ẩn/hiện)
         const myUid = userData.profile.uid;
+        // Tối ưu: Lấy danh sách bạn bè 1 lần
         const myFriendsSnap = await firebase.database().ref(`friendships/${myUid}`).once('value');
         const myFriends = myFriendsSnap.val() || {};
 
