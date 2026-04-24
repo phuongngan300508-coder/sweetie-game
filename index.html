@@ -23641,8 +23641,11 @@ function showReplyInput(commentId) {
 }
 
 // Gửi phản hồi
+// Gửi phản hồi
 async function submitReply(postId, commentId) {
     const replyInput = document.getElementById(`input-reply-${commentId}`);
+    if (!replyInput) return; // Bảo vệ nếu không tìm thấy input
+
     const text = replyInput.value.trim();
     if (!text) return;
 
@@ -23654,10 +23657,21 @@ async function submitReply(postId, commentId) {
     };
 
     try {
+        // Gửi dữ liệu lên Firebase
         await firebase.database().ref(`posts/${postId}/comments/${commentId}/replies`).push(replyData);
+        
+        // Xóa nội dung ô nhập sau khi gửi thành công
         replyInput.value = "";
-        document.getElementById(`reply-input-box-${commentId}`).style.display = 'none';
+        
+        // SỬA TẠI ĐÂY: Đổi từ reply-input-box thành reply-box cho khớp với HTML
+        const box = document.getElementById(`reply-box-${commentId}`);
+        if (box) {
+            box.style.display = 'none';
+        }
+        
+        console.log("Đã gửi phản hồi thành công! ✨");
     } catch (e) {
+        console.error("Lỗi khi phản hồi:", e);
         alert("Lỗi khi phản hồi: " + e.message);
     }
 }
