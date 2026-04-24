@@ -23208,6 +23208,16 @@ async function selectSavedAccount(stk, name) {
 
 // 1. Hàm Đăng Bài
 async function handlePostStatus() {
+    // Thêm dòng này vào đầu hàm handlePostStatus
+const postBtn = document.querySelector('.btn-send-status');
+if (postBtn.disabled) return; // Nếu đang gửi thì không làm gì cả
+postBtn.disabled = true;
+postBtn.innerText = "Đang đăng...";
+
+// Sau khi push thành công hoặc thất bại thì trả lại nút:
+postBtn.disabled = false;
+postBtn.innerText = "Đăng";
+    
     const statusInput = document.getElementById('status-text');
     const text = statusInput.value.trim();
     const privacy = document.getElementById('status-privacy').value;
@@ -23258,39 +23268,48 @@ async function handlePostStatus() {
 
 // 2. Hàm Lắng nghe và Hiển thị bài đăng (Realtime)
 function listenToPosts() {
-    firebase.database().ref('posts').orderByChild('timestamp').on('value', async (snapshot) => {
+    const postsRef = firebase.database().ref('posts');
+    
+    // Ngắt kết nối cũ (nếu có) để không bị nhận dữ liệu trùng lặp
+    postsRef.off(); 
+
+    // Lắng nghe dữ liệu mới nhất (giới hạn 50 bài để app mượt hơn)
+    postsRef.orderByChild('timestamp').limitToLast(50).on('value', async (snapshot) => {
         const postsContainer = document.getElementById('status-list');
-        postsContainer.innerHTML = "";
+        if (!postsContainer) return;
+
+        postsContainer.innerHTML = ""; // Xóa sạch danh sách cũ trước khi render
         
-        // Lấy danh sách bạn bè của user hiện tại (để check chế độ bạn bè)
-        const myFriendsSnap = await firebase.database().ref(`friendships/${currentUser.uid}`).once('value');
+        // Lấy danh sách bạn bè (nếu cần cho logic ẩn/hiện)
+        const myUid = userData.profile.uid;
+        const myFriendsSnap = await firebase.database().ref(`friendships/${myUid}`).once('value');
         const myFriends = myFriendsSnap.val() || {};
 
+        const postsArray = [];
         snapshot.forEach((child) => {
-            const post = child.val();
+            postsArray.push({ id: child.key, ...child.val() });
+        });
+
+        // Đảo ngược mảng để bài mới nhất lên đầu
+        postsArray.reverse().forEach((post) => {
             let showThisPost = false;
 
-            // Logic lọc quyền xem
-            if (post.privacy === 'public') {
-                showThisPost = true; 
-            } else if (post.uid === currentUser.uid) {
-                showThisPost = true; // Luôn thấy bài của chính mình
-            } else if (post.privacy === 'friends' && myFriends[post.uid]) {
-                showThisPost = true; // Thấy nếu là bạn bè
-            }
+            if (post.privacy === 'public') showThisPost = true;
+            else if (post.uid === myUid) showThisPost = true;
+            else if (post.privacy === 'friends' && myFriends[post.uid]) showThisPost = true;
 
             if (showThisPost) {
                 const html = `
-                    <div class="status-card post-item">
+                    <div class="status-card post-item animate__animated animate__fadeIn">
                         <div class="post-header">
                             <div class="post-user">💖 ${post.username}</div>
-                            <div class="post-time">${new Date(post.timestamp).toLocaleString()}</div>
+                            <div class="post-time">${new Date(post.timestamp).toLocaleString('vi-VN')}</div>
                             <span class="post-privacy-icon">${getPrivacyIcon(post.privacy)}</span>
                         </div>
                         <div class="post-content">${post.content}</div>
                     </div>
                 `;
-                postsContainer.insertAdjacentHTML('afterbegin', html);
+                postsContainer.insertAdjacentHTML('beforeend', html);
             }
         });
     });
