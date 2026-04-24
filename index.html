@@ -23497,20 +23497,31 @@ function toggleReaction(postId) {
 function submitComment(postId) {
     const input = document.getElementById(`comment-input-${postId}`);
     const text = input.value.trim();
-    if (!text || !userData) return;
+    
+    // KIỂM TRA QUAN TRỌNG: userData phải tồn tại
+    if (!text || !userData || !userData.profile || !userData.profile.uid) {
+        alert("Bạn cần đăng nhập để bình luận! 💖");
+        return;
+    }
 
     const commentData = {
-        uid: userData.profile.uid,
-        username: userData.profile.name,
+        uid: userData.profile.uid, // Phải có cái này để khớp với Rules
+        username: userData.profile.name || "Cư dân",
         text: text,
         timestamp: firebase.database.ServerValue.TIMESTAMP
     };
 
-    firebase.database().ref(`posts/${postId}/comments`).push(commentData).then(() => {
-        input.value = "";
-    });
+    // Gửi lên Firebase
+    firebase.database().ref(`posts/${postId}/comments`).push(commentData)
+        .then(() => {
+            input.value = "";
+        })
+        .catch(err => {
+            console.error("Lỗi gửi bình luận:", err);
+            alert("Không có quyền bình luận, hãy kiểm tra lại Rules!");
+        });
 }
-
+    
 function getPrivacyIcon(p) {
     if(p === 'public') return '🌎';
     if(p === 'friends') return '👥';
