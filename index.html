@@ -7009,6 +7009,11 @@ input[type="date"].sweetie-input-style {
     font-size: 0.8rem;
     outline: none;
 }
+
+    .privacy-option:hover {
+        background: #ffe4e8 !important;
+        transform: scale(1.02);
+    }
 </style>
 </head>
 <body>
@@ -9810,6 +9815,43 @@ input[type="date"].sweetie-input-style {
                 <button onclick="closeEditModal()" style="background: #eee; color: #666; border: none; padding: 10px 20px; border-radius: 15px; cursor: pointer; font-weight: bold;">Hủy</button>
                 <button id="btn-save-edit" style="background: var(--pink-dark); color: white; border: none; padding: 10px 25px; border-radius: 15px; cursor: pointer; font-weight: bold; box-shadow: 0 4px 10px rgba(255, 143, 171, 0.3);">Lưu thay đổi ✨</button>
             </div>
+        </div>
+    </div>
+</div>
+
+    <div id="privacy-modal" class="modal-overlay" style="display:none; z-index: 2001;">
+    <div class="modal-content animate__animated animate__fadeInUp" style="max-width: 350px; border-radius: 25px; border: 3px solid #ffe4e8; background: #fff;">
+        <div class="modal-header" style="background: linear-gradient(45deg, #ff8fab, #ffb3c1); color: white; padding: 15px; border-radius: 20px 20px 0 0; text-align: center;">
+            <h3 style="margin:0; font-size: 1.1rem;"><i class="fas fa-lock"></i> Quyền riêng tư bài viết</h3>
+        </div>
+        <div class="modal-body" style="padding: 15px;">
+            <p style="text-align: center; color: #666; font-size: 0.9rem; margin-bottom: 15px;">Ai có thể xem bài viết này? ✨</p>
+            
+            <div class="privacy-option" onclick="confirmChangePrivacy('public')" style="display: flex; align-items: center; gap: 15px; padding: 12px; margin-bottom: 10px; border-radius: 15px; background: #fff9fa; cursor: pointer; transition: 0.3s; border: 1px solid #ffe4e8;">
+                <div style="width: 40px; height: 40px; border-radius: 50%; background: #ff8fab; color: white; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">🌎</div>
+                <div>
+                    <strong style="display: block; color: #d81b60; font-size: 0.95rem;">Công khai</strong>
+                    <small style="color: #999;">Bất kỳ cư dân nào cũng thấy</small>
+                </div>
+            </div>
+
+            <div class="privacy-option" onclick="confirmChangePrivacy('friends')" style="display: flex; align-items: center; gap: 15px; padding: 12px; margin-bottom: 10px; border-radius: 15px; background: #fff9fa; cursor: pointer; transition: 0.3s; border: 1px solid #ffe4e8;">
+                <div style="width: 40px; height: 40px; border-radius: 50%; background: #ffb3c1; color: white; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">👥</div>
+                <div>
+                    <strong style="display: block; color: #d81b60; font-size: 0.95rem;">Bạn bè</strong>
+                    <small style="color: #999;">Chỉ những người đã kết bạn</small>
+                </div>
+            </div>
+
+            <div class="privacy-option" onclick="confirmChangePrivacy('private')" style="display: flex; align-items: center; gap: 15px; padding: 12px; border-radius: 15px; background: #fff9fa; cursor: pointer; transition: 0.3s; border: 1px solid #ffe4e8;">
+                <div style="width: 40px; height: 40px; border-radius: 50%; background: #ced4da; color: white; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">🔒</div>
+                <div>
+                    <strong style="display: block; color: #d81b60; font-size: 0.95rem;">Riêng tư</strong>
+                    <small style="color: #999;">Chỉ mình tôi xem bài này</small>
+                </div>
+            </div>
+
+            <button onclick="closePrivacyModal()" style="width: 100%; margin-top: 15px; padding: 10px; border: none; background: #eee; color: #666; border-radius: 15px; cursor: pointer; font-weight: bold;">Đóng</button>
         </div>
     </div>
 </div>
@@ -23515,7 +23557,7 @@ ${isMyPost ? `
         <div id="menu-post-${post.id}" class="status-menu-content" style="display:none; position:absolute; right:0; background:white; box-shadow:0 2px 10px rgba(0,0,0,0.1); border-radius:10px; z-index:100; min-width:140px;">
             <div onclick="editPost('${post.id}', \`${post.content.replace(/`/g, '\\`').replace(/\n/g, '\\n')}\`)" style="padding:10px 15px; cursor:pointer; color:#444; font-size:0.8rem; border-bottom:1px solid #fff3f5;"><i class="fas fa-edit"></i> Chỉnh sửa nội dung</div>
             
-            <div onclick="changePostPrivacy('${post.id}', '${post.privacy}')" style="padding:10px 15px; cursor:pointer; color:#444; font-size:0.8rem; border-bottom:1px solid #fff3f5;"><i class="fas fa-lock"></i> Chỉnh sửa quyền riêng tư</div>
+           <div onclick="changePostPrivacy('${post.id}')" style="padding:10px 15px; cursor:pointer; color:#444; font-size:0.8rem; border-bottom:1px solid #fff3f5;"><i class="fas fa-lock"></i> Chỉnh sửa quyền riêng tư</div>
             
             <div onclick="deletePost('${post.id}')" style="padding:10px 15px; cursor:pointer; color:#ff4d4d; font-size:0.8rem;"><i class="fas fa-trash-alt"></i> Xóa bài</div>
         </div>
@@ -23561,31 +23603,32 @@ ${isMyPost ? `
     });
 }
 
-    async function changePostPrivacy(postId, currentPrivacy) {
-    // Henry có thể dùng prompt đơn giản hoặc làm Modal xịn như cái Edit
-    // Ở đây mình dùng prompt để Henry nắm logic trước nhé
-    const options = {
-        'public': '🌎 Công khai',
-        'friends': '👥 Bạn bè',
-        'private': '🔒 Riêng tư'
-    };
-    
-    const newPrivacy = prompt(
-        `Quyền hiện tại: ${options[currentPrivacy]}\nNhập quyền mới (public, friends, private):`, 
-        currentPrivacy
-    );
+    let targetPrivacyPostId = ''; // Biến lưu trữ ID bài đang chọn
 
-    if (newPrivacy && options[newPrivacy] && newPrivacy !== currentPrivacy) {
-        try {
-            await firebase.database().ref(`posts/${postId}`).update({
-                privacy: newPrivacy
-            });
-            addNotification("HỆ THỐNG", `Đã đổi bài đăng sang chế độ: ${options[newPrivacy]} ✨`);
-        } catch (e) {
-            alert("Lỗi khi đổi quyền: " + e.message);
-        }
-    } else if (newPrivacy && !options[newPrivacy]) {
-        alert("Lệnh không hợp lệ! Vui lòng nhập: public, friends hoặc private.");
+// Hàm 1: Mở Modal
+function changePostPrivacy(postId) {
+    targetPrivacyPostId = postId;
+    document.getElementById('privacy-modal').style.display = 'flex';
+}
+
+// Hàm 2: Đóng Modal
+function closePrivacyModal() {
+    document.getElementById('privacy-modal').style.display = 'none';
+}
+
+// Hàm 3: Gửi dữ liệu lên Firebase sau khi Henry click chọn
+async function confirmChangePrivacy(newPrivacy) {
+    if (!targetPrivacyPostId) return;
+
+    try {
+        await firebase.database().ref(`posts/${targetPrivacyPostId}`).update({
+            privacy: newPrivacy
+        });
+        
+        closePrivacyModal();
+        addNotification("HỆ THỐNG", "Đã cập nhật quyền xem bài đăng! ✨");
+    } catch (e) {
+        alert("Lỗi: " + e.message);
     }
 }
     
