@@ -6846,18 +6846,24 @@ input[type="date"].sweetie-input-style {
 .post-privacy-icon { font-size: 0.75rem; color: #ff8fab; margin-left: 5px; }
 
     /* Thiết lập cho Tab Status thành một khối chứa toàn màn hình */
+/* Đảm bảo Tab Status khi hiện lên sẽ chiếm đúng không gian còn lại */
 #tab-status.active {
-    display: flex !important;
+    display: flex !important; /* Kích hoạt Flexbox */
     flex-direction: column;
-    height: calc(100vh - 70px); /* Trừ đi chiều cao của thanh bottom-nav của bạn */
-    overflow: hidden; /* Ngăn toàn bộ tab bị cuộn */
+    /* Trừ đi chiều cao của bottom-nav (ví dụ 70px), nếu app bạn ko có nav dưới thì để 100vh */
+    height: calc(100dvh - 70px); 
+    width: 100%;
+    overflow: hidden; /* Không cho cả tab cuộn, chỉ cho vùng list cuộn */
+    position: fixed; /* Giữ cố định khung tab */
+    top: 0;
+    left: 0;
 }
 
 /* Phần cố định phía trên */
 .status-fixed-header {
-    flex-shrink: 0; /* Không cho phép phần này bị co lại */
-    background: var(--bg-color); /* Màu nền app của bạn */
-    z-index: 10;
+    flex-shrink: 0; 
+    background: #fff9fa; /* Màu hồng nhạt đặc trưng của bạn */
+    padding-top: 10px;
 }
 
 /* Tiêu đề ngăn cách nhỏ */
@@ -6870,24 +6876,22 @@ input[type="date"].sweetie-input-style {
     background: linear-gradient(to right, transparent, #ffe4e8, transparent);
 }
 
-/* Phần nội dung bài đăng có thể cuộn */
+/* Vùng cuộn */
 .status-scrollable-content {
-    flex-grow: 1;
-    overflow-y: auto; /* Vẫn cho phép cuộn dọc */
-    padding-bottom: 20px;
-    -webkit-overflow-scrolling: touch; /* Giúp cuộn mượt trên iPhone/Android */
+    flex: 1; /* Chiếm toàn bộ phần còn lại */
+    overflow-y: auto !important; /* Bắt buộc hiện thanh cuộn ngầm */
+    padding-bottom: 100px; /* Tạo khoảng trống dưới cùng để không bị che bởi nav */
+    -webkit-overflow-scrolling: touch;
     
-    /* Ẩn thanh cuộn cho trình duyệt Chrome, Safari và các trình duyệt dùng Webkit */
-    scrollbar-width: none; /* Cho Firefox */
-    -ms-overflow-style: none; /* Cho Internet Explorer và Edge cũ */
+    /* Ẩn thanh cuộn */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
 }
 
-/* Ẩn thanh cuộn cụ thể cho Chrome/Safari/Edge mới */
 .status-scrollable-content::-webkit-scrollbar {
     display: none;
-    width: 0 !important;
-    height: 0 !important;
 }
+    
 .status-scrollable-content::-webkit-scrollbar-thumb {
     background: #ffb3c1;
     border-radius: 10px;
@@ -7459,7 +7463,7 @@ input[type="date"].sweetie-input-style {
 </section>
 
 <main>
-  <div id="tab-status" class="tab-content" style="display:none; height: 100vh; flex-direction: column;">
+  <div id="tab-status" class="tab-content" style="display:none;">
     <div class="status-fixed-header">
         <div class="status-container" style="padding-bottom: 0;">
             <div class="status-card composer">
@@ -12398,8 +12402,7 @@ function handleZonePayment(zoneId) {
     // Gọi hàm khởi tạo ngay
     setTimeout(renderRestoreZones, 100);
     
-    // Hàm chuyển đổi Tab
-// --- HÀM CHUYỂN ĐỔI TAB (ĐÃ FIX LỖI LỆCH THANH BAR) ---
+    // --- HÀM CHUYỂN ĐỔI TAB (ĐÃ FIX LỖI LỆCH THANH BAR & CUỘN BẢN TIN) ---
 function switchTab(tabId) {
     // 1. Ẩn tất cả các Tab Panel (Bao gồm cả tab-content nếu có)
     document.querySelectorAll('.tab-panel, .tab-content').forEach(panel => {
@@ -12429,11 +12432,14 @@ function switchTab(tabId) {
                 console.log("Hệ thống: Đã mở Kênh chat thế giới (Căn giữa Mobile/PC).");
             }
         } 
-        // --- THÊM RIÊNG CHO TAB BẢN TIN ---
+        // --- THÊM RIÊNG CHO TAB BẢN TIN (SỬA ĐỂ CUỘN ĐƯỢC) ---
         else if (tabId === 'tab-status') {
-            activePanel.style.setProperty('display', 'block', 'important');
-            document.body.style.overflow = 'auto';
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            // Quan trọng: Phải dùng flex để vùng scrollable-content bên trong hoạt động
+            activePanel.style.setProperty('display', 'flex', 'important'); 
+            activePanel.style.flexDirection = 'column';
+            
+            // Khóa cuộn trang chính để cuộn mượt bên trong Tab
+            document.body.style.overflow = 'hidden'; 
             
             // Kích hoạt hàm lắng nghe bài đăng từ Firebase
             if (typeof listenToPosts === 'function') {
