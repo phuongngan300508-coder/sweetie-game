@@ -6771,6 +6771,79 @@ input[type="date"].sweetie-input-style {
     text-align: center !important;
     font-size: 1.2em;
 }
+
+    .status-container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 15px;
+}
+
+.status-card {
+    background: #fff;
+    border-radius: 15px;
+    padding: 15px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 15px rgba(255, 182, 193, 0.2);
+    border: 2px solid #ffe4e8;
+}
+
+.composer-header {
+    font-weight: bold;
+    color: #ff8fab;
+    margin-bottom: 10px;
+    font-size: 0.9rem;
+}
+
+#status-text {
+    width: 100%;
+    height: 80px;
+    border: 1px solid #fce4ec;
+    border-radius: 10px;
+    padding: 10px;
+    font-family: inherit;
+    resize: none;
+    outline: none;
+    background: #fff9fa;
+}
+
+.composer-footer {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 10px;
+}
+
+.status-select {
+    border: 1px solid #ffc1cc;
+    border-radius: 8px;
+    padding: 5px;
+    color: #ff8fab;
+    outline: none;
+}
+
+.btn-send-status {
+    background: linear-gradient(45deg, #ff8fab, #ffb3c1);
+    color: white;
+    border: none;
+    padding: 8px 20px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.post-item {
+    animation: fadeIn 0.5s ease;
+}
+
+.post-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.post-user { font-weight: bold; color: #d81b60; }
+.post-time { font-size: 0.7rem; color: #aaa; }
+.post-privacy-icon { font-size: 0.75rem; color: #ff8fab; margin-left: 5px; }
 </style>
 </head>
 <body>
@@ -7338,7 +7411,30 @@ input[type="date"].sweetie-input-style {
 </section>
 
 <main>
-  
+  <div id="tab-status" class="tab-content" style="display:none;">
+    <div class="status-container">
+        <div class="status-card composer">
+            <div class="composer-header">
+                <i class="fas fa-pen-nib"></i> Đăng trạng thái mới
+            </div>
+            <textarea id="status-text" placeholder="Bạn đang nghĩ gì thế?"></textarea>
+            <div class="composer-footer">
+                <select id="status-privacy" class="status-select">
+                    <option value="public">🌎 Công khai</option>
+                    <option value="friends">👥 Bạn bè</option>
+                    <option value="private">🔒 Riêng tư</option>
+                </select>
+                <button onclick="handlePostStatus()" class="btn-send-status">
+                    <i class="fas fa-paper-plane"></i> Đăng
+                </button>
+            </div>
+        </div>
+
+        <div id="status-list">
+            </div>
+    </div>
+</div>
+    
   <div id="tab-friends" class="tab-panel">
     <div class="section-header" style="background: linear-gradient(135deg, #ffc0cb, #ffb6c1) !important; padding: 30px 25px; border-radius: 20px; margin-bottom: 20px; text-align: center; box-shadow: 0 8px 15px rgba(255, 182, 193, 0.3); border: 1px solid rgba(255, 255, 255, 0.5);">
         <h2 style="margin: 0 !important; font-family: 'Quicksand' !important; color: #ffffff !important; font-weight: 900 !important; text-shadow: 0 2px 8px rgba(214, 51, 132, 0.3) !important; letter-spacing: 1.5px !important; font-size: 1.6em !important; display: block !important;">
@@ -7829,20 +7925,24 @@ input[type="date"].sweetie-input-style {
     <div class="nav-item active" onclick="switchTab('tab-home')">
         <i class="fas fa-home"></i><span>Sảnh</span>
     </div>
+
+    <div class="nav-item" onclick="switchTab('tab-status')">
+        <i class="fas fa-newspaper"></i><span>Bản tin</span>
+    </div>
     <div class="nav-item" onclick="toggleModal('modal-profile')">
         <i class="fas fa-user-circle"></i><span>Hồ sơ</span>
     </div>
     <div class="nav-item" onclick="openAchievementModal()">
-    <i class="fas fa-trophy"></i><span>Danh hiệu</span>
-</div>
-<div class="nav-item" onclick="switchTab('tab-friends')">
-    <i class="fas fa-user-friends"></i>
-    <span>Bạn bè</span>
-</div>
+        <i class="fas fa-trophy"></i><span>Danh hiệu</span>
+    </div>
+    <div class="nav-item" onclick="switchTab('tab-friends')">
+        <i class="fas fa-user-friends"></i>
+        <span>Bạn bè</span>
+    </div>
     <div class="nav-item" onclick="switchTab('tab-global')">
-    <i class="fas fa-globe-asia"></i>
-    <span>Thế Giới</span>
-</div>
+        <i class="fas fa-globe-asia"></i>
+        <span>Thế Giới</span>
+    </div>
     <div class="nav-item" onclick="switchTab('tab-chinh')">
         <i class="fas fa-gamepad"></i><span>Chính</span>
     </div>
@@ -7865,10 +7965,10 @@ input[type="date"].sweetie-input-style {
         <i class="fas fa-crown"></i><span>PRO VIP</span>
     </div>
     <div class="nav-item" onclick="toggleModal('modal-settings')">
-    <i class="fas fa-cog"></i><span>Cài đặt</span>
-</div>
+        <i class="fas fa-cog"></i><span>Cài đặt</span>
+    </div>
 </nav>
-
+    
 <div id="noti-bell-container" onclick="toggleNotiModal()">
     <i class="fas fa-bell"></i>
     <span id="noti-badge" class="animate__animated animate__pulse animate__infinite">0</span>
@@ -12268,7 +12368,21 @@ function switchTab(tabId) {
                 initGlobalChat();
                 console.log("Hệ thống: Đã mở Kênh chat thế giới (Căn giữa Mobile/PC).");
             }
-        } else {
+        } 
+        // --- THÊM RIÊNG CHO TAB BẢN TIN ---
+        else if (tabId === 'tab-status') {
+            activePanel.style.setProperty('display', 'block', 'important');
+            document.body.style.overflow = 'auto';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            
+            // Kích hoạt hàm lắng nghe bài đăng từ Firebase
+            if (typeof listenToPosts === 'function') {
+                listenToPosts();
+                console.log("Hệ thống: Đã tải Bản tin Sweetie.");
+            }
+        }
+        // ---------------------------------
+        else {
             // Các tab thông thường
             activePanel.style.setProperty('display', 'block', 'important');
             document.body.style.overflow = 'auto'; // Trả lại khả năng cuộn trang
@@ -23084,6 +23198,80 @@ async function selectSavedAccount(stk, name) {
         </div>
     `;
 }
+
+// 1. Hàm Đăng Bài
+async function handlePostStatus() {
+    const text = document.getElementById('status-text').value;
+    const privacy = document.getElementById('status-privacy').value;
+    
+    // Giả sử bạn đã lưu thông tin user trong biến global currentUser
+    if(!currentUser || !text.trim()) return;
+
+    const newPost = {
+        uid: currentUser.uid,
+        username: currentUser.username || "Cư dân Sweetie",
+        content: text,
+        privacy: privacy,
+        timestamp: firebase.database.ServerValue.TIMESTAMP
+    };
+
+    try {
+        await firebase.database().ref('posts').push(newPost);
+        document.getElementById('status-text').value = "";
+        alert("Đã đăng bài thành công! ✨");
+    } catch (e) {
+        console.error(e);
+    }
+}
+
+// 2. Hàm Lắng nghe và Hiển thị bài đăng (Realtime)
+function listenToPosts() {
+    firebase.database().ref('posts').orderByChild('timestamp').on('value', async (snapshot) => {
+        const postsContainer = document.getElementById('status-list');
+        postsContainer.innerHTML = "";
+        
+        // Lấy danh sách bạn bè của user hiện tại (để check chế độ bạn bè)
+        const myFriendsSnap = await firebase.database().ref(`friendships/${currentUser.uid}`).once('value');
+        const myFriends = myFriendsSnap.val() || {};
+
+        snapshot.forEach((child) => {
+            const post = child.val();
+            let showThisPost = false;
+
+            // Logic lọc quyền xem
+            if (post.privacy === 'public') {
+                showThisPost = true; 
+            } else if (post.uid === currentUser.uid) {
+                showThisPost = true; // Luôn thấy bài của chính mình
+            } else if (post.privacy === 'friends' && myFriends[post.uid]) {
+                showThisPost = true; // Thấy nếu là bạn bè
+            }
+
+            if (showThisPost) {
+                const html = `
+                    <div class="status-card post-item">
+                        <div class="post-header">
+                            <div class="post-user">💖 ${post.username}</div>
+                            <div class="post-time">${new Date(post.timestamp).toLocaleString()}</div>
+                            <span class="post-privacy-icon">${getPrivacyIcon(post.privacy)}</span>
+                        </div>
+                        <div class="post-content">${post.content}</div>
+                    </div>
+                `;
+                postsContainer.insertAdjacentHTML('afterbegin', html);
+            }
+        });
+    });
+}
+
+function getPrivacyIcon(p) {
+    if(p === 'public') return '🌎';
+    if(p === 'friends') return '👥';
+    return '🔒';
+}
+
+// Gọi hàm lắng nghe khi ứng dụng khởi chạy hoặc khi chuyển tab
+// listenToPosts();
 </script>
 </body>
 </html>
