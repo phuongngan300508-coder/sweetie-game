@@ -6896,6 +6896,35 @@ input[type="date"].sweetie-input-style {
     background: #ffb3c1;
     border-radius: 10px;
 }
+
+    /* Căn giữa container chứa ô nhập bài */
+.status-fixed-header .status-container {
+    display: flex;
+    justify-content: center; /* Căn giữa theo chiều ngang */
+    align-items: center;    /* Căn giữa theo chiều dọc nếu cần */
+    width: 100%;
+    padding: 10px 0;        /* Tạo khoảng cách trên dưới */
+}
+
+/* Đảm bảo status-card (ô nhập) không bị quá to trên PC và tự dãn trên Mobile */
+.status-card.composer {
+    width: 90%;            /* Chiếm 90% chiều ngang màn hình */
+    max-width: 500px;      /* Không vượt quá 500px để đẹp trên máy tính */
+    margin: 0 auto;        /* Căn lề tự động */
+}
+
+    .status-card.composer {
+    background: #fff;
+    border-radius: 20px;
+    padding: 15px;
+    border: 2px solid #ffe4e8;
+    box-shadow: 0 10px 25px rgba(255, 182, 193, 0.3); /* Đổ bóng hồng */
+    transition: transform 0.3s ease;
+}
+
+.status-card.composer:focus-within {
+    transform: scale(1.02); /* Phóng to nhẹ khi người dùng nhấn vào viết */
+}
 </style>
 </head>
 <body>
@@ -7465,8 +7494,8 @@ input[type="date"].sweetie-input-style {
 <main>
   <div id="tab-status" class="tab-content" style="display:none;">
     <div class="status-fixed-header">
-        <div class="status-container" style="padding-bottom: 0;">
-            <div class="status-card composer">
+    <div class="status-container"> 
+        <div class="status-card composer">
                 <div class="composer-header">
                     <i class="fas fa-pen-nib"></i> Đăng trạng thái mới
                 </div>
