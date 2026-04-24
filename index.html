@@ -6932,6 +6932,59 @@ input[type="date"].sweetie-input-style {
 .status-card.composer:focus-within {
     transform: scale(1.02); /* Phóng to nhẹ khi người dùng nhấn vào viết */
 }
+
+    /* Style cho Reaction và Comment */
+.post-actions {
+    display: flex;
+    gap: 20px;
+    padding: 10px 0;
+    border-top: 1px solid #ffe4e8;
+    margin-top: 10px;
+}
+
+.action-btn {
+    background: none;
+    border: none;
+    color: #ff8fab;
+    cursor: pointer;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.action-btn.active { color: #ff1493; font-weight: bold; }
+
+.comment-section {
+    background: #fff9fa;
+    border-radius: 10px;
+    padding: 10px;
+    margin-top: 10px;
+}
+
+.comment-item {
+    font-size: 0.85rem;
+    margin-bottom: 5px;
+    padding: 5px;
+    border-bottom: 1px dashed #ffd1dc;
+}
+
+.comment-user { font-weight: bold; color: #d81b60; margin-right: 5px; }
+
+.comment-input-group {
+    display: flex;
+    gap: 5px;
+    margin-top: 10px;
+}
+
+.comment-input {
+    flex: 1;
+    border: 1px solid #ffc1cc;
+    border-radius: 15px;
+    padding: 5px 12px;
+    font-size: 0.8rem;
+    outline: none;
+}
 </style>
 </head>
 <body>
@@ -23345,27 +23398,21 @@ async function selectSavedAccount(stk, name) {
 }
     
 // 1. Hàm Đăng Bài
-let isListingPosts = false; // Biến cờ toàn cục đặt ngoài hàm
+let isListingPosts = false; 
 
 function listenToPosts() {
-    // Nếu đang lắng nghe rồi thì không tạo thêm bộ lắng nghe nữa
     if (isListingPosts) return; 
 
     const postsRef = firebase.database().ref('posts');
-    
-    // Đánh dấu đã bắt đầu lắng nghe
     isListingPosts = true;
 
-    // Chỉ dùng 1 bộ lắng nghe duy nhất cho suốt phiên làm việc
     postsRef.orderByChild('timestamp').limitToLast(50).on('value', async (snapshot) => {
         const postsContainer = document.getElementById('status-list');
         if (!postsContainer) return;
 
-        // Xóa sạch để vẽ lại, tránh bị nhân đôi bài đăng cũ
         postsContainer.innerHTML = ""; 
         
         const myUid = userData.profile.uid;
-        // Tối ưu: Lấy danh sách bạn bè 1 lần
         const myFriendsSnap = await firebase.database().ref(`friendships/${myUid}`).once('value');
         const myFriends = myFriendsSnap.val() || {};
 
@@ -23374,7 +23421,6 @@ function listenToPosts() {
             postsArray.push({ id: child.key, ...child.val() });
         });
 
-        // Đảo ngược mảng để bài mới nhất lên đầu
         postsArray.reverse().forEach((post) => {
             let showThisPost = false;
 
@@ -23383,6 +23429,20 @@ function listenToPosts() {
             else if (post.privacy === 'friends' && myFriends[post.uid]) showThisPost = true;
 
             if (showThisPost) {
+                // --- XỬ LÝ DỮ LIỆU REACTION & COMMENT ---
+                const reactionCount = post.reactions ? Object.keys(post.reactions).length : 0;
+                const hasLiked = post.reactions && post.reactions[myUid];
+                
+                let commentsHTML = "";
+                if (post.comments) {
+                    Object.values(post.comments).forEach(c => {
+                        commentsHTML += `
+                            <div class="comment-item" style="font-size:0.8rem; margin-bottom:5px; padding:5px; background:#fff3f5; border-radius:10px;">
+                                <strong style="color:#d81b60;">${c.username}:</strong> ${c.text}
+                            </div>`;
+                    });
+                }
+
                 const html = `
                     <div class="status-card post-item animate__animated animate__fadeIn">
                         <div class="post-header">
@@ -23390,12 +23450,64 @@ function listenToPosts() {
                             <div class="post-time">${new Date(post.timestamp).toLocaleString('vi-VN')}</div>
                             <span class="post-privacy-icon">${getPrivacyIcon(post.privacy)}</span>
                         </div>
-                        <div class="post-content">${post.content}</div>
+                        
+                        <div class="post-content" style="padding: 10px 0; border-bottom: 1px solid #ffe4e8;">
+                            ${post.content}
+                        </div>
+
+                        <div class="post-actions" style="display: flex; gap: 15px; padding: 8px 0;">
+                            <button class="action-btn" onclick="toggleReaction('${post.id}')" style="background:none; border:none; color:${hasLiked ? '#ff1493' : '#ff8fab'}; cursor:pointer; font-weight:${hasLiked ? 'bold' : 'normal'};">
+                                <i class="${hasLiked ? 'fas' : 'far'} fa-heart"></i> ${reactionCount} Tim
+                            </button>
+                            <button class="action-btn" onclick="document.getElementById('comment-input-${post.id}').focus()" style="background:none; border:none; color:#ff8fab; cursor:pointer;">
+                                <i class="far fa-comment"></i> Bình luận
+                            </button>
+                        </div>
+
+                        <div class="comment-section" style="background: #fff9fa; border-radius: 10px; padding: 8px; margin-top: 5px;">
+                            <div id="comments-list-${post.id}">${commentsHTML}</div>
+                            <div class="comment-input-group" style="display:flex; gap:5px; margin-top:8px;">
+                                <input type="text" id="comment-input-${post.id}" placeholder="Viết bình luận..." 
+                                    style="flex:1; border:1px solid #ffc1cc; border-radius:15px; padding:5px 12px; font-size:0.8rem; outline:none;">
+                                <button onclick="submitComment('${post.id}')" 
+                                    style="background:#ff8fab; color:white; border:none; border-radius:15px; padding:4px 12px; font-size:0.75rem; cursor:pointer;">
+                                    Gửi
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 `;
                 postsContainer.insertAdjacentHTML('beforeend', html);
             }
         });
+    });
+}
+
+// --- CÁC HÀM BỔ TRỢ (Cần thêm vào script của bạn) ---
+
+function toggleReaction(postId) {
+    const myUid = userData.profile.uid;
+    const ref = firebase.database().ref(`posts/${postId}/reactions/${myUid}`);
+    ref.once('value', snap => {
+        if (snap.exists()) ref.remove();
+        else ref.set(true);
+    });
+}
+
+function submitComment(postId) {
+    const input = document.getElementById(`comment-input-${postId}`);
+    const text = input.value.trim();
+    if (!text || !userData) return;
+
+    const commentData = {
+        uid: userData.profile.uid,
+        username: userData.profile.name,
+        text: text,
+        timestamp: firebase.database.ServerValue.TIMESTAMP
+    };
+
+    firebase.database().ref(`posts/${postId}/comments`).push(commentData).then(() => {
+        input.value = "";
     });
 }
 
