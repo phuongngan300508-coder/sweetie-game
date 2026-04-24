@@ -23495,11 +23495,9 @@ function listenToPosts() {
 
         postsContainer.innerHTML = ""; 
         
-        // --- SỬA LOGIC LẤY BẠN BÈ ĐỂ KHỚP VỚI HÀM ACCEPTFRIEND ---
         const myUsername = userData.profile.name; 
         const myUid = userData.profile.uid;
         
-        // Lấy danh sách bạn bè từ nhánh users theo đúng logic của hàm acceptFriend
         const myFriendsSnap = await firebase.database().ref(`users/${myUsername}/friends`).once('value');
         const myFriends = myFriendsSnap.val() || {}; 
 
@@ -23511,22 +23509,13 @@ function listenToPosts() {
         postsArray.reverse().forEach((post) => {
             let showThisPost = false;
 
-            // --- LOGIC KIỂM TRA QUYỀN XEM BÀI VIẾT (ĐÃ FIX CHO BẠN BÈ) ---
-            if (post.privacy === 'public') {
-                showThisPost = true;
-            } 
-            else if (post.uid === myUid) {
-                showThisPost = true;
-            } 
+            if (post.privacy === 'public') showThisPost = true;
+            else if (post.uid === myUid) showThisPost = true;
             else if (post.privacy === 'friends') {
-                // Kiểm tra xem username của người đăng có nằm trong danh sách bạn bè của mình không
-                if (myFriends && myFriends[post.username]) {
-                    showThisPost = true;
-                }
+                if (myFriends && myFriends[post.username]) showThisPost = true;
             }
 
             if (showThisPost) {
-                // --- XỬ LÝ DỮ LIỆU REACTION & COMMENT ---
                 const reactionCount = post.reactions ? Object.keys(post.reactions).length : 0;
                 const hasLiked = post.reactions && post.reactions[myUid];
                 
@@ -23536,19 +23525,46 @@ function listenToPosts() {
                         const c = post.comments[commentId];
                         const isMyComment = c.uid === myUid;
                         
+                        // --- XỬ LÝ REPLY (PHẢN HỒI) ---
+                        let repliesHTML = "";
+                        if (c.replies) {
+                            Object.keys(c.replies).forEach(replyId => {
+                                const r = c.replies[replyId];
+                                const isMyReply = r.uid === myUid;
+                                repliesHTML += `
+                                    <div class="reply-item" style="font-size:0.75rem; margin-top:5px; padding:6px 10px; background:#fff; border-radius:10px; border-left:3px solid #ffb3c1; position:relative;">
+                                        <strong style="color:#d81b60;">${r.username}:</strong> ${r.text}
+                                        ${isMyReply ? `<i class="fas fa-trash" onclick="deleteReply('${post.id}', '${commentId}', '${replyId}')" style="position:absolute; right:8px; top:8px; color:#ffc1cc; cursor:pointer; font-size:0.6rem;"></i>` : ''}
+                                    </div>`;
+                            });
+                        }
+                        
                         commentsHTML += `
-                            <div class="comment-item" style="font-size:0.8rem; margin-bottom:5px; padding:8px 12px; background:#fff3f5; border-radius:12px; line-height:1.4; position:relative; display:flex; justify-content:space-between; align-items:flex-start;">
-                                <div style="flex:1;">
-                                    <strong style="color:#d81b60;">${c.username}:</strong> <span>${c.text}</span>
-                                </div>
-                                ${isMyComment ? `
-                                    <div class="status-dropdown" style="margin-left:5px;">
-                                        <i class="fas fa-ellipsis-h" onclick="toggleStatusMenu(event, 'menu-comm-${commentId}')" style="color:#ffb3c1; cursor:pointer; font-size:0.7rem; padding:2px;"></i>
-                                        <div id="menu-comm-${commentId}" class="status-menu-content" style="display:none; position:absolute; right:0; background:white; box-shadow:0 2px 10px rgba(0,0,0,0.1); border-radius:8px; z-index:100; min-width:80px;">
-                                            <div onclick="editComment('${post.id}', '${commentId}', \`${c.text.replace(/`/g, '\\`').replace(/\n/g, '\\n')}\`)" style="padding:8px 12px; cursor:pointer; color:#444; font-size:0.7rem; border-bottom:1px solid #fff3f5;"><i class="fas fa-edit"></i> Sửa</div>
-                                            <div onclick="deleteComment('${post.id}', '${commentId}')" style="padding:8px 12px; cursor:pointer; color:#ff4d4d; font-size:0.7rem;"><i class="fas fa-trash"></i> Xóa</div>
+                            <div class="comment-wrapper" style="margin-bottom:12px;">
+                                <div class="comment-item" style="font-size:0.8rem; padding:8px 12px; background:#fff3f5; border-radius:12px; line-height:1.4; position:relative; display:flex; justify-content:space-between; align-items:flex-start;">
+                                    <div style="flex:1;">
+                                        <strong style="color:#d81b60;">${c.username}:</strong> <span>${c.text}</span>
+                                        <div style="margin-top:4px;">
+                                            <span onclick="showReplyInput('${commentId}')" style="color:#ff8fab; font-size:0.7rem; cursor:pointer; font-weight:bold; text-decoration:underline;">Trả lời</span>
                                         </div>
-                                    </div>` : ''}
+                                    </div>
+                                    ${isMyComment ? `
+                                        <div class="status-dropdown" style="margin-left:5px;">
+                                            <i class="fas fa-ellipsis-h" onclick="toggleStatusMenu(event, 'menu-comm-${commentId}')" style="color:#ffb3c1; cursor:pointer; font-size:0.7rem; padding:2px;"></i>
+                                            <div id="menu-comm-${commentId}" class="status-menu-content" style="display:none; position:absolute; right:0; background:white; box-shadow:0 2px 10px rgba(0,0,0,0.1); border-radius:8px; z-index:100; min-width:80px;">
+                                                <div onclick="editComment('${post.id}', '${commentId}', \`${c.text.replace(/`/g, '\\`').replace(/\n/g, '\\n')}\`)" style="padding:8px 12px; cursor:pointer; color:#444; font-size:0.7rem; border-bottom:1px solid #fff3f5;"><i class="fas fa-edit"></i> Sửa</div>
+                                                <div onclick="deleteComment('${post.id}', '${commentId}')" style="padding:8px 12px; cursor:pointer; color:#ff4d4d; font-size:0.7rem;"><i class="fas fa-trash"></i> Xóa</div>
+                                            </div>
+                                        </div>` : ''}
+                                </div>
+                                
+                                <div class="replies-list" style="margin-left:25px; border-left: 1px dashed #ffc1cc; padding-left:10px;">
+                                    ${repliesHTML}
+                                    <div id="reply-box-${commentId}" style="display:none; margin-top:5px; gap:5px;">
+                                        <input type="text" id="input-reply-${commentId}" placeholder="Viết phản hồi..." style="flex:1; border:1px solid #ffe4e8; border-radius:10px; padding:4px 10px; font-size:0.7rem; outline:none;">
+                                        <button onclick="submitReply('${post.id}', '${commentId}')" style="background:#ff8fab; color:white; border:none; border-radius:10px; padding:2px 8px; font-size:0.7rem; cursor:pointer;">Gửi</button>
+                                    </div>
+                                </div>
                             </div>`;
                     });
                 }
@@ -23565,7 +23581,6 @@ function listenToPosts() {
                                     <span class="post-privacy-icon" style="font-size: 0.75rem; color: #ffb3c1;">${getPrivacyIcon(post.privacy)}</span>
                                 </div>
                             </div>
-                            
                             ${isMyPost ? `
                                 <div class="status-dropdown">
                                     <i class="fas fa-ellipsis-v" onclick="toggleStatusMenu(event, 'menu-post-${post.id}')" style="color:#ffb3c1; cursor:pointer; padding:5px;"></i>
@@ -23576,11 +23591,9 @@ function listenToPosts() {
                                     </div>
                                 </div>` : ''}
                         </div>
-                        
                         <div class="post-content" style="padding: 10px 0; border-bottom: 1px solid #ffe4e8;">
                             ${post.content}
                         </div>
-
                         <div class="post-actions" style="display: flex; gap: 15px; padding: 8px 0;">
                             <button class="action-btn" onclick="toggleReaction('${post.id}')" style="background:none; border:none; color:${hasLiked ? '#ff1493' : '#ff8fab'}; cursor:pointer; font-weight:${hasLiked ? 'bold' : 'normal'};">
                                 <i class="${hasLiked ? 'fas' : 'far'} fa-heart"></i> ${reactionCount} Tim
@@ -23589,23 +23602,14 @@ function listenToPosts() {
                                 <i class="far fa-comment"></i> Bình luận
                             </button>
                         </div>
-
                         <div class="comment-section" style="background: #fff9fa; border-radius: 10px; padding: 8px; margin-top: 5px;">
                             <div id="comments-list-${post.id}" style="max-height: 180px; overflow-y: auto; scrollbar-width: none; -ms-overflow-style: none;">
                                 ${commentsHTML}
                             </div>
-                            
-                            <style>
-                                #comments-list-${post.id}::-webkit-scrollbar { display: none; }
-                            </style>
-
+                            <style>#comments-list-${post.id}::-webkit-scrollbar { display: none; }</style>
                             <div class="comment-input-group" style="display:flex; gap:5px; margin-top:8px;">
-                                <input type="text" id="comment-input-${post.id}" placeholder="Viết bình luận..." 
-                                    style="flex:1; border:1px solid #ffc1cc; border-radius:15px; padding:5px 12px; font-size:0.8rem; outline:none;">
-                                <button onclick="submitComment('${post.id}')" 
-                                    style="background:#ff8fab; color:white; border:none; border-radius:15px; padding:4px 12px; font-size:0.75rem; cursor:pointer; font-weight:bold;">
-                                    Gửi
-                                </button>
+                                <input type="text" id="comment-input-${post.id}" placeholder="Viết bình luận..." style="flex:1; border:1px solid #ffc1cc; border-radius:15px; padding:5px 12px; font-size:0.8rem; outline:none;">
+                                <button onclick="submitComment('${post.id}')" style="background:#ff8fab; color:white; border:none; border-radius:15px; padding:4px 12px; font-size:0.75rem; cursor:pointer; font-weight:bold;">Gửi</button>
                             </div>
                         </div>
                     </div>
@@ -23614,6 +23618,42 @@ function listenToPosts() {
             }
         });
     });
+}
+
+    // Hiện/Ẩn ô nhập phản hồi
+function showReplyInput(commentId) {
+    const box = document.getElementById(`reply-input-box-${commentId}`);
+    box.style.display = box.style.display === 'flex' ? 'none' : 'flex';
+    if(box.style.display === 'flex') document.getElementById(`input-reply-${commentId}`).focus();
+}
+
+// Gửi phản hồi
+async function submitReply(postId, commentId) {
+    const replyInput = document.getElementById(`input-reply-${commentId}`);
+    const text = replyInput.value.trim();
+    if (!text) return;
+
+    const replyData = {
+        uid: userData.profile.uid,
+        username: userData.profile.name,
+        text: text,
+        timestamp: firebase.database.ServerValue.TIMESTAMP
+    };
+
+    try {
+        await firebase.database().ref(`posts/${postId}/comments/${commentId}/replies`).push(replyData);
+        replyInput.value = "";
+        document.getElementById(`reply-input-box-${commentId}`).style.display = 'none';
+    } catch (e) {
+        alert("Lỗi khi phản hồi: " + e.message);
+    }
+}
+
+// Xóa phản hồi
+function deleteReply(postId, commentId, replyId) {
+    if (confirm("Xóa phản hồi này nhé? 💖")) {
+        firebase.database().ref(`posts/${postId}/comments/${commentId}/replies/${replyId}`).remove();
+    }
 }
     
     let targetPrivacyPostId = ''; // Biến lưu trữ ID bài đang chọn
