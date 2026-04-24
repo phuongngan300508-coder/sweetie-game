@@ -6736,6 +6736,41 @@ input[type="date"].sweetie-input-style {
     filter: contrast(180%) blur(0.2px);
     transition: all 0.5s ease; /* Hiệu ứng đổi mã mượt mà */
 }
+
+    /* Container chứa bảng */
+.price-scroll-container {
+    width: 100%;
+    display: flex;
+    justify-content: center; /* Căn giữa bảng theo chiều ngang */
+    padding: 5px 0;
+}
+
+/* Định dạng bảng */
+.pro-price-table {
+    width: 100%; /* Hoặc để auto nếu muốn bảng co lại theo nội dung */
+    border-collapse: collapse;
+    margin: 0 auto; /* Đảm bảo căn giữa */
+}
+
+/* Căn giữa tiêu đề và nội dung các ô */
+.pro-price-table th, 
+.pro-price-table td {
+    text-align: center; /* Căn giữa chữ trong tất cả các ô */
+    vertical-align: middle;
+    padding: 12px 8px;
+}
+
+/* Riêng cột danh sách game (nếu Henry muốn căn trái cho dễ đọc danh sách) */
+.game-list-cell {
+    text-align: left !important; /* Giữ danh sách game căn trái để nhìn rõ hơn */
+    padding-left: 15px !important;
+}
+
+/* Căn giữa các icon cấm */
+.forbidden-icon {
+    text-align: center !important;
+    font-size: 1.2em;
+}
 </style>
 </head>
 <body>
@@ -6937,8 +6972,8 @@ input[type="date"].sweetie-input-style {
                 <i>Ví dụ: Mua 2 lượt = (Giá gốc 2 lượt) + (Phí phụ thu x 2).</i>
             </div>
 
-            <div class="price-scroll-container">
-                <table class="pro-price-table">
+            <div class="price-scroll-container" style="display: flex; justify-content: center;">
+    <table class="pro-price-table" style="width: 100%; margin: 0 auto;">
                     <thead>
                         <tr>
                             <th>Tên Trò Chơi</th>
