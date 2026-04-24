@@ -10965,7 +10965,14 @@ function handleLogin() {
     }
 
     // --- BƯỚC CUỐI: THIẾT LẬP SESSION VÀ GIAO DIỆN (Dùng chung cho cả 2) ---
-    currentUser = name;
+    
+    // --- ĐOẠN SỬA CHÍNH: Gán Object thay vì String để dùng cho Status ---
+    currentUser = {
+        uid: userData.profile.uid,
+        username: name
+    };
+    // -----------------------------------------------------------------
+
     localStorage.setItem('lastLoggedInUser', name);
     sessionStorage.setItem('currentUser', name);
 
@@ -10973,7 +10980,7 @@ function handleLogin() {
     if (typeof initUserPresence === 'function') {
         initUserPresence();
         // Henry thêm dòng này: Cập nhật timestamp cuối để "đánh thức" các bộ lắng nghe của bạn bè
-        db.ref('/status/' + currentUser + '/last_changed').set(firebase.database.ServerValue.TIMESTAMP);
+        db.ref('/status/' + name + '/last_changed').set(firebase.database.ServerValue.TIMESTAMP);
         console.log("Hệ thống: Đã kích hoạt trạng thái Online cho " + name);
     }
 
@@ -23201,36 +23208,51 @@ async function selectSavedAccount(stk, name) {
 
 // 1. Hàm Đăng Bài
 async function handlePostStatus() {
-    const text = document.getElementById('status-text').value;
+    const statusInput = document.getElementById('status-text');
+    const text = statusInput.value.trim();
     const privacy = document.getElementById('status-privacy').value;
     
-    // Kiểm tra xem đã đăng nhập chưa và biến currentUser có tồn tại không
-    // Lưu ý: Hãy đảm bảo bạn dùng đúng tên biến người dùng của app bạn (ví dụ: userData)
-    if (!currentUser || !currentUser.uid) {
+    // 1. Kiểm tra đăng nhập (Sử dụng cấu trúc userData.profile.uid của bạn)
+    if (!userData || !userData.profile || !userData.profile.uid) {
         alert("Bạn cần đăng nhập để thực hiện tính năng này! 💖");
         return;
     }
 
-    if (!text.trim()) {
-        alert("Nội dung không được để trống nè!");
+    // 2. Kiểm tra nội dung trống
+    if (!text) {
+        alert("Nội dung không được để trống nè! ✨");
         return;
     }
 
+    // 3. Tạo cấu trúc dữ liệu bài đăng
     const newPost = {
-        uid: currentUser.uid,
-        username: currentUser.username || "Cư dân Sweetie",
+        uid: userData.profile.uid,
+        username: userData.profile.name || "Cư dân Sweetie",
         content: text,
         privacy: privacy,
         timestamp: firebase.database.ServerValue.TIMESTAMP
     };
 
     try {
+        // Vô hiệu hóa nút tạm thời để tránh bấm đăng 2 lần (spam)
+        const postBtn = document.querySelector('.btn-send-status');
+        if(postBtn) postBtn.disabled = true;
+
+        // 4. Đẩy dữ liệu lên Firebase
         await firebase.database().ref('posts').push(newPost);
-        document.getElementById('status-text').value = "";
-        alert("Đã đăng bài thành công! ✨");
+        
+        // 5. Thành công: Xóa khung nhập và thông báo
+        statusInput.value = "";
+        alert("Đã đăng trạng thái thành công! ✨💖");
+
+        if(postBtn) postBtn.disabled = false;
+        
     } catch (e) {
         console.error("Lỗi đăng bài:", e);
-        alert("Có lỗi xảy ra, thử lại sau nhé!");
+        alert("Có lỗi xảy ra khi kết nối Firebase, thử lại sau nhé!");
+        
+        const postBtn = document.querySelector('.btn-send-status');
+        if(postBtn) postBtn.disabled = false;
     }
 }
 
