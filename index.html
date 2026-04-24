@@ -23482,7 +23482,7 @@ function listenToPosts() {
                             <div class="post-time">${new Date(post.timestamp).toLocaleString('vi-VN')}</div>
                             <span class="post-privacy-icon">${getPrivacyIcon(post.privacy)}</span>
                             
-                            ${isMyPost ? `<i class="fas fa-times" onclick="deletePost('${post.id}')" style="position:absolute; right:0; top:0; color:#ffb3c1; cursor:pointer; padding:5px;"></i>` : ''}
+                            ${isMyPost ? `<i class="fas fa-trash-alt" onclick="deletePost('${post.id}')" style="position:absolute; right:0; top:0; color:#ffb3c1; cursor:pointer; padding:5px;"></i>` : ''}
                         </div>
                         
                         <div class="post-content" style="padding: 10px 0; border-bottom: 1px solid #ffe4e8;">
