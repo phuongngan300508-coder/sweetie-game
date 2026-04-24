@@ -23459,30 +23459,46 @@ function listenToPosts() {
                 
                 let commentsHTML = "";
                 if (post.comments) {
-                    // Chuyển Object thành Array để lấy ID bình luận
                     Object.keys(post.comments).forEach(commentId => {
                         const c = post.comments[commentId];
                         const isMyComment = c.uid === myUid;
                         
                         commentsHTML += `
-                            <div class="comment-item" style="font-size:0.8rem; margin-bottom:5px; padding:8px 12px; background:#fff3f5; border-radius:12px; line-height:1.4; position:relative;">
-                                <strong style="color:#d81b60;">${c.username}:</strong> ${c.text}
-                                ${isMyComment ? `<i class="fas fa-trash-alt" onclick="deleteComment('${post.id}', '${commentId}')" style="position:absolute; right:10px; top:10px; color:#ffb3c1; cursor:pointer; font-size:0.7rem;"></i>` : ''}
+                            <div class="comment-item" style="font-size:0.8rem; margin-bottom:5px; padding:8px 12px; background:#fff3f5; border-radius:12px; line-height:1.4; position:relative; display:flex; justify-content:space-between; align-items:flex-start;">
+                                <div style="flex:1;">
+                                    <strong style="color:#d81b60;">${c.username}:</strong> <span>${c.text}</span>
+                                </div>
+                                ${isMyComment ? `
+                                    <div class="status-dropdown" style="margin-left:5px;">
+                                        <i class="fas fa-ellipsis-h" onclick="toggleStatusMenu(event, 'menu-comm-${commentId}')" style="color:#ffb3c1; cursor:pointer; font-size:0.7rem; padding:2px;"></i>
+                                        <div id="menu-comm-${commentId}" class="status-menu-content" style="display:none; position:absolute; right:0; background:white; box-shadow:0 2px 10px rgba(0,0,0,0.1); border-radius:8px; z-index:100; min-width:80px;">
+                                            <div onclick="editComment('${post.id}', '${commentId}', \`${c.text.replace(/`/g, '\\`')}\`)" style="padding:8px 12px; cursor:pointer; color:#444; font-size:0.7rem; border-bottom:1px solid #fff3f5;"><i class="fas fa-edit"></i> Sửa</div>
+                                            <div onclick="deleteComment('${post.id}', '${commentId}')" style="padding:8px 12px; cursor:pointer; color:#ff4d4d; font-size:0.7rem;"><i class="fas fa-trash"></i> Xóa</div>
+                                        </div>
+                                    </div>` : ''}
                             </div>`;
                     });
                 }
 
-                // Kiểm tra quyền xóa bài đăng
                 const isMyPost = post.uid === myUid;
 
                 const html = `
                     <div class="status-card post-item animate__animated animate__fadeIn">
-                        <div class="post-header" style="position:relative;">
-                            <div class="post-user">💖 ${post.username}</div>
-                            <div class="post-time">${new Date(post.timestamp).toLocaleString('vi-VN')}</div>
-                            <span class="post-privacy-icon">${getPrivacyIcon(post.privacy)}</span>
+                        <div class="post-header" style="position:relative; display:flex; justify-content:space-between; align-items:flex-start;">
+                            <div>
+                                <div class="post-user">💖 ${post.username}</div>
+                                <div class="post-time">${new Date(post.timestamp).toLocaleString('vi-VN')}</div>
+                                <span class="post-privacy-icon">${getPrivacyIcon(post.privacy)}</span>
+                            </div>
                             
-                            ${isMyPost ? `<i class="fas fa-trash-alt" onclick="deletePost('${post.id}')" style="position:absolute; right:0; top:0; color:#ffb3c1; cursor:pointer; padding:5px;"></i>` : ''}
+                            ${isMyPost ? `
+                                <div class="status-dropdown">
+                                    <i class="fas fa-ellipsis-v" onclick="toggleStatusMenu(event, 'menu-post-${post.id}')" style="color:#ffb3c1; cursor:pointer; padding:5px;"></i>
+                                    <div id="menu-post-${post.id}" class="status-menu-content" style="display:none; position:absolute; right:0; background:white; box-shadow:0 2px 10px rgba(0,0,0,0.1); border-radius:10px; z-index:100; min-width:100px;">
+                                        <div onclick="editPost('${post.id}', \`${post.content.replace(/`/g, '\\`')}\`)" style="padding:10px 15px; cursor:pointer; color:#444; font-size:0.8rem; border-bottom:1px solid #fff3f5;"><i class="fas fa-edit"></i> Chỉnh sửa</div>
+                                        <div onclick="deletePost('${post.id}')" style="padding:10px 15px; cursor:pointer; color:#ff4d4d; font-size:0.8rem;"><i class="fas fa-trash-alt"></i> Xóa bài</div>
+                                    </div>
+                                </div>` : ''}
                         </div>
                         
                         <div class="post-content" style="padding: 10px 0; border-bottom: 1px solid #ffe4e8;">
@@ -23524,6 +23540,57 @@ function listenToPosts() {
     });
 }
 
+// --- HÀM BỔ TRỢ CHO MENU ---
+function toggleStatusMenu(event, menuId) {
+    event.stopPropagation();
+    const menu = document.getElementById(menuId);
+    const isOpen = menu.style.display === 'block';
+    
+    // Đóng tất cả menu khác trước
+    document.querySelectorAll('.status-menu-content').forEach(m => m.style.display = 'none');
+    
+    menu.style.display = isOpen ? 'none' : 'block';
+}
+
+// Đóng menu khi bấm ra ngoài
+window.addEventListener('click', function() {
+    document.querySelectorAll('.status-menu-content').forEach(m => m.style.display = 'none');
+});
+
+    // Chỉnh sửa Bài đăng
+async function editPost(postId, oldContent) {
+    const newContent = prompt("Chỉnh sửa bài đăng của bạn:", oldContent);
+    if (newContent !== null && newContent.trim() !== "" && newContent !== oldContent) {
+        try {
+            await firebase.database().ref(`posts/${postId}`).update({
+                content: newContent,
+                isEdited: true // Đánh dấu đã chỉnh sửa
+            });
+            console.log("Đã cập nhật bài đăng.");
+        } catch (e) { alert("Lỗi khi sửa: " + e.message); }
+    }
+}
+
+// Chỉnh sửa Bình luận
+async function editComment(postId, commentId, oldText) {
+    const newText = prompt("Chỉnh sửa bình luận:", oldText);
+    if (newText !== null && newText.trim() !== "" && newText !== oldText) {
+        try {
+            await firebase.database().ref(`posts/${postId}/comments/${commentId}`).update({
+                text: newText
+            });
+            console.log("Đã cập nhật bình luận.");
+        } catch (e) { alert("Lỗi khi sửa: " + e.message); }
+    }
+}
+
+// Tự động đóng menu khi bấm ra ngoài
+window.onclick = function(event) {
+    if (!event.target.matches('.fa-ellipsis-v') && !event.target.matches('.fa-ellipsis-h')) {
+        document.querySelectorAll('.dropdown-content').forEach(m => m.style.display = 'none');
+    }
+}
+    
     // Hàm xóa bài đăng vĩnh viễn
 function deletePost(postId) {
     if (confirm("Cư dân có chắc muốn xóa bài đăng này vĩnh viễn không? ✨")) {
