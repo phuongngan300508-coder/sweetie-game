@@ -6795,15 +6795,18 @@ input[type="date"].sweetie-input-style {
 }
 
 #status-text {
-    width: 100%;
-    height: 80px;
+    width: 100%;            /* Chiếm toàn bộ chiều rộng thẻ cha */
+    box-sizing: border-box; /* Ép trình duyệt tính padding vào bên trong width */
+    height: 100px;
     border: 1px solid #fce4ec;
-    border-radius: 10px;
-    padding: 10px;
+    border-radius: 12px;
+    padding: 12px;          /* Padding sẽ không làm textarea bị to ra nữa */
     font-family: inherit;
-    resize: none;
+    resize: none;           /* Chặn người dùng kéo dãn làm vỡ khung */
     outline: none;
     background: #fff9fa;
+    display: block;         /* Loại bỏ khoảng trống thừa phía dưới */
+    margin-bottom: 10px;
 }
 
 .composer-footer {
@@ -6897,20 +6900,24 @@ input[type="date"].sweetie-input-style {
     border-radius: 10px;
 }
 
-    /* Căn giữa container chứa ô nhập bài */
+/* Container bao quanh khung đăng */
 .status-fixed-header .status-container {
     display: flex;
-    justify-content: center; /* Căn giữa theo chiều ngang */
-    align-items: center;    /* Căn giữa theo chiều dọc nếu cần */
+    justify-content: center;
+    padding: 15px 0 0 0;
     width: 100%;
-    padding: 10px 0;        /* Tạo khoảng cách trên dưới */
 }
 
-/* Đảm bảo status-card (ô nhập) không bị quá to trên PC và tự dãn trên Mobile */
+/* Khung đăng trạng thái (Màu hồng Sweetie) */
 .status-card.composer {
-    width: 90%;            /* Chiếm 90% chiều ngang màn hình */
-    max-width: 500px;      /* Không vượt quá 500px để đẹp trên máy tính */
-    margin: 0 auto;        /* Căn lề tự động */
+    width: 92%;           /* Đẹp nhất trên mobile */
+    max-width: 500px;     /* Giới hạn trên PC */
+    background: #fff;
+    border-radius: 20px;
+    padding: 15px;
+    border: 2px solid #ffe4e8;
+    box-shadow: 0 8px 20px rgba(255, 182, 193, 0.2);
+    box-sizing: border-box; /* Đảm bảo card này cũng không bị tràn */
 }
 
     .status-card.composer {
