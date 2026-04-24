@@ -23459,20 +23459,30 @@ function listenToPosts() {
                 
                 let commentsHTML = "";
                 if (post.comments) {
-                    Object.values(post.comments).forEach(c => {
+                    // Chuyển Object thành Array để lấy ID bình luận
+                    Object.keys(post.comments).forEach(commentId => {
+                        const c = post.comments[commentId];
+                        const isMyComment = c.uid === myUid;
+                        
                         commentsHTML += `
-                            <div class="comment-item" style="font-size:0.8rem; margin-bottom:5px; padding:8px 12px; background:#fff3f5; border-radius:12px; line-height:1.4;">
+                            <div class="comment-item" style="font-size:0.8rem; margin-bottom:5px; padding:8px 12px; background:#fff3f5; border-radius:12px; line-height:1.4; position:relative;">
                                 <strong style="color:#d81b60;">${c.username}:</strong> ${c.text}
+                                ${isMyComment ? `<i class="fas fa-trash-alt" onclick="deleteComment('${post.id}', '${commentId}')" style="position:absolute; right:10px; top:10px; color:#ffb3c1; cursor:pointer; font-size:0.7rem;"></i>` : ''}
                             </div>`;
                     });
                 }
 
+                // Kiểm tra quyền xóa bài đăng
+                const isMyPost = post.uid === myUid;
+
                 const html = `
                     <div class="status-card post-item animate__animated animate__fadeIn">
-                        <div class="post-header">
+                        <div class="post-header" style="position:relative;">
                             <div class="post-user">💖 ${post.username}</div>
                             <div class="post-time">${new Date(post.timestamp).toLocaleString('vi-VN')}</div>
                             <span class="post-privacy-icon">${getPrivacyIcon(post.privacy)}</span>
+                            
+                            ${isMyPost ? `<i class="fas fa-times" onclick="deletePost('${post.id}')" style="position:absolute; right:0; top:0; color:#ffb3c1; cursor:pointer; padding:5px;"></i>` : ''}
                         </div>
                         
                         <div class="post-content" style="padding: 10px 0; border-bottom: 1px solid #ffe4e8;">
@@ -23512,6 +23522,32 @@ function listenToPosts() {
             }
         });
     });
+}
+
+    // Hàm xóa bài đăng vĩnh viễn
+function deletePost(postId) {
+    if (confirm("Cư dân có chắc muốn xóa bài đăng này vĩnh viễn không? ✨")) {
+        firebase.database().ref(`posts/${postId}`).remove()
+            .then(() => {
+                console.log("Đã xóa bài đăng.");
+            })
+            .catch(error => {
+                alert("Lỗi: " + error.message);
+            });
+    }
+}
+
+// Hàm xóa bình luận vĩnh viễn
+function deleteComment(postId, commentId) {
+    if (confirm("Xóa bình luận này nhé? 💖")) {
+        firebase.database().ref(`posts/${postId}/comments/${commentId}`).remove()
+            .then(() => {
+                console.log("Đã xóa bình luận.");
+            })
+            .catch(error => {
+                alert("Lỗi: " + error.message);
+            });
+    }
 }
 
 // --- CÁC HÀM BỔ TRỢ (Cần thêm vào script của bạn) ---
