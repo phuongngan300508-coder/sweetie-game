@@ -23622,9 +23622,22 @@ function listenToPosts() {
 
     // Hiện/Ẩn ô nhập phản hồi
 function showReplyInput(commentId) {
-    const box = document.getElementById(`reply-input-box-${commentId}`);
-    box.style.display = box.style.display === 'flex' ? 'none' : 'flex';
-    if(box.style.display === 'flex') document.getElementById(`input-reply-${commentId}`).focus();
+    // Tìm phần tử chứa ô nhập phản hồi
+    const box = document.getElementById(`reply-box-${commentId}`);
+    
+    if (box) {
+        // Nếu đang ẩn thì hiện, đang hiện thì ẩn (Toggle)
+        if (box.style.display === 'none' || box.style.display === '') {
+            box.style.display = 'flex';
+            // Tự động focus vào ô input để cư dân gõ luôn
+            const input = document.getElementById(`input-reply-${commentId}`);
+            if (input) input.focus();
+        } else {
+            box.style.display = 'none';
+        }
+    } else {
+        console.error("Không tìm thấy khung reply cho ID:", commentId);
+    }
 }
 
 // Gửi phản hồi
