@@ -23534,7 +23534,10 @@ function listenToPosts() {
                                 repliesHTML += `
                                     <div class="reply-item" style="font-size:0.75rem; margin-top:5px; padding:6px 10px; background:#fff; border-radius:10px; border-left:3px solid #ffb3c1; position:relative;">
                                         <strong style="color:#d81b60;">${r.username}:</strong> ${r.text}
-                                        ${isMyReply ? `<i class="fas fa-trash" onclick="deleteReply('${post.id}', '${commentId}', '${replyId}')" style="position:absolute; right:8px; top:8px; color:#ffc1cc; cursor:pointer; font-size:0.6rem;"></i>` : ''}
+                                        <div style="margin-top:4px; display:flex; gap:10px;">
+                                            <span onclick="showReplyInput('${commentId}', '${r.username}')" style="color:#ff8fab; cursor:pointer; font-weight:bold;">Trả lời</span>
+                                            ${isMyReply ? `<i class="fas fa-trash" onclick="deleteReply('${post.id}', '${commentId}', '${replyId}')" style="position:absolute; right:8px; top:8px; color:#ffc1cc; cursor:pointer; font-size:0.6rem;"></i>` : ''}
+                                        </div>
                                     </div>`;
                             });
                         }
@@ -23545,7 +23548,7 @@ function listenToPosts() {
                                     <div style="flex:1;">
                                         <strong style="color:#d81b60;">${c.username}:</strong> <span>${c.text}</span>
                                         <div style="margin-top:4px;">
-                                            <span onclick="showReplyInput('${commentId}')" style="color:#ff8fab; font-size:0.7rem; cursor:pointer; font-weight:bold; text-decoration:underline;">Trả lời</span>
+                                            <span onclick="showReplyInput('${commentId}', '${c.username}')" style="color:#ff8fab; font-size:0.7rem; cursor:pointer; font-weight:bold; text-decoration:underline;">Trả lời</span>
                                         </div>
                                     </div>
                                     ${isMyComment ? `
@@ -23620,23 +23623,42 @@ function listenToPosts() {
     });
 }
 
-    // Hiện/Ẩn ô nhập phản hồi
-function showReplyInput(commentId) {
-    // Tìm phần tử chứa ô nhập phản hồi
+   // Hiện/Ẩn ô nhập phản hồi và tự động tag tên cư dân
+function showReplyInput(commentId, tagUser) {
+    // 1. Tìm khung chứa ô nhập (đã đồng bộ ID với hàm listenToPosts)
     const box = document.getElementById(`reply-box-${commentId}`);
+    const input = document.getElementById(`input-reply-${commentId}`);
     
-    if (box) {
-        // Nếu đang ẩn thì hiện, đang hiện thì ẩn (Toggle)
-        if (box.style.display === 'none' || box.style.display === '') {
+    if (box && input) {
+        // Kiểm tra xem có đang đóng hay không
+        const isHidden = box.style.display === 'none' || box.style.display === '';
+
+        if (isHidden) {
+            // Hiện khung nhập liệu
             box.style.display = 'flex';
-            // Tự động focus vào ô input để cư dân gõ luôn
-            const input = document.getElementById(`input-reply-${commentId}`);
-            if (input) input.focus();
+            
+            // Nếu có tên người cần tag, điền vào ô input kèm dấu @
+            if (tagUser) {
+                input.value = `@${tagUser} `;
+            } else {
+                input.value = ""; // Nếu không có tag thì xóa trắng
+            }
+            
+            // Tự động nhảy con trỏ vào để cư dân gõ luôn
+            input.focus();
         } else {
-            box.style.display = 'none';
+            // Nếu nhấn lần nữa khi đang mở: 
+            // Nếu đang trả lời người khác thì đổi tag, nếu trùng tag thì đóng lại (giống Facebook)
+            if (tagUser && !input.value.includes(`@${tagUser}`)) {
+                input.value = `@${tagUser} `;
+                input.focus();
+            } else {
+                box.style.display = 'none';
+                input.value = "";
+            }
         }
     } else {
-        console.error("Không tìm thấy khung reply cho ID:", commentId);
+        console.error("Cư dân ơi, không tìm thấy khung reply cho ID:", commentId);
     }
 }
 
