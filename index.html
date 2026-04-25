@@ -23671,7 +23671,7 @@ const renderNestedComments = async (allComments, post, myUid, parentId = null, l
                         <div style="flex:1;">
                             <strong style="color:#d81b60; cursor:pointer;" onclick="searchFriendByID('${c.uid}')">${c.username}</strong> 
                             <span style="font-size: 0.65rem; color: #b0b0b0; font-weight: normal; margin-left: 4px;">• ${getTimeAgo(c.timestamp)}</span>
-                            <br><span>${c.text}</span>
+                            <br><span>${formatCommentText(c.text)}</span>
                             <div style="margin-top:4px; display: flex; align-items: center; gap: 12px;">
                                 <span onclick="toggleCommentReaction('${post.id}', '${c.id}')" style="color:${hasLikedComm ? '#ff1493' : '#ff8fab'}; font-size:0.7rem; cursor:pointer; font-weight:bold;">
                                     <i class="${hasLikedComm ? 'fas' : 'far'} fa-heart"></i> ${commReactionCount > 0 ? commReactionCount : ''} Thích
@@ -23852,6 +23852,8 @@ async function submitReply(postId, commentId) {
     try {
         // Gửi dữ liệu lên thẳng nút 'comments' (GIỮ NGUYÊN)
         await firebase.database().ref(`posts/${postId}/comments`).push(replyData);
+
+        handleMentionNotifications(text, postId);
         
         // Xóa nội dung ô nhập sau khi gửi thành công
         replyInput.value = "";
@@ -24067,6 +24069,8 @@ function submitComment(postId) {
         // Trong hàm submitComment(postId)
 firebase.database().ref(`posts/${postId}/comments`).push(commentData)
     .then(() => {
+        handleMentionNotifications(text, postId);
+        
         input.value = "";
         if (typeof addNotification === 'function') {
             addNotification("HỆ THỐNG", "Bình luận của bạn đã được gửi thành công! ✨");
@@ -24096,6 +24100,91 @@ function getPrivacyIcon(p) {
 
 // Gọi hàm lắng nghe khi ứng dụng khởi chạy hoặc khi chuyển tab
 // listenToPosts();
+
+// Hàm xử lý định dạng text để nhận diện @tag
+function formatCommentText(text) {
+    const tagRegex = /@([a-zA-Z0-9_À-ỹ]+)/g;
+    
+    return text.replace(tagRegex, (match, username) => {
+        // Biến cái tên thành một thẻ span có thể click
+        return `<span 
+                    style="color: #FF1493; font-weight: bold; cursor: pointer; text-decoration: underline;" 
+                    onclick="searchFriendByName('${username}')">
+                    ${username}
+                </span>`;
+    });
+}
+
+// Hàm phụ để kiểm tra tag và gửi thông báo
+async function handleMentionNotifications(text, postId) {
+    const tagRegex = /@([a-zA-Z0-9_À-ỹ]+)/g;
+    let match;
+    const mentions = [];
+
+    while ((match = tagRegex.exec(text)) !== null) {
+        mentions.push(match[1]); // Lấy list tên người được tag
+    }
+
+    if (mentions.length > 0) {
+        for (const targetName of mentions) {
+            // Không thông báo nếu tự tag chính mình
+            if (targetName === userData.profile.name) continue;
+
+            // 1. Tìm UID của người được tag từ database
+            const userRef = firebase.database().ref('users');
+            const snapshot = await userRef.orderByChild('profile/name').equalTo(targetName).once('value');
+
+            if (snapshot.exists()) {
+                const targetUid = Object.keys(snapshot.val())[0];
+                
+                // 2. Gửi thông báo vào node 'notifications' của người đó
+                const notificationData = {
+                    sender: userData.profile.name,
+                    content: `${userData.profile.name} đã nhắc đến bạn trong một bình luận`,
+                    postId: postId,
+                    timestamp: firebase.database.ServerValue.TIMESTAMP,
+                    isRead: false
+                };
+
+                await firebase.database().ref(`notifications/${targetUid}`).push(notificationData);
+                console.log(`Đã gửi thông báo cho ${targetName} ✨`);
+            }
+        }
+    }
+}
+
+    async function searchFriendByName(targetName) {
+    // 1. Hiển thị một thông báo nhỏ để người dùng biết hệ thống đang tìm
+    console.log("Đang tìm cư dân: " + targetName);
+
+    try {
+        // 2. Truy cập vào node 'users' và tìm người có profile/name khớp với targetName
+        const usersRef = firebase.database().ref('users');
+        const snapshot = await usersRef.orderByChild('profile/name').equalTo(targetName).once('value');
+
+        if (snapshot.exists()) {
+            // Firebase trả về một object, ta lấy key đầu tiên chính là UID
+            const userDataFound = snapshot.val();
+            const uid = Object.keys(userDataFound)[0];
+
+            // 3. Gọi hàm hiển thị trang cá nhân có sẵn của Henry
+            if (typeof searchFriendByID === 'function') {
+                searchFriendByID(uid);
+            } else {
+                alert("Đã tìm thấy cư dân " + targetName + " nhưng hàm hiển thị đang lỗi rồi! 🎀");
+            }
+        } else {
+            // Nếu không tìm thấy tên trong database
+            if (typeof addNotification === 'function') {
+                addNotification("HỆ THỐNG", "Không tìm thấy cư dân '" + targetName + "' trong hệ thống! ✨");
+            } else {
+                alert("Không tìm thấy cư dân này nha! 🎀");
+            }
+        }
+    } catch (error) {
+        console.error("Lỗi tìm kiếm tên:", error);
+    }
+}
 </script>
 </body>
 </html>
