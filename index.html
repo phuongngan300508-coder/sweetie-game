@@ -23485,7 +23485,11 @@ async function selectSavedAccount(stk, name) {
         postBtn.innerText = originalText;
     }
 }
-    
+
+let expandedComments = []; // Lưu danh sách các commentId đã bấm "Xem thêm"
+// 1. Hàm Đăng Bài (Đã cập nhật cơ chế giới hạn thụt lề đa cấp)
+let isListingPosts = false; 
+
 function listenToPosts() {
     if (isListingPosts) return; 
 
