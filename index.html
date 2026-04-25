@@ -13184,38 +13184,42 @@ function handleNotiClick(index) {
 
         // --- TRƯỜNG HỢP MỚI: NHẤN VÀO THÔNG BÁO NHẮC TÊN (TAG) ---
         else if (type === 'open_post' || type === 'mention') {
-            const postId = noti.extraData.postId;
-            const commentId = noti.extraData.commentId; // Henry nhớ đảm bảo extraData có ID bình luận
+    const postId = noti.extraData.postId;
+    const commentId = noti.extraData.commentId;
+    const parentId = noti.extraData.parentId; // Lấy parentId từ thông báo
 
-            if (postId) {
-                // Sử dụng hàm chuyển tab của Henry
-                switchTab('tab-status'); 
-
-                setTimeout(() => {
-                    // Xác định phần tử cần nhắm tới: Ưu tiên bình luận, nếu không có thì tới bài viết
-                    const targetId = commentId ? `comm-wrap-${commentId}` : `post-card-${postId}`;
-                    const targetEl = document.getElementById(targetId);
-
-                    if (targetEl) {
-                        // Cuộn mượt và đưa phần tử vào giữa màn hình
-                        targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-                        // Thêm hiệu ứng "Nháy hồng" Henry đã viết trong CSS
-                        targetEl.classList.add('highlight-noti-comment');
-
-                        // Xóa class sau 3 giây để sạch DOM
-                        setTimeout(() => {
-                            targetEl.classList.remove('highlight-noti-comment');
-                        }, 3000);
-                    } else {
-                        // Nếu mạng chậm chưa kịp render, dùng hàm dự phòng của Henry
-                        scrollToGame(`post-card-${postId}`);
-                    }
-                }, 400); // Tăng delay nhẹ để tab kịp render nội dung
-            } else {
-                alert("❌ Không tìm thấy bài viết liên quan!");
+    if (postId) {
+        // --- BƯỚC QUAN TRỌNG: Tự động mở rộng mục phản hồi ---
+        if (parentId && typeof expandedComments !== 'undefined') {
+            if (!expandedComments.includes(parentId)) {
+                expandedComments.push(parentId);
+                console.log("Hệ thống: Đã ép mở mục phản hồi cho ID:", parentId);
             }
         }
+
+        switchTab('tab-status'); 
+
+        setTimeout(() => {
+            // Xác định ID cần tìm: ưu tiên comm-wrap, nếu không có thì tới post-card
+            const targetId = commentId ? `comm-wrap-${commentId}` : `post-card-${postId}`;
+            const targetEl = document.getElementById(targetId);
+
+            if (targetEl) {
+                targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                targetEl.classList.add('highlight-noti-comment');
+                setTimeout(() => {
+                    if (targetEl) targetEl.classList.remove('highlight-noti-comment');
+                }, 3000);
+            } else {
+                // Nếu chưa render kịp (do đệ quy sâu), Henry gọi hàm load lại bài này
+                if (typeof refreshCommentsOnly === 'function') refreshCommentsOnly(postId);
+                scrollToGame(`post-card-${postId}`);
+            }
+        }, 600); // Đợi 0.6 giây để Firebase load kịp các bình luận con
+    } else {
+        alert("❌ Không tìm thấy bài viết liên quan!");
+    }
+}
         
         // --- TRƯỜNG HỢP 3: XEM HỒ SƠ THÔNG THƯỜNG ---
         else if (type === 'view_profile') {
@@ -23930,7 +23934,6 @@ function showReplyInput(commentId, tagUser) {
 }
     
 // Gửi phản hồi (Đã sửa để hỗ trợ đa cấp lồng nhau)
-// Gửi phản hồi (Đã sửa để đứng im tại chỗ, không cuộn xuống đáy bài viết)
 async function submitReply(postId, commentId) {
     const replyInput = document.getElementById(`input-reply-${commentId}`);
     if (!replyInput) return; 
@@ -23938,22 +23941,21 @@ async function submitReply(postId, commentId) {
     const text = replyInput.value.trim();
     if (!text) return;
 
-    // Cấu trúc dữ liệu mới: Thêm parentId thay vì lồng sâu vào replies (GIỮ NGUYÊN)
     const replyData = {
         uid: userData.profile.uid,
         username: userData.profile.name,
         text: text,
-        parentId: commentId, // Quan trọng: Đánh dấu comment này là con của commentId
+        parentId: commentId, // Chính là ID của bình luận Henry đang nhấn "Trả lời"
         timestamp: firebase.database.ServerValue.TIMESTAMP
     };
 
     try {
-        // Gửi dữ liệu lên thẳng nút 'comments' (GIỮ NGUYÊN)
-        await firebase.database().ref(`posts/${postId}/comments`).push(replyData);
+        const snap = await firebase.database().ref(`posts/${postId}/comments`).push(replyData);
+        const newReplyId = snap.key; // ID của chính cái reply vừa gõ
 
-        handleMentionNotifications(text, postId);
+        // TRUYỀN THÊM THAM SỐ THỨ 4: parentId (commentId)
+        handleMentionNotifications(text, postId, newReplyId, commentId);
         
-        // Xóa nội dung ô nhập sau khi gửi thành công
         replyInput.value = "";
         
         // Đóng khung nhập phản hồi
@@ -24289,19 +24291,18 @@ async function handleMentionNotifications(text, postId, commentId) { // Bổ sun
         const data = snapshot.val();
         if (!data) return;
         
-        // SỬA TẠI ĐÂY: Henry phải truyền cả postId và commentId vào extraData
         addNotification(
             data.title || "💖 NHẮC ĐẾN", 
             data.message, 
             false, 
             { 
-                type: 'mention', // Dùng mention để kích hoạt nháy hồng
+                type: 'mention',
                 postId: data.extraData?.postId || data.postId, 
-                commentId: data.extraData?.commentId || data.commentId 
+                commentId: data.extraData?.commentId || data.commentId,
+                parentId: data.extraData?.parentId || data.parentId // LẤY PARENT ID TẠI ĐÂY
             }
         );
 
-        // Sau khi nạp vào chuông thì xóa trên Firebase
         queueRef.child(snapshot.key).remove();
     });
 }
