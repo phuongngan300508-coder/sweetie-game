@@ -23511,21 +23511,7 @@ async function listenToPosts() {
     isListingPosts = true;
     postsContainer.innerHTML = ""; 
 
-    const getTimeAgo = (timestamp) => {
-        if (!timestamp) return "";
-        const now = new Date().getTime();
-        const diff = Math.floor((now - timestamp) / 1000);
-        if (diff < 60) return "vừa xong";
-        const mins = Math.floor(diff / 60);
-        if (mins < 60) return `${mins} phút trước`;
-        const hours = Math.floor(mins / 60);
-        if (hours < 24) return `${hours} giờ trước`;
-        const days = Math.floor(hours / 24);
-        if (days < 30) return `${days} ngày trước`;
-        const months = Math.floor(days / 30);
-        if (months < 12) return `${months} tháng trước`;
-        return `${Math.floor(days / 365)} năm trước`;
-    };
+    // (XÓA ĐOẠN getTimeAgo CŨ Ở ĐÂY)
 
     const snapshot = await postsRef.orderByChild('timestamp').limitToLast(50).once('value');
     const myUsername = userData.profile.name; 
@@ -23557,7 +23543,6 @@ async function listenToPosts() {
         if (card) card.remove();
     });
 
-    // --- HÀM RENDER CHÍNH (GỌI ĐẾN HÀM DÙNG CHUNG) ---
     async function renderSinglePost(post, position) {
         let showThisPost = false;
         if (post.privacy === 'public') showThisPost = true;
@@ -23571,8 +23556,8 @@ async function listenToPosts() {
             const reactionCount = post.reactions ? Object.keys(post.reactions).length : 0;
             const hasLiked = post.reactions && post.reactions[myUid];
 
-            // GỌI HÀM DÙNG CHUNG Ở ĐÂY ✨
-            const commentsHTML = await renderNestedComments(post.comments, post, myUid, getTimeAgo);
+            // GỌI HÀM DÙNG CHUNG Ở ĐÂY (TRUYỀN THAM SỐ GỌN HƠN) ✨
+            const commentsHTML = await renderNestedComments(post.comments, post, myUid);
 
             const isMyPost = post.uid === myUid;
             const pAvatarHtml = currentAuthorAvatar ? `<img src="${currentAuthorAvatar}" style="width:45px; height:45px; border-radius:50%; object-fit:cover;">` : `<div style="width:45px; height:45px; border-radius:50%; background:#ffe4e8; display:flex; align-items:center; justify-content:center; color:#ff8fab; font-size:1.2rem;"><i class="fas ${authorData.gender === 'Nam' ? 'fa-user-tie' : 'fa-user-graduate'}"></i></div>`;
@@ -23630,12 +23615,28 @@ async function listenToPosts() {
     }
 }
 
+    const getTimeAgo = (timestamp) => {
+    if (!timestamp) return "";
+    const now = new Date().getTime();
+    const diff = Math.floor((now - timestamp) / 1000);
+    if (diff < 60) return "vừa xong";
+    const mins = Math.floor(diff / 60);
+    if (mins < 60) return `${mins} phút trước`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours} giờ trước`;
+    const days = Math.floor(hours / 24);
+    if (days < 30) return `${days} ngày trước`;
+    const months = Math.floor(days / 30);
+    if (months < 12) return `${months} tháng trước`;
+    return `${Math.floor(days / 365)} năm trước`;
+};
+    
    // --- HÀM RENDER COMMENTS DÙNG CHUNG (ĐÃ SỬA LỖI ĐỊNH NGHĨA PARENTID) ---
-const renderNestedComments = async (allComments, post, myUid, getTimeAgo, parentId = null, level = 0) => {
+// --- HÀM RENDER COMMENTS DÙNG CHUNG (GIỮ NGUYÊN 100% LOGIC CỦA HENRY) ---
+const renderNestedComments = async (allComments, post, myUid, parentId = null, level = 0) => {
     let html = "";
     if (!allComments) return html;
 
-    // Henry để ý chỗ này: parentId bây giờ đã được định nghĩa mặc định là null ở trên
     const children = Object.keys(allComments)
         .map(id => ({ id, ...allComments[id] }))
         .filter(c => (parentId === null ? !c.parentId : c.parentId === parentId))
@@ -23696,7 +23697,7 @@ const renderNestedComments = async (allComments, post, myUid, getTimeAgo, parent
                 ${hasChildren && !isCurrentExpanded ? `<div onclick="expandComment('${c.id}', '${post.id}')" style="color: #ff8fab; font-size: 0.72rem; margin-left: 20px; cursor: pointer; font-weight: bold; margin-top: 5px; display: flex; align-items: center; gap: 6px;"><i class="fas fa-level-up-alt fa-rotate-90" style="font-size: 0.6rem;"></i> Xem các phản hồi...</div>` : ''}
                 
                 <div class="replies-container">
-                    ${await renderNestedComments(allComments, post, myUid, getTimeAgo, c.id, level + 1)}
+                    ${await renderNestedComments(allComments, post, myUid, c.id, level + 1)}
                 </div>
             </div>`;
     }
