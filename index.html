@@ -23495,6 +23495,7 @@ async function selectSavedAccount(stk, name) {
 let expandedComments = []; // Lưu danh sách các commentId đã bấm "Xem thêm"
 // 1. Hàm Đăng Bài (Đã cập nhật cơ chế giới hạn thụt lề đa cấp)
 let isListingPosts = false; 
+let isFirstLoad = true;
 
 async function listenToPosts() {
     if (isListingPosts) return; 
@@ -23519,9 +23520,14 @@ async function listenToPosts() {
     };
 
     postsRef.orderByChild('timestamp').limitToLast(50).on('value', async (snapshot) => {
+        // --- 1. LƯU VỊ TRÍ CUỘN HIỆN TẠI ---
+        const currentScroll = window.scrollY;
+
         const postsContainer = document.getElementById('status-list');
         if (!postsContainer) return;
 
+        // Tạm thời ẩn container hoặc dùng fragment để tránh flicker nếu muốn, 
+        // nhưng để giữ nguyên logic của bạn, ta vẫn dùng innerHTML = ""
         postsContainer.innerHTML = ""; 
         
         const myUsername = userData.profile.name; 
@@ -23535,7 +23541,6 @@ async function listenToPosts() {
             postsArray.push({ id: child.key, ...child.val() });
         });
 
-        // Sử dụng for...of để có thể sử dụng await bên trong khi render từng post
         for (const post of postsArray.reverse()) {
             let showThisPost = false;
 
@@ -23546,7 +23551,6 @@ async function listenToPosts() {
             }
 
             if (showThisPost) {
-                // --- LẤY AVATAR CHỦ BÀI VIẾT MỚI NHẤT ---
                 const authorSnap = await firebase.database().ref(`users/${post.username}/profile`).once('value');
                 const authorData = authorSnap.val() || {};
                 const currentAuthorAvatar = authorData.customAvatar;
@@ -23554,7 +23558,6 @@ async function listenToPosts() {
                 const reactionCount = post.reactions ? Object.keys(post.reactions).length : 0;
                 const hasLiked = post.reactions && post.reactions[myUid];
                 
-                // Chuyển renderNestedComments thành async để lấy avatar comment
                 const renderNestedComments = async (allComments, parentId = null, level = 0) => {
                     let html = "";
                     if (!allComments) return html;
@@ -23579,7 +23582,6 @@ async function listenToPosts() {
                         const commReactionCount = c.reactions ? Object.keys(c.reactions).length : 0;
                         const hasLikedComm = c.reactions && c.reactions[myUid];
 
-                        // --- LẤY AVATAR NGƯỜI COMMENT MỚI NHẤT ---
                         const commUserSnap = await firebase.database().ref(`users/${c.username}/profile`).once('value');
                         const commUserData = commUserSnap.val() || {};
                         const currentCommAvatar = commUserData.customAvatar;
@@ -23638,7 +23640,6 @@ async function listenToPosts() {
                 const commentsHTML = await renderNestedComments(post.comments);
                 const isMyPost = post.uid === myUid;
 
-                // Render avatar bài đăng
                 const pAvatarHtml = currentAuthorAvatar 
                     ? `<img src="${currentAuthorAvatar}" style="width:45px; height:45px; border-radius:50%; object-fit:cover;">`
                     : `<div style="width:45px; height:45px; border-radius:50%; background:#ffe4e8; display:flex; align-items:center; justify-content:center; color:#ff8fab; font-size:1.2rem;"><i class="fas ${authorData.gender === 'Nam' ? 'fa-user-tie' : 'fa-user-graduate'}"></i></div>`;
@@ -23700,6 +23701,12 @@ async function listenToPosts() {
                 postsContainer.insertAdjacentHTML('beforeend', html);
             }
         }
+        
+        // --- 2. KHÔI PHỤC LẠI VỊ TRÍ CUỘN ---
+        // Sử dụng requestAnimationFrame để trình duyệt render xong HTML mới thực hiện cuộn
+        window.requestAnimationFrame(() => {
+            window.scrollTo(0, currentScroll);
+        });
     });
 }
 
@@ -23743,24 +23750,22 @@ function toggleCommentReaction(postId, commentId) {
     if (!expandedComments.includes(commentId)) {
         expandedComments.push(commentId);
         
-        // MẸO CỰC HAY: Không cần load lại cả trang!
-        // Chúng ta chỉ cần kích hoạt lại hàm render của Firebase đang chạy ngầm.
-        // Cách sạch nhất là dùng lại chính dữ liệu cũ để vẽ lại giao diện.
+        // --- CÁCH SỬA TỐI ƯU ---
         
-        const postsRef = firebase.database().ref('posts');
-        
-        // Thay vì dùng .once('value') load lại data tốn băng thông, 
-        // ta chỉ cần "giả vờ" tắt listener đi rồi bật lại ngay lập tức 
-        // để nó tự chạy lại hàm render với danh sách expandedComments mới.
-        
+        // 1. Vẫn cho phép listenToPosts chạy lại
         isListingPosts = false;
         
-        // Tắt listener cũ để tránh bị trùng lặp bộ nhớ (memory leak)
+        // 2. Quan trọng: Tắt listener cũ kèm theo hàm callback cụ thể (nếu có) 
+        // hoặc đơn giản là tắt để khởi động lại.
+        const postsRef = firebase.database().ref('posts');
         postsRef.off(); 
         
-        // Bật lại listener - Lúc này hàm renderNestedComments sẽ chạy lại
-        // và thấy commentId đã nằm trong expandedComments nên sẽ bung ra.
+        // 3. Gọi lại hàm lắng nghe. 
+        // Nhờ logic currentScroll Henry vừa thêm vào listenToPosts, 
+        // khi hàm này chạy lại, nó sẽ tự động giữ nguyên vị trí cũ cho Henry!
         listenToPosts();
+        
+        console.log(`Đã bung bình luận ${commentId} và giữ nguyên vị trí cuộn! ✨`);
     }
 }
     
