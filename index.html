@@ -11081,6 +11081,8 @@ function checkLoginStatus() {
                 if (typeof initUserPresence === 'function') {
                     initUserPresence();
                 }
+
+                initNotificationQueueListener();
                 
                 isSocialInitialized = true; // Đánh dấu đã kích hoạt xong
                 console.log("Hệ thống: Đã bật bộ lắng nghe Social (Duy nhất)");
@@ -13129,6 +13131,20 @@ function handleNotiClick(index) {
                 alert("❌ Không thể xác định người gửi tin nhắn!");
             }
         } 
+
+        // --- TRƯỜNG HỢP MỚI: NHẤN VÀO THÔNG BÁO NHẮC TÊN (TAG) ---
+        else if (type === 'open_post' || type === 'mention') {
+            const postId = noti.extraData.postId;
+            if (postId) {
+                // Sử dụng hàm chuyển tab và cuộn đến bài viết Henry đã có sẵn
+                switchTab('tab-status'); 
+                setTimeout(() => {
+                    scrollToGame(`post-card-${postId}`);
+                }, 300);
+            } else {
+                alert("❌ Không tìm thấy bài viết liên quan!");
+            }
+        }
         
         // --- TRƯỜNG HỢP 3: XEM HỒ SƠ THÔNG THƯỜNG ---
         else if (type === 'view_profile') {
@@ -13154,7 +13170,7 @@ function handleNotiClick(index) {
         }
     }, 150);
 }
-
+    
 // Cập nhật số lượng trên Badge
 function updateNotiBadge() {
     const badge = document.getElementById('noti-badge');
@@ -24132,51 +24148,87 @@ async function handleMentionNotifications(text, postId) {
     let match;
     const mentions = [];
 
+    // 1. Lọc danh sách tên được tag (không trùng lặp)
     while ((match = tagRegex.exec(text)) !== null) {
-        mentions.push(match[1]); 
+        if (!mentions.includes(match[1])) {
+            mentions.push(match[1]);
+        }
     }
 
     if (mentions.length > 0) {
+        const usersRef = firebase.database().ref('users');
+
         for (const targetName of mentions) {
-            if (targetName === userData.profile.name) continue;
+            // Không tự gửi thông báo cho chính mình
+            if (targetName === userData.profile.name || targetName === currentUser) continue;
 
-            const usersRef = firebase.database().ref('users');
-            // Tìm theo cả Username (Key) hoặc Profile Name
             let targetUid = null;
-            
-            // Thử tìm trực tiếp theo Username trước (Tốc độ cao)
-            const directSnap = await usersRef.child(targetName).once('value');
-            if (directSnap.exists()) {
-                targetUid = directSnap.val().profile?.uid || targetName;
-            } else {
-                // Nếu không thấy, tìm theo Display Name
-                const querySnap = await usersRef.orderByChild('profile/name').equalTo(targetName).once('value');
-                if (querySnap.exists()) {
-                    const data = querySnap.val();
-                    const firstKey = Object.keys(data)[0];
-                    targetUid = data[firstKey].profile?.uid || firstKey;
+
+            try {
+                // A. Tìm nhanh bằng Username (Key của node users)
+                const directSnap = await usersRef.child(targetName).once('value');
+                if (directSnap.exists()) {
+                    targetUid = directSnap.val().profile?.uid || targetName;
+                } else {
+                    // B. Nếu không thấy, tìm bằng Profile Name (hiển thị có dấu)
+                    const querySnap = await usersRef.orderByChild('profile/name').equalTo(targetName).once('value');
+                    if (querySnap.exists()) {
+                        const dataFound = querySnap.val();
+                        const firstKey = Object.keys(dataFound)[0];
+                        targetUid = dataFound[firstKey].profile?.uid || firstKey;
+                    }
                 }
-            }
 
-            if (targetUid) {
-                // Gửi vào notifications_queue theo bộ Rules của Henry
-                const notificationData = {
-                    title: "NHẮC ĐẾN",
-                    sender: userData.profile.name,
-                    content: `${userData.profile.name} đã nhắc đến bạn trong một bình luận! ✨`,
-                    postId: postId,
-                    type: "mention",
-                    timestamp: firebase.database.ServerValue.TIMESTAMP,
-                    isRead: false
-                };
+                // 2. Nếu tìm thấy UID, đẩy vào hàng chờ (Queue) để chuông rung
+                if (targetUid) {
+                    const notificationData = {
+                        title: "💖 NHẮC ĐẾN",
+                        sender: userData.profile.name,
+                        // Nội dung ngắn gọn để hiện lên màn hình điện thoại/chuông
+                        message: `${userData.profile.name} đã nhắc đến bạn trong một bình luận! ✨`,
+                        timestamp: firebase.database.ServerValue.TIMESTAMP,
+                        // Đóng gói extraData ngay từ Firebase để hàm handleNotiClick của Henry đọc được luôn
+                        extraData: {
+                            type: 'open_post', // Loại thông báo: Mở bài viết
+                            postId: postId,
+                            sender: userData.profile.name
+                        }
+                    };
 
-                await firebase.database().ref(`notifications_queue/${targetUid}`).push(notificationData);
-                console.log(`🔔 Đã rung chuông cho: ${targetName}`);
+                    // Đẩy vào node notifications_queue theo đúng Rules
+                    await firebase.database().ref(`notifications_queue/${targetUid}`).push(notificationData);
+                    console.log(`🔔 Đã rung chuông thành công cho: ${targetName}`);
+                }
+            } catch (err) {
+                console.error("Lỗi khi gửi thông báo nhắc tên:", err);
             }
         }
     }
 }
 
+    function initNotificationQueueListener() {
+    if (!userData || !userData.profile || !userData.profile.uid) return;
+
+    const myUid = userData.profile.uid;
+    const queueRef = firebase.database().ref(`notifications_queue/${myUid}`);
+
+    queueRef.on('child_added', (snapshot) => {
+        const data = snapshot.val();
+        
+        // Gọi hàm addNotification chính chủ của Henry
+        // extraData truyền postId để khi nhấn vào chuông thì cuộn đến bài viết
+        addNotification(
+            data.title, 
+            data.message, 
+            false, 
+            { type: 'open_post', postId: data.postId }
+        );
+
+        // Sau khi đã nạp vào máy (biến userData.notifications) thì xóa trên Firebase cho sạch
+        queueRef.child(snapshot.key).remove();
+    });
+}
+    
     async function searchFriendByName(targetName) {
     // Xóa khoảng trắng thừa nếu có
     const cleanName = targetName.trim();
