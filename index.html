@@ -7014,6 +7014,12 @@ input[type="date"].sweetie-input-style {
         background: #ffe4e8 !important;
         transform: scale(1.02);
     }
+
+    .author-avatar:hover, .comment-avatar:hover {
+    opacity: 0.8;
+    transform: scale(1.05);
+    transition: all 0.2s ease;
+}
 </style>
 </head>
 <body>
@@ -23496,7 +23502,6 @@ function listenToPosts() {
     const postsRef = firebase.database().ref('posts');
     isListingPosts = true;
 
-    // --- HÀM BỔ TRỢ: Tính thời gian bao lâu rồi ---
     const getTimeAgo = (timestamp) => {
         if (!timestamp) return "";
         const now = new Date().getTime();
@@ -23568,19 +23573,29 @@ function listenToPosts() {
                         const commReactionCount = c.reactions ? Object.keys(c.reactions).length : 0;
                         const hasLikedComm = c.reactions && c.reactions[myUid];
 
+                        // Lấy avatar comment (ưu tiên customAvatar nếu có trong post data)
+                        const cAvatarHtml = c.customAvatar 
+                            ? `<img src="${c.customAvatar}" style="width:30px; height:30px; border-radius:50%; object-fit:cover;">`
+                            : `<div style="width:30px; height:30px; border-radius:50%; background:#ffe4e8; display:flex; align-items:center; justify-content:center; color:#ff8fab; font-size:0.7rem;"><i class="fas fa-user"></i></div>`;
+
                         html += `
                             <div class="comment-wrapper" style="margin-left:${marginLeft}px; margin-top:8px; border-left:${borderLeft}; padding-left:${paddingLeft}px;">
                                 <div class="comment-item" style="font-size:0.8rem; padding:8px 12px; background:${level === 0 ? '#fff3f5' : '#fff'}; border-radius:12px; line-height:1.4; position:relative; display:flex; justify-content:space-between; align-items:flex-start; border: ${level > 0 ? '1px solid #fff3f5' : 'none'}">
-                                    <div style="flex:1;">
-                                        <strong style="color:#d81b60;">${c.username}</strong> 
-                                        <span style="font-size: 0.65rem; color: #b0b0b0; font-weight: normal; margin-left: 4px;">• ${getTimeAgo(c.timestamp)}</span>
-                                        <br>
-                                        <span>${c.text}</span>
-                                        <div style="margin-top:4px; display: flex; align-items: center; gap: 12px;">
-                                            <span onclick="toggleCommentReaction('${post.id}', '${c.id}')" style="color:${hasLikedComm ? '#ff1493' : '#ff8fab'}; font-size:0.7rem; cursor:pointer; font-weight:bold;">
-                                                <i class="${hasLikedComm ? 'fas' : 'far'} fa-heart"></i> ${commReactionCount > 0 ? commReactionCount : ''} Thích
-                                            </span>
-                                            <span onclick="showReplyInput('${c.id}', '${c.username}')" style="color:#ff8fab; font-size:0.7rem; cursor:pointer; font-weight:bold; text-decoration:underline;">Trả lời</span>
+                                    <div style="display:flex; gap:10px; flex:1;">
+                                        <div onclick="searchFriendByID('${c.uid}')" style="cursor:pointer; flex-shrink:0; margin-top:3px;">
+                                            ${cAvatarHtml}
+                                        </div>
+                                        <div style="flex:1;">
+                                            <strong style="color:#d81b60; cursor:pointer;" onclick="searchFriendByID('${c.uid}')">${c.username}</strong> 
+                                            <span style="font-size: 0.65rem; color: #b0b0b0; font-weight: normal; margin-left: 4px;">• ${getTimeAgo(c.timestamp)}</span>
+                                            <br>
+                                            <span>${c.text}</span>
+                                            <div style="margin-top:4px; display: flex; align-items: center; gap: 12px;">
+                                                <span onclick="toggleCommentReaction('${post.id}', '${c.id}')" style="color:${hasLikedComm ? '#ff1493' : '#ff8fab'}; font-size:0.7rem; cursor:pointer; font-weight:bold;">
+                                                    <i class="${hasLikedComm ? 'fas' : 'far'} fa-heart"></i> ${commReactionCount > 0 ? commReactionCount : ''} Thích
+                                                </span>
+                                                <span onclick="showReplyInput('${c.id}', '${c.username}')" style="color:#ff8fab; font-size:0.7rem; cursor:pointer; font-weight:bold; text-decoration:underline;">Trả lời</span>
+                                            </div>
                                         </div>
                                     </div>
                                     ${isMyComment ? `
@@ -23614,14 +23629,24 @@ function listenToPosts() {
                 const commentsHTML = renderNestedComments(post.comments);
                 const isMyPost = post.uid === myUid;
 
+                // Lấy avatar chủ bài viết
+                const pAvatarHtml = post.authorAvatar 
+                    ? `<img src="${post.authorAvatar}" style="width:45px; height:45px; border-radius:50%; object-fit:cover;">`
+                    : `<div style="width:45px; height:45px; border-radius:50%; background:#ffe4e8; display:flex; align-items:center; justify-content:center; color:#ff8fab; font-size:1.2rem;"><i class="fas fa-user"></i></div>`;
+
                 const html = `
                     <div class="status-card post-item animate__animated animate__fadeIn">
                         <div class="post-header" style="position:relative; display:flex; justify-content:space-between; align-items:flex-start;">
-                            <div>
-                                <div class="post-user">💖 ${post.username}</div>
-                                <div style="display: flex; align-items: center; gap: 6px;">
-                                    <div class="post-time" style="margin-bottom: 0;">${new Date(post.timestamp).toLocaleString('vi-VN')}</div>
-                                    <span class="post-privacy-icon" style="font-size: 0.75rem; color: #ffb3c1;">${getPrivacyIcon(post.privacy)}</span>
+                            <div style="display:flex; gap:12px; align-items:center;">
+                                <div onclick="searchFriendByID('${post.uid}')" style="cursor:pointer; position:relative;">
+                                    ${pAvatarHtml}
+                                </div>
+                                <div>
+                                    <div class="post-user" onclick="searchFriendByID('${post.uid}')" style="cursor:pointer;">💖 ${post.username}</div>
+                                    <div style="display: flex; align-items: center; gap: 6px;">
+                                        <div class="post-time" style="margin-bottom: 0;">${new Date(post.timestamp).toLocaleString('vi-VN')}</div>
+                                        <span class="post-privacy-icon" style="font-size: 0.75rem; color: #ffb3c1;">${getPrivacyIcon(post.privacy)}</span>
+                                    </div>
                                 </div>
                             </div>
                             ${isMyPost ? `
