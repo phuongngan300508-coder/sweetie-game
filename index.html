@@ -13183,52 +13183,39 @@ function handleNotiClick(index) {
         } 
 
         // --- TRƯỜNG HỢP MỚI: NHẤN VÀO THÔNG BÁO NHẮC TÊN (TAG) ---
-       else if (type === 'open_post' || type === 'mention') {
-    const postId = noti.extraData.postId;
-    const commentId = noti.extraData.commentId;
-    // BỔ SUNG: Lấy parentId từ extraData để biết cần mở rộng mục nào
-    const parentId = noti.extraData.parentId; 
+        else if (type === 'open_post' || type === 'mention') {
+            const postId = noti.extraData.postId;
+            const commentId = noti.extraData.commentId; // Henry nhớ đảm bảo extraData có ID bình luận
 
-    if (postId) {
-        // --- LOGIC TỰ ĐỘNG MỞ PHẢN HỒI ---
-        // Nếu có parentId và nó chưa được mở, Henry hãy ép nó vào mảng expandedComments
-        if (parentId && typeof expandedComments !== 'undefined') {
-            if (!expandedComments.includes(parentId)) {
-                expandedComments.push(parentId);
-                console.log("Hệ thống: Đã tự động kích hoạt mở rộng cho bình luận cha:", parentId);
+            if (postId) {
+                // Sử dụng hàm chuyển tab của Henry
+                switchTab('tab-status'); 
+
+                setTimeout(() => {
+                    // Xác định phần tử cần nhắm tới: Ưu tiên bình luận, nếu không có thì tới bài viết
+                    const targetId = commentId ? `comm-wrap-${commentId}` : `post-card-${postId}`;
+                    const targetEl = document.getElementById(targetId);
+
+                    if (targetEl) {
+                        // Cuộn mượt và đưa phần tử vào giữa màn hình
+                        targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+                        // Thêm hiệu ứng "Nháy hồng" Henry đã viết trong CSS
+                        targetEl.classList.add('highlight-noti-comment');
+
+                        // Xóa class sau 3 giây để sạch DOM
+                        setTimeout(() => {
+                            targetEl.classList.remove('highlight-noti-comment');
+                        }, 3000);
+                    } else {
+                        // Nếu mạng chậm chưa kịp render, dùng hàm dự phòng của Henry
+                        scrollToGame(`post-card-${postId}`);
+                    }
+                }, 400); // Tăng delay nhẹ để tab kịp render nội dung
+            } else {
+                alert("❌ Không tìm thấy bài viết liên quan!");
             }
         }
-
-        // Sử dụng hàm chuyển tab của Henry
-        switchTab('tab-status'); 
-
-        setTimeout(() => {
-            // Xác định phần tử cần nhắm tới: Ưu tiên bình luận con, nếu không có thì tới bài viết
-            const targetId = commentId ? `comm-wrap-${commentId}` : `post-card-${postId}`;
-            const targetEl = document.getElementById(targetId);
-
-            if (targetEl) {
-                // Cuộn mượt và đưa phần tử vào giữa màn hình
-                targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-                // Thêm hiệu ứng "Nháy hồng" Henry đã viết trong CSS
-                targetEl.classList.add('highlight-noti-comment');
-
-                // Xóa class sau 3 giây để sạch DOM
-                setTimeout(() => {
-                    if (targetEl) targetEl.classList.remove('highlight-noti-comment');
-                }, 3000);
-            } else {
-                // Nếu mạng chậm hoặc là comment con nằm sâu, dùng hàm dự phòng của Henry
-                // Đồng thời load lại comment để đảm bảo ID xuất hiện
-                if (typeof refreshCommentsOnly === 'function') refreshCommentsOnly(postId);
-                scrollToGame(`post-card-${postId}`);
-            }
-        }, 600); // Tăng delay lên 600ms để đảm bảo đệ quy render kịp các comment con vừa mở
-    } else {
-        alert("❌ Không tìm thấy bài viết liên quan!");
-    }
-}
         
         // --- TRƯỜNG HỢP 3: XEM HỒ SƠ THÔNG THƯỜNG ---
         else if (type === 'view_profile') {
@@ -23964,7 +23951,7 @@ async function submitReply(postId, commentId) {
         // Gửi dữ liệu lên thẳng nút 'comments' (GIỮ NGUYÊN)
         await firebase.database().ref(`posts/${postId}/comments`).push(replyData);
 
-        handleMentionNotifications(text, postId, newReplyId, commentId);
+        handleMentionNotifications(text, postId);
         
         // Xóa nội dung ô nhập sau khi gửi thành công
         replyInput.value = "";
@@ -24181,7 +24168,7 @@ function submitComment(postId) {
 firebase.database().ref(`posts/${postId}/comments`).push(commentData)
     .then((snap) => { // Sửa thành (snap) để lấy ID bình luận vừa tạo
         const newCommentId = snap.key; // Đây chính là ID bình luận
-        handleMentionNotifications(text, postId, newCommentId, null);
+        handleMentionNotifications(text, postId, newCommentId); // Truyền ID vào đây
         
         input.value = "";
         if (typeof addNotification === 'function') {
@@ -24277,7 +24264,6 @@ async function handleMentionNotifications(text, postId, commentId) { // Bổ sun
                             type: 'mention', // Henry dùng 'mention' để handleNotiClick kích hoạt hiệu ứng nháy hồng
                             postId: postId,
                             commentId: commentId, // BỔ SUNG: Gửi kèm ID bình luận để cuộn đến chính xác vị trí
-                            parentId: parentId,
                             sender: userData.profile.name
                         }
                     };
