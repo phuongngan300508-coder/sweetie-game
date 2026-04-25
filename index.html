@@ -11274,11 +11274,6 @@ function handleLogin() {
             console.log("Hệ thống: Đã kết nối vào Kênh chat thế giới.");
         }
 
-        if (typeof listenToMyNotifications === 'function') {
-            listenToMyNotifications();
-            console.log("Hệ thống: Đã bắt đầu lắng nghe tương tác mới Realtime.");
-        }
-
         isSocialInitialized = true; // Cắm cờ để không lặp lại
         console.log("Hệ thống: Đã kích hoạt bộ lắng nghe Social (Duy nhất)");
     }
@@ -23829,27 +23824,6 @@ async function submitReply(postId, commentId) {
         // Gửi dữ liệu lên thẳng nút 'comments' (không dùng nút 'replies' cũ)
         await firebase.database().ref(`posts/${postId}/comments`).push(replyData);
         
-        // --- PHẦN THÊM MỚI: GỬI THÔNG BÁO CHO NGƯỜI ĐƯỢC PHẢN HỒI ---
-        firebase.database().ref(`posts/${postId}/comments/${commentId}/uid`).once('value', (commenterSnap) => {
-            const targetUid = commenterSnap.val();
-            // Chỉ gửi thông báo nếu người phản hồi không phải là chủ của bình luận đó
-            if (targetUid && targetUid !== userData.profile.uid) {
-                const notiData = {
-                    title: "PHẢN HỒI MỚI 💖", // Thêm tiêu đề để khớp giao diện chuông
-                    fromName: userData.profile.name,
-                    message: `đã phản hồi bình luận của bạn: "${text.substring(0, 30)}..."`,
-                    timestamp: firebase.database.ServerValue.TIMESTAMP,
-                    isRead: false,
-                    unread: true, // Đảm bảo số thông báo đỏ hiện lên
-                    type: 'reply',
-                    postId: postId // Gửi kèm postId để khi bấm vào chuông có thể dẫn tới bài viết
-                };
-                // Đẩy vào nhánh notifications/${targetUid} theo Rules
-                firebase.database().ref(`notifications/${targetUid}`).push(notiData);
-            }
-        });
-        // -----------------------------------------------------------
-
         // Xóa nội dung ô nhập sau khi gửi thành công
         replyInput.value = "";
         
@@ -23864,10 +23838,9 @@ async function submitReply(postId, commentId) {
         console.error("Lỗi khi phản hồi:", e);
         alert("Lỗi khi phản hồi: " + e.message);
     } 
-
     // Trong hàm submitReply, trước khi kết thúc try:
-    if (!expandedComments.includes(commentId)) {
-        expandedComments.push(commentId);
+if (!expandedComments.includes(commentId)) {
+    expandedComments.push(commentId);
     }
 }
     
@@ -24053,31 +24026,6 @@ function submitComment(postId) {
         firebase.database().ref(`posts/${postId}/comments`).push(commentData)
             .then(() => {
                 input.value = "";
-
-                // --- PHẦN THÊM MỚI: GỬI THÔNG BÁO CHO CHỦ BÀI ĐĂNG ---
-                firebase.database().ref(`posts/${postId}/uid`).once('value', (authorSnap) => {
-                    const authorUid = authorSnap.val();
-                    // Chỉ gửi nếu người comment không phải là chủ bài đăng
-                    if (authorUid && authorUid !== userData.profile.uid) {
-                        
-                        // HENRY LƯU Ý: Chỉnh lại cấu trúc notiData để hàm render chuông của Henry nhận diện được
-                        const notiData = {
-                            title: "BÌNH LUẬN MỚI ✨", // Thêm title để hiện ở header chuông
-                            fromName: userData.profile.name,
-                            message: `đã bình luận bài viết của bạn: "${text.substring(0, 30)}..."`,
-                            timestamp: firebase.database.ServerValue.TIMESTAMP,
-                            isRead: false,
-                            unread: true, // Henry dùng unread để hiện số đỏ ở chuông (theo code cũ)
-                            type: 'comment',
-                            postId: postId // Lưu lại ID để khi bấm vào thông báo có thể dẫn tới bài đăng
-                        };
-
-                        // Đẩy vào đúng nhánh notifications/${authorUid} đã mở trong Rules
-                        firebase.database().ref(`notifications/${authorUid}`).push(notiData);
-                    }
-                });
-                // -------------------------------------------------------
-
             })
             .catch(err => {
                 console.error("Lỗi gửi bình luận:", err);
@@ -24092,64 +24040,6 @@ function getPrivacyIcon(p) {
     return '🔒';
 }
 
-    // Hàm gửi thông báo chung cho cư dân
-async function sendNotificationToUser(targetUid, message, type = "comment") {
-    if (!targetUid || targetUid === userData.profile.uid) return; // Không thông báo cho chính mình
-
-    const notiData = {
-        fromName: userData.profile.name,
-        fromUid: userData.profile.uid,
-        message: message,
-        type: type,
-        isRead: false,
-        timestamp: firebase.database.ServerValue.TIMESTAMP
-    };
-
-    // Gửi vào nhánh thông báo của người nhận
-    await firebase.database().ref(`notifications/${targetUid}`).push(notiData);
-}
-
-   function listenToMyNotifications() {
-    if (!userData || !userData.profile || !userData.profile.uid) return;
-
-    const myUid = userData.profile.uid;
-    const notiRef = firebase.database().ref(`notifications/${myUid}`);
-
-    // Ghi lại thời điểm bắt đầu lắng nghe để tránh nổ thông báo cũ khi vừa load trang
-    const startTime = Date.now();
-
-    // Lắng nghe tại nhánh notifications/ID_CỦA_HENRY
-    // Sử dụng .on('child_added') để bắt thông báo MỚI
-    notiRef.orderByChild('timestamp').startAt(startTime).on('child_added', (snapshot) => {
-        const noti = snapshot.val();
-        
-        // Kiểm tra nếu thông báo này chưa đọc (unread/isRead) và mới phát sinh
-        // Giữ nguyên logic hiển thị và thiết kế của Henry
-        if (noti && (noti.unread === true || noti.isRead === false)) {
-            
-            // 1. Hiện thông báo lên Chuông báo của Henry
-            // Giữ nguyên tham số: Tiêu đề, Nội dung, Phát tiếng (false), và extraData (noti)
-            addNotification(
-                noti.title || "TƯƠNG TÁC ✨", 
-                `💖 ${noti.fromName} ${noti.message}`, 
-                false, 
-                noti
-            );
-            
-            // 2. Bắn thông báo ra máy (Desktop/Mobile)
-            if (typeof sendSystemLiveNotification === 'function') {
-                sendSystemLiveNotification("Sweetie Game World 💖", `${noti.fromName} ${noti.message}`);
-            }
-
-            // 3. Đánh dấu đã đọc trên Firebase theo đúng thiết kế của Henry
-            // Cập nhật cả 2 flag để chắc chắn Rules và Local đều khớp
-            snapshot.ref.update({ 
-                isRead: true,
-                unread: false 
-            });
-        }
-    });
-}
 // Gọi hàm lắng nghe khi ứng dụng khởi chạy hoặc khi chuyển tab
 // listenToPosts();
 </script>
