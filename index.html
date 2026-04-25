@@ -11208,8 +11208,8 @@ function handleLogin() {
     // --- MỚI: KÍCH HOẠT TRẠNG THÁI ONLINE NGAY LẬP TỨC ---
     if (typeof initUserPresence === 'function') {
         initUserPresence();
-        // Henry thêm dòng này: Cập nhật timestamp cuối để "đánh thức" các bộ lắng nghe của bạn bè
-        db.ref('/status/' + name + '/last_changed').set(firebase.database.ServerValue.TIMESTAMP);
+        // SỬA LỖI TẠI ĐÂY: Sử dụng biến 'name' (là chuỗi) thay vì các object phức tạp
+        db.ref('/status/' + String(name) + '/last_changed').set(firebase.database.ServerValue.TIMESTAMP);
         console.log("Hệ thống: Đã kích hoạt trạng thái Online cho " + name);
     }
 
