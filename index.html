@@ -23468,6 +23468,7 @@ async function selectSavedAccount(stk, name) {
         username: userData.profile.name || "Cư dân Sweetie",
         content: text,
         privacy: privacy,
+        allowComments: true, // THÊM DÒNG NÀY
         timestamp: firebase.database.ServerValue.TIMESTAMP
     };
 
@@ -23485,10 +23486,6 @@ async function selectSavedAccount(stk, name) {
     }
 }
     
-let expandedComments = []; // Lưu danh sách các commentId đã bấm "Xem thêm"
-// 1. Hàm Đăng Bài (Đã cập nhật cơ chế giới hạn thụt lề đa cấp)
-let isListingPosts = false; 
-
 function listenToPosts() {
     if (isListingPosts) return; 
 
@@ -23547,7 +23544,6 @@ function listenToPosts() {
                         const hasChildren = Object.values(allComments).some(child => child.parentId === c.id);
                         const isCurrentExpanded = expandedComments.includes(c.id);
 
-                        // --- LOGIC THẢ TIM BÌNH LUẬN ---
                         const commReactionCount = c.reactions ? Object.keys(c.reactions).length : 0;
                         const hasLikedComm = c.reactions && c.reactions[myUid];
 
@@ -23560,7 +23556,6 @@ function listenToPosts() {
                                             <span onclick="toggleCommentReaction('${post.id}', '${c.id}')" style="color:${hasLikedComm ? '#ff1493' : '#ff8fab'}; font-size:0.7rem; cursor:pointer; font-weight:bold;">
                                                 <i class="${hasLikedComm ? 'fas' : 'far'} fa-heart"></i> ${commReactionCount > 0 ? commReactionCount : ''} Thích
                                             </span>
-
                                             <span onclick="showReplyInput('${c.id}', '${c.username}')" style="color:#ff8fab; font-size:0.7rem; cursor:pointer; font-weight:bold; text-decoration:underline;">Trả lời</span>
                                         </div>
                                     </div>
@@ -23573,19 +23568,16 @@ function listenToPosts() {
                                             </div>
                                         </div>` : ''}
                                 </div>
-                                
                                 <div id="reply-box-${c.id}" style="display:none; margin-top:5px; gap:5px; margin-left:10px;">
                                     <input type="text" id="input-reply-${c.id}" placeholder="Viết phản hồi..." style="flex:1; border:1px solid #ffe4e8; border-radius:10px; padding:4px 10px; font-size:0.7rem; outline:none;">
                                     <button onclick="submitReply('${post.id}', '${c.id}')" style="background:#ff8fab; color:white; border:none; border-radius:10px; padding:2px 8px; font-size:0.7rem; cursor:pointer;">Gửi</button>
                                 </div>
-
                                 ${hasChildren && !isCurrentExpanded ? `
                                     <div onclick="expandComment('${c.id}')" style="color: #ff8fab; font-size: 0.72rem; margin-left: 20px; cursor: pointer; font-weight: bold; margin-top: 5px; display: flex; align-items: center; gap: 6px;">
                                          <i class="fas fa-level-up-alt fa-rotate-90" style="font-size: 0.6rem;"></i> 
                                          Xem các phản hồi...
                                     </div>
                                 ` : ''}
-
                                 <div class="replies-container">
                                     ${renderNestedComments(allComments, c.id, level + 1)}
                                 </div>
@@ -23596,7 +23588,6 @@ function listenToPosts() {
                 };
 
                 const commentsHTML = renderNestedComments(post.comments);
-
                 const isMyPost = post.uid === myUid;
 
                 const html = `
@@ -23615,6 +23606,10 @@ function listenToPosts() {
                                     <div id="menu-post-${post.id}" class="status-menu-content" style="display:none; position:absolute; right:0; background:white; box-shadow:0 2px 10px rgba(0,0,0,0.1); border-radius:10px; z-index:100; min-width:140px;">
                                         <div onclick="editPost('${post.id}', \`${post.content.replace(/`/g, '\\`').replace(/\n/g, '\\n')}\`)" style="padding:10px 15px; cursor:pointer; color:#444; font-size:0.8rem; border-bottom:1px solid #fff3f5;"><i class="fas fa-edit"></i> Chỉnh sửa nội dung</div>
                                         <div onclick="changePostPrivacy('${post.id}')" style="padding:10px 15px; cursor:pointer; color:#444; font-size:0.8rem; border-bottom:1px solid #fff3f5;"><i class="fas fa-lock"></i> Chỉnh sửa quyền riêng tư</div>
+                                        <div onclick="toggleCommentSettings('${post.id}', ${post.allowComments !== false})" style="padding:10px 15px; cursor:pointer; color:#444; font-size:0.8rem; border-bottom:1px solid #fff3f5;">
+                                            <i class="fas ${post.allowComments !== false ? 'fa-comment-slash' : 'fa-comment'}"></i> 
+                                            ${post.allowComments !== false ? 'Tắt bình luận' : 'Mở bình luận'}
+                                        </div>
                                         <div onclick="deletePost('${post.id}')" style="padding:10px 15px; cursor:pointer; color:#ff4d4d; font-size:0.8rem;"><i class="fas fa-trash-alt"></i> Xóa bài</div>
                                     </div>
                                 </div>` : ''}
@@ -23626,7 +23621,7 @@ function listenToPosts() {
                             <button class="action-btn" onclick="toggleReaction('${post.id}')" style="background:none; border:none; color:${hasLiked ? '#ff1493' : '#ff8fab'}; cursor:pointer; font-weight:${hasLiked ? 'bold' : 'normal'};">
                                 <i class="${hasLiked ? 'fas' : 'far'} fa-heart"></i> ${reactionCount} Tim
                             </button>
-                            <button class="action-btn" onclick="document.getElementById('comment-input-${post.id}').focus()" style="background:none; border:none; color:#ff8fab; cursor:pointer;">
+                            <button class="action-btn" onclick="${post.allowComments !== false ? `document.getElementById('comment-input-${post.id}').focus()` : `alert('Bài viết đã tắt bình luận!')`}" style="background:none; border:none; color:#ff8fab; cursor:pointer;">
                                 <i class="far fa-comment"></i> Bình luận
                             </button>
                         </div>
@@ -23635,10 +23630,17 @@ function listenToPosts() {
                                 ${commentsHTML}
                             </div>
                             <style>#comments-list-${post.id}::-webkit-scrollbar { display: none; }</style>
-                            <div class="comment-input-group" style="display:flex; gap:5px; margin-top:8px;">
-                                <input type="text" id="comment-input-${post.id}" placeholder="Viết bình luận..." style="flex:1; border:1px solid #ffc1cc; border-radius:15px; padding:5px 12px; font-size:0.8rem; outline:none;">
-                                <button onclick="submitComment('${post.id}')" style="background:#ff8fab; color:white; border:none; border-radius:15px; padding:4px 12px; font-size:0.75rem; cursor:pointer; font-weight:bold;">Gửi</button>
-                            </div>
+                            
+                            ${post.allowComments !== false ? `
+                                <div class="comment-input-group" style="display:flex; gap:5px; margin-top:8px;">
+                                    <input type="text" id="comment-input-${post.id}" placeholder="Viết bình luận..." style="flex:1; border:1px solid #ffc1cc; border-radius:15px; padding:5px 12px; font-size:0.8rem; outline:none;">
+                                    <button onclick="submitComment('${post.id}')" style="background:#ff8fab; color:white; border:none; border-radius:15px; padding:4px 12px; font-size:0.75rem; cursor:pointer; font-weight:bold;">Gửi</button>
+                                </div>
+                            ` : `
+                                <div style="text-align:center; padding:10px; font-size:0.75rem; color:#888; font-style:italic;">
+                                    <i class="fas fa-lock"></i> Chủ bài viết đã tắt tính năng bình luận.
+                                </div>
+                            `}
                         </div>
                     </div>
                 `;
@@ -23646,6 +23648,20 @@ function listenToPosts() {
             }
         });
     });
+}
+
+    // Hàm bật/tắt quyền bình luận
+async function toggleCommentSettings(postId, currentStatus) {
+    try {
+        await firebase.database().ref(`posts/${postId}`).update({
+            allowComments: !currentStatus
+        });
+        
+        const msg = !currentStatus ? "Đã mở lại bình luận! ✨" : "Đã tắt bình luận bài viết! 🔒";
+        addNotification("HỆ THỐNG", msg);
+    } catch (e) {
+        alert("Lỗi: " + e.message);
+    }
 }
 
     // Thả tim cho bình luận (áp dụng cho cả comment gốc và reply)
@@ -23938,22 +23954,31 @@ function submitComment(postId) {
         return;
     }
 
-    const commentData = {
-        uid: userData.profile.uid, // Phải có cái này để khớp với Rules
-        username: userData.profile.name || "Cư dân",
-        text: text,
-        timestamp: firebase.database.ServerValue.TIMESTAMP
-    };
+    // --- THÊM BƯỚC KIỂM TRA QUYỀN BÌNH LUẬN ---
+    firebase.database().ref(`posts/${postId}/allowComments`).once('value', (snap) => {
+        if (snap.exists() && snap.val() === false) {
+            alert("Bài viết này đã tắt tính năng bình luận rồi nha! 💖");
+            return;
+        }
 
-    // Gửi lên Firebase
-    firebase.database().ref(`posts/${postId}/comments`).push(commentData)
-        .then(() => {
-            input.value = "";
-        })
-        .catch(err => {
-            console.error("Lỗi gửi bình luận:", err);
-            alert("Không có quyền bình luận, hãy kiểm tra lại Rules!");
-        });
+        // Nếu quyền bình luận đang mở, tiến hành gửi dữ liệu
+        const commentData = {
+            uid: userData.profile.uid, // Phải có cái này để khớp với Rules
+            username: userData.profile.name || "Cư dân",
+            text: text,
+            timestamp: firebase.database.ServerValue.TIMESTAMP
+        };
+
+        // Gửi lên Firebase
+        firebase.database().ref(`posts/${postId}/comments`).push(commentData)
+            .then(() => {
+                input.value = "";
+            })
+            .catch(err => {
+                console.error("Lỗi gửi bình luận:", err);
+                alert("Không có quyền bình luận, hãy kiểm tra lại Rules!");
+            });
+    });
 }
     
 function getPrivacyIcon(p) {
