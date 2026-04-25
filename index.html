@@ -23454,7 +23454,7 @@ async function selectSavedAccount(stk, name) {
     const text = statusInput.value.trim();
     const privacy = document.getElementById('status-privacy').value;
     
-    if (!userData || !userData.profile || !userData.profile.uid) {
+    if (!userData?.profile?.uid) {
         alert("Bạn cần đăng nhập để thực hiện tính năng này! 💖");
         return;
     }
@@ -23464,7 +23464,6 @@ async function selectSavedAccount(stk, name) {
         return;
     }
 
-    // Khóa nút ngay lập tức
     postBtn.disabled = true;
     const originalText = postBtn.innerText;
     postBtn.innerText = "Đang đăng...";
@@ -23474,24 +23473,37 @@ async function selectSavedAccount(stk, name) {
         username: userData.profile.name || "Cư dân Sweetie",
         content: text,
         privacy: privacy,
-        allowComments: true, // THÊM DÒNG NÀY
+        allowComments: true,
         timestamp: firebase.database.ServerValue.TIMESTAMP
     };
 
     try {
         await firebase.database().ref('posts').push(newPost);
+        
+        // 1. Reset input
         statusInput.value = "";
-        // Không cần gọi lại listenToPosts() ở đây vì hàm .on('value') ở dưới sẽ tự cập nhật khi có data mới
+
+        // 2. Thông báo thành công
+        if (typeof addNotification === 'function') {
+            addNotification("HỆ THỐNG", "Bài viết của bạn đã được đăng lên tường nhà! 🌎");
+        }
+
+        // 3. Cuộn lên đầu trang mượt mà để cư dân thấy bài mình vừa đăng
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+        // Henry không cần gọi lại bất cứ hàm gì ở đây, 
+        // listener 'child_added' trong listenToPosts sẽ tự bắt được bài mới này 
+        // và vẽ nó lên đầu danh sách ngay lập tức!
+
     } catch (e) {
         console.error("Lỗi đăng bài:", e);
         alert("Có lỗi xảy ra, thử lại sau nhé!");
     } finally {
-        // Luôn mở lại nút dù thành công hay thất bại
         postBtn.disabled = false;
         postBtn.innerText = originalText;
     }
 }
-
+    
 let expandedComments = []; // Lưu danh sách các commentId đã bấm "Xem thêm"
 // 1. Hàm Đăng Bài (Đã cập nhật cơ chế giới hạn thụt lề đa cấp)
 let isListingPosts = false; 
@@ -23518,187 +23530,184 @@ async function listenToPosts() {
         return `${Math.floor(days / 365)} năm trước`;
     };
 
-    // Bước 1: Dùng .once để lấy dữ liệu 50 bài gần nhất mà không bị reload cả danh sách khi có thay đổi nhỏ
-    postsRef.orderByChild('timestamp').limitToLast(50).once('value', async (snapshot) => {
-        const postsContainer = document.getElementById('status-list');
-        if (!postsContainer) return;
+    const postsContainer = document.getElementById('status-list');
+    if (!postsContainer) return;
 
-        postsContainer.innerHTML = ""; 
+    // Henry lưu ý: Dùng .on('child_added') để khi có bài mới, Firebase tự đẩy bài đó về mà không load lại cả list
+    // Chúng ta lấy 50 bài gần nhất
+    postsRef.orderByChild('timestamp').limitToLast(50).on('child_added', async (snapshot) => {
+        const post = { id: snapshot.key, ...snapshot.val() };
         
+        // Kiểm tra tránh trùng lặp bài viết trên giao diện
+        if (document.getElementById(`post-card-${post.id}`)) return;
+
         const myUsername = userData.profile.name; 
         const myUid = userData.profile.uid;
         
         const myFriendsSnap = await firebase.database().ref(`users/${myUsername}/friends`).once('value');
         const myFriends = myFriendsSnap.val() || {}; 
 
-        const postsArray = [];
-        snapshot.forEach((child) => {
-            postsArray.push({ id: child.key, ...child.val() });
-        });
+        let showThisPost = false;
+        if (post.privacy === 'public') showThisPost = true;
+        else if (post.uid === myUid) showThisPost = true;
+        else if (post.privacy === 'friends') {
+            if (myFriends && myFriends[post.username]) showThisPost = true;
+        }
 
-        for (const post of postsArray.reverse()) {
-            let showThisPost = false;
+        if (showThisPost) {
+            const authorSnap = await firebase.database().ref(`users/${post.username}/profile`).once('value');
+            const authorData = authorSnap.val() || {};
+            const currentAuthorAvatar = authorData.customAvatar;
 
-            if (post.privacy === 'public') showThisPost = true;
-            else if (post.uid === myUid) showThisPost = true;
-            else if (post.privacy === 'friends') {
-                if (myFriends && myFriends[post.username]) showThisPost = true;
-            }
+            const reactionCount = post.reactions ? Object.keys(post.reactions).length : 0;
+            const hasLiked = post.reactions && post.reactions[myUid];
+            
+            // --- GIỮ NGUYÊN 100% LOGIC RENDER COMMENTS CỦA HENRY ---
+            const renderNestedComments = async (allComments, parentId = null, level = 0) => {
+                let html = "";
+                if (!allComments) return html;
 
-            if (showThisPost) {
-                const authorSnap = await firebase.database().ref(`users/${post.username}/profile`).once('value');
-                const authorData = authorSnap.val() || {};
-                const currentAuthorAvatar = authorData.customAvatar;
+                const children = Object.keys(allComments)
+                    .map(id => ({ id, ...allComments[id] }))
+                    .filter(c => (parentId === null ? !c.parentId : c.parentId === parentId))
+                    .sort((a, b) => a.timestamp - b.timestamp);
 
-                const reactionCount = post.reactions ? Object.keys(post.reactions).length : 0;
-                const hasLiked = post.reactions && post.reactions[myUid];
-                
-                // --- GIỮ NGUYÊN 100% LOGIC RENDER COMMENTS CỦA HENRY ---
-                const renderNestedComments = async (allComments, parentId = null, level = 0) => {
-                    let html = "";
-                    if (!allComments) return html;
+                const isParentExpanded = (parentId === null) || expandedComments.includes(parentId);
+                if (!isParentExpanded && level > 0) return "";
 
-                    const children = Object.keys(allComments)
-                        .map(id => ({ id, ...allComments[id] }))
-                        .filter(c => (parentId === null ? !c.parentId : c.parentId === parentId))
-                        .sort((a, b) => a.timestamp - b.timestamp);
+                for (const c of children) {
+                    const isMyComment = c.uid === myUid;
+                    const marginLeft = (level > 0 && level <= 3) ? 20 : 0;
+                    const borderLeft = (level > 0 && level <= 3) ? "1px dashed #ffc1cc" : "none";
+                    const paddingLeft = (level > 0 && level <= 3) ? 10 : 0;
 
-                    const isParentExpanded = (parentId === null) || expandedComments.includes(parentId);
-                    if (!isParentExpanded && level > 0) return "";
+                    const hasChildren = Object.values(allComments).some(child => child.parentId === c.id);
+                    const isCurrentExpanded = expandedComments.includes(c.id);
 
-                    for (const c of children) {
-                        const isMyComment = c.uid === myUid;
-                        const marginLeft = (level > 0 && level <= 3) ? 20 : 0;
-                        const borderLeft = (level > 0 && level <= 3) ? "1px dashed #ffc1cc" : "none";
-                        const paddingLeft = (level > 0 && level <= 3) ? 10 : 0;
+                    const commReactionCount = c.reactions ? Object.keys(c.reactions).length : 0;
+                    const hasLikedComm = c.reactions && c.reactions[myUid];
 
-                        const hasChildren = Object.values(allComments).some(child => child.parentId === c.id);
-                        const isCurrentExpanded = expandedComments.includes(c.id);
+                    const commUserSnap = await firebase.database().ref(`users/${c.username}/profile`).once('value');
+                    const commUserData = commUserSnap.val() || {};
+                    const currentCommAvatar = commUserData.customAvatar;
 
-                        const commReactionCount = c.reactions ? Object.keys(c.reactions).length : 0;
-                        const hasLikedComm = c.reactions && c.reactions[myUid];
+                    const cAvatarHtml = currentCommAvatar 
+                        ? `<img src="${currentCommAvatar}" style="width:30px; height:30px; border-radius:50%; object-fit:cover;">`
+                        : `<div style="width:30px; height:30px; border-radius:50%; background:#ffe4e8; display:flex; align-items:center; justify-content:center; color:#ff8fab; font-size:0.7rem;"><i class="fas ${commUserData.gender === 'Nam' ? 'fa-user-tie' : 'fa-user-graduate'}"></i></div>`;
 
-                        const commUserSnap = await firebase.database().ref(`users/${c.username}/profile`).once('value');
-                        const commUserData = commUserSnap.val() || {};
-                        const currentCommAvatar = commUserData.customAvatar;
-
-                        const cAvatarHtml = currentCommAvatar 
-                            ? `<img src="${currentCommAvatar}" style="width:30px; height:30px; border-radius:50%; object-fit:cover;">`
-                            : `<div style="width:30px; height:30px; border-radius:50%; background:#ffe4e8; display:flex; align-items:center; justify-content:center; color:#ff8fab; font-size:0.7rem;"><i class="fas ${commUserData.gender === 'Nam' ? 'fa-user-tie' : 'fa-user-graduate'}"></i></div>`;
-
-                        html += `
-                            <div class="comment-wrapper" id="comm-wrap-${c.id}" style="margin-left:${marginLeft}px; margin-top:8px; border-left:${borderLeft}; padding-left:${paddingLeft}px;">
-                                <div class="comment-item" style="font-size:0.8rem; padding:8px 12px; background:${level === 0 ? '#fff3f5' : '#fff'}; border-radius:12px; line-height:1.4; position:relative; display:flex; justify-content:space-between; align-items:flex-start; border: ${level > 0 ? '1px solid #fff3f5' : 'none'}">
-                                    <div style="display:flex; gap:10px; flex:1;">
-                                        <div onclick="searchFriendByID('${c.uid}')" style="cursor:pointer; flex-shrink:0; margin-top:3px;">
-                                            ${cAvatarHtml}
-                                        </div>
-                                        <div style="flex:1;">
-                                            <strong style="color:#d81b60; cursor:pointer;" onclick="searchFriendByID('${c.uid}')">${c.username}</strong> 
-                                            <span style="font-size: 0.65rem; color: #b0b0b0; font-weight: normal; margin-left: 4px;">• ${getTimeAgo(c.timestamp)}</span>
-                                            <br>
-                                            <span>${c.text}</span>
-                                            <div style="margin-top:4px; display: flex; align-items: center; gap: 12px;">
-                                                <span onclick="toggleCommentReaction('${post.id}', '${c.id}')" style="color:${hasLikedComm ? '#ff1493' : '#ff8fab'}; font-size:0.7rem; cursor:pointer; font-weight:bold;">
-                                                    <i class="${hasLikedComm ? 'fas' : 'far'} fa-heart"></i> ${commReactionCount > 0 ? commReactionCount : ''} Thích
-                                                </span>
-                                                <span onclick="showReplyInput('${c.id}', '${c.username}')" style="color:#ff8fab; font-size:0.7rem; cursor:pointer; font-weight:bold; text-decoration:underline;">Trả lời</span>
-                                            </div>
+                    html += `
+                        <div class="comment-wrapper" id="comm-wrap-${c.id}" style="margin-left:${marginLeft}px; margin-top:8px; border-left:${borderLeft}; padding-left:${paddingLeft}px;">
+                            <div class="comment-item" style="font-size:0.8rem; padding:8px 12px; background:${level === 0 ? '#fff3f5' : '#fff'}; border-radius:12px; line-height:1.4; position:relative; display:flex; justify-content:space-between; align-items:flex-start; border: ${level > 0 ? '1px solid #fff3f5' : 'none'}">
+                                <div style="display:flex; gap:10px; flex:1;">
+                                    <div onclick="searchFriendByID('${c.uid}')" style="cursor:pointer; flex-shrink:0; margin-top:3px;">
+                                        ${cAvatarHtml}
+                                    </div>
+                                    <div style="flex:1;">
+                                        <strong style="color:#d81b60; cursor:pointer;" onclick="searchFriendByID('${c.uid}')">${c.username}</strong> 
+                                        <span style="font-size: 0.65rem; color: #b0b0b0; font-weight: normal; margin-left: 4px;">• ${getTimeAgo(c.timestamp)}</span>
+                                        <br>
+                                        <span>${c.text}</span>
+                                        <div style="margin-top:4px; display: flex; align-items: center; gap: 12px;">
+                                            <span onclick="toggleCommentReaction('${post.id}', '${c.id}')" style="color:${hasLikedComm ? '#ff1493' : '#ff8fab'}; font-size:0.7rem; cursor:pointer; font-weight:bold;">
+                                                <i class="${hasLikedComm ? 'fas' : 'far'} fa-heart"></i> ${commReactionCount > 0 ? commReactionCount : ''} Thích
+                                            </span>
+                                            <span onclick="showReplyInput('${c.id}', '${c.username}')" style="color:#ff8fab; font-size:0.7rem; cursor:pointer; font-weight:bold; text-decoration:underline;">Trả lời</span>
                                         </div>
                                     </div>
-                                    ${isMyComment ? `
-                                        <div class="status-dropdown" style="margin-left:5px;">
-                                            <i class="fas fa-ellipsis-h" onclick="toggleStatusMenu(event, 'menu-comm-${c.id}')" style="color:#ffb3c1; cursor:pointer; font-size:0.7rem; padding:2px;"></i>
-                                            <div id="menu-comm-${c.id}" class="status-menu-content" style="display:none; position:absolute; right:0; background:white; box-shadow:0 2px 10px rgba(0,0,0,0.1); border-radius:8px; z-index:100; min-width:80px;">
-                                                <div onclick="editComment('${post.id}', '${c.id}', \`${c.text.replace(/`/g, '\\`').replace(/\n/g, '\\n')}\`)" style="padding:8px 12px; cursor:pointer; color:#444; font-size:0.7rem; border-bottom:1px solid #fff3f5;"><i class="fas fa-edit"></i> Sửa</div>
-                                                <div onclick="deleteComment('${post.id}', '${c.id}')" style="padding:8px 12px; cursor:pointer; color:#ff4d4d; font-size:0.7rem;"><i class="fas fa-trash"></i> Xóa</div>
-                                            </div>
-                                        </div>` : ''}
                                 </div>
-                                <div id="reply-box-${c.id}" style="display:none; margin-top:5px; gap:5px; margin-left:10px;">
-                                    <input type="text" id="input-reply-${c.id}" placeholder="Viết phản hồi..." style="flex:1; border:1px solid #ffe4e8; border-radius:10px; padding:4px 10px; font-size:0.7rem; outline:none;">
-                                    <button onclick="submitReply('${post.id}', '${c.id}')" style="background:#ff8fab; color:white; border:none; border-radius:10px; padding:2px 8px; font-size:0.7rem; cursor:pointer;">Gửi</button>
+                                ${isMyComment ? `
+                                    <div class="status-dropdown" style="margin-left:5px;">
+                                        <i class="fas fa-ellipsis-h" onclick="toggleStatusMenu(event, 'menu-comm-${c.id}')" style="color:#ffb3c1; cursor:pointer; font-size:0.7rem; padding:2px;"></i>
+                                        <div id="menu-comm-${c.id}" class="status-menu-content" style="display:none; position:absolute; right:0; background:white; box-shadow:0 2px 10px rgba(0,0,0,0.1); border-radius:8px; z-index:100; min-width:80px;">
+                                            <div onclick="editComment('${post.id}', '${c.id}', \`${c.text.replace(/`/g, '\\`').replace(/\n/g, '\\n')}\`)" style="padding:8px 12px; cursor:pointer; color:#444; font-size:0.7rem; border-bottom:1px solid #fff3f5;"><i class="fas fa-edit"></i> Sửa</div>
+                                            <div onclick="deleteComment('${post.id}', '${c.id}')" style="padding:8px 12px; cursor:pointer; color:#ff4d4d; font-size:0.7rem;"><i class="fas fa-trash"></i> Xóa</div>
+                                        </div>
+                                    </div>` : ''}
+                            </div>
+                            <div id="reply-box-${c.id}" style="display:none; margin-top:5px; gap:5px; margin-left:10px;">
+                                <input type="text" id="input-reply-${c.id}" placeholder="Viết phản hồi..." style="flex:1; border:1px solid #ffe4e8; border-radius:10px; padding:4px 10px; font-size:0.7rem; outline:none;">
+                                <button onclick="submitReply('${post.id}', '${c.id}')" style="background:#ff8fab; color:white; border:none; border-radius:10px; padding:2px 8px; font-size:0.7rem; cursor:pointer;">Gửi</button>
+                            </div>
+                            ${hasChildren && !isCurrentExpanded ? `
+                                <div onclick="expandComment('${c.id}', '${post.id}')" style="color: #ff8fab; font-size: 0.72rem; margin-left: 20px; cursor: pointer; font-weight: bold; margin-top: 5px; display: flex; align-items: center; gap: 6px;">
+                                     <i class="fas fa-level-up-alt fa-rotate-90" style="font-size: 0.6rem;"></i> 
+                                     Xem các phản hồi...
                                 </div>
-                                ${hasChildren && !isCurrentExpanded ? `
-                                    <div onclick="expandComment('${c.id}', '${post.id}')" style="color: #ff8fab; font-size: 0.72rem; margin-left: 20px; cursor: pointer; font-weight: bold; margin-top: 5px; display: flex; align-items: center; gap: 6px;">
-                                         <i class="fas fa-level-up-alt fa-rotate-90" style="font-size: 0.6rem;"></i> 
-                                         Xem các phản hồi...
-                                    </div>
-                                ` : ''}
-                                <div class="replies-container">
-                                    ${await renderNestedComments(allComments, c.id, level + 1)}
-                                </div>
-                            </div>`;
-                    }
-                    return html;
-                };
+                            ` : ''}
+                            <div class="replies-container">
+                                ${await renderNestedComments(allComments, c.id, level + 1)}
+                            </div>
+                        </div>`;
+                }
+                return html;
+            };
 
-                const commentsHTML = await renderNestedComments(post.comments);
-                const isMyPost = post.uid === myUid;
+            const commentsHTML = await renderNestedComments(post.comments);
+            const isMyPost = post.uid === myUid;
 
-                const pAvatarHtml = currentAuthorAvatar 
-                    ? `<img src="${currentAuthorAvatar}" style="width:45px; height:45px; border-radius:50%; object-fit:cover;">`
-                    : `<div style="width:45px; height:45px; border-radius:50%; background:#ffe4e8; display:flex; align-items:center; justify-content:center; color:#ff8fab; font-size:1.2rem;"><i class="fas ${authorData.gender === 'Nam' ? 'fa-user-tie' : 'fa-user-graduate'}"></i></div>`;
+            const pAvatarHtml = currentAuthorAvatar 
+                ? `<img src="${currentAuthorAvatar}" style="width:45px; height:45px; border-radius:50%; object-fit:cover;">`
+                : `<div style="width:45px; height:45px; border-radius:50%; background:#ffe4e8; display:flex; align-items:center; justify-content:center; color:#ff8fab; font-size:1.2rem;"><i class="fas ${authorData.gender === 'Nam' ? 'fa-user-tie' : 'fa-user-graduate'}"></i></div>`;
 
-                const html = `
-                    <div class="status-card post-item animate__animated animate__fadeIn" id="post-card-${post.id}">
-                        <div class="post-header" style="position:relative; display:flex; justify-content:space-between; align-items:flex-start;">
-                            <div style="display:flex; gap:12px; align-items:center;">
-                                <div onclick="searchFriendByID('${post.uid}')" style="cursor:pointer; position:relative;">
-                                    ${pAvatarHtml}
-                                </div>
-                                <div>
-                                    <div class="post-user" onclick="searchFriendByID('${post.uid}')" style="cursor:pointer;">💖 ${post.username}</div>
-                                    <div style="display: flex; align-items: center; gap: 6px;">
-                                        <div class="post-time" style="margin-bottom: 0;">${new Date(post.timestamp).toLocaleString('vi-VN')}</div>
-                                        <span class="post-privacy-icon" style="font-size: 0.75rem; color: #ffb3c1;">${getPrivacyIcon(post.privacy)}</span>
-                                    </div>
+            const html = `
+                <div class="status-card post-item animate__animated animate__fadeInDown" id="post-card-${post.id}">
+                    <div class="post-header" style="position:relative; display:flex; justify-content:space-between; align-items:flex-start;">
+                        <div style="display:flex; gap:12px; align-items:center;">
+                            <div onclick="searchFriendByID('${post.uid}')" style="cursor:pointer; position:relative;">
+                                ${pAvatarHtml}
+                            </div>
+                            <div>
+                                <div class="post-user" onclick="searchFriendByID('${post.uid}')" style="cursor:pointer;">💖 ${post.username}</div>
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <div class="post-time" style="margin-bottom: 0;">${new Date(post.timestamp).toLocaleString('vi-VN')}</div>
+                                    <span class="post-privacy-icon" style="font-size: 0.75rem; color: #ffb3c1;">${getPrivacyIcon(post.privacy)}</span>
                                 </div>
                             </div>
-                            ${isMyPost ? `
-                                <div class="status-dropdown">
-                                    <i class="fas fa-ellipsis-v" onclick="toggleStatusMenu(event, 'menu-post-${post.id}')" style="color:#ffb3c1; cursor:pointer; padding:5px;"></i>
-                                    <div id="menu-post-${post.id}" class="status-menu-content" style="display:none; position:absolute; right:0; background:white; box-shadow:0 2px 10px rgba(0,0,0,0.1); border-radius:10px; z-index:100; min-width:140px;">
-                                        <div onclick="editPost('${post.id}', \`${post.content.replace(/`/g, '\\`').replace(/\n/g, '\\n')}\`)" style="padding:10px 15px; cursor:pointer; color:#444; font-size:0.8rem; border-bottom:1px solid #fff3f5;"><i class="fas fa-edit"></i> Chỉnh sửa nội dung</div>
-                                        <div onclick="changePostPrivacy('${post.id}')" style="padding:10px 15px; cursor:pointer; color:#444; font-size:0.8rem; border-bottom:1px solid #fff3f5;"><i class="fas fa-lock"></i> Chỉnh sửa quyền riêng tư</div>
-                                        <div onclick="toggleCommentSettings('${post.id}', ${post.allowComments !== false})" style="padding:10px 15px; cursor:pointer; color:#444; font-size:0.8rem; border-bottom:1px solid #fff3f5;">
-                                            <i class="fas ${post.allowComments !== false ? 'fa-comment-slash' : 'fa-comment'}"></i> 
-                                            ${post.allowComments !== false ? 'Tắt bình luận' : 'Mở bình luận'}
-                                        </div>
-                                        <div onclick="deletePost('${post.id}')" style="padding:10px 15px; cursor:pointer; color:#ff4d4d; font-size:0.8rem;"><i class="fas fa-trash-alt"></i> Xóa bài</div>
+                        </div>
+                        ${isMyPost ? `
+                            <div class="status-dropdown">
+                                <i class="fas fa-ellipsis-v" onclick="toggleStatusMenu(event, 'menu-post-${post.id}')" style="color:#ffb3c1; cursor:pointer; padding:5px;"></i>
+                                <div id="menu-post-${post.id}" class="status-menu-content" style="display:none; position:absolute; right:0; background:white; box-shadow:0 2px 10px rgba(0,0,0,0.1); border-radius:10px; z-index:100; min-width:140px;">
+                                    <div onclick="editPost('${post.id}', \`${post.content.replace(/`/g, '\\`').replace(/\n/g, '\\n')}\`)" style="padding:10px 15px; cursor:pointer; color:#444; font-size:0.8rem; border-bottom:1px solid #fff3f5;"><i class="fas fa-edit"></i> Chỉnh sửa nội dung</div>
+                                    <div onclick="changePostPrivacy('${post.id}')" style="padding:10px 15px; cursor:pointer; color:#444; font-size:0.8rem; border-bottom:1px solid #fff3f5;"><i class="fas fa-lock"></i> Chỉnh sửa quyền riêng tư</div>
+                                    <div onclick="toggleCommentSettings('${post.id}', ${post.allowComments !== false})" style="padding:10px 15px; cursor:pointer; color:#444; font-size:0.8rem; border-bottom:1px solid #fff3f5;">
+                                        <i class="fas ${post.allowComments !== false ? 'fa-comment-slash' : 'fa-comment'}"></i> 
+                                        ${post.allowComments !== false ? 'Tắt bình luận' : 'Mở bình luận'}
                                     </div>
-                                </div>` : ''}
-                        </div>
-                        <div class="post-content" style="padding: 10px 0; border-bottom: 1px solid #ffe4e8;">
-                            ${post.content}
-                        </div>
-                        <div class="post-actions" style="display: flex; gap: 15px; padding: 8px 0;">
-                            <button class="action-btn" onclick="toggleReaction('${post.id}')" style="background:none; border:none; color:${hasLiked ? '#ff1493' : '#ff8fab'}; cursor:pointer; font-weight:${hasLiked ? 'bold' : 'normal'};">
-                                <i class="${hasLiked ? 'fas' : 'far'} fa-heart"></i> ${reactionCount} Tim
-                            </button>
-                            <button class="action-btn" onclick="${post.allowComments !== false ? `document.getElementById('comment-input-${post.id}').focus()` : `alert('Bài viết đã tắt bình luận!')`}" style="background:none; border:none; color:#ff8fab; cursor:pointer;">
-                                <i class="far fa-comment"></i> Bình luận
-                            </button>
-                        </div>
-                        <div class="comment-section" style="background: #fff9fa; border-radius: 10px; padding: 8px; margin-top: 5px;">
-                            <div id="comments-list-${post.id}" style="max-height: 350px; overflow-y: auto; scrollbar-width: none; -ms-overflow-style: none;">
-                                ${commentsHTML}
-                            </div>
-                            ${post.allowComments !== false ? `
-                                <div class="comment-input-group" style="display:flex; gap:5px; margin-top:8px;">
-                                    <input type="text" id="comment-input-${post.id}" placeholder="Viết bình luận..." style="flex:1; border:1px solid #ffc1cc; border-radius:15px; padding:5px 12px; font-size:0.8rem; outline:none;">
-                                    <button onclick="submitComment('${post.id}')" style="background:#ff8fab; color:white; border:none; border-radius:15px; padding:4px 12px; font-size:0.75rem; cursor:pointer; font-weight:bold;">Gửi</button>
+                                    <div onclick="deletePost('${post.id}')" style="padding:10px 15px; cursor:pointer; color:#ff4d4d; font-size:0.8rem;"><i class="fas fa-trash-alt"></i> Xóa bài</div>
                                 </div>
-                            ` : `<div style="text-align:center; padding:10px; font-size:0.75rem; color:#888; font-style:italic;"><i class="fas fa-lock"></i> Chủ bài viết đã tắt tính năng bình luận.</div>`}
-                        </div>
+                            </div>` : ''}
                     </div>
-                `;
-                postsContainer.insertAdjacentHTML('beforeend', html);
+                    <div class="post-content" style="padding: 10px 0; border-bottom: 1px solid #ffe4e8;">
+                        ${post.content}
+                    </div>
+                    <div class="post-actions" style="display: flex; gap: 15px; padding: 8px 0;">
+                        <button class="action-btn" onclick="toggleReaction('${post.id}')" style="background:none; border:none; color:${hasLiked ? '#ff1493' : '#ff8fab'}; cursor:pointer; font-weight:${hasLiked ? 'bold' : 'normal'};">
+                            <i class="${hasLiked ? 'fas' : 'far'} fa-heart"></i> ${reactionCount} Tim
+                        </button>
+                        <button class="action-btn" onclick="${post.allowComments !== false ? `document.getElementById('comment-input-${post.id}').focus()` : `alert('Bài viết đã tắt bình luận!')`}" style="background:none; border:none; color:#ff8fab; cursor:pointer;">
+                            <i class="far fa-comment"></i> Bình luận
+                        </button>
+                    </div>
+                    <div class="comment-section" style="background: #fff9fa; border-radius: 10px; padding: 8px; margin-top: 5px;">
+                        <div id="comments-list-${post.id}" style="max-height: 350px; overflow-y: auto; scrollbar-width: none; -ms-overflow-style: none;">
+                            ${commentsHTML}
+                        </div>
+                        ${post.allowComments !== false ? `
+                            <div class="comment-input-group" style="display:flex; gap:5px; margin-top:8px;">
+                                <input type="text" id="comment-input-${post.id}" placeholder="Viết bình luận..." style="flex:1; border:1px solid #ffc1cc; border-radius:15px; padding:5px 12px; font-size:0.8rem; outline:none;">
+                                <button onclick="submitComment('${post.id}')" style="background:#ff8fab; color:white; border:none; border-radius:15px; padding:4px 12px; font-size:0.75rem; cursor:pointer; font-weight:bold;">Gửi</button>
+                            </div>
+                        ` : `<div style="text-align:center; padding:10px; font-size:0.75rem; color:#888; font-style:italic;"><i class="fas fa-lock"></i> Chủ bài viết đã tắt tính năng bình luận.</div>`}
+                    </div>
+                </div>
+            `;
+            
+            // CHỖ NÀY QUAN TRỌNG: Dùng afterbegin để bài viết mới nhất luôn đẩy lên trên cùng
+            postsContainer.insertAdjacentHTML('afterbegin', html);
 
-                // --- BƯỚC 2: THÊM LISTENER REAL-TIME CHO BÌNH LUẬN CỦA BÀI NÀY ---
-                // Điều này giúp bài viết tự cập nhật comment mà không reload lại toàn bộ 'status-list'
-                setupCommentRealtime(post.id, renderNestedComments);
-            }
+            // Gán listener bình luận real-time cho bài viết này
+            setupCommentRealtime(post.id, renderNestedComments);
         }
     });
 }
