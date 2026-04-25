@@ -23838,7 +23838,7 @@ async function submitReply(postId, commentId) {
     const text = replyInput.value.trim();
     if (!text) return;
 
-    // Cấu trúc dữ liệu mới: Thêm parentId thay vì lồng sâu vào replies
+    // Cấu trúc dữ liệu mới: Thêm parentId thay vì lồng sâu vào replies (GIỮ NGUYÊN)
     const replyData = {
         uid: userData.profile.uid,
         username: userData.profile.name,
@@ -23848,7 +23848,7 @@ async function submitReply(postId, commentId) {
     };
 
     try {
-        // Gửi dữ liệu lên thẳng nút 'comments' (không dùng nút 'replies' cũ)
+        // Gửi dữ liệu lên thẳng nút 'comments' (GIỮ NGUYÊN)
         await firebase.database().ref(`posts/${postId}/comments`).push(replyData);
         
         // Xóa nội dung ô nhập sau khi gửi thành công
@@ -23859,16 +23859,30 @@ async function submitReply(postId, commentId) {
         if (box) {
             box.style.display = 'none';
         }
+
+        // --- 1. THÊM THÔNG BÁO THÀNH CÔNG ---
+        if (typeof addNotification === 'function') {
+            addNotification("HỆ THỐNG", "Đã gửi phản hồi của bạn! 💖");
+        }
+
+        // --- 2. TỰ ĐỘNG MỞ RỘNG VÀ CUỘN XUỐNG PHẦN PHẢN HỒI ---
+        if (!expandedComments.includes(commentId)) {
+            expandedComments.push(commentId);
+        }
+
+        const commentList = document.getElementById(`comments-list-${postId}`);
+        if (commentList) {
+            commentList.scrollTo({
+                top: commentList.scrollHeight,
+                behavior: 'smooth'
+            });
+        }
         
         console.log("Đã gửi phản hồi đa cấp thành công! ✨");
     } catch (e) {
         console.error("Lỗi khi phản hồi:", e);
         alert("Lỗi khi phản hồi: " + e.message);
     } 
-    // Trong hàm submitReply, trước khi kết thúc try:
-if (!expandedComments.includes(commentId)) {
-    expandedComments.push(commentId);
-    }
 }
     
 // Xóa phản hồi
@@ -24053,6 +24067,20 @@ function submitComment(postId) {
         firebase.database().ref(`posts/${postId}/comments`).push(commentData)
             .then(() => {
                 input.value = "";
+
+                // --- 1. THÊM THÔNG BÁO THÀNH CÔNG ---
+                if (typeof addNotification === 'function') {
+                    addNotification("HỆ THỐNG", "Bình luận của bạn đã được gửi thành công! ✨");
+                }
+
+                // --- 2. TỰ ĐỘNG CUỘN XUỐNG BÌNH LUẬN MỚI NHẤT ---
+                const commentList = document.getElementById(`comments-list-${postId}`);
+                if (commentList) {
+                    commentList.scrollTo({
+                        top: commentList.scrollHeight,
+                        behavior: 'smooth' // Cuộn mượt mà không bị giật
+                    });
+                }
             })
             .catch(err => {
                 console.error("Lỗi gửi bình luận:", err);
