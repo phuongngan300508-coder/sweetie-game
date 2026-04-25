@@ -7015,10 +7015,18 @@ input[type="date"].sweetie-input-style {
         transform: scale(1.02);
     }
 
-    .author-avatar:hover, .comment-avatar:hover {
-    opacity: 0.8;
-    transform: scale(1.05);
+   /* Sửa lại CSS của Henry một chút nhé */
+.author-avatar, .comment-avatar {
+    cursor: pointer; /* Thêm dòng này để hiện bàn tay */
     transition: all 0.2s ease;
+    display: inline-block; /* Đảm bảo hiệu ứng scale hoạt động tốt */
+}
+
+.author-avatar:hover, .comment-avatar:hover {
+    position: relative;
+    z-index: 10;
+    opacity: 0.9;
+    transform: scale(1.1);
 }
 </style>
 </head>
@@ -23560,8 +23568,10 @@ async function listenToPosts() {
             const commentsHTML = await renderNestedComments(post.comments, post, myUid);
 
             const isMyPost = post.uid === myUid;
-            const pAvatarHtml = currentAuthorAvatar ? `<img src="${currentAuthorAvatar}" style="width:45px; height:45px; border-radius:50%; object-fit:cover;">` : `<div style="width:45px; height:45px; border-radius:50%; background:#ffe4e8; display:flex; align-items:center; justify-content:center; color:#ff8fab; font-size:1.2rem;"><i class="fas ${authorData.gender === 'Nam' ? 'fa-user-tie' : 'fa-user-graduate'}"></i></div>`;
-
+            // Tìm đoạn này và sửa lại:
+const pAvatarHtml = currentAuthorAvatar 
+    ? `<img src="${currentAuthorAvatar}" class="author-avatar" style="width:45px; height:45px; border-radius:50%; object-fit:cover;">` 
+    : `<div class="author-avatar" style="width:45px; height:45px; border-radius:50%; background:#ffe4e8; display:flex; align-items:center; justify-content:center; color:#ff8fab; font-size:1.2rem;"><i class="fas ${authorData.gender === 'Nam' ? 'fa-user-tie' : 'fa-user-graduate'}"></i></div>`;
             const html = `
                 <div class="status-card post-item animate__animated animate__fadeIn" id="post-card-${post.id}">
                     <div class="post-header" style="position:relative; display:flex; justify-content:space-between; align-items:flex-start;">
@@ -23659,9 +23669,10 @@ const renderNestedComments = async (allComments, post, myUid, parentId = null, l
         const commUserData = commUserSnap.val() || {};
         const currentCommAvatar = commUserData.customAvatar;
         
-        const cAvatarHtml = currentCommAvatar 
-            ? `<img src="${currentCommAvatar}" style="width:30px; height:30px; border-radius:50%; object-fit:cover;">`
-            : `<div style="width:30px; height:30px; border-radius:50%; background:#ffe4e8; display:flex; align-items:center; justify-content:center; color:#ff8fab; font-size:0.7rem;"><i class="fas ${commUserData.gender === 'Nam' ? 'fa-user-tie' : 'fa-user-graduate'}"></i></div>`;
+        // Tìm đoạn này và sửa lại:
+const cAvatarHtml = currentCommAvatar 
+    ? `<img src="${currentCommAvatar}" class="comment-avatar" style="width:30px; height:30px; border-radius:50%; object-fit:cover;">`
+    : `<div class="comment-avatar" style="width:30px; height:30px; border-radius:50%; background:#ffe4e8; display:flex; align-items:center; justify-content:center; color:#ff8fab; font-size:0.7rem;"><i class="fas ${commUserData.gender === 'Nam' ? 'fa-user-tie' : 'fa-user-graduate'}"></i></div>`;
 
         html += `
             <div class="comment-wrapper" id="comm-wrap-${c.id}" style="margin-left:${marginLeft}px; margin-top:8px; border-left:${borderLeft}; padding-left:${paddingLeft}px;">
