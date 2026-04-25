@@ -11082,7 +11082,28 @@ function checkLoginStatus() {
                     initUserPresence();
                 }
 
-                initNotificationQueueListener();
+                // --- E. KÍCH HOẠT LẮNG NGHE CHUÔNG THÔNG BÁO (FIX LỖI UNDEFINED) ---
+                if (typeof initNotificationQueueListener === 'function') {
+                    initNotificationQueueListener();
+                } else {
+                    // Nếu chưa khai báo hàm ở ngoài, Henry dùng trực tiếp đoạn này:
+                    if (userData.profile && userData.profile.uid) {
+                        const myUid = userData.profile.uid;
+                        firebase.database().ref(`notifications_queue/${myUid}`).on('child_added', (snap) => {
+                            const data = snap.val();
+                            if (data) {
+                                // Gọi hàm chuông của Henry và ép dữ liệu không bị undefined
+                                addNotification(
+                                    data.title || "THÔNG BÁO", 
+                                    data.message || data.content || "Bạn có tin nhắn mới! ✨", 
+                                    false, 
+                                    data.extraData || null
+                                );
+                                snap.ref.remove(); // Nhận xong xóa trên mây
+                            }
+                        });
+                    }
+                }
                 
                 isSocialInitialized = true; // Đánh dấu đã kích hoạt xong
                 console.log("Hệ thống: Đã bật bộ lắng nghe Social (Duy nhất)");
@@ -11101,6 +11122,7 @@ function checkLoginStatus() {
     // QUAN TRỌNG: Luôn ẩn Splash Screen dù đăng nhập thành công hay thất bại
     hideSplashScreen(); 
 }
+    
 function handleLogin() {
     const nameInput = document.getElementById('reg-name');
     const name = nameInput.value.trim();
