@@ -7029,25 +7029,16 @@ input[type="date"].sweetie-input-style {
     transform: scale(1.1);
 }
 
-    /* Hiệu ứng nổi bật bình luận được tag - Sweetie Game World */
-@keyframes highlightPinkFade {
-    0% {
-        background-color: rgba(255, 20, 147, 0.3);
-        box-shadow: 0 0 20px rgba(255, 20, 147, 0.6);
-        transform: scale(1.03); /* Nảy nhẹ lên */
-    }
-    100% {
-        background-color: transparent;
-        box-shadow: none;
-        transform: scale(1);
-    }
+   @keyframes flashPink {
+    0% { background-color: #ffe4e8; transform: scale(1); }
+    50% { background-color: #ffb3c1; transform: scale(1.02); }
+    100% { background-color: transparent; transform: scale(1); }
 }
 
 .highlight-noti-comment {
-    animation: highlightPinkFade 3s ease-out;
+    animation: flashPink 1.5s ease-in-out 2;
+    border: 2px solid #ff8fab !important;
     border-radius: 12px;
-    position: relative;
-    z-index: 10;
 }
 </style>
 </head>
