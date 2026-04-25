@@ -24133,32 +24133,45 @@ async function handleMentionNotifications(text, postId) {
     const mentions = [];
 
     while ((match = tagRegex.exec(text)) !== null) {
-        mentions.push(match[1]); // Lấy list tên người được tag
+        mentions.push(match[1]); 
     }
 
     if (mentions.length > 0) {
         for (const targetName of mentions) {
-            // Không thông báo nếu tự tag chính mình
             if (targetName === userData.profile.name) continue;
 
-            // 1. Tìm UID của người được tag từ database
-            const userRef = firebase.database().ref('users');
-            const snapshot = await userRef.orderByChild('profile/name').equalTo(targetName).once('value');
+            const usersRef = firebase.database().ref('users');
+            // Tìm theo cả Username (Key) hoặc Profile Name
+            let targetUid = null;
+            
+            // Thử tìm trực tiếp theo Username trước (Tốc độ cao)
+            const directSnap = await usersRef.child(targetName).once('value');
+            if (directSnap.exists()) {
+                targetUid = directSnap.val().profile?.uid || targetName;
+            } else {
+                // Nếu không thấy, tìm theo Display Name
+                const querySnap = await usersRef.orderByChild('profile/name').equalTo(targetName).once('value');
+                if (querySnap.exists()) {
+                    const data = querySnap.val();
+                    const firstKey = Object.keys(data)[0];
+                    targetUid = data[firstKey].profile?.uid || firstKey;
+                }
+            }
 
-            if (snapshot.exists()) {
-                const targetUid = Object.keys(snapshot.val())[0];
-                
-                // 2. Gửi thông báo vào node 'notifications' của người đó
+            if (targetUid) {
+                // Gửi vào notifications_queue theo bộ Rules của Henry
                 const notificationData = {
+                    title: "NHẮC ĐẾN",
                     sender: userData.profile.name,
-                    content: `${userData.profile.name} đã nhắc đến bạn trong một bình luận`,
+                    content: `${userData.profile.name} đã nhắc đến bạn trong một bình luận! ✨`,
                     postId: postId,
+                    type: "mention",
                     timestamp: firebase.database.ServerValue.TIMESTAMP,
                     isRead: false
                 };
 
-                await firebase.database().ref(`notifications/${targetUid}`).push(notificationData);
-                console.log(`Đã gửi thông báo cho ${targetName} ✨`);
+                await firebase.database().ref(`notifications_queue/${targetUid}`).push(notificationData);
+                console.log(`🔔 Đã rung chuông cho: ${targetName}`);
             }
         }
     }
