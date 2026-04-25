@@ -23721,14 +23721,21 @@ const renderNestedComments = async (allComments, post, myUid, parentId = null, l
 
     // Hàm bổ trợ để Henry không phải viết lại logic render phức tạp
 async function refreshCommentsOnly(postId) {
+    // Henry lấy dữ liệu bài viết từ Firebase
     const postSnap = await firebase.database().ref(`posts/${postId}`).once('value');
-    const post = postSnap.val();
+    const postData = postSnap.val();
     const container = document.getElementById(`comments-list-${postId}`);
     
-    if (container && post.comments) {
-        // Gọi lại đúng hàm renderNestedComments hiện tại của Henry
-        // Để đảm bảo giao diện comment lồng nhau giữ nguyên 100%
-        const newCommentsHTML = await renderNestedComments(post.comments); 
+    // Kiểm tra xem bài viết và danh sách bình luận có tồn tại không
+    if (container && postData && postData.comments) {
+        // Henry lấy UID của người dùng hiện tại để khớp với logic render
+        const myUid = userData.profile.uid; 
+        
+        // GỌI HÀM RENDER DÙNG CHUNG:
+        // Henry nhớ truyền đủ: (Dữ liệu comments, Object bài viết, UID của mình)
+        const newCommentsHTML = await renderNestedComments(postData.comments, {id: postId, ...postData}, myUid); 
+        
+        // Cập nhật giao diện mà không load lại trang ✨
         container.innerHTML = newCommentsHTML;
     }
 }
