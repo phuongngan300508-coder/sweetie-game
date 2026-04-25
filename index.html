@@ -23636,7 +23636,6 @@ const renderNestedComments = async (allComments, post, myUid, parentId = null, l
     let html = "";
     if (!allComments) return html;
 
-    // Lấy danh sách comment con dựa trên parentId
     const children = Object.keys(allComments)
         .map(id => ({ id, ...allComments[id] }))
         .filter(c => (parentId === null ? !c.parentId : c.parentId === parentId))
