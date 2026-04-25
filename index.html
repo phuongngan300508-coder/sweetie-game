@@ -23747,24 +23747,24 @@ function toggleCommentReaction(postId, commentId) {
     if (!expandedComments.includes(commentId)) {
         expandedComments.push(commentId);
         
-        // MẸO CỰC HAY: Không cần load lại cả trang!
-        // Chúng ta chỉ cần kích hoạt lại hàm render của Firebase đang chạy ngầm.
-        // Cách sạch nhất là dùng lại chính dữ liệu cũ để vẽ lại giao diện.
+        // --- BƯỚC 1: CHỤP LẠI VỊ TRÍ HIỆN TẠI ---
+        const currentScrollPos = window.scrollY;
         
         const postsRef = firebase.database().ref('posts');
         
-        // Thay vì dùng .once('value') load lại data tốn băng thông, 
-        // ta chỉ cần "giả vờ" tắt listener đi rồi bật lại ngay lập tức 
-        // để nó tự chạy lại hàm render với danh sách expandedComments mới.
-        
         isListingPosts = false;
         
-        // Tắt listener cũ để tránh bị trùng lặp bộ nhớ (memory leak)
+        // Tắt listener cũ
         postsRef.off(); 
         
-        // Bật lại listener - Lúc này hàm renderNestedComments sẽ chạy lại
-        // và thấy commentId đã nằm trong expandedComments nên sẽ bung ra.
+        // Bật lại listener để render lại giao diện với danh sách đã bung
         listenToPosts();
+
+        // --- BƯỚC 2: PHỤC HỒI VỊ TRÍ CUỘN ---
+        // Đợi một chút để hàm listenToPosts vẽ xong rồi mới nhảy về vị trí cũ
+        requestAnimationFrame(() => {
+            window.scrollTo(0, currentScrollPos);
+        });
     }
 }
     
