@@ -24166,8 +24166,9 @@ function submitComment(postId) {
         // Gửi lên Firebase
         // Trong hàm submitComment(postId)
 firebase.database().ref(`posts/${postId}/comments`).push(commentData)
-    .then(() => {
-        handleMentionNotifications(text, postId);
+    .then((snap) => { // Sửa thành (snap) để lấy ID bình luận vừa tạo
+        const newCommentId = snap.key; // Đây chính là ID bình luận
+        handleMentionNotifications(text, postId, newCommentId); // Truyền ID vào đây
         
         input.value = "";
         if (typeof addNotification === 'function') {
@@ -24286,17 +24287,21 @@ async function handleMentionNotifications(text, postId, commentId) { // Bổ sun
 
     queueRef.on('child_added', (snapshot) => {
         const data = snapshot.val();
+        if (!data) return;
         
-        // Gọi hàm addNotification chính chủ của Henry
-        // extraData truyền postId để khi nhấn vào chuông thì cuộn đến bài viết
+        // SỬA TẠI ĐÂY: Henry phải truyền cả postId và commentId vào extraData
         addNotification(
-            data.title, 
+            data.title || "💖 NHẮC ĐẾN", 
             data.message, 
             false, 
-            { type: 'open_post', postId: data.postId }
+            { 
+                type: 'mention', // Dùng mention để kích hoạt nháy hồng
+                postId: data.extraData?.postId || data.postId, 
+                commentId: data.extraData?.commentId || data.commentId 
+            }
         );
 
-        // Sau khi đã nạp vào máy (biến userData.notifications) thì xóa trên Firebase cho sạch
+        // Sau khi nạp vào chuông thì xóa trên Firebase
         queueRef.child(snapshot.key).remove();
     });
 }
