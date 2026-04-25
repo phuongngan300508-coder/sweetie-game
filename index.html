@@ -15171,30 +15171,34 @@ function listenUserStatus(friendName) {
 }
     
 function initUserPresence() {
+    // 1. Kiểm tra nếu currentUser không tồn tại hoặc không có dữ liệu
     if (!currentUser) return;
 
-    // SỬA TẠI ĐÂY: Thêm .uid để lấy chuỗi ID thay vì cả Object
-    const statusRef = db.ref('/status/' + (currentUser.uid || currentUser));
+    // 2. Xác định rõ ID của user (ưu tiên lấy UID, nếu không có mới lấy chính nó)
+    // Ép kiểu String để chắc chắn Firebase không nhận nhầm Object
+    const currentUserId = String(currentUser.uid || currentUser);
 
-    // Một kết nối đặc biệt của Firebase để kiểm tra Henry có đang mở web không (Giữ nguyên)
+    // Đường dẫn trạng thái online/offline
+    const statusRef = db.ref('/status/' + currentUserId);
+
+    // Kiểm tra kết nối
     db.ref('.info/connected').on('value', (snapshot) => {
-        // snapshot.val() === false nghĩa là mất kết nối socket (Giữ nguyên)
         if (snapshot.val() === false) return;
 
-        // KHI HENRY ĐÓNG WEB: Thiết lập lệnh chờ trên Server Firebase (Giữ nguyên)
+        // KHI ĐÓNG WEB: Chuyển sang offline
         statusRef.onDisconnect().update({
             state: 'offline',
             last_changed: firebase.database.ServerValue.TIMESTAMP
         }).then(() => {
-            // SAU KHI THIẾT LẬP ONDISCONNECT XONG: Đặt trạng thái Online ngay lập tức (Giữ nguyên)
+            // KHI ĐANG MỞ WEB: Chuyển sang online
             statusRef.update({
                 state: 'online',
                 last_changed: firebase.database.ServerValue.TIMESTAMP
             });
 
-            // --- ĐOẠN MỚI THÊM: KÍCH HOẠT "MẮT THẦN" THEO DÕI BẠN BÈ ---
-            // SỬA TẠI ĐÂY: currentUser ở đây cũng phải là .uid hoặc .username để đúng đường dẫn lưu trữ
-            db.ref('users/' + (currentUser.uid || currentUser) + '/friends').once('value', (snap) => {
+            // --- KÍCH HOẠT THEO DÕI BẠN BÈ ---
+            // Sửa triệt để đường dẫn 'users/' tại đây bằng biến currentUserId đã ép kiểu
+            db.ref('users/' + currentUserId + '/friends').once('value', (snap) => {
                 const friends = snap.val() || {};
                 Object.keys(friends).forEach(fName => {
                     if (typeof setupStatusListener === 'function') {
@@ -15204,7 +15208,8 @@ function initUserPresence() {
             });
         });
     });
-}
+
+    
 
     // --- BỘ DUY TRÌ ONLINE (HEARTBEAT) --- (Giữ nguyên)
     // Cứ mỗi 1 phút, Henry cho hệ thống "gõ cửa" Firebase một lần
@@ -15234,7 +15239,7 @@ function initUserPresence() {
             last_changed: firebase.database.ServerValue.TIMESTAMP
         });
     });
-
+ }
 
     function formatLastSeen(timestamp) {
     if (!timestamp) return "Ngoại tuyến";
