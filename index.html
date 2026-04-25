@@ -23496,6 +23496,23 @@ function listenToPosts() {
     const postsRef = firebase.database().ref('posts');
     isListingPosts = true;
 
+    // --- HÀM BỔ TRỢ: Tính thời gian bao lâu rồi ---
+    const getTimeAgo = (timestamp) => {
+        if (!timestamp) return "";
+        const now = new Date().getTime();
+        const diff = Math.floor((now - timestamp) / 1000);
+        if (diff < 60) return "vừa xong";
+        const mins = Math.floor(diff / 60);
+        if (mins < 60) return `${mins} phút trước`;
+        const hours = Math.floor(mins / 60);
+        if (hours < 24) return `${hours} giờ trước`;
+        const days = Math.floor(hours / 24);
+        if (days < 30) return `${days} ngày trước`;
+        const months = Math.floor(days / 30);
+        if (months < 12) return `${months} tháng trước`;
+        return `${Math.floor(days / 365)} năm trước`;
+    };
+
     postsRef.orderByChild('timestamp').limitToLast(50).on('value', async (snapshot) => {
         const postsContainer = document.getElementById('status-list');
         if (!postsContainer) return;
@@ -23555,7 +23572,10 @@ function listenToPosts() {
                             <div class="comment-wrapper" style="margin-left:${marginLeft}px; margin-top:8px; border-left:${borderLeft}; padding-left:${paddingLeft}px;">
                                 <div class="comment-item" style="font-size:0.8rem; padding:8px 12px; background:${level === 0 ? '#fff3f5' : '#fff'}; border-radius:12px; line-height:1.4; position:relative; display:flex; justify-content:space-between; align-items:flex-start; border: ${level > 0 ? '1px solid #fff3f5' : 'none'}">
                                     <div style="flex:1;">
-                                        <strong style="color:#d81b60;">${c.username}:</strong> <span>${c.text}</span>
+                                        <strong style="color:#d81b60;">${c.username}</strong> 
+                                        <span style="font-size: 0.65rem; color: #b0b0b0; font-weight: normal; margin-left: 4px;">• ${getTimeAgo(c.timestamp)}</span>
+                                        <br>
+                                        <span>${c.text}</span>
                                         <div style="margin-top:4px; display: flex; align-items: center; gap: 12px;">
                                             <span onclick="toggleCommentReaction('${post.id}', '${c.id}')" style="color:${hasLikedComm ? '#ff1493' : '#ff8fab'}; font-size:0.7rem; cursor:pointer; font-weight:bold;">
                                                 <i class="${hasLikedComm ? 'fas' : 'far'} fa-heart"></i> ${commReactionCount > 0 ? commReactionCount : ''} Thích
