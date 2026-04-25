@@ -7028,26 +7028,6 @@ input[type="date"].sweetie-input-style {
     opacity: 0.9;
     transform: scale(1.1);
 }
-
-    /* Hiệu ứng nổi bật cho bình luận được tag - Dành riêng cho Henry */
-@keyframes highlightPinkFade {
-    0% {
-        background-color: rgba(255, 20, 147, 0.3); /* Màu hồng đậm hơn lúc đầu */
-        box-shadow: 0 0 15px rgba(255, 20, 147, 0.5);
-        transform: scale(1.02); /* Hơi nảy nhẹ lên */
-    }
-    100% {
-        background-color: transparent; /* Trở về bình thường */
-        box-shadow: none;
-        transform: scale(1);
-    }
-}
-
-.highlight-noti-comment {
-    animation: highlightPinkFade 3s ease-out; /* Chạy hiệu ứng trong 3 giây */
-    z-index: 10; /* Đảm bảo nằm trên các phần tử khác khi nảy lên */
-    position: relative;
-}
 </style>
 </head>
 <body>
@@ -13117,6 +13097,7 @@ function renderNotis() {
     }).join('');
 }
     
+// Hàm xử lý khi nhấn vào thông báo
 function handleNotiClick(index) {
     // --- DÒNG FIX DÀNH RIÊNG CHO IPHONE: Đảm bảo sự kiện chạm được ưu tiên ---
     if (event) event.stopPropagation(); 
@@ -13142,7 +13123,7 @@ function handleNotiClick(index) {
     const notiModal = document.getElementById('modal-notifications');
     if (notiModal) notiModal.style.display = 'none';
 
-    // 4. Phân loại để xử lý theo yêu cầu của Henry
+    // 4. Phân loại để xử lý theo yêu cầu của Henry (Giữ nguyên 100% logic bên trong)
     setTimeout(() => {
         
         // --- TRƯỜNG HỢP 1: LỜI MỜI KẾT BẠN ---
@@ -13173,37 +13154,15 @@ function handleNotiClick(index) {
             }
         } 
 
-        // --- TRƯỜNG HỢP TAG TÊN: DẪN ĐẾN BÌNH LUẬN VÀ BẬT HIỆU ỨNG CỦA HENRY ---
+        // --- TRƯỜNG HỢP MỚI: NHẤN VÀO THÔNG BÁO NHẮC TÊN (TAG) ---
         else if (type === 'open_post' || type === 'mention') {
             const postId = noti.extraData.postId;
-            const commentId = noti.extraData.commentId; 
-
             if (postId) {
-                // Chuyển tab sang Bản Tin
+                // Sử dụng hàm chuyển tab và cuộn đến bài viết Henry đã có sẵn
                 switchTab('tab-status'); 
-                
-                // Đợi tab render (khoảng 400ms cho mượt)
                 setTimeout(() => {
-                    // Ưu tiên tìm ID bình luận (comm-wrap), nếu không có thì tìm bài đăng (post-card)
-                    const targetId = commentId ? `comm-wrap-${commentId}` : `post-card-${postId}`;
-                    const targetEl = document.getElementById(targetId);
-
-                    if (targetEl) {
-                        // Cuộn mượt và đưa phần tử vào giữa màn hình
-                        targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        
-                        // Kích hoạt class hiệu ứng Henry đã viết (tự động chạy trong 3s)
-                        targetEl.classList.add('highlight-noti-comment');
-                        
-                        // Sau 3 giây gỡ class để sạch DOM (dù animation đã xong)
-                        setTimeout(() => {
-                            targetEl.classList.remove('highlight-noti-comment');
-                        }, 3000);
-                    } else {
-                        // Nếu mạng chậm chưa kịp render bài, gọi hàm dự phòng của Henry
-                        scrollToGame(`post-card-${postId}`);
-                    }
-                }, 400); 
+                    scrollToGame(`post-card-${postId}`);
+                }, 300);
             } else {
                 alert("❌ Không tìm thấy bài viết liên quan!");
             }
@@ -23748,11 +23707,11 @@ const renderNestedComments = async (allComments, post, myUid, parentId = null, l
         const commUserData = commUserSnap.val() || {};
         const currentCommAvatar = commUserData.customAvatar;
         
-        const cAvatarHtml = currentCommAvatar 
-            ? `<img src="${currentCommAvatar}" class="comment-avatar" style="width:30px; height:30px; border-radius:50%; object-fit:cover;">`
-            : `<div class="comment-avatar" style="width:30px; height:30px; border-radius:50%; background:#ffe4e8; display:flex; align-items:center; justify-content:center; color:#ff8fab; font-size:0.7rem;"><i class="fas ${commUserData.gender === 'Nam' ? 'fa-user-tie' : 'fa-user-graduate'}"></i></div>`;
+        // Tìm đoạn này và sửa lại:
+const cAvatarHtml = currentCommAvatar 
+    ? `<img src="${currentCommAvatar}" class="comment-avatar" style="width:30px; height:30px; border-radius:50%; object-fit:cover;">`
+    : `<div class="comment-avatar" style="width:30px; height:30px; border-radius:50%; background:#ffe4e8; display:flex; align-items:center; justify-content:center; color:#ff8fab; font-size:0.7rem;"><i class="fas ${commUserData.gender === 'Nam' ? 'fa-user-tie' : 'fa-user-graduate'}"></i></div>`;
 
-        // BỔ SUNG: id="comm-wrap-${c.id}" để handleNotiClick có thể tìm thấy và thêm class highlight
         html += `
             <div class="comment-wrapper" id="comm-wrap-${c.id}" style="margin-left:${marginLeft}px; margin-top:8px; border-left:${borderLeft}; padding-left:${paddingLeft}px;">
                 <div class="comment-item" style="font-size:0.8rem; padding:8px 12px; background:${level === 0 ? '#fff3f5' : '#fff'}; border-radius:12px; line-height:1.4; position:relative; display:flex; justify-content:space-between; align-items:flex-start; border: ${level > 0 ? '1px solid #fff3f5' : 'none'}">
@@ -24206,7 +24165,7 @@ function formatCommentText(text) {
 }
 
 // Hàm phụ để kiểm tra tag và gửi thông báo
-async function handleMentionNotifications(text, postId, commentId) { // Thêm tham số commentId
+async function handleMentionNotifications(text, postId) {
     const tagRegex = /@([a-zA-Z0-9_À-ỹ]+)/g;
     let match;
     const mentions = [];
@@ -24247,13 +24206,13 @@ async function handleMentionNotifications(text, postId, commentId) { // Thêm th
                     const notificationData = {
                         title: "💖 NHẮC ĐẾN",
                         sender: userData.profile.name,
+                        // Nội dung ngắn gọn để hiện lên màn hình điện thoại/chuông
                         message: `${userData.profile.name} đã nhắc đến bạn trong một bình luận! ✨`,
                         timestamp: firebase.database.ServerValue.TIMESTAMP,
-                        // CẬP NHẬT: Đóng gói thêm commentId vào extraData
+                        // Đóng gói extraData ngay từ Firebase để hàm handleNotiClick của Henry đọc được luôn
                         extraData: {
-                            type: 'mention', 
+                            type: 'open_post', // Loại thông báo: Mở bài viết
                             postId: postId,
-                            commentId: commentId, // <--- Henry nhớ truyền ID bình luận vào đây nhé
                             sender: userData.profile.name
                         }
                     };
