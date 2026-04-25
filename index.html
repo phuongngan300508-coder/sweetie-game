@@ -23519,7 +23519,7 @@ async function listenToPosts() {
     };
 
     postsRef.orderByChild('timestamp').limitToLast(50).on('value', async (snapshot) => {
-        // --- KỸ THUẬT 1: LƯU VỊ TRÍ CUỘN HIỆN TẠI ---
+        // --- 1. LƯU VỊ TRÍ CUỘN HIỆN TẠI ---
         const currentScroll = window.scrollY;
 
         const postsContainer = document.getElementById('status-list');
@@ -23699,13 +23699,16 @@ async function listenToPosts() {
             }
         }
         
-        // --- KỸ THUẬT 3: KHÔI PHỤC VỊ TRÍ CUỘN SAU KHI VẼ XONG ---
-        window.requestAnimationFrame(() => {
-            window.scrollTo(0, currentScroll);
-        });
+        // --- SỬA CHỖ NÀY: DÙNG SETTIMEOUT ĐỂ ĐỢI RENDER XONG ---
+        setTimeout(() => {
+            window.scrollTo({
+                top: currentScroll,
+                behavior: 'instant' 
+            });
+        }, 100); 
     });
 }
-
+    
     // Hàm bật/tắt quyền bình luận
 async function toggleCommentSettings(postId, currentStatus) {
     try {
@@ -23750,6 +23753,9 @@ function toggleCommentReaction(postId, commentId) {
         // Chúng ta chỉ cần kích hoạt lại hàm render của Firebase đang chạy ngầm.
         // Cách sạch nhất là dùng lại chính dữ liệu cũ để vẽ lại giao diện.
         
+        // --- THÊM DÒNG NÀY: Lưu lại vị trí trước khi gọi lại hàm lắng nghe ---
+        const scrollBeforeExpand = window.scrollY;
+
         const postsRef = firebase.database().ref('posts');
         
         // SỬA TẠI ĐÂY: Thay vì tắt toàn bộ, ta đảm bảo biến flag được reset
@@ -23762,8 +23768,16 @@ function toggleCommentReaction(postId, commentId) {
         
         // Bật lại listener - Lúc này hàm renderNestedComments sẽ chạy lại
         // và thấy commentId đã nằm trong expandedComments nên sẽ bung ra.
-        // Nhờ logic currentScroll trong listenToPosts, màn hình sẽ không bị nhảy!
         listenToPosts();
+        
+        // --- THÊM DÒNG NÀY: Ép cuộn lại một lần nữa sau khi render xong ---
+        // Chúng ta đợi lâu hơn một chút (150ms) để phần bình luận con kịp bung ra hết
+        setTimeout(() => {
+            window.scrollTo({
+                top: scrollBeforeExpand,
+                behavior: 'instant'
+            });
+        }, 150);
         
         console.log("Đã bung phản hồi và giữ vững vị trí cuộn cho Henry! ✨");
     }
