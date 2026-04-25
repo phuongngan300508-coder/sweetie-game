@@ -13186,36 +13186,56 @@ function handleNotiClick(index) {
         else if (type === 'open_post' || type === 'mention') {
     const postId = noti.extraData.postId;
     const commentId = noti.extraData.commentId;
-    const parentId = noti.extraData.parentId; // Lấy parentId từ thông báo
+    const parentId = noti.extraData.parentId;
 
     if (postId) {
-        // --- BƯỚC QUAN TRỌNG: Tự động mở rộng mục phản hồi ---
+        // 1. CHUẨN BỊ: Ép mở rộng bình luận cha ngay lập tức
         if (parentId && typeof expandedComments !== 'undefined') {
             if (!expandedComments.includes(parentId)) {
                 expandedComments.push(parentId);
-                console.log("Hệ thống: Đã ép mở mục phản hồi cho ID:", parentId);
+                console.log("Hệ thống: Đã chuẩn bị mở rộng cho cha:", parentId);
             }
         }
 
+        // 2. CHUYỂN TAB
         switchTab('tab-status'); 
 
-        setTimeout(() => {
-            // Xác định ID cần tìm: ưu tiên comm-wrap, nếu không có thì tới post-card
+        // 3. XỬ LÝ ĐỢI RENDER VÀ CUỘN (Tăng thời gian và kiểm tra đệ quy)
+        let retryCount = 0;
+        const maxRetries = 5; // Thử lại tối đa 5 lần nếu chưa tìm thấy phần tử
+
+        const attemptScroll = () => {
             const targetId = commentId ? `comm-wrap-${commentId}` : `post-card-${postId}`;
             const targetEl = document.getElementById(targetId);
 
             if (targetEl) {
+                // Đã tìm thấy phần tử (nghĩa là đã render xong)
                 targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 targetEl.classList.add('highlight-noti-comment');
+                
                 setTimeout(() => {
                     if (targetEl) targetEl.classList.remove('highlight-noti-comment');
                 }, 3000);
             } else {
-                // Nếu chưa render kịp (do đệ quy sâu), Henry gọi hàm load lại bài này
-                if (typeof refreshCommentsOnly === 'function') refreshCommentsOnly(postId);
-                scrollToGame(`post-card-${postId}`);
+                // Nếu chưa tìm thấy, kích hoạt vẽ lại bài viết đó một lần nữa cho chắc
+                if (retryCount === 0 && typeof refreshCommentsOnly === 'function') {
+                    refreshCommentsOnly(postId);
+                }
+
+                if (retryCount < maxRetries) {
+                    retryCount++;
+                    console.log(`Hệ thống: Đang chờ render lần ${retryCount}...`);
+                    setTimeout(attemptScroll, 400); // Đợi thêm 0.4 giây mỗi lần thử
+                } else {
+                    // Cuối cùng nếu không thấy comment thì cuộn tới bài viết gốc
+                    scrollToGame(`post-card-${postId}`);
+                }
             }
-        }, 600); // Đợi 0.6 giây để Firebase load kịp các bình luận con
+        };
+
+        // Bắt đầu chuỗi kiểm tra sau khi chuyển tab 0.6 giây
+        setTimeout(attemptScroll, 600);
+
     } else {
         alert("❌ Không tìm thấy bài viết liên quan!");
     }
@@ -23828,17 +23848,30 @@ const renderNestedComments = async (allComments, post, myUid, parentId = null, l
 
     // Hàm bổ trợ để Henry không phải viết lại logic render phức tạp
 async function refreshCommentsOnly(postId) {
+    // 1. Lấy dữ liệu mới nhất từ Firebase
     const postSnap = await firebase.database().ref(`posts/${postId}`).once('value');
     const postData = postSnap.val();
     const container = document.getElementById(`comments-list-${postId}`);
     
-    if (container && postData && postData.comments) {
+    if (container && postData) {
         const myUid = userData.profile.uid; 
-        const postObj = { id: postId, ...postData }; // Đảm bảo object có chứa .id
+        const postObj = { id: postId, ...postData };
         
-        const newCommentsHTML = await renderNestedComments(postData.comments, postObj, myUid); 
+        // 2. Chờ hàm render vẽ xong chuỗi HTML
+        const newCommentsHTML = await renderNestedComments(postData.comments || {}, postObj, myUid); 
+        
+        // 3. Cập nhật vào giao diện
         container.innerHTML = newCommentsHTML;
+
+        // 4. MẸO QUAN TRỌNG: Trả về một Promise để xác nhận trình duyệt đã hoàn tất vẽ (Layout)
+        // Việc dùng requestAnimationFrame đảm bảo phần tử đã thực sự xuất hiện trong DOM
+        return new Promise((resolve) => {
+            requestAnimationFrame(() => {
+                setTimeout(resolve, 50); // Đợi thêm 50ms cho chắc chắn
+            });
+        });
     }
+    return Promise.resolve(); // Trả về mặc định nếu không có container
 }
 
     // Hàm bật/tắt quyền bình luận
