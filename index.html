@@ -11200,8 +11200,12 @@ function handleLogin() {
     }
 
     // --- BƯỚC CUỐI: THIẾT LẬP SESSION VÀ GIAO DIỆN (Dùng chung cho cả 2) ---
+    
+    // --- ĐOẠN ĐÃ SỬA: currentUser phải là String để tránh lỗi path [object Object] ---
     currentUser = name; 
+    // Tạo thêm một biến toàn cục khác nếu Henry cần dùng UID ở chỗ khác
     currentUserId = userData.profile.uid; 
+    // -----------------------------------------------------------------
 
     localStorage.setItem('lastLoggedInUser', name);
     sessionStorage.setItem('currentUser', name);
@@ -11209,6 +11213,7 @@ function handleLogin() {
     // --- MỚI: KÍCH HOẠT TRẠNG THÁI ONLINE NGAY LẬP TỨC ---
     if (typeof initUserPresence === 'function') {
         initUserPresence();
+        // Sử dụng trực tiếp userData.profile.uid là chuẩn nhất
         db.ref('/status/' + userData.profile.uid + '/last_changed').set(firebase.database.ServerValue.TIMESTAMP);
         console.log("Hệ thống: Đã kích hoạt trạng thái Online cho ID " + userData.profile.uid);
     }
@@ -11224,6 +11229,7 @@ function handleLogin() {
                     badge: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png"
                 };
 
+                // Nếu có Service Worker, hãy dùng nó để hiện thông báo (giúp báo được khi tắt web)
                 if ('serviceWorker' in navigator) {
                     navigator.serviceWorker.ready.then(reg => {
                         reg.showNotification(notifTitle, notifOptions);
@@ -11266,12 +11272,6 @@ function handleLogin() {
         if (typeof initGlobalChat === 'function') {
             initGlobalChat();
             console.log("Hệ thống: Đã kết nối vào Kênh chat thế giới.");
-        }
-
-        // --- MỚI: KÍCH HOẠT LẮNG NGHE THÔNG BÁO BÌNH LUẬN & REPLY ---
-        if (typeof listenToNotifications === 'function') {
-            listenToNotifications();
-            console.log("Hệ thống: Đã kích hoạt bộ lắng nghe thông báo Bài viết.");
         }
 
         isSocialInitialized = true; // Cắm cờ để không lặp lại
@@ -23811,10 +23811,6 @@ async function submitReply(postId, commentId) {
     const text = replyInput.value.trim();
     if (!text) return;
 
-    // --- BƯỚC BỔ SUNG: LẤY THÔNG TIN NGƯỜI NHẬN THÔNG BÁO ---
-    const parentCommSnap = await firebase.database().ref(`posts/${postId}/comments/${commentId}`).once('value');
-    const parentCommData = parentCommSnap.val();
-
     // Cấu trúc dữ liệu mới: Thêm parentId thay vì lồng sâu vào replies
     const replyData = {
         uid: userData.profile.uid,
@@ -23837,32 +23833,15 @@ async function submitReply(postId, commentId) {
             box.style.display = 'none';
         }
         
-        // --- LOGIC GỬI THÔNG BÁO PHẢN HỒI ---
-        // Chỉ gửi nếu người phản hồi không phải là chủ của comment đó
-        if (parentCommData && parentCommData.username !== userData.profile.name) {
-            const notificationData = {
-                type: "reply",
-                from: userData.profile.name,
-                message: `💬 ${userData.profile.name} đã phản hồi bình luận của bạn: "${text.substring(0, 30)}..."`,
-                postId: postId,
-                timestamp: firebase.database.ServerValue.TIMESTAMP,
-                isRead: false
-            };
-            
-            // Gửi thông báo vào node của người sở hữu comment cha
-            firebase.database().ref(`notifications/${parentCommData.username}`).push(notificationData);
-        }
-
         console.log("Đã gửi phản hồi đa cấp thành công! ✨");
-
-        // Trước khi kết thúc try:
-        if (!expandedComments.includes(commentId)) {
-            expandedComments.push(commentId);
-        }
     } catch (e) {
         console.error("Lỗi khi phản hồi:", e);
         alert("Lỗi khi phản hồi: " + e.message);
     } 
+    // Trong hàm submitReply, trước khi kết thúc try:
+if (!expandedComments.includes(commentId)) {
+    expandedComments.push(commentId);
+    }
 }
     
 // Xóa phản hồi
@@ -24029,11 +24008,8 @@ function submitComment(postId) {
     }
 
     // --- THÊM BƯỚC KIỂM TRA QUYỀN BÌNH LUẬN ---
-    firebase.database().ref(`posts/${postId}`).once('value', async (snap) => {
-        const postData = snap.val();
-        
-        // Kiểm tra nếu bài viết không tồn tại hoặc đã tắt bình luận
-        if (!postData || postData.allowComments === false) {
+    firebase.database().ref(`posts/${postId}/allowComments`).once('value', (snap) => {
+        if (snap.exists() && snap.val() === false) {
             alert("Bài viết này đã tắt tính năng bình luận rồi nha! 💖");
             return;
         }
@@ -24047,33 +24023,14 @@ function submitComment(postId) {
         };
 
         // Gửi lên Firebase
-        try {
-            await firebase.database().ref(`posts/${postId}/comments`).push(commentData);
-            
-            // Xóa nội dung ô nhập
-            input.value = "";
-
-            // --- LOGIC GỬI THÔNG BÁO CHO CHỦ BÀI VIẾT ---
-            // Chỉ gửi thông báo nếu người comment KHÔNG PHẢI là chủ bài viết
-            if (postData.uid !== userData.profile.uid) {
-                const notificationData = {
-                    type: "comment",
-                    from: userData.profile.name,
-                    message: `🌸 ${userData.profile.name} đã bình luận về bài viết của bạn: "${text.substring(0, 30)}..."`,
-                    postId: postId,
-                    timestamp: firebase.database.ServerValue.TIMESTAMP,
-                    isRead: false
-                };
-
-                // Gửi vào node notifications của chủ bài viết (dùng username hoặc uid tùy cấu trúc của Henry)
-                // Ở đây mình dùng postData.username để khớp với cách lưu trữ thông báo phổ biến của bạn
-                firebase.database().ref(`notifications/${postData.username}`).push(notificationData);
-            }
-
-        } catch (err) {
-            console.error("Lỗi gửi bình luận:", err);
-            alert("Không có quyền bình luận, hãy kiểm tra lại Rules!");
-        }
+        firebase.database().ref(`posts/${postId}/comments`).push(commentData)
+            .then(() => {
+                input.value = "";
+            })
+            .catch(err => {
+                console.error("Lỗi gửi bình luận:", err);
+                alert("Không có quyền bình luận, hãy kiểm tra lại Rules!");
+            });
     });
 }
     
@@ -24085,27 +24042,6 @@ function getPrivacyIcon(p) {
 
 // Gọi hàm lắng nghe khi ứng dụng khởi chạy hoặc khi chuyển tab
 // listenToPosts();
-
-    function listenToNotifications() {
-    if (!userData || !userData.profile.name) return;
-
-    const notiRef = firebase.database().ref(`notifications/${userData.profile.name}`);
-    
-    // Lắng nghe khi có thông báo mới (child_added)
-    notiRef.limitToLast(1).on('child_added', (snapshot) => {
-        const noti = snapshot.val();
-        
-        // Kiểm tra thời gian để không hiện lại thông báo cũ khi vừa load trang
-        const now = Date.now();
-        if (now - noti.timestamp < 5000) { // Nếu thông báo mới phát sinh trong 5 giây qua
-             // Sử dụng hàm addNotification có sẵn của bạn để hiện lên UI
-             addNotification("BÌNH LUẬN MỚI", noti.message);
-             
-             // Có thể thêm tiếng chuông nhỏ ở đây nếu muốn
-             // playNotificationSound(); 
-        }
-    });
-}
 </script>
 </body>
 </html>
