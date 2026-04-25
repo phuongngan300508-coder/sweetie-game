@@ -11274,6 +11274,11 @@ function handleLogin() {
             console.log("Hệ thống: Đã kết nối vào Kênh chat thế giới.");
         }
 
+        if (typeof listenToMyNotifications === 'function') {
+            listenToMyNotifications();
+            console.log("Hệ thống: Đã bắt đầu lắng nghe tương tác mới Realtime.");
+        }
+
         isSocialInitialized = true; // Cắm cờ để không lặp lại
         console.log("Hệ thống: Đã kích hoạt bộ lắng nghe Social (Duy nhất)");
     }
@@ -23824,6 +23829,23 @@ async function submitReply(postId, commentId) {
         // Gửi dữ liệu lên thẳng nút 'comments' (không dùng nút 'replies' cũ)
         await firebase.database().ref(`posts/${postId}/comments`).push(replyData);
         
+        // --- PHẦN THÊM MỚI: GỬI THÔNG BÁO CHO NGƯỜI ĐƯỢC PHẢN HỒI ---
+        firebase.database().ref(`posts/${postId}/comments/${commentId}/uid`).once('value', (commenterSnap) => {
+            const targetUid = commenterSnap.val();
+            // Chỉ gửi thông báo nếu người phản hồi không phải là chủ của bình luận đó
+            if (targetUid && targetUid !== userData.profile.uid) {
+                const notiData = {
+                    fromName: userData.profile.name,
+                    message: `đã phản hồi bình luận của bạn: "${text.substring(0, 30)}..."`,
+                    timestamp: firebase.database.ServerValue.TIMESTAMP,
+                    isRead: false,
+                    type: 'reply'
+                };
+                firebase.database().ref(`notifications/${targetUid}`).push(notiData);
+            }
+        });
+        // -----------------------------------------------------------
+
         // Xóa nội dung ô nhập sau khi gửi thành công
         replyInput.value = "";
         
@@ -23838,9 +23860,10 @@ async function submitReply(postId, commentId) {
         console.error("Lỗi khi phản hồi:", e);
         alert("Lỗi khi phản hồi: " + e.message);
     } 
+
     // Trong hàm submitReply, trước khi kết thúc try:
-if (!expandedComments.includes(commentId)) {
-    expandedComments.push(commentId);
+    if (!expandedComments.includes(commentId)) {
+        expandedComments.push(commentId);
     }
 }
     
@@ -24026,6 +24049,24 @@ function submitComment(postId) {
         firebase.database().ref(`posts/${postId}/comments`).push(commentData)
             .then(() => {
                 input.value = "";
+
+                // --- PHẦN THÊM MỚI: GỬI THÔNG BÁO CHO CHỦ BÀI ĐĂNG ---
+                firebase.database().ref(`posts/${postId}/uid`).once('value', (authorSnap) => {
+                    const authorUid = authorSnap.val();
+                    // Chỉ gửi nếu người comment không phải là chủ bài đăng
+                    if (authorUid && authorUid !== userData.profile.uid) {
+                        const notiData = {
+                            fromName: userData.profile.name,
+                            message: `đã bình luận bài viết của bạn: "${text.substring(0, 30)}..."`,
+                            timestamp: firebase.database.ServerValue.TIMESTAMP,
+                            isRead: false,
+                            type: 'comment'
+                        };
+                        firebase.database().ref(`notifications/${authorUid}`).push(notiData);
+                    }
+                });
+                // -------------------------------------------------------
+
             })
             .catch(err => {
                 console.error("Lỗi gửi bình luận:", err);
@@ -24040,6 +24081,50 @@ function getPrivacyIcon(p) {
     return '🔒';
 }
 
+    // Hàm gửi thông báo chung cho cư dân
+async function sendNotificationToUser(targetUid, message, type = "comment") {
+    if (!targetUid || targetUid === userData.profile.uid) return; // Không thông báo cho chính mình
+
+    const notiData = {
+        fromName: userData.profile.name,
+        fromUid: userData.profile.uid,
+        message: message,
+        type: type,
+        isRead: false,
+        timestamp: firebase.database.ServerValue.TIMESTAMP
+    };
+
+    // Gửi vào nhánh thông báo của người nhận
+    await firebase.database().ref(`notifications/${targetUid}`).push(notiData);
+}
+
+    function listenToMyNotifications() {
+    if (!userData || !userData.profile || !userData.profile.uid) return;
+
+    const myUid = userData.profile.uid;
+    // Lắng nghe tại nhánh notifications/ID_CỦA_HENRY
+    const notiRef = firebase.database().ref(`notifications/${myUid}`);
+
+    // Sử dụng .on('child_added') để chỉ bắt những thông báo MỚI NHẤT phát sinh từ lúc này
+    notiRef.limitToLast(1).on('child_added', (snapshot) => {
+        const noti = snapshot.val();
+        
+        // Kiểm tra nếu thông báo này chưa đọc và mới phát sinh
+        if (noti && !noti.isRead) {
+            // 1. Hiện thông báo lên Chuông báo của Henry
+            // Mình gửi kèm extraData để Henry có thể bấm vào thông báo để mở bài viết/chat
+            addNotification("TƯƠNG TÁC ✨", `💖 ${noti.fromName} ${noti.message}`, false, noti);
+            
+            // 2. Bắn thông báo ra máy (Desktop/Mobile) để chắc chắn không bỏ lỡ
+            if (typeof sendSystemLiveNotification === 'function') {
+                sendSystemLiveNotification("Sweetie Town 💖", `${noti.fromName} ${noti.message}`);
+            }
+
+            // 3. Đánh dấu đã đọc trên Firebase để không hiện lại lần sau
+            snapshot.ref.update({ isRead: true });
+        }
+    });
+}
 // Gọi hàm lắng nghe khi ứng dụng khởi chạy hoặc khi chuyển tab
 // listenToPosts();
 </script>
