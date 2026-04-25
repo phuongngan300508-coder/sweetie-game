@@ -23636,8 +23636,6 @@ async function listenToPosts() {
     isListingPosts = true;
     postsContainer.innerHTML = ""; 
 
-    // (XÓA ĐOẠN getTimeAgo CŨ Ở ĐÂY)
-
     const snapshot = await postsRef.orderByChild('timestamp').limitToLast(50).once('value');
     const myUsername = userData.profile.name; 
     const myUid = userData.profile.uid;
@@ -23655,6 +23653,7 @@ async function listenToPosts() {
 
     initialLoadDone = true;
 
+    // 1. LẮNG NGHE BÀI MỚI (Giữ nguyên của Henry)
     postsRef.orderByChild('timestamp').limitToLast(1).on('child_added', async (snap) => {
         if (!initialLoadDone) return; 
         const newPost = { id: snap.key, ...snap.val() };
@@ -23663,12 +23662,33 @@ async function listenToPosts() {
         }
     });
 
+    // 2. LẮNG NGHE CẬP NHẬT (Thả tim, sửa bài, thêm comment) ✨
+    // Khi có thay đổi, chỉ vẽ lại nội dung bên trong, không xóa thẻ cha
+    postsRef.on('child_changed', async (snap) => {
+        const updatedPost = { id: snap.key, ...snap.val() };
+        const postCard = document.getElementById(`post-card-${updatedPost.id}`);
+        
+        if (postCard) {
+            // Chỉ gọi renderSinglePost để lấy chuỗi HTML mới
+            // Mẹo: Tạo một helper tạm để lấy nội dung mới mà không insert thêm thẻ cha mới
+            const tempDiv = document.createElement('div');
+            await renderSinglePost(updatedPost, 'beforeend', tempDiv);
+            
+            // Lấy phần ruột (innerHTML) của post-card mới thay vào post-card cũ
+            const newInnerContent = tempDiv.querySelector('.status-card').innerHTML;
+            postCard.innerHTML = newInnerContent;
+            
+            console.log(`💖 Đã cập nhật trạng thái bài viết: ${updatedPost.id}`);
+        }
+    });
+
     postsRef.on('child_removed', (snapshot) => {
         const card = document.getElementById(`post-card-${snapshot.key}`);
         if (card) card.remove();
     });
 
-    async function renderSinglePost(post, position) {
+    // Sửa tham số để hỗ trợ cập nhật nội dung (Thêm targetContainer)
+    async function renderSinglePost(post, position, targetContainer = postsContainer) {
         let showThisPost = false;
         if (post.privacy === 'public') showThisPost = true;
         else if (post.uid === myUid) showThisPost = true;
@@ -23681,14 +23701,13 @@ async function listenToPosts() {
             const reactionCount = post.reactions ? Object.keys(post.reactions).length : 0;
             const hasLiked = post.reactions && post.reactions[myUid];
 
-            // GỌI HÀM DÙNG CHUNG Ở ĐÂY (TRUYỀN THAM SỐ GỌN HƠN) ✨
             const commentsHTML = await renderNestedComments(post.comments, post, myUid);
-
             const isMyPost = post.uid === myUid;
-            // Tìm đoạn này và sửa lại:
-const pAvatarHtml = currentAuthorAvatar 
-    ? `<img src="${currentAuthorAvatar}" class="author-avatar" style="width:45px; height:45px; border-radius:50%; object-fit:cover;">` 
-    : `<div class="author-avatar" style="width:45px; height:45px; border-radius:50%; background:#ffe4e8; display:flex; align-items:center; justify-content:center; color:#ff8fab; font-size:1.2rem;"><i class="fas ${authorData.gender === 'Nam' ? 'fa-user-tie' : 'fa-user-graduate'}"></i></div>`;
+
+            const pAvatarHtml = currentAuthorAvatar 
+                ? `<img src="${currentAuthorAvatar}" class="author-avatar" style="width:45px; height:45px; border-radius:50%; object-fit:cover;">` 
+                : `<div class="author-avatar" style="width:45px; height:45px; border-radius:50%; background:#ffe4e8; display:flex; align-items:center; justify-content:center; color:#ff8fab; font-size:1.2rem;"><i class="fas ${authorData.gender === 'Nam' ? 'fa-user-tie' : 'fa-user-graduate'}"></i></div>`;
+
             const html = `
                 <div class="status-card post-item animate__animated animate__fadeIn" id="post-card-${post.id}">
                     <div class="post-header" style="position:relative; display:flex; justify-content:space-between; align-items:flex-start;">
@@ -23735,8 +23754,7 @@ const pAvatarHtml = currentAuthorAvatar
                     </div>
                 </div>
             `;
-            postsContainer.insertAdjacentHTML(position, html);
-            // THIẾT LẬP REAL-TIME
+            targetContainer.insertAdjacentHTML(position, html);
             setupCommentRealtime(post.id, renderNestedComments);
         }
     }
@@ -24172,6 +24190,13 @@ function deleteComment(postId, commentId) {
 
 function toggleReaction(postId) {
     const myUid = userData.profile.uid;
+    const btn = document.querySelector(`#post-card-${postId} .action-btn i.fa-heart`).parentElement;
+    
+    // Bước 1: Thay đổi giao diện ngay lập tức (cho người dùng sướng mắt trước)
+    const isLiked = btn.style.color === 'rgb(255, 20, 147)'; // Kiểm tra màu hồng đậm
+    btn.style.color = isLiked ? '#ff8fab' : '#ff1493';
+    
+    // Bước 2: Gửi lên Firebase sau
     const ref = firebase.database().ref(`posts/${postId}/reactions/${myUid}`);
     ref.once('value', snap => {
         if (snap.exists()) ref.remove();
