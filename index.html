@@ -24085,6 +24085,27 @@ function getPrivacyIcon(p) {
 
 // Gọi hàm lắng nghe khi ứng dụng khởi chạy hoặc khi chuyển tab
 // listenToPosts();
+
+    function listenToNotifications() {
+    if (!userData || !userData.profile.name) return;
+
+    const notiRef = firebase.database().ref(`notifications/${userData.profile.name}`);
+    
+    // Lắng nghe khi có thông báo mới (child_added)
+    notiRef.limitToLast(1).on('child_added', (snapshot) => {
+        const noti = snapshot.val();
+        
+        // Kiểm tra thời gian để không hiện lại thông báo cũ khi vừa load trang
+        const now = Date.now();
+        if (now - noti.timestamp < 5000) { // Nếu thông báo mới phát sinh trong 5 giây qua
+             // Sử dụng hàm addNotification có sẵn của bạn để hiện lên UI
+             addNotification("BÌNH LUẬN MỚI", noti.message);
+             
+             // Có thể thêm tiếng chuông nhỏ ở đây nếu muốn
+             // playNotificationSound(); 
+        }
+    });
+}
 </script>
 </body>
 </html>
