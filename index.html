@@ -23835,12 +23835,16 @@ async function submitReply(postId, commentId) {
             // Chỉ gửi thông báo nếu người phản hồi không phải là chủ của bình luận đó
             if (targetUid && targetUid !== userData.profile.uid) {
                 const notiData = {
+                    title: "PHẢN HỒI MỚI 💖", // Thêm tiêu đề để khớp giao diện chuông
                     fromName: userData.profile.name,
                     message: `đã phản hồi bình luận của bạn: "${text.substring(0, 30)}..."`,
                     timestamp: firebase.database.ServerValue.TIMESTAMP,
                     isRead: false,
-                    type: 'reply'
+                    unread: true, // Đảm bảo số thông báo đỏ hiện lên
+                    type: 'reply',
+                    postId: postId // Gửi kèm postId để khi bấm vào chuông có thể dẫn tới bài viết
                 };
+                // Đẩy vào nhánh notifications/${targetUid} theo Rules
                 firebase.database().ref(`notifications/${targetUid}`).push(notiData);
             }
         });
@@ -24055,13 +24059,20 @@ function submitComment(postId) {
                     const authorUid = authorSnap.val();
                     // Chỉ gửi nếu người comment không phải là chủ bài đăng
                     if (authorUid && authorUid !== userData.profile.uid) {
+                        
+                        // HENRY LƯU Ý: Chỉnh lại cấu trúc notiData để hàm render chuông của Henry nhận diện được
                         const notiData = {
+                            title: "BÌNH LUẬN MỚI ✨", // Thêm title để hiện ở header chuông
                             fromName: userData.profile.name,
                             message: `đã bình luận bài viết của bạn: "${text.substring(0, 30)}..."`,
                             timestamp: firebase.database.ServerValue.TIMESTAMP,
                             isRead: false,
-                            type: 'comment'
+                            unread: true, // Henry dùng unread để hiện số đỏ ở chuông (theo code cũ)
+                            type: 'comment',
+                            postId: postId // Lưu lại ID để khi bấm vào thông báo có thể dẫn tới bài đăng
                         };
+
+                        // Đẩy vào đúng nhánh notifications/${authorUid} đã mở trong Rules
                         firebase.database().ref(`notifications/${authorUid}`).push(notiData);
                     }
                 });
@@ -24098,30 +24109,44 @@ async function sendNotificationToUser(targetUid, message, type = "comment") {
     await firebase.database().ref(`notifications/${targetUid}`).push(notiData);
 }
 
-    function listenToMyNotifications() {
+   function listenToMyNotifications() {
     if (!userData || !userData.profile || !userData.profile.uid) return;
 
     const myUid = userData.profile.uid;
-    // Lắng nghe tại nhánh notifications/ID_CỦA_HENRY
     const notiRef = firebase.database().ref(`notifications/${myUid}`);
 
-    // Sử dụng .on('child_added') để chỉ bắt những thông báo MỚI NHẤT phát sinh từ lúc này
-    notiRef.limitToLast(1).on('child_added', (snapshot) => {
+    // Ghi lại thời điểm bắt đầu lắng nghe để tránh nổ thông báo cũ khi vừa load trang
+    const startTime = Date.now();
+
+    // Lắng nghe tại nhánh notifications/ID_CỦA_HENRY
+    // Sử dụng .on('child_added') để bắt thông báo MỚI
+    notiRef.orderByChild('timestamp').startAt(startTime).on('child_added', (snapshot) => {
         const noti = snapshot.val();
         
-        // Kiểm tra nếu thông báo này chưa đọc và mới phát sinh
-        if (noti && !noti.isRead) {
-            // 1. Hiện thông báo lên Chuông báo của Henry
-            // Mình gửi kèm extraData để Henry có thể bấm vào thông báo để mở bài viết/chat
-            addNotification("TƯƠNG TÁC ✨", `💖 ${noti.fromName} ${noti.message}`, false, noti);
+        // Kiểm tra nếu thông báo này chưa đọc (unread/isRead) và mới phát sinh
+        // Giữ nguyên logic hiển thị và thiết kế của Henry
+        if (noti && (noti.unread === true || noti.isRead === false)) {
             
-            // 2. Bắn thông báo ra máy (Desktop/Mobile) để chắc chắn không bỏ lỡ
+            // 1. Hiện thông báo lên Chuông báo của Henry
+            // Giữ nguyên tham số: Tiêu đề, Nội dung, Phát tiếng (false), và extraData (noti)
+            addNotification(
+                noti.title || "TƯƠNG TÁC ✨", 
+                `💖 ${noti.fromName} ${noti.message}`, 
+                false, 
+                noti
+            );
+            
+            // 2. Bắn thông báo ra máy (Desktop/Mobile)
             if (typeof sendSystemLiveNotification === 'function') {
-                sendSystemLiveNotification("Sweetie Town 💖", `${noti.fromName} ${noti.message}`);
+                sendSystemLiveNotification("Sweetie Game World 💖", `${noti.fromName} ${noti.message}`);
             }
 
-            // 3. Đánh dấu đã đọc trên Firebase để không hiện lại lần sau
-            snapshot.ref.update({ isRead: true });
+            // 3. Đánh dấu đã đọc trên Firebase theo đúng thiết kế của Henry
+            // Cập nhật cả 2 flag để chắc chắn Rules và Local đều khớp
+            snapshot.ref.update({ 
+                isRead: true,
+                unread: false 
+            });
         }
     });
 }
