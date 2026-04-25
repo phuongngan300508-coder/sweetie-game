@@ -11208,9 +11208,10 @@ function handleLogin() {
     // --- MỚI: KÍCH HOẠT TRẠNG THÁI ONLINE NGAY LẬP TỨC ---
     if (typeof initUserPresence === 'function') {
         initUserPresence();
-        // SỬA LỖI TẠI ĐÂY: Sử dụng biến 'name' (là chuỗi) thay vì các object phức tạp
-        db.ref('/status/' + String(name) + '/last_changed').set(firebase.database.ServerValue.TIMESTAMP);
-        console.log("Hệ thống: Đã kích hoạt trạng thái Online cho " + name);
+        // FIX LỖI: Sử dụng userData.profile.uid (là String) thay vì biến name 
+        // để đảm bảo đường dẫn chuẩn xác và duy nhất
+        db.ref('/status/' + userData.profile.uid + '/last_changed').set(firebase.database.ServerValue.TIMESTAMP);
+        console.log("Hệ thống: Đã kích hoạt trạng thái Online cho ID " + userData.profile.uid);
     }
 
     // --- SỬA LẠI: Yêu cầu quyền thông báo tối ưu cho Web Push ---
@@ -15169,11 +15170,11 @@ function listenUserStatus(friendName) {
     });
 }
     
- function initUserPresence() {
+function initUserPresence() {
     if (!currentUser) return;
 
-    // Nhánh lưu trạng thái online/offline của tất cả cư dân (Giữ nguyên)
-    const statusRef = db.ref('/status/' + currentUser);
+    // SỬA TẠI ĐÂY: Thêm .uid để lấy chuỗi ID thay vì cả Object
+    const statusRef = db.ref('/status/' + (currentUser.uid || currentUser));
 
     // Một kết nối đặc biệt của Firebase để kiểm tra Henry có đang mở web không (Giữ nguyên)
     db.ref('.info/connected').on('value', (snapshot) => {
@@ -15192,8 +15193,8 @@ function listenUserStatus(friendName) {
             });
 
             // --- ĐOẠN MỚI THÊM: KÍCH HOẠT "MẮT THẦN" THEO DÕI BẠN BÈ ---
-            // Ngay khi Henry vừa online, quét danh sách bạn bè để lắng nghe chấm xanh của họ
-            db.ref('users/' + currentUser + '/friends').once('value', (snap) => {
+            // SỬA TẠI ĐÂY: currentUser ở đây cũng phải là .uid hoặc .username để đúng đường dẫn lưu trữ
+            db.ref('users/' + (currentUser.uid || currentUser) + '/friends').once('value', (snap) => {
                 const friends = snap.val() || {};
                 Object.keys(friends).forEach(fName => {
                     if (typeof setupStatusListener === 'function') {
@@ -15203,6 +15204,7 @@ function listenUserStatus(friendName) {
             });
         });
     });
+}
 
     // --- BỘ DUY TRÌ ONLINE (HEARTBEAT) --- (Giữ nguyên)
     // Cứ mỗi 1 phút, Henry cho hệ thống "gõ cửa" Firebase một lần
