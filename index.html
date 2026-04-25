@@ -24154,35 +24154,39 @@ async function handleMentionNotifications(text, postId) {
 }
 
     async function searchFriendByName(targetName) {
-    // 1. Hiển thị một thông báo nhỏ để người dùng biết hệ thống đang tìm
-    console.log("Đang tìm cư dân: " + targetName);
+    // Xóa khoảng trắng thừa nếu có
+    const cleanName = targetName.trim();
+    const usersRef = firebase.database().ref('users');
 
     try {
-        // 2. Truy cập vào node 'users' và tìm người có profile/name khớp với targetName
-        const usersRef = firebase.database().ref('users');
-        const snapshot = await usersRef.orderByChild('profile/name').equalTo(targetName).once('value');
+        // CÁCH 1: Kiểm tra xem targetName có phải là Username (Key) không
+        // Đây là cách nhanh nhất vì không cần dùng tới query phức tạp
+        const directSnap = await usersRef.child(cleanName).once('value');
+        
+        if (directSnap.exists()) {
+            const userData = directSnap.val();
+            // Lấy UID từ trong profile hoặc lấy chính cái key cleanName nếu đó là UID
+            const uid = (userData.profile && userData.profile.uid) ? userData.profile.uid : cleanName;
+            searchFriendByID(uid);
+            return; // Tìm thấy rồi thì dừng luôn
+        }
 
-        if (snapshot.exists()) {
-            // Firebase trả về một object, ta lấy key đầu tiên chính là UID
-            const userDataFound = snapshot.val();
-            const uid = Object.keys(userDataFound)[0];
+        // CÁCH 2: Nếu không phải Username, tìm theo profile/name (Cái này dùng đến index "profile/name")
+        const querySnap = await usersRef.orderByChild('profile/name').equalTo(cleanName).once('value');
 
-            // 3. Gọi hàm hiển thị trang cá nhân có sẵn của Henry
-            if (typeof searchFriendByID === 'function') {
-                searchFriendByID(uid);
-            } else {
-                alert("Đã tìm thấy cư dân " + targetName + " nhưng hàm hiển thị đang lỗi rồi! 🎀");
-            }
+        if (querySnap.exists()) {
+            const dataFound = querySnap.val();
+            const firstKey = Object.keys(dataFound)[0];
+            const uid = dataFound[firstKey].profile.uid || firstKey;
+            searchFriendByID(uid);
         } else {
-            // Nếu không tìm thấy tên trong database
+            // CÁCH 3: Nếu vẫn không thấy, thông báo cho cư dân
             if (typeof addNotification === 'function') {
-                addNotification("HỆ THỐNG", "Không tìm thấy cư dân '" + targetName + "' trong hệ thống! ✨");
-            } else {
-                alert("Không tìm thấy cư dân này nha! 🎀");
+                addNotification("HỆ THỐNG", `Không tìm thấy cư dân "${cleanName}" đâu cả! ✨`);
             }
         }
     } catch (error) {
-        console.error("Lỗi tìm kiếm tên:", error);
+        console.error("Lỗi tìm bạn:", error);
     }
 }
 </script>
