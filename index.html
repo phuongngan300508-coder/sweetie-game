@@ -11195,11 +11195,10 @@ function handleLogin() {
 
     // --- BƯỚC CUỐI: THIẾT LẬP SESSION VÀ GIAO DIỆN (Dùng chung cho cả 2) ---
     
-    // --- ĐOẠN SỬA CHÍNH: Gán Object thay vì String để dùng cho Status ---
-    currentUser = {
-        uid: userData.profile.uid,
-        username: name
-    };
+    // --- ĐOẠN ĐÃ SỬA: currentUser phải là String để tránh lỗi path [object Object] ---
+    currentUser = name; 
+    // Tạo thêm một biến toàn cục khác nếu Henry cần dùng UID ở chỗ khác
+    currentUserId = userData.profile.uid; 
     // -----------------------------------------------------------------
 
     localStorage.setItem('lastLoggedInUser', name);
@@ -11208,8 +11207,7 @@ function handleLogin() {
     // --- MỚI: KÍCH HOẠT TRẠNG THÁI ONLINE NGAY LẬP TỨC ---
     if (typeof initUserPresence === 'function') {
         initUserPresence();
-        // FIX LỖI: Sử dụng userData.profile.uid (là String) thay vì biến name 
-        // để đảm bảo đường dẫn chuẩn xác và duy nhất
+        // Sử dụng trực tiếp userData.profile.uid là chuẩn nhất
         db.ref('/status/' + userData.profile.uid + '/last_changed').set(firebase.database.ServerValue.TIMESTAMP);
         console.log("Hệ thống: Đã kích hoạt trạng thái Online cho ID " + userData.profile.uid);
     }
