@@ -13171,60 +13171,58 @@ function handleNotiClick(index) {
             }
         } 
 
-        // --- KHU VỰC CHỈNH SỬA: XỬ LÝ NHẤN ĐỂ BUNG DẦN CÁC CẤP ---
+        // --- KHU VỰC CHỈNH SỬA: TỰ ĐỘNG BUNG TOÀN BỘ CẤP KHI NHẤN ---
         else if (type === 'open_post' || type === 'mention') {
             const postId = noti.extraData.postId;
             const commentId = noti.extraData.commentId;
             const parentId = noti.extraData.parentId;
-            const ancestors = noti.extraData.ancestors || []; // Mảng chứa ID các cấp cha từ cao xuống thấp
+            const ancestors = noti.extraData.ancestors || []; 
 
             if (postId) {
-                // Bước 1: Chuyển tab trước
+                // Bước 1: Auto bung tất cả các nhánh liên quan
+                // Henry gom cụ, ông, bà, cha vào một danh sách và duyệt hết sạch
+                const allParents = [...ancestors, parentId].filter(id => id); 
+                
+                allParents.forEach(pId => {
+                    if (!expandedComments.includes(pId)) {
+                        expandedComments.push(pId);
+                        console.log("Hệ thống: Đã auto bung cấp:", pId);
+                    }
+                });
+
+                // Bước 2: Chuyển tab
                 switchTab('tab-status'); 
 
-                // Bước 2: Kiểm tra xem comment mục tiêu đã có trong DOM chưa
-                const targetId = `comm-wrap-${commentId}`;
-                let targetEl = document.getElementById(targetId);
-
-                if (!targetEl) {
-                    console.log("Hệ thống: Chưa tìm thấy comment, bắt đầu quy trình bung lớp...");
-                    
-                    // Logic bung dần: Tìm xem trong danh sách cha, cái nào chưa được mở thì mở cái đó
-                    // Chúng ta duyệt từ ancestors (ông nội) rồi mới đến parentId (cha trực tiếp)
-                    const allParents = [...ancestors, parentId].filter(id => id); 
-                    
-                    for (let pId of allParents) {
-                        if (!expandedComments.includes(pId)) {
-                            expandedComments.push(pId);
-                            console.log("Hệ thống: Đã tự động bung cấp:", pId);
-                            // Sau khi đẩy vào mảng, dừng vòng lặp để lần nhấn sau mới bung tiếp (theo ý Henry)
-                            // Hoặc Henry có thể bỏ break để nó bung hết luôn 1 lần.
-                            break; 
-                        }
-                    }
-                }
-
-                // Bước 3: Đợi render và cuộn
+                // Bước 3: Đợi render và cuộn (Quy trình tìm kiếm tự động)
                 let retryCount = 0;
+                const targetId = `comm-wrap-${commentId}`;
+
                 const attemptScroll = () => {
-                    targetEl = document.getElementById(targetId) || document.getElementById(`post-card-${postId}`);
+                    let targetEl = document.getElementById(targetId);
                     
                     if (targetEl) {
+                        // CHÚC MỪNG: Đã tìm thấy comment sau khi auto bung!
                         targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        if (targetEl.id === targetId) {
-                            targetEl.classList.add('highlight-noti-comment');
-                            setTimeout(() => targetEl.classList.remove('highlight-noti-comment'), 3000);
-                        }
+                        targetEl.classList.add('highlight-noti-comment');
+                        setTimeout(() => {
+                            if (targetEl) targetEl.classList.remove('highlight-noti-comment');
+                        }, 3000);
                     } else {
-                        if (retryCount < 3) {
+                        // Nếu chưa thấy, có thể do Firebase đang tải nhánh con vừa bung
+                        if (retryCount < 5) { // Thử tối đa 5 lần
                             retryCount++;
+                            // Ép vẽ lại để các nhánh vừa thêm vào expandedComments hiện ra
                             if (typeof refreshCommentsOnly === 'function') refreshCommentsOnly(postId);
                             setTimeout(attemptScroll, 500);
+                        } else {
+                            // Nếu vẫn không thấy thì cuộn về bài viết cho cư dân đỡ lạc
+                            const postEl = document.getElementById(`post-card-${postId}`);
+                            if (postEl) postEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
                         }
                     }
                 };
 
-                setTimeout(attemptScroll, 600);
+                setTimeout(attemptScroll, 700);
 
             } else {
                 alert("❌ Không tìm thấy bài viết liên quan!");
