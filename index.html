@@ -11107,13 +11107,9 @@ function handleLogin() {
         if (!userData.profile.uid) {
             const randomNumber = Math.floor(10000 + Math.random() * 90000);
             userData.profile.uid = "SGW" + randomNumber;
-            saveData(); // Lưu lại ngay để lần sau không bị đổi số khác
+            saveData(); 
             console.log("Hệ thống: Đã cấp ID mới cho tài khoản cũ: " + userData.profile.uid);
         }
-        
-        // Thông báo cho người chơi cũ quay lại (có số dư)
-        const totalAssets = (userData.balance || 0) + (userData.piggyBank ? userData.piggyBank.balance : 0);
-        addNotification("🌸 CHÀO MỪNG QUAY LẠI", `Chào ${name}! Tổng tài sản hiện có của bạn là ${totalAssets.toLocaleString('vi-VN')} VNĐ (Ví + Hũ).`);
         
     } else {
         // --- TRƯỜNG HỢP 2: NGƯỜI CHƠI MỚI (KIỂM TRA CÁC Ô NHẬP LIỆU) ---
@@ -11127,7 +11123,7 @@ function handleLogin() {
         if (!gender) { alert("Vui lòng chọn giới tính!"); return; } 
         if (!confirmed) { alert("Bạn cần xác nhận đã đọc luật!"); return; }
 
-        // TÍNH TOÁN HẠN ĐIỂM DANH (Giữ nguyên logic của bạn)
+        // TÍNH TOÁN HẠN ĐIỂM DANH
         const vnNow = getVietnamTime().getTime();
         let hasAccess = false;
         let expiryDate = null;
@@ -11137,20 +11133,16 @@ function handleLogin() {
             if (expiryDate > vnNow) hasAccess = true;
         }
 
-        function removeVietnameseTones(str) {
-            return str.normalize('NFD').replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").replace(/Đ/g, "D").replace(/\s+/g, '').toLowerCase();
-        }
-
-        // --- ĐOẠN SỬA ĐỂ CẤP ID NGAY KHI ĐĂNG KÝ ---
-        const randomNumber = Math.floor(10000 + Math.random() * 90000); // Tạo 5 số ngẫu nhiên
-        const uniqueID = "SGW" + randomNumber; // Kết hợp thành SGW12345
+        // --- CẤP ID NGAY KHI ĐĂNG KÝ ---
+        const randomNumber = Math.floor(10000 + Math.random() * 90000); 
+        const uniqueID = "SGW" + randomNumber; 
 
         // KHỞI TẠO USER DATA MỚI
         userData = {
             profile: { 
                 name, 
                 gender, 
-                uid: uniqueID, // GÁN ID VÀO ĐÂY ĐỂ HỆ THỐNG LƯU LẠI
+                uid: uniqueID, 
                 date: document.getElementById('reg-date').value, 
                 purpose: document.getElementById('reg-purpose').value 
             },
@@ -11165,7 +11157,7 @@ function handleLogin() {
             zoneAccess: {} 
         };
 
-        // --- XỬ LÝ KHÔI PHỤC KHU VỰC (Giữ nguyên logic của bạn) ---
+        // --- XỬ LÝ KHÔI PHỤC KHU VỰC ---
         for (const zoneId in ZONE_CONFIG) {
             const chk = document.getElementById(`restore-chk-${zoneId}`);
             const dateInput = document.getElementById(`restore-date-${zoneId}`);
@@ -11188,56 +11180,32 @@ function handleLogin() {
                 }
             }
         }
-
-        // Thông báo cho tài khoản mới hoàn toàn
-        addNotification("🌸 CHÀO MỪNG THÀNH VIÊN MỚI", `Chào mừng ${name} gia nhập khu Minigame! Chúc bạn có những giây phút giải trí thật vui vẻ.`);
     }
 
-    // --- BƯỚC CUỐI: THIẾT LẬP SESSION VÀ GIAO DIỆN (Dùng chung cho cả 2) ---
-    
-    // --- ĐOẠN SỬA CHÍNH: Gán Object thay vì String để dùng cho Status ---
+    // --- BƯỚC CUỐI: THIẾT LẬP SESSION VÀ GIAO DIỆN ---
     currentUser = {
         uid: userData.profile.uid,
         username: name
     };
-    // -----------------------------------------------------------------
 
     localStorage.setItem('lastLoggedInUser', name);
     sessionStorage.setItem('currentUser', name);
 
-    // --- MỚI: KÍCH HOẠT TRẠNG THÁI ONLINE NGAY LẬP TỨC ---
+    // Lưu dữ liệu trước khi chuyển giao diện
+    saveData();
+
+    // Ẩn màn hình đăng nhập NGAY LẬP TỨC để vào sảnh
+    document.getElementById('auth-screen').style.display = 'none';
+
+    // Cập nhật trạng thái online - Sửa lỗi truyền Object vào Path Firebase
     if (typeof initUserPresence === 'function') {
         initUserPresence();
-        // Henry thêm dòng này: Cập nhật timestamp cuối để "đánh thức" các bộ lắng nghe của bạn bè
+        // SỬA TẠI ĐÂY: Dùng biến 'name' thay vì object 'currentUser'
         db.ref('/status/' + name + '/last_changed').set(firebase.database.ServerValue.TIMESTAMP);
         console.log("Hệ thống: Đã kích hoạt trạng thái Online cho " + name);
     }
 
-    // --- SỬA LẠI: Yêu cầu quyền thông báo tối ưu cho Web Push ---
-    if ("Notification" in window) {
-        Notification.requestPermission().then(permission => {
-            if (permission === "granted") {
-                const notifTitle = "🌸 SWEETIE GAME WORLD";
-                const notifOptions = {
-                    body: `Chào mừng ${name}! Bạn sẽ nhận được thông báo sự kiện và nhắc nhở nuôi Tim tại đây.`,
-                    icon: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
-                    badge: "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png"
-                };
-
-                // Nếu có Service Worker, hãy dùng nó để hiện thông báo (giúp báo được khi tắt web)
-                if ('serviceWorker' in navigator) {
-                    navigator.serviceWorker.ready.then(reg => {
-                        reg.showNotification(notifTitle, notifOptions);
-                    });
-                } else {
-                    new Notification(notifTitle, notifOptions);
-                }
-            }
-        });
-    }
-
-    saveData();
-    document.getElementById('auth-screen').style.display = 'none';
+    // Kích hoạt các thông báo hệ thống và UI
     checkMinigameStatus(); 
     updateUI();
     updateGameLimitsUI(); 
@@ -11246,38 +11214,40 @@ function handleLogin() {
     checkDailyCheckinReminder();    
     checkSystemAlerts(); 
 
-    // --- ĐOẠN SỬA ĐỂ FIX LỖI 3 THÔNG BÁO & KÍCH HOẠT CALL ---
+    // --- KÍCH HOẠT HỆ THỐNG SOCIAL ---
     if (!isSocialInitialized) {
         initChatSystem(); 
-        
-        // --- MỚI: KÍCH HOẠT HỆ THỐNG GỌI THOẠI & VIDEO ---
         if (typeof initCallSystem === 'function') {
             initCallSystem();
             console.log("Hệ thống: Đã kích hoạt Call Center cho Henry.");
         }
-
-        if (typeof initFriendRequestListener === 'function') {
-            initFriendRequestListener();
-        }
-        if (typeof initFriendStatusListener === 'function') {
-            initFriendStatusListener();
-        }
-
-        // --- MỚI: KHỞI ĐỘNG KÊNH CHAT THẾ GIỚI ---
+        if (typeof initFriendRequestListener === 'function') initFriendRequestListener();
+        if (typeof initFriendStatusListener === 'function') initFriendStatusListener();
         if (typeof initGlobalChat === 'function') {
             initGlobalChat();
             console.log("Hệ thống: Đã kết nối vào Kênh chat thế giới.");
         }
-
-        isSocialInitialized = true; // Cắm cờ để không lặp lại
-        console.log("Hệ thống: Đã kích hoạt bộ lắng nghe Social (Duy nhất)");
+        isSocialInitialized = true; 
     }
     
-    // Ép render lại danh sách bạn bè ngay khi Henry vừa đăng nhập thành công
     if (typeof renderFriendsList === 'function') renderFriendsList();
-    
-    // Alert chào mừng tùy biến theo trạng thái
-    alert(isNewUser ? `🌸 Chào mừng người chơi mới: ${name}!` : `🌸 Chào mừng ${name} đã quay trở lại!`);
+
+    // --- HIỂN THỊ THÔNG BÁO CHÀO MỪNG (Dùng setTimeout để không bị chặn UI) ---
+    setTimeout(() => {
+        if (isNewUser) {
+            addNotification("🌸 CHÀO MỪNG THÀNH VIÊN MỚI", `Chào mừng ${name} gia nhập khu Minigame!`);
+            alert(`🌸 Chào mừng người chơi mới: ${name}!`);
+        } else {
+            const totalAssets = (userData.balance || 0) + (userData.piggyBank ? userData.piggyBank.balance : 0);
+            addNotification("🌸 CHÀO MỪNG QUAY LẠI", `Chào ${name}! Tổng tài sản hiện có của bạn là ${totalAssets.toLocaleString('vi-VN')} VNĐ (Ví + Hũ).`);
+            alert(`🌸 Chào mừng ${name} đã quay trở lại!`);
+        }
+    }, 200);
+
+    // Xử lý quyền thông báo Web Push
+    if ("Notification" in window) {
+        Notification.requestPermission();
+    }
 }
     
 // Tự động kiểm tra tên khi người dùng đang nhập
