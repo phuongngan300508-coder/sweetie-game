@@ -23481,6 +23481,10 @@ async function selectSavedAccount(stk, name) {
     try {
         await firebase.database().ref('posts').push(newPost);
         statusInput.value = "";
+        // --- THÊM THÔNG BÁO VÀO CHUÔNG GAME TẠI ĐÂY ---
+        if (typeof addNotification === 'function') {
+            addNotification("HỆ THỐNG", "Bạn vừa đăng một trạng thái mới thành công! ✨");
+        }
         // Không cần gọi lại listenToPosts() ở đây vì hàm .on('value') ở dưới sẽ tự cập nhật khi có data mới
     } catch (e) {
         console.error("Lỗi đăng bài:", e);
@@ -23824,6 +23828,7 @@ function showReplyInput(commentId, tagUser) {
 }
     
 // Gửi phản hồi (Đã sửa để hỗ trợ đa cấp lồng nhau)
+// Gửi phản hồi (Đã sửa để đứng im tại chỗ, không cuộn xuống đáy bài viết)
 async function submitReply(postId, commentId) {
     const replyInput = document.getElementById(`input-reply-${commentId}`);
     if (!replyInput) return; 
@@ -23858,20 +23863,18 @@ async function submitReply(postId, commentId) {
             addNotification("HỆ THỐNG", "Đã gửi phản hồi của bạn! 💖");
         }
 
-        // --- 2. TỰ ĐỘNG MỞ RỘNG VÀ CUỘN XUỐNG PHẦN PHẢN HỒI ---
+        // --- 2. TỰ ĐỘNG MỞ RỘNG PHẦN PHẢN HỒI ---
+        // (Bỏ phần scrollTo để trình duyệt giữ nguyên vị trí mắt đang đọc)
         if (!expandedComments.includes(commentId)) {
             expandedComments.push(commentId);
-        }
-
-        const commentList = document.getElementById(`comments-list-${postId}`);
-        if (commentList) {
-            commentList.scrollTo({
-                top: commentList.scrollHeight,
-                behavior: 'smooth'
-            });
+            
+            // Nếu Henry có hàm refreshCommentsOnly thì gọi ở đây để cập nhật giao diện ngay lập tức
+            if (typeof refreshCommentsOnly === 'function') {
+                refreshCommentsOnly(postId);
+            }
         }
         
-        console.log("Đã gửi phản hồi đa cấp thành công! ✨");
+        console.log("Đã gửi phản hồi đa cấp thành công và giữ nguyên vị trí! ✨");
     } catch (e) {
         console.error("Lỗi khi phản hồi:", e);
         alert("Lỗi khi phản hồi: " + e.message);
@@ -24057,24 +24060,23 @@ function submitComment(postId) {
         };
 
         // Gửi lên Firebase
-        firebase.database().ref(`posts/${postId}/comments`).push(commentData)
-            .then(() => {
-                input.value = "";
+        // Trong hàm submitComment(postId)
+firebase.database().ref(`posts/${postId}/comments`).push(commentData)
+    .then(() => {
+        input.value = "";
+        if (typeof addNotification === 'function') {
+            addNotification("HỆ THỐNG", "Bình luận của bạn đã được gửi thành công! ✨");
+        }
 
-                // --- 1. THÊM THÔNG BÁO THÀNH CÔNG ---
-                if (typeof addNotification === 'function') {
-                    addNotification("HỆ THỐNG", "Bình luận của bạn đã được gửi thành công! ✨");
-                }
-
-                // --- 2. TỰ ĐỘNG CUỘN XUỐNG BÌNH LUẬN MỚI NHẤT ---
-                const commentList = document.getElementById(`comments-list-${postId}`);
-                if (commentList) {
-                    commentList.scrollTo({
-                        top: commentList.scrollHeight,
-                        behavior: 'smooth' // Cuộn mượt mà không bị giật
-                    });
-                }
-            })
+        // CHỈ CUỘN XUỐNG KHI LÀ COMMENT GỐC
+        const commentList = document.getElementById(`comments-list-${postId}`);
+        if (commentList) {
+            commentList.scrollTo({
+                top: commentList.scrollHeight,
+                behavior: 'smooth'
+            });
+        }
+    })
             .catch(err => {
                 console.error("Lỗi gửi bình luận:", err);
                 alert("Không có quyền bình luận, hãy kiểm tra lại Rules!");
