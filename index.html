@@ -23522,6 +23522,9 @@ async function listenToPosts() {
         const postsContainer = document.getElementById('status-list');
         if (!postsContainer) return;
 
+        // --- BƯỚC 1: LƯU VỊ TRÍ CUỘN HIỆN TẠI ---
+        const currentScrollPos = window.scrollY;
+
         postsContainer.innerHTML = ""; 
         
         const myUsername = userData.profile.name; 
@@ -23535,7 +23538,6 @@ async function listenToPosts() {
             postsArray.push({ id: child.key, ...child.val() });
         });
 
-        // Sử dụng for...of để có thể sử dụng await bên trong khi render từng post
         for (const post of postsArray.reverse()) {
             let showThisPost = false;
 
@@ -23546,7 +23548,6 @@ async function listenToPosts() {
             }
 
             if (showThisPost) {
-                // --- LẤY AVATAR CHỦ BÀI VIẾT MỚI NHẤT ---
                 const authorSnap = await firebase.database().ref(`users/${post.username}/profile`).once('value');
                 const authorData = authorSnap.val() || {};
                 const currentAuthorAvatar = authorData.customAvatar;
@@ -23554,7 +23555,6 @@ async function listenToPosts() {
                 const reactionCount = post.reactions ? Object.keys(post.reactions).length : 0;
                 const hasLiked = post.reactions && post.reactions[myUid];
                 
-                // Chuyển renderNestedComments thành async để lấy avatar comment
                 const renderNestedComments = async (allComments, parentId = null, level = 0) => {
                     let html = "";
                     if (!allComments) return html;
@@ -23579,7 +23579,6 @@ async function listenToPosts() {
                         const commReactionCount = c.reactions ? Object.keys(c.reactions).length : 0;
                         const hasLikedComm = c.reactions && c.reactions[myUid];
 
-                        // --- LẤY AVATAR NGƯỜI COMMENT MỚI NHẤT ---
                         const commUserSnap = await firebase.database().ref(`users/${c.username}/profile`).once('value');
                         const commUserData = commUserSnap.val() || {};
                         const currentCommAvatar = commUserData.customAvatar;
@@ -23638,7 +23637,6 @@ async function listenToPosts() {
                 const commentsHTML = await renderNestedComments(post.comments);
                 const isMyPost = post.uid === myUid;
 
-                // Render avatar bài đăng
                 const pAvatarHtml = currentAuthorAvatar 
                     ? `<img src="${currentAuthorAvatar}" style="width:45px; height:45px; border-radius:50%; object-fit:cover;">`
                     : `<div style="width:45px; height:45px; border-radius:50%; background:#ffe4e8; display:flex; align-items:center; justify-content:center; color:#ff8fab; font-size:1.2rem;"><i class="fas ${authorData.gender === 'Nam' ? 'fa-user-tie' : 'fa-user-graduate'}"></i></div>`;
@@ -23700,9 +23698,15 @@ async function listenToPosts() {
                 postsContainer.insertAdjacentHTML('beforeend', html);
             }
         }
+        
+        // --- BƯỚC 2: PHỤC HỒI VỊ TRÍ CUỘN ---
+        // Sử dụng requestAnimationFrame để đảm bảo trình duyệt đã render xong giao diện trước khi cuộn
+        requestAnimationFrame(() => {
+            window.scrollTo(0, currentScrollPos);
+        });
     });
 }
-
+    
     // Hàm bật/tắt quyền bình luận
 async function toggleCommentSettings(postId, currentStatus) {
     try {
