@@ -13151,10 +13151,9 @@ function handleNotiClick(index) {
     const notiModal = document.getElementById('modal-notifications');
     if (notiModal) notiModal.style.display = 'none';
 
-    // 4. Phân loại để xử lý theo yêu cầu của Henry (Giữ nguyên 100% logic bên trong)
+    // 4. Phân loại để xử lý theo yêu cầu của Henry
     setTimeout(() => {
         
-        // --- TRƯỜNG HỢP 1: LỜI MỜI KẾT BẠN ---
         if (type === 'friend_request') {
             if (friendData && friendData.profile) {
                 showFriendRequestProfile(friendData);
@@ -13173,7 +13172,6 @@ function handleNotiClick(index) {
             return; 
         } 
 
-        // --- TRƯỜNG HỢP 2: NHẤN VÀO THÔNG BÁO TIN NHẮN ---
         else if (type === 'open_chat' || type === 'chat' || type === 'message_request') {
             if (friendName) {
                 openChatWith(friendName);
@@ -13182,66 +13180,66 @@ function handleNotiClick(index) {
             }
         } 
 
-        // --- TRƯỜNG HỢP MỚI: NHẤN VÀO THÔNG BÁO NHẮC TÊN (TAG) ---
+        // --- KHU VỰC CHỈNH SỬA: XỬ LÝ NHẤN ĐỂ BUNG DẦN CÁC CẤP ---
         else if (type === 'open_post' || type === 'mention') {
-    const postId = noti.extraData.postId;
-    const commentId = noti.extraData.commentId;
-    const parentId = noti.extraData.parentId;
+            const postId = noti.extraData.postId;
+            const commentId = noti.extraData.commentId;
+            const parentId = noti.extraData.parentId;
+            const ancestors = noti.extraData.ancestors || []; // Mảng chứa ID các cấp cha từ cao xuống thấp
 
-    if (postId) {
-        // 1. CHUẨN BỊ: Ép mở rộng bình luận cha ngay lập tức
-        if (parentId && typeof expandedComments !== 'undefined') {
-            if (!expandedComments.includes(parentId)) {
-                expandedComments.push(parentId);
-                console.log("Hệ thống: Đã chuẩn bị mở rộng cho cha:", parentId);
+            if (postId) {
+                // Bước 1: Chuyển tab trước
+                switchTab('tab-status'); 
+
+                // Bước 2: Kiểm tra xem comment mục tiêu đã có trong DOM chưa
+                const targetId = `comm-wrap-${commentId}`;
+                let targetEl = document.getElementById(targetId);
+
+                if (!targetEl) {
+                    console.log("Hệ thống: Chưa tìm thấy comment, bắt đầu quy trình bung lớp...");
+                    
+                    // Logic bung dần: Tìm xem trong danh sách cha, cái nào chưa được mở thì mở cái đó
+                    // Chúng ta duyệt từ ancestors (ông nội) rồi mới đến parentId (cha trực tiếp)
+                    const allParents = [...ancestors, parentId].filter(id => id); 
+                    
+                    for (let pId of allParents) {
+                        if (!expandedComments.includes(pId)) {
+                            expandedComments.push(pId);
+                            console.log("Hệ thống: Đã tự động bung cấp:", pId);
+                            // Sau khi đẩy vào mảng, dừng vòng lặp để lần nhấn sau mới bung tiếp (theo ý Henry)
+                            // Hoặc Henry có thể bỏ break để nó bung hết luôn 1 lần.
+                            break; 
+                        }
+                    }
+                }
+
+                // Bước 3: Đợi render và cuộn
+                let retryCount = 0;
+                const attemptScroll = () => {
+                    targetEl = document.getElementById(targetId) || document.getElementById(`post-card-${postId}`);
+                    
+                    if (targetEl) {
+                        targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        if (targetEl.id === targetId) {
+                            targetEl.classList.add('highlight-noti-comment');
+                            setTimeout(() => targetEl.classList.remove('highlight-noti-comment'), 3000);
+                        }
+                    } else {
+                        if (retryCount < 3) {
+                            retryCount++;
+                            if (typeof refreshCommentsOnly === 'function') refreshCommentsOnly(postId);
+                            setTimeout(attemptScroll, 500);
+                        }
+                    }
+                };
+
+                setTimeout(attemptScroll, 600);
+
+            } else {
+                alert("❌ Không tìm thấy bài viết liên quan!");
             }
         }
-
-        // 2. CHUYỂN TAB
-        switchTab('tab-status'); 
-
-        // 3. XỬ LÝ ĐỢI RENDER VÀ CUỘN (Tăng thời gian và kiểm tra đệ quy)
-        let retryCount = 0;
-        const maxRetries = 5; // Thử lại tối đa 5 lần nếu chưa tìm thấy phần tử
-
-        const attemptScroll = () => {
-            const targetId = commentId ? `comm-wrap-${commentId}` : `post-card-${postId}`;
-            const targetEl = document.getElementById(targetId);
-
-            if (targetEl) {
-                // Đã tìm thấy phần tử (nghĩa là đã render xong)
-                targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                targetEl.classList.add('highlight-noti-comment');
-                
-                setTimeout(() => {
-                    if (targetEl) targetEl.classList.remove('highlight-noti-comment');
-                }, 3000);
-            } else {
-                // Nếu chưa tìm thấy, kích hoạt vẽ lại bài viết đó một lần nữa cho chắc
-                if (retryCount === 0 && typeof refreshCommentsOnly === 'function') {
-                    refreshCommentsOnly(postId);
-                }
-
-                if (retryCount < maxRetries) {
-                    retryCount++;
-                    console.log(`Hệ thống: Đang chờ render lần ${retryCount}...`);
-                    setTimeout(attemptScroll, 400); // Đợi thêm 0.4 giây mỗi lần thử
-                } else {
-                    // Cuối cùng nếu không thấy comment thì cuộn tới bài viết gốc
-                    scrollToGame(`post-card-${postId}`);
-                }
-            }
-        };
-
-        // Bắt đầu chuỗi kiểm tra sau khi chuyển tab 0.6 giây
-        setTimeout(attemptScroll, 600);
-
-    } else {
-        alert("❌ Không tìm thấy bài viết liên quan!");
-    }
-}
         
-        // --- TRƯỜNG HỢP 3: XEM HỒ SƠ THÔNG THƯỜNG ---
         else if (type === 'view_profile') {
             const searchKey = noti.targetName || (friendData && friendData.profile ? friendData.profile.name : null);
 
@@ -13250,7 +13248,6 @@ function handleNotiClick(index) {
                     if (snap.exists()) {
                         const latestData = snap.val();
                         showOtherUserProfile(latestData);
-                        console.log("Hệ thống: Đã tải dữ liệu mới nhất cho " + searchKey);
                     } else {
                         if (friendData) {
                             showOtherUserProfile(friendData);
@@ -23998,40 +23995,51 @@ async function submitReply(postId, commentId) {
     const text = replyInput.value.trim();
     if (!text) return;
 
+    // --- PHẦN THÊM MỚI: TRUY VẾT CÁC CẤP CHA ---
+    const ancestors = [];
+    let currentElement = document.getElementById(`comm-wrap-${commentId}`);
+    while (currentElement) {
+        // Tìm wrapper cha gần nhất (ông nội, cụ...)
+        const parentWrap = currentElement.parentElement.closest('.comment-wrapper');
+        if (parentWrap) {
+            const parentId = parentWrap.id.replace('comm-wrap-', '');
+            ancestors.push(parentId);
+            currentElement = parentWrap;
+        } else {
+            currentElement = null;
+        }
+    }
+    // ------------------------------------------
+
     const replyData = {
         uid: userData.profile.uid,
         username: userData.profile.name,
         text: text,
-        parentId: commentId, // Chính là ID của bình luận Henry đang nhấn "Trả lời"
+        parentId: commentId, 
         timestamp: firebase.database.ServerValue.TIMESTAMP
     };
 
     try {
         const snap = await firebase.database().ref(`posts/${postId}/comments`).push(replyData);
-        const newReplyId = snap.key; // ID của chính cái reply vừa gõ
+        const newReplyId = snap.key; 
 
-        // TRUYỀN THÊM THAM SỐ THỨ 4: parentId (commentId)
-        handleMentionNotifications(text, postId, newReplyId, commentId);
+        // TRUYỀN THÊM THAM SỐ: parentId và mảng ancestors vào hàm thông báo
+        handleMentionNotifications(text, postId, newReplyId, commentId, ancestors);
         
         replyInput.value = "";
         
-        // Đóng khung nhập phản hồi
         const box = document.getElementById(`reply-box-${commentId}`);
         if (box) {
             box.style.display = 'none';
         }
 
-        // --- 1. THÊM THÔNG BÁO THÀNH CÔNG ---
         if (typeof addNotification === 'function') {
             addNotification("HỆ THỐNG", "Đã gửi phản hồi của bạn! 💖");
         }
 
-        // --- 2. TỰ ĐỘNG MỞ RỘNG PHẦN PHẢN HỒI ---
-        // (Bỏ phần scrollTo để trình duyệt giữ nguyên vị trí mắt đang đọc)
         if (!expandedComments.includes(commentId)) {
             expandedComments.push(commentId);
             
-            // Nếu Henry có hàm refreshCommentsOnly thì gọi ở đây để cập nhật giao diện ngay lập tức
             if (typeof refreshCommentsOnly === 'function') {
                 refreshCommentsOnly(postId);
             }
