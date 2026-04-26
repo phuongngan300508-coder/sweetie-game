@@ -13171,7 +13171,7 @@ function handleNotiClick(index) {
             }
         } 
 
-        // --- KHU VỰC CHỈNH SỬA: TỰ ĐỘNG BUNG TOÀN BỘ CẤP KHI NHẤN ---
+        // --- KHU VỰC CHỈNH SỬA: TỰ ĐỘNG BUNG VÀ HIGHLIGHT TRÚNG ĐÍCH ---
         else if (type === 'open_post' || type === 'mention') {
             const postId = noti.extraData.postId;
             const commentId = noti.extraData.commentId;
@@ -13180,7 +13180,6 @@ function handleNotiClick(index) {
 
             if (postId) {
                 // Bước 1: Auto bung tất cả các nhánh liên quan
-                // Henry gom cụ, ông, bà, cha vào một danh sách và duyệt hết sạch
                 const allParents = [...ancestors, parentId].filter(id => id); 
                 
                 allParents.forEach(pId => {
@@ -13193,9 +13192,10 @@ function handleNotiClick(index) {
                 // Bước 2: Chuyển tab
                 switchTab('tab-status'); 
 
-                // Bước 3: Đợi render và cuộn (Quy trình tìm kiếm tự động)
+                // Bước 3: Đợi render và cuộn (Sửa ID tìm kiếm từ wrap sang item)
                 let retryCount = 0;
-                const targetId = `comm-wrap-${commentId}`;
+                // Nếu có commentId thì tìm comm-item để highlight đúng mục tiêu, không thì tìm post-card
+                const targetId = commentId ? `comm-item-${commentId}` : `post-card-${postId}`;
 
                 const attemptScroll = () => {
                     let targetEl = document.getElementById(targetId);
@@ -13209,9 +13209,8 @@ function handleNotiClick(index) {
                         }, 3000);
                     } else {
                         // Nếu chưa thấy, có thể do Firebase đang tải nhánh con vừa bung
-                        if (retryCount < 5) { // Thử tối đa 5 lần
+                        if (retryCount < 5) { 
                             retryCount++;
-                            // Ép vẽ lại để các nhánh vừa thêm vào expandedComments hiện ra
                             if (typeof refreshCommentsOnly === 'function') refreshCommentsOnly(postId);
                             setTimeout(attemptScroll, 500);
                         } else {
@@ -23796,11 +23795,9 @@ const renderNestedComments = async (allComments, post, myUid, parentId = null, l
         const borderLeft = (level > 0 && level <= 3) ? "1px dashed #ffc1cc" : "none";
         const paddingLeft = (level > 0 && level <= 3) ? 10 : 0;
 
-        // --- PHẦN LOGIC ĐẾM PHẢN HỒI CON ---
         const childrenOfCurrent = Object.values(allComments).filter(child => child.parentId === c.id);
         const totalReplies = childrenOfCurrent.length; 
         const hasChildren = totalReplies > 0;
-        // ------------------------------------
 
         const isCurrentExpanded = expandedComments.includes(c.id);
         const commReactionCount = c.reactions ? Object.keys(c.reactions).length : 0;
@@ -23814,9 +23811,12 @@ const renderNestedComments = async (allComments, post, myUid, parentId = null, l
             ? `<img src="${currentCommAvatar}" class="comment-avatar" style="width:30px; height:30px; border-radius:50%; object-fit:cover;">`
             : `<div class="comment-avatar" style="width:30px; height:30px; border-radius:50%; background:#ffe4e8; display:flex; align-items:center; justify-content:center; color:#ff8fab; font-size:0.7rem;"><i class="fas ${commUserData.gender === 'Nam' ? 'fa-user-tie' : 'fa-user-graduate'}"></i></div>`;
 
+        // THAY ĐỔI TẠI ĐÂY: 
+        // 1. comm-wrap-${c.id} dùng để bao quát toàn bộ nhánh (nhưng không dùng để highlight).
+        // 2. comm-item-${c.id} được thêm vào thẻ chứa nội dung để chỉ highlight đúng thẻ đó.
         html += `
             <div class="comment-wrapper" id="comm-wrap-${c.id}" style="margin-left:${marginLeft}px; margin-top:8px; border-left:${borderLeft}; padding-left:${paddingLeft}px;">
-                <div class="comment-item" style="font-size:0.8rem; padding:8px 12px; background:${level === 0 ? '#fff3f5' : '#fff'}; border-radius:12px; line-height:1.4; position:relative; display:flex; justify-content:space-between; align-items:flex-start; border: ${level > 0 ? '1px solid #fff3f5' : 'none'}">
+                <div class="comment-item" id="comm-item-${c.id}" style="font-size:0.8rem; padding:8px 12px; background:${level === 0 ? '#fff3f5' : '#fff'}; border-radius:12px; line-height:1.4; position:relative; display:flex; justify-content:space-between; align-items:flex-start; border: ${level > 0 ? '1px solid #fff3f5' : 'none'}">
                     <div style="display:flex; gap:10px; flex:1;">
                         <div onclick="searchFriendByID('${c.uid}')" style="cursor:pointer; flex-shrink:0; margin-top:3px;">${cAvatarHtml}</div>
                         <div style="flex:1;">
