@@ -23801,7 +23801,9 @@ async function listenToPosts() {
                             </div>` : ''}
                         </div>
                     </div>
-                    <div class="post-content" style="padding: 10px 0; border-bottom: 1px solid #ffe4e8;">${post.content}</div>
+                    <div class="post-content" style="padding: 10px 0; border-bottom: 1px solid #ffe4e8; word-break: break-word; line-height: 1.5;">
+    ${formatPostContent(post.content)}
+</div>
                     <div class="post-actions" style="display: flex; gap: 15px; padding: 8px 0;">
                         <button class="action-btn" onclick="toggleReaction('${post.id}')" style="background:none; border:none; color:${hasLiked ? '#ff1493' : '#ff8fab'}; cursor:pointer; font-weight:${hasLiked ? 'bold' : 'normal'};">
                             <i class="${hasLiked ? 'fas' : 'far'} fa-heart"></i> ${reactionCount} Tim
@@ -24219,14 +24221,23 @@ async function saveEditAction() {
     try {
         if (currentEditData.type === 'post') {
             await firebase.database().ref(`posts/${currentEditData.postId}`).update({
-                content: newContent,
+                content: newContent, // Lưu văn bản thô để lần sau sửa vẫn còn dấu xuống dòng
                 isEdited: true
             });
+            
+            // Cập nhật giao diện ngay lập tức (Nếu Henry dùng cơ chế cập nhật từng phần)
+            const postCard = document.getElementById(`post-card-${currentEditData.postId}`);
+            if (postCard) {
+                const contentDiv = postCard.querySelector('.post-content');
+                if (contentDiv) contentDiv.innerHTML = formatPostContent(newContent);
+            }
         } else {
             await firebase.database().ref(`posts/${currentEditData.postId}/comments/${currentEditData.commentId}`).update({
                 text: newContent
             });
+            // Bình luận sẽ tự cập nhật qua listener .on('value') bạn đã viết ở setupCommentRealtime
         }
+        
         closeEditModal();
         addNotification("HỆ THỐNG", "Đã cập nhật nội dung thành công! ✨");
     } catch (e) {
@@ -24600,6 +24611,22 @@ async function loadAllUsernames() {
 
 // Gọi hàm này khi ứng dụng khởi chạy hoặc khi người dùng mở tab Status
 loadAllUsernames();
+
+    function formatPostContent(text) {
+    if (!text) return "";
+    let formatted = text
+        .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") // Bảo mật cơ bản
+        .replace(/\n/g, '<br>') // Xuống dòng
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // In đậm **
+        .replace(/\*(.*?)\*/g, '<strong>$1</strong>')    // In đậm *
+        .replace(/_(.*?)_/g, '<em>$1</em>');             // In nghiêng _
+
+    // Nhận diện Link tự động
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    return formatted.replace(urlRegex, (url) => {
+        return `<a href="${url}" target="_blank" style="color: #007bff; text-decoration: underline;">${url}</a>`;
+    });
+}
 </script>
 </body>
 </html>
