@@ -23659,7 +23659,6 @@ async function listenToPosts() {
     snapshot.forEach(child => {
         const data = child.val();
         
-        // CHỈNH SỬA TẠI ĐÂY: Đảm bảo reactionCount luôn là con số (0 nếu không có tim)
         let reactionCount = 0;
         if (data.reactions && typeof data.reactions === 'object') {
             reactionCount = Object.keys(data.reactions).length;
@@ -23668,10 +23667,16 @@ async function listenToPosts() {
         initialPosts.push({ id: child.key, ...data, reactionCount: reactionCount });
     });
 
-    // --- LOGIC SẮP XẾP RIÊNG BIỆT (ĐÃ FIX LỖI LOẠN) ---
+    // --- LOGIC SẮP XẾP ĐA TẦNG (FIXED THEO Ý HENRY) ---
     if (currentFilter === 'trending') {
-        // Cao tim nhất nằm đầu: b - a
-        initialPosts.sort((a, b) => (b.reactionCount || 0) - (a.reactionCount || 0));
+        initialPosts.sort((a, b) => {
+            // Tầng 1: So sánh số tim (Cao đứng trước)
+            if (b.reactionCount !== a.reactionCount) {
+                return b.reactionCount - a.reactionCount;
+            }
+            // Tầng 2: Nếu cùng số tim, so sánh thời gian (Mới nhất đứng trước)
+            return b.timestamp - a.timestamp;
+        });
     } else if (currentFilter === 'oldest') {
         // Cũ nhất nằm đầu: a - b
         initialPosts.sort((a, b) => a.timestamp - b.timestamp);
