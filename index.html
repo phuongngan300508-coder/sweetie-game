@@ -24289,28 +24289,33 @@ function getPrivacyIcon(p) {
 
 // Hàm xử lý định dạng text để nhận diện @tag
 function formatCommentText(text) {
-    const tagRegex = /@([a-zA-Z0-9_À-ỹ]+)/g;
+    // Regex mới: Cho phép chữ, số, dấu tiếng Việt và khoảng trắng (\s). 
+    // Dừng lại khi gặp các kí tự đặc biệt như . , ! ? hoặc xuống dòng.
+    const tagRegex = /@([a-zA-Z0-9_À-ỹ\s]+?)(?=[.,!?\n]|$)/g;
     
     return text.replace(tagRegex, (match, username) => {
+        const cleanName = username.trim(); // Trim để tránh dư khoảng trắng ở cuối tên
         // Biến cái tên thành một thẻ span có thể click
         return `<span 
                     style="color: #FF1493; font-weight: bold; cursor: pointer; text-decoration: underline;" 
-                    onclick="searchFriendByName('${username}')">
-                    ${username}
+                    onclick="searchFriendByName('${cleanName}')">
+                    @${cleanName}
                 </span>`;
     });
 }
 
 // Hàm phụ để kiểm tra tag và gửi thông báo
-async function handleMentionNotifications(text, postId, commentId) { // Bổ sung commentId vào tham số
-    const tagRegex = /@([a-zA-Z0-9_À-ỹ]+)/g;
+async function handleMentionNotifications(text, postId, commentId, ancestors = []) { // Nhớ nhận ancestors nếu Henry đã sửa ở bước trước
+    // Dùng chung Regex mới để đồng bộ việc nhận diện tên có dấu cách
+    const tagRegex = /@([a-zA-Z0-9_À-ỹ\s]+?)(?=[.,!?\n]|$)/g;
     let match;
     const mentions = [];
 
     // 1. Lọc danh sách tên được tag (không trùng lặp)
     while ((match = tagRegex.exec(text)) !== null) {
-        if (!mentions.includes(match[1])) {
-            mentions.push(match[1]);
+        const cleanName = match[1].trim();
+        if (cleanName && !mentions.includes(cleanName)) {
+            mentions.push(cleanName);
         }
     }
 
@@ -24343,14 +24348,13 @@ async function handleMentionNotifications(text, postId, commentId) { // Bổ sun
                     const notificationData = {
                         title: "💖 NHẮC ĐẾN",
                         sender: userData.profile.name,
-                        // Nội dung ngắn gọn để hiện lên màn hình điện thoại/chuông
                         message: `${userData.profile.name} đã nhắc đến bạn trong một bình luận! ✨`,
                         timestamp: firebase.database.ServerValue.TIMESTAMP,
-                        // Đóng gói extraData ngay từ Firebase để hàm handleNotiClick của Henry đọc được luôn
                         extraData: {
-                            type: 'mention', // Henry dùng 'mention' để handleNotiClick kích hoạt hiệu ứng nháy hồng
+                            type: 'mention', 
                             postId: postId,
-                            commentId: commentId, // BỔ SUNG: Gửi kèm ID bình luận để cuộn đến chính xác vị trí
+                            commentId: commentId, 
+                            ancestors: ancestors, // Gửi kèm ancestors để Auto-Expand như đã làm
                             sender: userData.profile.name
                         }
                     };
@@ -24365,7 +24369,7 @@ async function handleMentionNotifications(text, postId, commentId) { // Bổ sun
         }
     }
 }
-
+    
     function initNotificationQueueListener() {
     if (!userData || !userData.profile || !userData.profile.uid) return;
 
