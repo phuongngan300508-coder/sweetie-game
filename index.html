@@ -24289,43 +24289,58 @@ function getPrivacyIcon(p) {
 
 // Hàm xử lý định dạng text để nhận diện @tag
 function formatCommentText(text) {
-    // Regex mới: Cho phép chữ, số, dấu tiếng Việt và khoảng trắng (\s). 
-    // Dừng lại khi gặp các kí tự đặc biệt như . , ! ? hoặc xuống dòng.
-    const tagRegex = /@([a-zA-Z0-9_À-ỹ\s]+?)(?=[.,!?\n]|$)/g;
-    
-    return text.replace(tagRegex, (match, username) => {
-        const cleanName = username.trim(); // Trim để tránh dư khoảng trắng ở cuối tên
-        // Biến cái tên thành một thẻ span có thể click
-        return `<span 
-                    style="color: #FF1493; font-weight: bold; cursor: pointer; text-decoration: underline;" 
-                    onclick="searchFriendByName('${cleanName}')">
-                    @${cleanName}
-                </span>`;
-    });
-}
+    if (!text || globalUsernames.length === 0) return text;
+    let formattedText = text;
 
+    globalUsernames.forEach(username => {
+        // Hỗ trợ ký tự đặc biệt và dấu ! bằng cách escape
+        const escapedName = username.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        
+        // Regex: Tìm chính xác cụm "@Tên"
+        // (?=\s|[.,?!]|$) : Điểm dừng là dấu cách, dấu câu hoặc hết dòng
+        const regex = new RegExp(`@${escapedName}(?=\\s|[.,?!]|$)`, 'g');
+
+        formattedText = formattedText.replace(regex, (match) => {
+            return `<span 
+                        style="color: #FF1493; font-weight: bold; cursor: pointer; text-decoration: underline;" 
+                        onclick="searchFriendByName('${username}')">
+                        ${match}
+                    </span>`;
+        });
+    });
+
+    return formattedText;
+}
+    
 // Hàm phụ để kiểm tra tag và gửi thông báo
-async function handleMentionNotifications(text, postId, commentId, ancestors = []) { // Nhớ nhận ancestors nếu Henry đã sửa ở bước trước
-    // Dùng chung Regex mới để đồng bộ việc nhận diện tên có dấu cách
-    const tagRegex = /@([a-zA-Z0-9_À-ỹ\s]+?)(?=[.,!?\n]|$)/g;
-    let match;
+async function handleMentionNotifications(text, postId, commentId, ancestors = []) {
+    // Nếu chưa có danh sách tên cư dân thì không quét (Đảm bảo Henry đã gọi loadAllUsernames trước đó)
+    if (!globalUsernames || globalUsernames.length === 0) return;
+
     const mentions = [];
 
-    // 1. Lọc danh sách tên được tag (không trùng lặp)
-    while ((match = tagRegex.exec(text)) !== null) {
-        const cleanName = match[1].trim();
-        if (cleanName && !mentions.includes(cleanName)) {
-            mentions.push(cleanName);
+    // 1. Duyệt qua danh sách tên cư dân để tìm xem ai được nhắc đến trong text
+    for (const name of globalUsernames) {
+        // Tạo Regex tìm chính xác @Tên (có dấu cách, dấu !,...) 
+        // và dừng lại trước khoảng trắng hoặc dấu câu
+        const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const regex = new RegExp(`@${escapedName}(?=\\s|[.,?!]|$)`, 'g');
+
+        if (regex.test(text)) {
+            // Không tự gửi thông báo cho chính mình
+            if (name === userData.profile.name || name === (typeof currentUser !== 'undefined' ? currentUser : '')) continue;
+            
+            if (!mentions.includes(name)) {
+                mentions.push(name);
+            }
         }
     }
 
+    // 2. Gửi thông báo cho những người tìm thấy
     if (mentions.length > 0) {
         const usersRef = firebase.database().ref('users');
 
         for (const targetName of mentions) {
-            // Không tự gửi thông báo cho chính mình
-            if (targetName === userData.profile.name || targetName === currentUser) continue;
-
             let targetUid = null;
 
             try {
@@ -24334,7 +24349,7 @@ async function handleMentionNotifications(text, postId, commentId, ancestors = [
                 if (directSnap.exists()) {
                     targetUid = directSnap.val().profile?.uid || targetName;
                 } else {
-                    // B. Nếu không thấy, tìm bằng Profile Name (hiển thị có dấu)
+                    // B. Nếu không thấy, tìm bằng Profile Name (Phòng hờ trường hợp đặc biệt)
                     const querySnap = await usersRef.orderByChild('profile/name').equalTo(targetName).once('value');
                     if (querySnap.exists()) {
                         const dataFound = querySnap.val();
@@ -24343,7 +24358,7 @@ async function handleMentionNotifications(text, postId, commentId, ancestors = [
                     }
                 }
 
-                // 2. Nếu tìm thấy UID, đẩy vào hàng chờ (Queue) để chuông rung
+                // 3. Nếu tìm thấy UID, đẩy vào hàng chờ (Queue) để chuông rung
                 if (targetUid) {
                     const notificationData = {
                         title: "💖 NHẮC ĐẾN",
@@ -24354,12 +24369,12 @@ async function handleMentionNotifications(text, postId, commentId, ancestors = [
                             type: 'mention', 
                             postId: postId,
                             commentId: commentId, 
-                            ancestors: ancestors, // Gửi kèm ancestors để Auto-Expand như đã làm
+                            ancestors: ancestors, // Gửi kèm ancestors để Auto-Expand
                             sender: userData.profile.name
                         }
                     };
 
-                    // Đẩy vào node notifications_queue theo đúng Rules
+                    // Đẩy vào node notifications_queue theo đúng Rules của Henry
                     await firebase.database().ref(`notifications_queue/${targetUid}`).push(notificationData);
                     console.log(`🔔 Đã rung chuông thành công cho: ${targetName}`);
                 }
@@ -24503,6 +24518,21 @@ function closeReactionModal() {
     if (modal) modal.style.display = 'none';
     // Ngắt listener khi đóng để tránh tốn tài nguyên (tùy chọn)
 }
+
+    let globalUsernames = []; // Biến lưu danh sách tên toàn bộ cư dân
+
+async function loadAllUsernames() {
+    // Chỉ lấy các key (tên đăng nhập) từ node 'users'
+    const snap = await firebase.database().ref('users').once('value');
+    if (snap.exists()) {
+        globalUsernames = Object.keys(snap.val());
+        // Sắp xếp tên từ DÀI đến NGẮN để tránh tag nhầm (vdu: @Henry Đào không bị dính thành @Henry)
+        globalUsernames.sort((a, b) => b.length - a.length);
+    }
+}
+
+// Gọi hàm này khi ứng dụng khởi chạy hoặc khi người dùng mở tab Status
+loadAllUsernames();
 </script>
 </body>
 </html>
