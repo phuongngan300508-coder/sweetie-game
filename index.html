@@ -23658,20 +23658,25 @@ async function listenToPosts() {
     let initialPosts = [];
     snapshot.forEach(child => {
         const data = child.val();
-        // Tính số tim để phục vụ chế độ "Xu hướng"
-        const reactionCount = data.reactions ? Object.keys(data.reactions).length : 0;
-        initialPosts.push({ id: child.key, ...data, reactionCount });
+        
+        // CHỈNH SỬA TẠI ĐÂY: Đảm bảo reactionCount luôn là con số (0 nếu không có tim)
+        let reactionCount = 0;
+        if (data.reactions && typeof data.reactions === 'object') {
+            reactionCount = Object.keys(data.reactions).length;
+        }
+        
+        initialPosts.push({ id: child.key, ...data, reactionCount: reactionCount });
     });
 
-    // --- LOGIC SẮP XẾP RIÊNG BIỆT ---
+    // --- LOGIC SẮP XẾP RIÊNG BIỆT (ĐÃ FIX LỖI LOẠN) ---
     if (currentFilter === 'trending') {
-        // Cao tim nhất nằm đầu (Giảm dần)
-        initialPosts.sort((a, b) => b.reactionCount - a.reactionCount);
+        // Cao tim nhất nằm đầu: b - a
+        initialPosts.sort((a, b) => (b.reactionCount || 0) - (a.reactionCount || 0));
     } else if (currentFilter === 'oldest') {
-        // Cũ nhất nằm đầu (Tăng dần theo timestamp)
+        // Cũ nhất nằm đầu: a - b
         initialPosts.sort((a, b) => a.timestamp - b.timestamp);
     } else {
-        // Mặc định: Mới nhất nằm đầu (Giảm dần theo timestamp)
+        // Mặc định: Mới nhất nằm đầu: b - a
         initialPosts.sort((a, b) => b.timestamp - a.timestamp);
     }
 
@@ -23687,18 +23692,16 @@ async function listenToPosts() {
         if (!initialLoadDone) return; 
         const newPost = { id: snap.key, ...snap.val() };
         
-        // Chỉ chèn bài mới lên đầu nếu đang ở chế độ "Mới nhất" để tránh xáo trộn "Xu hướng"
         if (!document.getElementById(`post-card-${newPost.id}`)) {
             if (currentFilter === 'newest') {
                 await renderSinglePost(newPost, 'afterbegin');
             } else {
-                // Nếu đang ở chế độ khác, bài mới cứ cho xuống cuối hoặc chờ load lại
                 await renderSinglePost(newPost, 'beforeend');
             }
         }
     });
 
-    // 2. LẮNG NGHE CẬP NHẬT (Thả tim, sửa bài, thêm comment) ✨
+    // 2. LẮNG NGHE CẬP NHẬT (Giữ nguyên của Henry) ✨
     postsRef.on('child_changed', async (snap) => {
         const updatedPost = { id: snap.key, ...snap.val() };
         const postCard = document.getElementById(`post-card-${updatedPost.id}`);
@@ -23712,7 +23715,7 @@ async function listenToPosts() {
         }
     });
 
-    // 3. LẮNG NGHE XÓA BÀI
+    // 3. LẮNG NGHE XÓA BÀI (Giữ nguyên của Henry)
     postsRef.on('child_removed', (snapshot) => {
         const card = document.getElementById(`post-card-${snapshot.key}`);
         if (card) card.remove();
@@ -23730,7 +23733,7 @@ async function listenToPosts() {
         const authorData = authorSnap.val() || {};
         const currentAuthorAvatar = authorData.customAvatar;
         
-        // --- LOGIC TÍNH TIM VÀ BÌNH LUẬN ---
+        // CẬP NHẬT TẠI ĐÂY: Đảm bảo hiển thị tim chính xác trong render
         const reactionCount = post.reactions ? Object.keys(post.reactions).length : 0;
         const hasLiked = post.reactions && post.reactions[myUid];
         const totalComments = post.comments ? Object.keys(post.comments).length : 0;
