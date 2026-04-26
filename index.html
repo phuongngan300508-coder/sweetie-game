@@ -23626,15 +23626,20 @@ let currentFilter = 'newest'; // Mặc định là tin mới nhất
 function changeFeedFilter() {
     currentFilter = document.getElementById('feed-filter').value;
     const postsContainer = document.getElementById('status-list');
-    if (postsContainer) postsContainer.innerHTML = ""; 
     
-    // Reset các biến trạng thái để load lại từ đầu
+    // 1. Tắt sạch các listener cũ của Firebase để tránh xung đột dữ liệu khi load lại
+    firebase.database().ref('posts').off();
+    
+    // 2. Xóa sạch container và hiện loading cho chuyên nghiệp
+    if (postsContainer) {
+        postsContainer.innerHTML = `<div style="text-align:center; padding:20px; color:#ff8fab;"><i class="fas fa-spinner fa-spin"></i> Đang sắp xếp bản tin cư dân...</div>`;
+    }
+    
+    // 3. Reset các biến điều hướng
     isListingPosts = false;
     initialLoadDone = false;
     
-    // Tắt các listener cũ để tránh bị nhân đôi thông báo/dữ liệu
-    firebase.database().ref('posts').off();
-    
+    // 4. Gọi hàm nạp lại dữ liệu
     listenToPosts();
 }
 
@@ -23648,7 +23653,7 @@ async function listenToPosts() {
     isListingPosts = true;
     postsContainer.innerHTML = ""; 
 
-    // Lấy dữ liệu 50 bài gần nhất
+    // 1. Lấy dữ liệu (Dùng once để lấy snapshot ban đầu chính xác)
     const snapshot = await postsRef.orderByChild('timestamp').limitToLast(50).once('value');
     const myUsername = userData.profile.name; 
     const myUid = userData.profile.uid;
@@ -23659,40 +23664,49 @@ async function listenToPosts() {
     snapshot.forEach(child => {
         const data = child.val();
         
+        // ÉP KIỂU SỐ cho reactionCount để sort không bị loạn
         let reactionCount = 0;
         if (data.reactions && typeof data.reactions === 'object') {
             reactionCount = Object.keys(data.reactions).length;
         }
         
-        initialPosts.push({ id: child.key, ...data, reactionCount: reactionCount });
+        initialPosts.push({ id: child.key, ...data, reactionCount: Number(reactionCount) });
     });
 
-    // --- LOGIC SẮP XẾP ĐA TẦNG (FIXED THEO Ý HENRY) ---
-    if (currentFilter === 'trending') {
-        initialPosts.sort((a, b) => {
-            // Tầng 1: So sánh số tim (Cao đứng trước)
-            if (b.reactionCount !== a.reactionCount) {
-                return b.reactionCount - a.reactionCount;
-            }
-            // Tầng 2: Nếu cùng số tim, so sánh thời gian (Mới nhất đứng trước)
-            return b.timestamp - a.timestamp;
-        });
-    } else if (currentFilter === 'oldest') {
-        // Cũ nhất nằm đầu: a - b
-        initialPosts.sort((a, b) => a.timestamp - b.timestamp);
-    } else {
-        // Mặc định: Mới nhất nằm đầu: b - a
-        initialPosts.sort((a, b) => b.timestamp - a.timestamp);
-    }
+    // --- LOGIC SẮP XẾP ĐA TẦNG (FIX TRIỆT ĐỂ LỖI XÁO TRỘN) ---
+    initialPosts.sort((a, b) => {
+        // Luôn ép kiểu Number cho timestamp và reactionCount để so sánh chính xác
+        const timeA = Number(a.timestamp || 0);
+        const timeB = Number(b.timestamp || 0);
+        const reactA = Number(a.reactionCount || 0);
+        const reactB = Number(b.reactionCount || 0);
 
-    // Đổ dữ liệu đã sắp xếp ra giao diện
+        if (currentFilter === 'trending') {
+            // Ưu tiên 1: Tim cao nhất đứng đầu
+            if (reactB !== reactA) {
+                return reactB - reactA;
+            }
+            // Ưu tiên 2: Cùng tim thì bài mới nhất đứng đầu
+            return timeB - timeA;
+        } else if (currentFilter === 'oldest') {
+            // Cũ nhất đứng đầu (Thời gian tăng dần)
+            return timeA - timeB;
+        } else {
+            // Mặc định: Mới nhất đứng đầu (Thời gian giảm dần)
+            return timeB - timeA;
+        }
+    });
+
+    // 2. Đổ dữ liệu đã sắp xếp ra giao diện
     for (const post of initialPosts) {
         await renderSinglePost(post, 'beforeend'); 
     }
 
     initialLoadDone = true;
 
-    // 1. LẮNG NGHE BÀI MỚI (Giữ nguyên của Henry)
+    // 3. CÁC LISTENER REALTIME (Giữ nguyên 100% logic của Henry)
+    // Tắt listener cũ trước khi gắn mới để tránh trùng lặp khi load lại trang
+    postsRef.orderByChild('timestamp').limitToLast(1).off('child_added');
     postsRef.orderByChild('timestamp').limitToLast(1).on('child_added', async (snap) => {
         if (!initialLoadDone) return; 
         const newPost = { id: snap.key, ...snap.val() };
@@ -23706,7 +23720,7 @@ async function listenToPosts() {
         }
     });
 
-    // 2. LẮNG NGHE CẬP NHẬT (Giữ nguyên của Henry) ✨
+    postsRef.off('child_changed');
     postsRef.on('child_changed', async (snap) => {
         const updatedPost = { id: snap.key, ...snap.val() };
         const postCard = document.getElementById(`post-card-${updatedPost.id}`);
@@ -23720,98 +23734,97 @@ async function listenToPosts() {
         }
     });
 
-    // 3. LẮNG NGHE XÓA BÀI (Giữ nguyên của Henry)
+    postsRef.off('child_removed');
     postsRef.on('child_removed', (snapshot) => {
         const card = document.getElementById(`post-card-${snapshot.key}`);
         if (card) card.remove();
     });
 
-    // Sửa tham số để hỗ trợ cập nhật nội dung (Thêm targetContainer)
+    // Hàm renderSinglePost (Giữ nguyên thiết kế và logic của bạn)
     async function renderSinglePost(post, position, targetContainer = postsContainer) {
-    let showThisPost = false;
-    if (post.privacy === 'public') showThisPost = true;
-    else if (post.uid === myUid) showThisPost = true;
-    else if (post.privacy === 'friends' && myFriends[post.username]) showThisPost = true;
+        let showThisPost = false;
+        if (post.privacy === 'public') showThisPost = true;
+        else if (post.uid === myUid) showThisPost = true;
+        else if (post.privacy === 'friends' && myFriends[post.username]) showThisPost = true;
 
-    if (showThisPost) {
-        const authorSnap = await firebase.database().ref(`users/${post.username}/profile`).once('value');
-        const authorData = authorSnap.val() || {};
-        const currentAuthorAvatar = authorData.customAvatar;
-        
-        // CẬP NHẬT TẠI ĐÂY: Đảm bảo hiển thị tim chính xác trong render
-        const reactionCount = post.reactions ? Object.keys(post.reactions).length : 0;
-        const hasLiked = post.reactions && post.reactions[myUid];
-        const totalComments = post.comments ? Object.keys(post.comments).length : 0;
+        if (showThisPost) {
+            const authorSnap = await firebase.database().ref(`users/${post.username}/profile`).once('value');
+            const authorData = authorSnap.val() || {};
+            const currentAuthorAvatar = authorData.customAvatar;
+            
+            const reactionCount = post.reactions ? Object.keys(post.reactions).length : 0;
+            const hasLiked = post.reactions && post.reactions[myUid];
+            const totalComments = post.comments ? Object.keys(post.comments).length : 0;
 
-        const commentsHTML = await renderNestedComments(post.comments, post, myUid);
-        const isMyPost = post.uid === myUid;
+            const commentsHTML = await renderNestedComments(post.comments, post, myUid);
+            const isMyPost = post.uid === myUid;
 
-        const pAvatarHtml = currentAuthorAvatar 
-            ? `<img src="${currentAuthorAvatar}" class="author-avatar" style="width:45px; height:45px; border-radius:50%; object-fit:cover;">` 
-            : `<div class="author-avatar" style="width:45px; height:45px; border-radius:50%; background:#ffe4e8; display:flex; align-items:center; justify-content:center; color:#ff8fab; font-size:1.2rem;"><i class="fas ${authorData.gender === 'Nam' ? 'fa-user-tie' : 'fa-user-graduate'}"></i></div>`;
+            const pAvatarHtml = currentAuthorAvatar 
+                ? `<img src="${currentAuthorAvatar}" class="author-avatar" style="width:45px; height:45px; border-radius:50%; object-fit:cover;">` 
+                : `<div class="author-avatar" style="width:45px; height:45px; border-radius:50%; background:#ffe4e8; display:flex; align-items:center; justify-content:center; color:#ff8fab; font-size:1.2rem;"><i class="fas ${authorData.gender === 'Nam' ? 'fa-user-tie' : 'fa-user-graduate'}"></i></div>`;
 
-        const html = `
-            <div class="status-card post-item animate__animated animate__fadeIn" id="post-card-${post.id}">
-                <div class="post-header" style="position:relative; display:flex; justify-content:space-between; align-items:flex-start;">
-                    <div style="display:flex; gap:12px; align-items:center;">
-                        <div onclick="searchFriendByID('${post.uid}')" style="cursor:pointer; position:relative;">${pAvatarHtml}</div>
-                        <div>
-                            <div class="post-user" onclick="searchFriendByID('${post.uid}')" style="cursor:pointer;">💖 ${post.username}</div>
-                            <div style="display: flex; align-items: center; gap: 6px;">
-                                <div class="post-time" style="margin-bottom: 0;">${new Date(post.timestamp).toLocaleString('vi-VN')}</div>
-                                <span class="post-privacy-icon" style="font-size: 0.75rem; color: #ffb3c1;">${getPrivacyIcon(post.privacy)}</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <div onclick="showReactionList('${post.id}')" 
-                             style="font-size: 0.75rem; color: #ff1493; background: #fff0f3; padding: 2px 8px; border-radius: 10px; font-weight: bold; display: flex; align-items: center; gap: 4px; cursor: pointer; border: 1px solid #ffe4e8;">
-                            <i class="fas fa-heart"></i> ${reactionCount}
-                        </div>
-
-                        <div style="font-size: 0.75rem; color: #ff8fab; background: #fff0f3; padding: 2px 8px; border-radius: 10px; font-weight: bold; display: flex; align-items: center; gap: 4px;">
-                            <i class="far fa-comment-alt"></i> ${totalComments}
-                        </div>
-
-                        ${isMyPost ? `<div class="status-dropdown">
-                            <i class="fas fa-ellipsis-v" onclick="toggleStatusMenu(event, 'menu-post-${post.id}')" style="color:#ffb3c1; cursor:pointer; padding:5px;"></i>
-                            <div id="menu-post-${post.id}" class="status-menu-content" style="display:none; position:absolute; right:0; background:white; box-shadow:0 2px 10px rgba(0,0,0,0.1); border-radius:10px; z-index:100; min-width:140px;">
-                                <div onclick="editPost('${post.id}', \`${post.content.replace(/`/g, '\\`').replace(/\n/g, '\\n')}\`)" style="padding:10px 15px; cursor:pointer; color:#444; font-size:0.8rem; border-bottom:1px solid #fff3f5;"><i class="fas fa-edit"></i> Chỉnh sửa nội dung</div>
-                                <div onclick="changePostPrivacy('${post.id}')" style="padding:10px 15px; cursor:pointer; color:#444; font-size:0.8rem; border-bottom:1px solid #fff3f5;"><i class="fas fa-lock"></i> Chỉnh sửa quyền riêng tư</div>
-                                <div onclick="toggleCommentSettings('${post.id}', ${post.allowComments !== false})" style="padding:10px 15px; cursor:pointer; color:#444; font-size:0.8rem; border-bottom:1px solid #fff3f5;">
-                                    <i class="fas ${post.allowComments !== false ? 'fa-comment-slash' : 'fa-comment'}"></i> 
-                                    ${post.allowComments !== false ? 'Tắt bình luận' : 'Mở bình luận'}
+            const html = `
+                <div class="status-card post-item animate__animated animate__fadeIn" id="post-card-${post.id}">
+                    <div class="post-header" style="position:relative; display:flex; justify-content:space-between; align-items:flex-start;">
+                        <div style="display:flex; gap:12px; align-items:center;">
+                            <div onclick="searchFriendByID('${post.uid}')" style="cursor:pointer; position:relative;">${pAvatarHtml}</div>
+                            <div>
+                                <div class="post-user" onclick="searchFriendByID('${post.uid}')" style="cursor:pointer;">💖 ${post.username}</div>
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <div class="post-time" style="margin-bottom: 0;">${new Date(post.timestamp).toLocaleString('vi-VN')}</div>
+                                    <span class="post-privacy-icon" style="font-size: 0.75rem; color: #ffb3c1;">${getPrivacyIcon(post.privacy)}</span>
                                 </div>
-                                <div onclick="deletePost('${post.id}')" style="padding:10px 15px; cursor:pointer; color:#ff4d4d; font-size:0.8rem;"><i class="fas fa-trash-alt"></i> Xóa bài</div>
                             </div>
-                        </div>` : ''}
+                        </div>
+                        
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <div onclick="showReactionList('${post.id}')" 
+                                 style="font-size: 0.75rem; color: #ff1493; background: #fff0f3; padding: 2px 8px; border-radius: 10px; font-weight: bold; display: flex; align-items: center; gap: 4px; cursor: pointer; border: 1px solid #ffe4e8;">
+                                <i class="fas fa-heart"></i> ${reactionCount}
+                            </div>
+
+                            <div style="font-size: 0.75rem; color: #ff8fab; background: #fff0f3; padding: 2px 8px; border-radius: 10px; font-weight: bold; display: flex; align-items: center; gap: 4px;">
+                                <i class="far fa-comment-alt"></i> ${totalComments}
+                            </div>
+
+                            ${isMyPost ? `<div class="status-dropdown">
+                                <i class="fas fa-ellipsis-v" onclick="toggleStatusMenu(event, 'menu-post-${post.id}')" style="color:#ffb3c1; cursor:pointer; padding:5px;"></i>
+                                <div id="menu-post-${post.id}" class="status-menu-content" style="display:none; position:absolute; right:0; background:white; box-shadow:0 2px 10px rgba(0,0,0,0.1); border-radius:10px; z-index:100; min-width:140px;">
+                                    <div onclick="editPost('${post.id}', \`${post.content.replace(/`/g, '\\`').replace(/\n/g, '\\n')}\`)" style="padding:10px 15px; cursor:pointer; color:#444; font-size:0.8rem; border-bottom:1px solid #fff3f5;"><i class="fas fa-edit"></i> Chỉnh sửa nội dung</div>
+                                    <div onclick="changePostPrivacy('${post.id}')" style="padding:10px 15px; cursor:pointer; color:#444; font-size:0.8rem; border-bottom:1px solid #fff3f5;"><i class="fas fa-lock"></i> Chỉnh sửa quyền riêng tư</div>
+                                    <div onclick="toggleCommentSettings('${post.id}', ${post.allowComments !== false})" style="padding:10px 15px; cursor:pointer; color:#444; font-size:0.8rem; border-bottom:1px solid #fff3f5;">
+                                        <i class="fas ${post.allowComments !== false ? 'fa-comment-slash' : 'fa-comment'}"></i> 
+                                        ${post.allowComments !== false ? 'Tắt bình luận' : 'Mở bình luận'}
+                                    </div>
+                                    <div onclick="deletePost('${post.id}')" style="padding:10px 15px; cursor:pointer; color:#ff4d4d; font-size:0.8rem;"><i class="fas fa-trash-alt"></i> Xóa bài</div>
+                                </div>
+                            </div>` : ''}
+                        </div>
+                    </div>
+                    <div class="post-content" style="padding: 10px 0; border-bottom: 1px solid #ffe4e8;">${post.content}</div>
+                    <div class="post-actions" style="display: flex; gap: 15px; padding: 8px 0;">
+                        <button class="action-btn" onclick="toggleReaction('${post.id}')" style="background:none; border:none; color:${hasLiked ? '#ff1493' : '#ff8fab'}; cursor:pointer; font-weight:${hasLiked ? 'bold' : 'normal'};">
+                            <i class="${hasLiked ? 'fas' : 'far'} fa-heart"></i> ${reactionCount} Tim
+                        </button>
+                        <button class="action-btn" onclick="${post.allowComments !== false ? `document.getElementById('comment-input-${post.id}').focus()` : `alert('Bài viết đã tắt bình luận!')`}" style="background:none; border:none; color:#ff8fab; cursor:pointer;">
+                            <i class="far fa-comment"></i> Bình luận
+                        </button>
+                    </div>
+                    <div class="comment-section" style="background: #fff9fa; border-radius: 10px; padding: 8px; margin-top: 5px;">
+                        <div id="comments-list-${post.id}" style="max-height: 350px; overflow-y: auto;">${commentsHTML}</div>
+                        ${post.allowComments !== false ? `
+                            <div class="comment-input-group" style="display:flex; gap:5px; margin-top:8px;">
+                                <input type="text" id="comment-input-${post.id}" placeholder="Viết bình luận..." style="flex:1; border:1px solid #ffc1cc; border-radius:15px; padding:5px 12px; font-size:0.8rem; outline:none;">
+                                <button onclick="submitComment('${post.id}')" style="background:#ff8fab; color:white; border:none; border-radius:15px; padding:4px 12px; font-size:0.75rem; cursor:pointer; font-weight:bold;">Gửi</button>
+                            </div>
+                        ` : `<div style="text-align:center; padding:10px; font-size:0.75rem; color:#888; font-style:italic;"><i class="fas fa-lock"></i> Chủ bài viết đã tắt tính năng bình luận.</div>`}
                     </div>
                 </div>
-                <div class="post-content" style="padding: 10px 0; border-bottom: 1px solid #ffe4e8;">${post.content}</div>
-                <div class="post-actions" style="display: flex; gap: 15px; padding: 8px 0;">
-                    <button class="action-btn" onclick="toggleReaction('${post.id}')" style="background:none; border:none; color:${hasLiked ? '#ff1493' : '#ff8fab'}; cursor:pointer; font-weight:${hasLiked ? 'bold' : 'normal'};">
-                        <i class="${hasLiked ? 'fas' : 'far'} fa-heart"></i> ${reactionCount} Tim
-                    </button>
-                    <button class="action-btn" onclick="${post.allowComments !== false ? `document.getElementById('comment-input-${post.id}').focus()` : `alert('Bài viết đã tắt bình luận!')`}" style="background:none; border:none; color:#ff8fab; cursor:pointer;">
-                        <i class="far fa-comment"></i> Bình luận
-                    </button>
-                </div>
-                <div class="comment-section" style="background: #fff9fa; border-radius: 10px; padding: 8px; margin-top: 5px;">
-                    <div id="comments-list-${post.id}" style="max-height: 350px; overflow-y: auto;">${commentsHTML}</div>
-                    ${post.allowComments !== false ? `
-                        <div class="comment-input-group" style="display:flex; gap:5px; margin-top:8px;">
-                            <input type="text" id="comment-input-${post.id}" placeholder="Viết bình luận..." style="flex:1; border:1px solid #ffc1cc; border-radius:15px; padding:5px 12px; font-size:0.8rem; outline:none;">
-                            <button onclick="submitComment('${post.id}')" style="background:#ff8fab; color:white; border:none; border-radius:15px; padding:4px 12px; font-size:0.75rem; cursor:pointer; font-weight:bold;">Gửi</button>
-                        </div>
-                    ` : `<div style="text-align:center; padding:10px; font-size:0.75rem; color:#888; font-style:italic;"><i class="fas fa-lock"></i> Chủ bài viết đã tắt tính năng bình luận.</div>`}
-                </div>
-            </div>
-        `;
-        targetContainer.insertAdjacentHTML(position, html);
-        setupCommentRealtime(post.id, renderNestedComments);
+            `;
+            targetContainer.insertAdjacentHTML(position, html);
+            setupCommentRealtime(post.id, renderNestedComments);
+        }
     }
-}
 }
 
     const getTimeAgo = (timestamp) => {
