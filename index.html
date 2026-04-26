@@ -23791,7 +23791,12 @@ const renderNestedComments = async (allComments, post, myUid, parentId = null, l
         const borderLeft = (level > 0 && level <= 3) ? "1px dashed #ffc1cc" : "none";
         const paddingLeft = (level > 0 && level <= 3) ? 10 : 0;
 
-        const hasChildren = Object.values(allComments).some(child => child.parentId === c.id);
+        // --- PHẦN LOGIC ĐẾM PHẢN HỒI CON ---
+        const childrenOfCurrent = Object.values(allComments).filter(child => child.parentId === c.id);
+        const totalReplies = childrenOfCurrent.length; 
+        const hasChildren = totalReplies > 0;
+        // ------------------------------------
+
         const isCurrentExpanded = expandedComments.includes(c.id);
         const commReactionCount = c.reactions ? Object.keys(c.reactions).length : 0;
         const hasLikedComm = c.reactions && c.reactions[myUid];
@@ -23804,7 +23809,6 @@ const renderNestedComments = async (allComments, post, myUid, parentId = null, l
             ? `<img src="${currentCommAvatar}" class="comment-avatar" style="width:30px; height:30px; border-radius:50%; object-fit:cover;">`
             : `<div class="comment-avatar" style="width:30px; height:30px; border-radius:50%; background:#ffe4e8; display:flex; align-items:center; justify-content:center; color:#ff8fab; font-size:0.7rem;"><i class="fas ${commUserData.gender === 'Nam' ? 'fa-user-tie' : 'fa-user-graduate'}"></i></div>`;
 
-        // GIỮ NGUYÊN 100% THIẾT KẾ - CHỈ THÊM ID comm-wrap-${c.id} ĐỂ HANDLE CLICK
         html += `
             <div class="comment-wrapper" id="comm-wrap-${c.id}" style="margin-left:${marginLeft}px; margin-top:8px; border-left:${borderLeft}; padding-left:${paddingLeft}px;">
                 <div class="comment-item" style="font-size:0.8rem; padding:8px 12px; background:${level === 0 ? '#fff3f5' : '#fff'}; border-radius:12px; line-height:1.4; position:relative; display:flex; justify-content:space-between; align-items:flex-start; border: ${level > 0 ? '1px solid #fff3f5' : 'none'}">
@@ -23835,7 +23839,12 @@ const renderNestedComments = async (allComments, post, myUid, parentId = null, l
                     <input type="text" id="input-reply-${c.id}" placeholder="Viết phản hồi..." style="flex:1; border:1px solid #ffe4e8; border-radius:10px; padding:4px 10px; font-size:0.7rem; outline:none;">
                     <button onclick="submitReply('${post.id}', '${c.id}')" style="background:#ff8fab; color:white; border:none; border-radius:10px; padding:2px 8px; font-size:0.7rem; cursor:pointer;">Gửi</button>
                 </div>
-                ${hasChildren && !isCurrentExpanded ? `<div onclick="expandComment('${c.id}', '${post.id}')" style="color: #ff8fab; font-size: 0.72rem; margin-left: 20px; cursor: pointer; font-weight: bold; margin-top: 5px; display: flex; align-items: center; gap: 6px;"><i class="fas fa-level-up-alt fa-rotate-90" style="font-size: 0.6rem;"></i> Xem các phản hồi...</div>` : ''}
+                
+                ${hasChildren && !isCurrentExpanded ? `
+                    <div onclick="expandComment('${c.id}', '${post.id}')" style="color: #ff8fab; font-size: 0.72rem; margin-left: 20px; cursor: pointer; font-weight: bold; margin-top: 5px; display: flex; align-items: center; gap: 6px;">
+                        <i class="fas fa-level-up-alt fa-rotate-90" style="font-size: 0.6rem;"></i> 
+                        Xem ${totalReplies} phản hồi khác...
+                    </div>` : ''}
                 
                 <div class="replies-container">
                     ${await renderNestedComments(allComments, post, myUid, c.id, level + 1)}
