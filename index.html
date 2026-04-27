@@ -7164,7 +7164,10 @@ input[type="date"].sweetie-input-style {
 .post-content-inner {
     position: relative;
     overflow: hidden;
-    transition: max-height 0.3s ease;
+    /* Cập nhật: Thêm transition để bung ra thu vào mượt hơn */
+    transition: all 0.3s ease-in-out; 
+    /* Cập nhật: Thêm con trỏ bàn tay để cư dân biết là có thể chạm vào */
+    cursor: pointer; 
 }
 
 /* Khi ở trạng thái thu gọn (giới hạn 4 dòng) */
@@ -7172,7 +7175,8 @@ input[type="date"].sweetie-input-style {
     display: -webkit-box;
     -webkit-line-clamp: 4; /* Số dòng muốn hiển thị trước khi thu gọn */
     -webkit-box-orient: vertical;
-    max-height: 8em; /* Khoảng 4 dòng */
+    /* Cập nhật: max-height giúp transition hoạt động mượt mà */
+    max-height: 8em; 
 }
 
 /* Nút Xem thêm */
@@ -7187,6 +7191,11 @@ input[type="date"].sweetie-input-style {
 
 .read-more-btn:hover {
     text-decoration: underline;
+}
+
+/* Mẹo cho Henry: Đảm bảo class này không bị ghi đè bởi các thuộc tính display khác */
+.post-content-inner:not(.post-content-collapsed) {
+    max-height: 2000px; /* Một con số đủ lớn để chứa bài viết dài khi mở ra */
 }
 </style>
 </head>
@@ -24809,7 +24818,7 @@ loadAllUsernames();
     function formatPostContent(text, isNewPost = false) {
     if (!text) return "";
     
-    // Logic format cũ của Henry (giữ nguyên)
+    // Logic format cũ của Henry (giữ nguyên 100%)
     let formatted = text
         .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
         .replace(/\n/g, '<br>')
@@ -24823,31 +24832,50 @@ loadAllUsernames();
     });
 
     // --- LOGIC THU GỌN MỚI ---
-    // Ngưỡng ký tự hoặc số dòng để thu gọn (ví dụ > 300 ký tự)
     const threshold = 300;
     const shouldCollapse = text.length > threshold || (text.match(/\n/g) || []).length > 4;
 
-    if (shouldCollapse && !isNewPost) {
+    if (shouldCollapse) {
+        // Nếu là bài mới thì không dán class thu gọn, nếu bài cũ thì dán class để ẩn bớt
+        const collapseClass = isNewPost ? "" : "post-content-collapsed";
+        // Nếu là bài mới thì ẩn nút Xem thêm đi
+        const btnDisplay = isNewPost ? "none" : "inline-block";
+
         return `
-            <div class="post-content-inner post-content-collapsed" onclick="expandText(this)">
+            <div class="post-content-inner ${collapseClass}" onclick="expandText(this)">
                 ${formatted}
             </div>
-            <div class="read-more-btn" onclick="expandText(this.previousElementSibling)">Xem thêm...</div>
+            <div class="read-more-btn" style="display: ${btnDisplay}" onclick="expandText(this.previousElementSibling)">Xem thêm...</div>
         `;
     }
 
+    // Trường hợp văn bản ngắn thì trả về bình thường
     return `<div class="post-content-inner">${formatted}</div>`;
 }
 
     function expandText(element) {
+    // Tìm nút "Xem thêm" ngay sau phần tử nội dung
+    const btn = element.nextElementSibling;
+    const isBtn = btn && btn.classList.contains('read-more-btn');
+
     if (element.classList.contains('post-content-collapsed')) {
+        // TRƯỜNG HỢP 1: ĐANG ĐÓNG -> MỞ RA
         element.classList.remove('post-content-collapsed');
-        element.style.maxHeight = 'none';
+        element.style.maxHeight = 'none'; // Cho phép hiện toàn bộ nội dung
         
-        // Ẩn nút "Xem thêm" đi kèm nếu có
-        const btn = element.nextElementSibling;
-        if (btn && btn.classList.contains('read-more-btn')) {
-            btn.style.display = 'none';
+        if (isBtn) {
+            btn.style.display = 'none'; // Ẩn nút "Xem thêm"
+        }
+    } else {
+        // TRƯỜNG HỢP 2: ĐANG MỞ FULL -> THU GỌN LẠI
+        // Chỉ thu gọn nếu văn bản thực sự dài (có nút Xem thêm đi kèm)
+        if (isBtn) {
+            element.classList.add('post-content-collapsed');
+            element.style.maxHeight = '8em'; // Giới hạn lại chiều cao
+            btn.style.display = 'inline-block'; // Hiện lại nút "Xem thêm"
+            
+            // Cuộn nhẹ lên đầu bài viết nếu cư dân thu gọn khi đang ở cuối bài dài
+            element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
     }
 }
