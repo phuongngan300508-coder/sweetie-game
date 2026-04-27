@@ -3167,6 +3167,39 @@ html {
     }
 }
 
+    /* Container chính cần có position relative để căn nút X */
+#gacha-floating-widget {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    z-index: 9999;
+}
+
+/* Style cho nút đóng riêng biệt */
+#gacha-close-unique-btn {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    width: 20px;
+    height: 20px;
+    background: #ff4d4d;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    z-index: 10000;
+    line-height: 1;
+}
+
+#gacha-close-unique-btn:hover {
+    background: #ff0000;
+    transform: scale(1.1);
+}
 
 /* POPUP GACHA */
 .gacha-main {
@@ -8809,8 +8842,10 @@ input[type="date"].sweetie-input-style {
     </div>
 </div>
 
-<div id="gacha-floating-widget" onclick="toggleModal('modal-gacha')">
-    <div class="widget-content">
+<div id="gacha-floating-widget">
+    <div id="gacha-close-unique-btn" onclick="closeGachaWidget(event)">&times;</div>
+    
+    <div class="widget-content" onclick="toggleModal('modal-gacha')">
         <div class="widget-icon">
             <i class="fas fa-box-open animate__animated animate__pulse animate__infinite"></i>
         </div>
@@ -8820,7 +8855,7 @@ input[type="date"].sweetie-input-style {
         </div>
     </div>
 </div>
-
+    
 <div id="modal-gacha" class="modal-overlay">
     <div class="modal-content modal-small">
         <div class="modal-header">
@@ -24743,6 +24778,16 @@ document.getElementById('btn-open-composer').onclick = function() {
 
 function closeComposer() {
     document.getElementById('composer-modal').style.display = 'none';
+}
+
+    function closeGachaWidget(event) {
+    // Ngăn chặn sự kiện click lan ra ngoài (không mở modal)
+    event.stopPropagation();
+    
+    const widget = document.getElementById('gacha-floating-widget');
+    if (widget) {
+        widget.style.display = 'none';
+    }
 }
 </script>
 </body>
