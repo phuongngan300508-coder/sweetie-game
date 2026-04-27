@@ -7077,7 +7077,7 @@ input[type="date"].sweetie-input-style {
     display: flex;
     align-items: center;      /* Căn giữa dọc */
     justify-content: center;    /* Căn giữa ngang */
-    z-index: 10000;
+    z-index: 10001;
     padding: 15px;
     box-sizing: border-box;
 }
@@ -7706,23 +7706,25 @@ input[type="date"].sweetie-input-style {
     </div>
 
     <div class="status-fixed-header">
-        <div class="status-container">
-            <div style="display: flex; justify-content: space-between; align-items: center; background: #fff0f3; padding: 8px 12px; border-radius: 15px; border: 1px solid #ffe4e8; margin-bottom: 10px;">
-                <div style="font-size: 0.85rem; color: #ff8fab; font-weight: bold;">
-                    <i class="fas fa-bullhorn"></i> Bản tin cư dân ✨
-                </div>
-                
-                <div style="display: flex; align-items: center; gap: 4px; background: white; padding: 2px 8px; border-radius: 10px; border: 1px solid #ffcad4;">
-                    <i class="fas fa-filter" style="font-size: 0.7rem; color: #ff8fab;"></i>
-                    <select id="feed-filter" onchange="changeFeedFilter()" style="border: none; background: transparent; font-size: 0.75rem; color: #d81b60; font-weight: bold; outline: none; cursor: pointer;">
-                        <option value="newest">Mới</option>
-                        <option value="trending">Hot</option>
-                        <option value="oldest">Cũ</option>
-                    </select>
-                </div>
+    <div class="status-container">
+        <div style="display: flex; justify-content: space-between; align-items: center; background: #fff0f3; padding: 8px 12px; border-radius: 15px; border: 1px solid #ffe4e8; margin-bottom: 10px;">
+            
+            <div style="font-size: 0.85rem; color: #ff8fab; font-weight: bold; white-space: nowrap;">
+                <i class="fas fa-bullhorn"></i> Bản tin cư dân ✨
             </div>
+            
+            <div style="display: flex; align-items: center; gap: 4px; background: white; padding: 2px 6px 2px 10px; border-radius: 12px; border: 1px solid #ffcad4; box-shadow: 0 2px 5px rgba(255,143,171,0.1);">
+                <i class="fas fa-filter" style="font-size: 0.65rem; color: #ff8fab;"></i>
+                <select id="feed-filter" onchange="changeFeedFilter()" style="border: none; background: transparent; font-size: 0.75rem; color: #d81b60; font-weight: bold; outline: none; cursor: pointer; padding-right: 4px;">
+                    <option value="newest">Mới nhất</option>
+                    <option value="trending">Hot nhất</option>
+                    <option value="oldest">Cũ nhất</option>
+                </select>
+            </div>
+            
         </div>
     </div>
+</div>
 
     <div class="status-scrollable-content">
         <div class="status-container" id="status-list"></div>
