@@ -3128,10 +3128,11 @@ html {
 }
 
 /* --- WIDGET GACHA NỔI --- */
+/* --- WIDGET GACHA NỔI --- */
 #gacha-floating-widget {
     position: fixed;
     left: 20px;
-    top: calc(40% + 69px); /* Giữ nguyên vị trí tính toán của bạn */
+    top: calc(40% + 69px); 
     z-index: 1001;
     background: rgba(255, 255, 255, 0.2);
     backdrop-filter: blur(10px);
@@ -3148,7 +3149,43 @@ html {
     box-sizing: border-box;
 }
 
-/* Container bọc nội dung để nhận sự kiện click mở modal */
+/* Nút đóng màu hồng giống Vòng Quay */
+#gacha-close-unique-btn {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    background: #ff69b4; /* Hồng của vòng quay */
+    color: white;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    border: 2px solid white;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    z-index: 1002;
+    transition: all 0.2s ease;
+}
+
+#gacha-close-unique-btn:hover {
+    background: #ff1493;
+    transform: scale(1.2);
+}
+
+/* Hiệu ứng Fade Out khi đóng */
+.gacha-fade-out {
+    opacity: 0 !important;
+    transform: translateX(-20px) !important;
+    pointer-events: none;
+}
+
+/* Các thành phần text bên trong cũng dùng màu hồng cho đồng bộ */
+#gacha-floating-widget .widget-icon i { color: #ff1493; }
+#gacha-floating-widget .widget-text b { color: #ff1493; }
+
 .widget-content-wrapper {
     display: flex;
     align-items: center;
@@ -3157,41 +3194,12 @@ html {
     height: 100%;
 }
 
-/* Nút đóng riêng biệt */
-#gacha-close-unique-btn {
-    position: absolute;
-    top: -8px;
-    right: -8px;
-    width: 22px;
-    height: 22px;
-    background: #ff4d4d;
-    color: white;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    font-size: 16px;
-    font-weight: bold;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-    z-index: 1002;
-    line-height: 1;
-    transition: transform 0.2s;
-}
-
-#gacha-close-unique-btn:hover {
-    background: #ff0000;
-    transform: scale(1.2);
-}
-
-/* Hover cho cả widget */
 #gacha-floating-widget:hover {
     left: 25px;
     background: rgba(255, 255, 255, 0.4);
     box-shadow: 8px 8px 20px rgba(255, 105, 180, 0.2);
 }
 
-/* --- ĐIỀU CHỈNH CHO MOBILE --- */
 @media (max-width: 768px) {
     #gacha-floating-widget {
         top: calc(25% + 64px);
@@ -3199,7 +3207,7 @@ html {
         border-radius: 0 15px 15px 0;
     }
 }
-
+    
 /* POPUP GACHA */
 .gacha-main {
     text-align: center;
@@ -8841,8 +8849,8 @@ input[type="date"].sweetie-input-style {
     </div>
 </div>
 
-<div id="gacha-floating-widget">
-    <div id="gacha-close-unique-btn" onclick="closeGachaWidgetExplicit(event)">&times;</div>
+<div id="gacha-floating-widget" class="animate__animated animate__fadeInRight">
+    <span id="gacha-close-unique-btn" onclick="closeGachaWithEffect(event)">&times;</span>
     
     <div class="widget-content-wrapper" onclick="toggleModal('modal-gacha')">
         <div class="widget-content">
@@ -24781,18 +24789,23 @@ function closeComposer() {
     document.getElementById('composer-modal').style.display = 'none';
 }
 
-    function closeGachaWidgetExplicit(event) {
-    // Ngăn chặn sự kiện click lan tới hàm toggleModal
+    function closeGachaWithEffect(event) {
+    // Ngăn chặn nổi bọt (không cho mở modal khi bấm X)
     if (event && event.stopPropagation) {
-        event.stopPropagation(); 
-    } else if (window.event) {
+        event.stopPropagation();
+    } else {
         window.event.cancelBubble = true;
     }
 
-    // Ẩn widget
-    const gachaWidget = document.getElementById('gacha-floating-widget');
-    if (gachaWidget) {
-        gachaWidget.style.display = 'none';
+    const widget = document.getElementById('gacha-floating-widget');
+    if (widget) {
+        // Thêm hiệu ứng bay nhẹ và mờ dần
+        widget.classList.add('gacha-fade-out');
+        
+        // Đợi 0.3s (bằng thời gian transition) rồi mới ẩn hẳn
+        setTimeout(() => {
+            widget.style.display = 'none';
+        }, 300);
     }
 }
 </script>
