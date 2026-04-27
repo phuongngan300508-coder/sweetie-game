@@ -3131,8 +3131,7 @@ html {
 #gacha-floating-widget {
     position: fixed;
     left: 20px;
-    /* top của Vòng quay (40%) + Chiều cao Vòng quay (54px) + Khoảng trống (15px) */
-    top: calc(40% + 69px); 
+    top: calc(40% + 69px); /* Giữ nguyên vị trí tính toán của bạn */
     z-index: 1001;
     background: rgba(255, 255, 255, 0.2);
     backdrop-filter: blur(10px);
@@ -3142,46 +3141,29 @@ html {
     box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.1);
     border: 1px solid rgba(255, 255, 255, 0.3);
     border-left: none;
-    cursor: pointer;
     display: flex;
     align-items: center;
     transition: all 0.3s ease;
-    height: 54px; /* Đồng bộ chiều cao */
+    height: 54px;
     box-sizing: border-box;
 }
 
-/* Hiệu ứng Hover đồng bộ */
-#wheel-floating-widget:hover, #gacha-floating-widget:hover {
-    left: 25px;
-    background: rgba(255, 255, 255, 0.4);
-    box-shadow: 8px 8px 20px rgba(255, 105, 180, 0.2);
+/* Container bọc nội dung để nhận sự kiện click mở modal */
+.widget-content-wrapper {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
 }
 
-/* --- ĐIỀU CHỈNH CHO MOBILE --- */
-@media (max-width: 768px) {
-    
-    #gacha-floating-widget {
-        top: calc(25% + 64px); /* Khoảng trống 10px trên Mobile */
-        left: 0;
-        border-radius: 0 15px 15px 0;
-    }
-}
-
-    /* Container chính cần có position relative để căn nút X */
-#gacha-floating-widget {
-    position: fixed;
-    bottom: 20px;
-    left: 20px;
-    z-index: 9999;
-}
-
-/* Style cho nút đóng riêng biệt */
+/* Nút đóng riêng biệt */
 #gacha-close-unique-btn {
     position: absolute;
-    top: -10px;
-    right: -10px;
-    width: 20px;
-    height: 20px;
+    top: -8px;
+    right: -8px;
+    width: 22px;
+    height: 22px;
     background: #ff4d4d;
     color: white;
     border-radius: 50%;
@@ -3189,16 +3171,33 @@ html {
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    font-size: 14px;
+    font-size: 16px;
     font-weight: bold;
     box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-    z-index: 10000;
+    z-index: 1002;
     line-height: 1;
+    transition: transform 0.2s;
 }
 
 #gacha-close-unique-btn:hover {
     background: #ff0000;
-    transform: scale(1.1);
+    transform: scale(1.2);
+}
+
+/* Hover cho cả widget */
+#gacha-floating-widget:hover {
+    left: 25px;
+    background: rgba(255, 255, 255, 0.4);
+    box-shadow: 8px 8px 20px rgba(255, 105, 180, 0.2);
+}
+
+/* --- ĐIỀU CHỈNH CHO MOBILE --- */
+@media (max-width: 768px) {
+    #gacha-floating-widget {
+        top: calc(25% + 64px);
+        left: 0;
+        border-radius: 0 15px 15px 0;
+    }
 }
 
 /* POPUP GACHA */
@@ -8843,15 +8842,17 @@ input[type="date"].sweetie-input-style {
 </div>
 
 <div id="gacha-floating-widget">
-    <div id="gacha-close-unique-btn" onclick="closeGachaWidget(event)">&times;</div>
+    <div id="gacha-close-unique-btn" onclick="closeGachaWidgetExplicit(event)">&times;</div>
     
-    <div class="widget-content" onclick="toggleModal('modal-gacha')">
-        <div class="widget-icon">
-            <i class="fas fa-box-open animate__animated animate__pulse animate__infinite"></i>
-        </div>
-        <div class="widget-text">
-            <b>GACHA MONEY</b>
-            <span>2.000đ/Lượt</span>
+    <div class="widget-content-wrapper" onclick="toggleModal('modal-gacha')">
+        <div class="widget-content">
+            <div class="widget-icon">
+                <i class="fas fa-box-open animate__animated animate__pulse animate__infinite"></i>
+            </div>
+            <div class="widget-text">
+                <b>GACHA MONEY</b>
+                <span>2.000đ/Lượt</span>
+            </div>
         </div>
     </div>
 </div>
@@ -24780,13 +24781,18 @@ function closeComposer() {
     document.getElementById('composer-modal').style.display = 'none';
 }
 
-    function closeGachaWidget(event) {
-    // Ngăn chặn sự kiện click lan ra ngoài (không mở modal)
-    event.stopPropagation();
-    
-    const widget = document.getElementById('gacha-floating-widget');
-    if (widget) {
-        widget.style.display = 'none';
+    function closeGachaWidgetExplicit(event) {
+    // Ngăn chặn sự kiện click lan tới hàm toggleModal
+    if (event && event.stopPropagation) {
+        event.stopPropagation(); 
+    } else if (window.event) {
+        window.event.cancelBubble = true;
+    }
+
+    // Ẩn widget
+    const gachaWidget = document.getElementById('gacha-floating-widget');
+    if (gachaWidget) {
+        gachaWidget.style.display = 'none';
     }
 }
 </script>
