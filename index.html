@@ -7066,41 +7066,42 @@ input[type="date"].sweetie-input-style {
     transform: scale(0.9);
 }
 
-/* Overlay bao phủ toàn màn hình và căn giữa */
+/* Overlay: Căn giữa tuyệt đối trên cả Mobile và PC */
 .sw-post-overlay {
     position: fixed;
     top: 0;
     left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.6); /* Làm tối nền một chút cho nổi popup */
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.6);
     display: flex;
-    align-items: center;     /* Căn giữa dọc */
-    justify-content: center;   /* Căn giữa ngang */
+    align-items: center;      /* Căn giữa dọc */
+    justify-content: center;    /* Căn giữa ngang */
     z-index: 10000;
-    padding: 20px;            /* Tránh popup dính sát mép điện thoại */
+    padding: 15px;
+    box-sizing: border-box;
 }
-
-/* Nội dung Popup co giãn linh hoạt */
+    
+/* Popup: Co giãn thông minh */
 .sw-post-popup {
     background: white;
-    width: 95%;               /* Mặc định gần full màn hình điện thoại */
-    max-width: 550px;         /* Tối đa 550px trên máy tính */
-    border-radius: 20px;      /* Bo tròn đều các góc */
-    padding: 20px;
+    width: 100%;
+    max-width: 500px;           /* Trên PC tối đa 500px */
+    border-radius: 20px;
+    padding: 18px;
     box-sizing: border-box;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+    position: relative;         /* Đảm bảo căn chỉnh nội bộ chuẩn */
 }
 
 .sw-post-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 15px;
+    margin-bottom: 12px;
     color: #ff8fab;
     font-weight: bold;
-    border-bottom: 1px solid #fff0f3;
-    padding-bottom: 10px;
+    font-size: 1rem;
 }
 
 .sw-post-close {
@@ -7706,15 +7707,20 @@ input[type="date"].sweetie-input-style {
 
     <div class="status-fixed-header">
         <div class="status-container">
-            <div style="display: flex; justify-content: space-between; align-items: center; background: #fff0f3; padding: 12px 15px; border-radius: 15px; border: 1px solid #ffe4e8; margin-bottom: 10px;">
-                <span style="font-size: 0.85rem; color: #ff8fab; font-weight: bold;"><i class="fas fa-filter"></i> Chế độ xem:</span>
-                <select id="feed-filter" onchange="changeFeedFilter()" style="border: none; background: transparent; font-size: 0.85rem; color: #d81b60; font-weight: bold; outline: none; cursor: pointer;">
-                    <option value="newest">✨ Mới nhất</option>
-                    <option value="trending">🔥 Xu hướng (Nhiều tim)</option>
-                    <option value="oldest">📜 Tin cũ nhất</option>
-                </select>
+            <div style="display: flex; justify-content: space-between; align-items: center; background: #fff0f3; padding: 8px 12px; border-radius: 15px; border: 1px solid #ffe4e8; margin-bottom: 10px;">
+                <div style="font-size: 0.85rem; color: #ff8fab; font-weight: bold;">
+                    <i class="fas fa-bullhorn"></i> Bản tin cư dân ✨
+                </div>
+                
+                <div style="display: flex; align-items: center; gap: 4px; background: white; padding: 2px 8px; border-radius: 10px; border: 1px solid #ffcad4;">
+                    <i class="fas fa-filter" style="font-size: 0.7rem; color: #ff8fab;"></i>
+                    <select id="feed-filter" onchange="changeFeedFilter()" style="border: none; background: transparent; font-size: 0.75rem; color: #d81b60; font-weight: bold; outline: none; cursor: pointer;">
+                        <option value="newest">Mới</option>
+                        <option value="trending">Hot</option>
+                        <option value="oldest">Cũ</option>
+                    </select>
+                </div>
             </div>
-            <div class="status-divider">Bản tin cư dân ✨</div>
         </div>
     </div>
 
