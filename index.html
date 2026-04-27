@@ -24816,22 +24816,6 @@ function closeComposer() {
         }, 300);
     }
 }
-
-    // Thêm vào script của bạn
-document.addEventListener('keydown', function(e) {
-    if (e.target && (e.target.id.startsWith('comment-input-') || e.target.id.startsWith('input-reply-'))) {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            const id = e.target.id.split('-').pop();
-            if (e.target.id.includes('reply')) {
-                const postId = e.target.closest('.status-card').id.replace('post-card-', '');
-                submitReply(postId, id);
-            } else {
-                submitComment(id);
-            }
-        }
-    }
-});
 </script>
 </body>
 </html>
