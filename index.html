@@ -7119,6 +7119,34 @@ input[type="date"].sweetie-input-style {
 .sw-post-close:hover {
     color: #ff8fab;
 }
+
+    #gacha-floating-widget {
+    position: relative; /* Để nút đóng căn chỉnh theo widget */
+}
+
+.close-widget {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: #ff4d6d;
+    color: white;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    cursor: pointer;
+    border: 2px solid white;
+    z-index: 10;
+    transition: all 0.3s ease;
+}
+
+.close-widget:hover {
+    background: #d81b60;
+    transform: scale(1.1);
+}
 </style>
 </head>
 <body>
@@ -8809,8 +8837,12 @@ input[type="date"].sweetie-input-style {
     </div>
 </div>
 
-<div id="gacha-floating-widget" onclick="toggleModal('modal-gacha')">
-    <div class="widget-content">
+<div id="gacha-floating-widget">
+    <div class="close-widget" onclick="closeGachaWidget(event)">
+        <i class="fas fa-times"></i>
+    </div>
+
+    <div class="widget-content" onclick="toggleModal('modal-gacha')">
         <div class="widget-icon">
             <i class="fas fa-box-open animate__animated animate__pulse animate__infinite"></i>
         </div>
@@ -24743,6 +24775,22 @@ document.getElementById('btn-open-composer').onclick = function() {
 
 function closeComposer() {
     document.getElementById('composer-modal').style.display = 'none';
+}
+
+    function closeGachaWidget(event) {
+    // Ngăn chặn sự kiện click lan ra ngoài (không làm mở Modal Gacha)
+    event.stopPropagation();
+    
+    const widget = document.getElementById('gacha-floating-widget');
+    if (widget) {
+        // Thêm hiệu ứng biến mất cho mượt (nếu Henry dùng Animate.css)
+        widget.classList.add('animate__animated', 'animate__fadeOut');
+        
+        // Ẩn widget sau khi hiệu ứng kết thúc
+        setTimeout(() => {
+            widget.style.display = 'none';
+        }, 500);
+    }
 }
 </script>
 </body>
