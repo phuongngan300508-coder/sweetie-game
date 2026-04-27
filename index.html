@@ -7040,6 +7040,67 @@ input[type="date"].sweetie-input-style {
     border: 2px solid #ff8fab !important;
     border-radius: 12px;
 }
+
+    /* Nút bấm nổi FAB */
+.fab-post {
+    position: fixed;
+    bottom: 80px; /* Nằm trên thanh điều hướng điện thoại */
+    right: 20px;
+    width: 55px;
+    height: 55px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ff8fab, #ff4d6d);
+    color: white;
+    border: none;
+    box-shadow: 0 4px 15px rgba(255, 143, 171, 0.4);
+    z-index: 999;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    transition: all 0.3s ease;
+}
+
+.fab-post:active {
+    transform: scale(0.9);
+}
+
+/* Modal Popup */
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: flex-end; /* Mở từ dưới lên cho giống mobile app */
+    justify-content: center;
+    z-index: 10000;
+}
+
+.composer-popup {
+    background: white;
+    width: 100%;
+    max-width: 500px;
+    border-radius: 25px 25px 0 0; /* Bo tròn góc trên */
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    color: #ff8fab;
+    font-weight: bold;
+}
+
+.close-modal {
+    font-size: 1.2rem;
+    cursor: pointer;
+    color: #ccc;
+}
 </style>
 </head>
 <body>
@@ -7607,13 +7668,19 @@ input[type="date"].sweetie-input-style {
 </section>
 
 <main>
-  <div id="tab-status" class="tab-content" style="display:none;">
-    <div class="status-fixed-header">
-        <div class="status-container"> 
+ <div id="tab-status" class="tab-content" style="display:none;">
+    <button id="btn-open-composer" class="fab-post">
+        <i class="fas fa-pen-nib"></i>
+    </button>
+
+    <div id="composer-modal" class="modal-overlay" style="display:none;">
+        <div class="modal-content composer-popup animate__animated animate__backInUp">
+            <div class="modal-header">
+                <span><i class="fas fa-pen-nib"></i> Đăng trạng thái mới</span>
+                <i class="fas fa-times close-modal" onclick="closeComposer()"></i>
+            </div>
+            
             <div class="status-card composer">
-                <div class="composer-header">
-                    <i class="fas fa-pen-nib"></i> Đăng trạng thái mới
-                </div>
                 <textarea id="status-text" placeholder="Bạn đang nghĩ gì thế?"></textarea>
                 <div class="composer-footer">
                     <select id="status-privacy" class="status-select">
@@ -7627,17 +7694,20 @@ input[type="date"].sweetie-input-style {
                 </div>
             </div>
         </div>
-        <div class="status-container" style="padding-top: 0;">
-            <div style="display: flex; justify-content: space-between; align-items: center; background: #fff0f3; padding: 8px 15px; border-radius: 15px; border: 1px solid #ffe4e8; margin-bottom: 10px;">
-                <span style="font-size: 0.8rem; color: #ff8fab; font-weight: bold;"><i class="fas fa-filter"></i> Chế độ xem:</span>
-                <select id="feed-filter" onchange="changeFeedFilter()" style="border: none; background: transparent; font-size: 0.8rem; color: #d81b60; font-weight: bold; outline: none; cursor: pointer;">
+    </div>
+
+    <div class="status-fixed-header">
+        <div class="status-container">
+            <div style="display: flex; justify-content: space-between; align-items: center; background: #fff0f3; padding: 12px 15px; border-radius: 15px; border: 1px solid #ffe4e8; margin-bottom: 10px;">
+                <span style="font-size: 0.85rem; color: #ff8fab; font-weight: bold;"><i class="fas fa-filter"></i> Chế độ xem:</span>
+                <select id="feed-filter" onchange="changeFeedFilter()" style="border: none; background: transparent; font-size: 0.85rem; color: #d81b60; font-weight: bold; outline: none; cursor: pointer;">
                     <option value="newest">✨ Mới nhất</option>
                     <option value="trending">🔥 Xu hướng (Nhiều tim)</option>
                     <option value="oldest">📜 Tin cũ nhất</option>
                 </select>
             </div>
+            <div class="status-divider">Bản tin cư dân ✨</div>
         </div>
-        <div class="status-divider">Bản tin cư dân ✨</div>
     </div>
 
     <div class="status-scrollable-content">
@@ -12691,6 +12761,16 @@ function switchTab(tabId) {
     if (targetBtn) {
         targetBtn.classList.add('active');
         targetBtn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    }
+
+    // --- PHẦN THÊM MỚI: Điều khiển hiển thị nút đăng bài nổi (FAB) ---
+    const postFab = document.getElementById('btn-open-composer');
+    if (postFab) {
+        if (tabId === 'tab-status') {
+            postFab.style.display = 'flex'; // Hiện nút khi ở tab bản tin
+        } else {
+            postFab.style.display = 'none'; // Ẩn nút ở các tab khác
+        }
     }
 }
     
@@ -23600,6 +23680,8 @@ async function selectSavedAccount(stk, name) {
     try {
         await firebase.database().ref('posts').push(newPost);
         statusInput.value = "";
+
+        closeComposer();
         // --- THÊM THÔNG BÁO VÀO CHUÔNG GAME TẠI ĐÂY ---
         if (typeof addNotification === 'function') {
             addNotification("HỆ THỐNG", "Bạn vừa đăng một trạng thái mới thành công! ✨");
@@ -24626,6 +24708,16 @@ loadAllUsernames();
     return formatted.replace(urlRegex, (url) => {
         return `<a href="${url}" target="_blank" style="color: #007bff; text-decoration: underline;">${url}</a>`;
     });
+}
+
+    // 1. Hàm mở/đóng Modal
+document.getElementById('btn-open-composer').onclick = function() {
+    document.getElementById('composer-modal').style.display = 'flex';
+    document.getElementById('status-text').focus(); // Tự động focus để gõ luôn
+};
+
+function closeComposer() {
+    document.getElementById('composer-modal').style.display = 'none';
 }
 </script>
 </body>
