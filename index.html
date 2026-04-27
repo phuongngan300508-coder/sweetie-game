@@ -24457,6 +24457,10 @@ function toggleReaction(postId) {
 
 function submitComment(postId) {
     const input = document.getElementById(`comment-input-${postId}`);
+    
+    // --- LỚP BẢO VỆ: Ngăn lỗi null khi DOM chưa sẵn sàng hoặc sai ID ---
+    if (!input) return; 
+
     const text = input.value.trim();
     
     // KIỂM TRA QUAN TRỌNG: userData phải tồn tại
@@ -24481,30 +24485,32 @@ function submitComment(postId) {
         };
 
         // Gửi lên Firebase
-        // Trong hàm submitComment(postId)
-firebase.database().ref(`posts/${postId}/comments`).push(commentData)
-    .then((snap) => { // Sửa thành (snap) để lấy ID bình luận vừa tạo
-        const newCommentId = snap.key; // Đây chính là ID bình luận
-        handleMentionNotifications(text, postId, newCommentId); // Truyền ID vào đây
-        
-        input.value = "";
-        if (typeof addNotification === 'function') {
-            addNotification("HỆ THỐNG", "Bình luận của bạn đã được gửi thành công! ✨");
-        }
+        firebase.database().ref(`posts/${postId}/comments`).push(commentData)
+        .then((snap) => { 
+            const newCommentId = snap.key; 
+            handleMentionNotifications(text, postId, newCommentId); 
+            
+            input.value = "";
+            // Reset chiều cao textarea về 36px (hoặc auto) sau khi gửi để không bị trống một mảng to
+            input.style.height = '36px'; 
 
-        // CHỈ CUỘN XUỐNG KHI LÀ COMMENT GỐC
-        const commentList = document.getElementById(`comments-list-${postId}`);
-        if (commentList) {
-            commentList.scrollTo({
-                top: commentList.scrollHeight,
-                behavior: 'smooth'
-            });
-        }
-    })
-            .catch(err => {
-                console.error("Lỗi gửi bình luận:", err);
-                alert("Không có quyền bình luận, hãy kiểm tra lại Rules!");
-            });
+            if (typeof addNotification === 'function') {
+                addNotification("HỆ THỐNG", "Bình luận của bạn đã được gửi thành công! ✨");
+            }
+
+            // CHỈ CUỘN XUỐNG KHI LÀ COMMENT GỐC
+            const commentList = document.getElementById(`comments-list-${postId}`);
+            if (commentList) {
+                commentList.scrollTo({
+                    top: commentList.scrollHeight,
+                    behavior: 'smooth'
+                });
+            }
+        })
+        .catch(err => {
+            console.error("Lỗi gửi bình luận:", err);
+            alert("Không có quyền bình luận, hãy kiểm tra lại Rules!");
+        });
     });
 }
     
@@ -24816,6 +24822,36 @@ function closeComposer() {
         }, 300);
     }
 }
+
+    // Xử lý phím Enter toàn cục cho các ô nhập liệu
+document.addEventListener('keydown', function (e) {
+    // Kiểm tra xem có phải đang gõ trong textarea bình luận hoặc phản hồi không
+    if (e.target && (e.target.id.startsWith('comment-input-') || e.target.id.startsWith('input-reply-'))) {
+        
+        // Nếu nhấn Enter và KHÔNG giữ Shift
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault(); // Ngăn trình duyệt xuống dòng mặc định
+
+            const targetId = e.target.id;
+            
+            if (targetId.startsWith('comment-input-')) {
+                // TRƯỜNG HỢP: Bình luận gốc
+                const postId = targetId.replace('comment-input-', '');
+                submitComment(postId);
+            } else if (targetId.startsWith('input-reply-')) {
+                // TRƯỜNG HỢP: Phản hồi (Reply)
+                const commentId = targetId.replace('input-reply-', '');
+                
+                // Tìm postId bằng cách leo lên thẻ cha có class status-card
+                const postCard = e.target.closest('.status-card');
+                if (postCard) {
+                    const postId = postCard.id.replace('post-card-', '');
+                    submitReply(postId, commentId);
+                }
+            }
+        }
+    }
+});
 </script>
 </body>
 </html>
