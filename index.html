@@ -7159,6 +7159,35 @@ input[type="date"].sweetie-input-style {
 .sw-post-close:hover {
     color: #ff8fab;
 }
+
+    /* Khung chứa nội dung bài viết */
+.post-content-inner {
+    position: relative;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+}
+
+/* Khi ở trạng thái thu gọn (giới hạn 4 dòng) */
+.post-content-collapsed {
+    display: -webkit-box;
+    -webkit-line-clamp: 4; /* Số dòng muốn hiển thị trước khi thu gọn */
+    -webkit-box-orient: vertical;
+    max-height: 8em; /* Khoảng 4 dòng */
+}
+
+/* Nút Xem thêm */
+.read-more-btn {
+    color: #ff1493;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 0.85rem;
+    margin-top: 5px;
+    display: inline-block;
+}
+
+.read-more-btn:hover {
+    text-decoration: underline;
+}
 </style>
 </head>
 <body>
@@ -23953,7 +23982,7 @@ async function listenToPosts() {
                     </div>
                 </div>
                 <div class="post-content" style="padding: 10px 0; border-bottom: 1px solid #ffe4e8; word-break: break-word; line-height: 1.5;">
-                    ${formatPostContent(post.content)}
+                    ${formatPostContent(post.content, post.timestamp > (Date.now() - 5000))}
                 </div>
                 <div class="post-actions" style="display: flex; gap: 15px; padding: 8px 0;">
                     <button class="action-btn" onclick="toggleReaction('${post.id}')" style="background:none; border:none; color:${hasLiked ? '#ff1493' : '#ff8fab'}; cursor:pointer; font-weight:${hasLiked ? 'bold' : 'normal'};">
@@ -24777,22 +24806,52 @@ async function loadAllUsernames() {
 // Gọi hàm này khi ứng dụng khởi chạy hoặc khi người dùng mở tab Status
 loadAllUsernames();
 
-    function formatPostContent(text) {
+    function formatPostContent(text, isNewPost = false) {
     if (!text) return "";
+    
+    // Logic format cũ của Henry (giữ nguyên)
     let formatted = text
-        .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") // Bảo mật cơ bản
-        .replace(/\n/g, '<br>') // Xuống dòng
-        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // In đậm **
-        .replace(/\*(.*?)\*/g, '<strong>$1</strong>')    // In đậm *
-        .replace(/_(.*?)_/g, '<em>$1</em>');             // In nghiêng _
+        .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+        .replace(/\n/g, '<br>')
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.*?)\*/g, '<strong>$1</strong>')
+        .replace(/_(.*?)_/g, '<em>$1</em>');
 
-    // Nhận diện Link tự động
     const urlRegex = /(https?:\/\/[^\s]+)/g;
-    return formatted.replace(urlRegex, (url) => {
+    formatted = formatted.replace(urlRegex, (url) => {
         return `<a href="${url}" target="_blank" style="color: #007bff; text-decoration: underline;">${url}</a>`;
     });
+
+    // --- LOGIC THU GỌN MỚI ---
+    // Ngưỡng ký tự hoặc số dòng để thu gọn (ví dụ > 300 ký tự)
+    const threshold = 300;
+    const shouldCollapse = text.length > threshold || (text.match(/\n/g) || []).length > 4;
+
+    if (shouldCollapse && !isNewPost) {
+        return `
+            <div class="post-content-inner post-content-collapsed" onclick="expandText(this)">
+                ${formatted}
+            </div>
+            <div class="read-more-btn" onclick="expandText(this.previousElementSibling)">Xem thêm...</div>
+        `;
+    }
+
+    return `<div class="post-content-inner">${formatted}</div>`;
 }
 
+    function expandText(element) {
+    if (element.classList.contains('post-content-collapsed')) {
+        element.classList.remove('post-content-collapsed');
+        element.style.maxHeight = 'none';
+        
+        // Ẩn nút "Xem thêm" đi kèm nếu có
+        const btn = element.nextElementSibling;
+        if (btn && btn.classList.contains('read-more-btn')) {
+            btn.style.display = 'none';
+        }
+    }
+}
+    
     // 1. Hàm mở/đóng Modal
 document.getElementById('btn-open-composer').onclick = function() {
     document.getElementById('composer-modal').style.display = 'flex';
