@@ -7066,26 +7066,30 @@ input[type="date"].sweetie-input-style {
     transform: scale(0.9);
 }
 
-/* Modal Overlay riêng cho đăng bài */
+/* Overlay bao phủ toàn màn hình và căn giữa */
 .sw-post-overlay {
     position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    background: rgba(0, 0, 0, 0.5);
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6); /* Làm tối nền một chút cho nổi popup */
     display: flex;
-    align-items: flex-end; /* Mở từ dưới lên */
-    justify-content: center;
+    align-items: center;     /* Căn giữa dọc */
+    justify-content: center;   /* Căn giữa ngang */
     z-index: 10000;
+    padding: 20px;            /* Tránh popup dính sát mép điện thoại */
 }
 
-/* Nội dung Popup riêng biệt */
+/* Nội dung Popup co giãn linh hoạt */
 .sw-post-popup {
     background: white;
-    width: 100%;
-    max-width: 500px;
-    border-radius: 25px 25px 0 0; /* Bo tròn góc trên */
+    width: 95%;               /* Mặc định gần full màn hình điện thoại */
+    max-width: 550px;         /* Tối đa 550px trên máy tính */
+    border-radius: 20px;      /* Bo tròn đều các góc */
     padding: 20px;
     box-sizing: border-box;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
 }
 
 .sw-post-header {
@@ -7095,6 +7099,8 @@ input[type="date"].sweetie-input-style {
     margin-bottom: 15px;
     color: #ff8fab;
     font-weight: bold;
+    border-bottom: 1px solid #fff0f3;
+    padding-bottom: 10px;
 }
 
 .sw-post-close {
@@ -7670,13 +7676,13 @@ input[type="date"].sweetie-input-style {
 </section>
 
 <main>
- <div id="tab-status" class="tab-content" style="display:none;">
+<div id="tab-status" class="tab-content" style="display:none;">
     <button id="btn-open-composer" class="sw-post-fab">
         <i class="fas fa-pen-nib"></i>
     </button>
 
     <div id="composer-modal" class="sw-post-overlay" style="display:none;">
-        <div class="sw-post-popup animate__animated animate__backInUp">
+        <div class="sw-post-popup animate__animated animate__zoomIn">
             <div class="sw-post-header">
                 <span><i class="fas fa-pen-nib"></i> Đăng trạng thái mới</span>
                 <i class="fas fa-times sw-post-close" onclick="closeComposer()"></i>
