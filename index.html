@@ -7081,31 +7081,49 @@ input[type="date"].sweetie-input-style {
     border-radius: 12px;
 }
 
-   /* Nút bấm nổi FAB riêng biệt cho đăng bài */
+/* NÚT ĐĂNG BÀI (Mặc định cho Máy tính) */
 .sw-post-fab {
     position: fixed;
-    bottom: 80px; /* Nằm trên thanh điều hướng điện thoại */
-    right: 20px;
+    /* PC: Nút game ở 30px + chiều cao nút game (~55px) + khoảng cách (15px) = 100px */
+    bottom: 100px; 
+    right: 30px; /* Căn lề phải bằng với nút game trên PC */
     width: 55px;
     height: 55px;
     border-radius: 50%;
     background: linear-gradient(135deg, #ff8fab, #ff4d6d);
     color: white;
-    border: none;
-    box-shadow: 0 4px 15px rgba(255, 143, 171, 0.4);
-    z-index: 10001; /* Đảm bảo nút FAB cũng nằm trên các icon game thông thường */
+    border: 3px solid #ffffff; /* Thêm viền trắng cho đồng bộ với nút game */
+    box-shadow: 0 10px 25px rgba(255, 77, 109, 0.4);
+    z-index: 10001; 
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 1.5rem;
-    transition: all 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    animation: floating-bounce 2s infinite alternate; /* Dùng chung hiệu ứng bay với nút game */
 }
 
+/* Hiệu ứng khi nhấn */
 .sw-post-fab:active {
     transform: scale(0.9);
 }
 
+.sw-post-fab:hover {
+    transform: scale(1.1);
+}
+
+/* ĐIỀU CHỈNH CHO ĐIỆN THOẠI (DƯỚI 1024PX) */
+@media (max-width: 1023px) {
+    .sw-post-fab {
+        /* Mobile: Nút game ở 85px + chiều cao nút game (~45px) + khoảng cách (10px) = 140px */
+        bottom: 140px; 
+        right: 20px; /* Căn lề phải bằng với nút game trên Mobile */
+        width: 48px;  /* Thu nhỏ một chút cho cân đối */
+        height: 48px;
+        font-size: 1.2rem;
+    }
+}
 /* Overlay: Căn giữa tuyệt đối và nằm trên cùng nhất */
 .sw-post-overlay {
     position: fixed;
@@ -24880,15 +24898,33 @@ loadAllUsernames();
     }
 }
     
-    // 1. Hàm mở/đóng Modal
-document.getElementById('btn-open-composer').onclick = function() {
-    document.getElementById('composer-modal').style.display = 'flex';
-    document.getElementById('status-text').focus(); // Tự động focus để gõ luôn
-};
+    // Đợi DOM tải xong để đảm bảo tìm thấy ID nút
+document.addEventListener('DOMContentLoaded', function() {
+    const btnOpen = document.getElementById('btn-open-composer');
+    const modal = document.getElementById('composer-modal');
+    const textarea = document.getElementById('status-text');
 
+    if (btnOpen) {
+        btnOpen.onclick = function() {
+            modal.style.display = 'flex';
+            // Dùng setTimeout để focus mượt hơn sau khi hiệu ứng mở (nếu có) chạy xong
+            setTimeout(() => textarea.focus(), 100); 
+        };
+    }
+});
+
+// Hàm đóng modal
 function closeComposer() {
     document.getElementById('composer-modal').style.display = 'none';
 }
+
+// Thêm: Click ra ngoài vùng popup (vào phần overlay đen) thì đóng modal
+window.onclick = function(event) {
+    const modal = document.getElementById('composer-modal');
+    if (event.target == modal) {
+        closeComposer();
+    }
+};
 
     function closeGachaWithEffect(event) {
     // Ngăn chặn nổi bọt (không cho mở modal khi bấm X)
