@@ -24174,10 +24174,15 @@ const renderNestedComments = async (allComments, post, myUid, parentId = null, l
                     <button onclick="submitReply('${post.id}', '${c.id}')" style="background:#ff8fab; color:white; border:none; border-radius:10px; padding:6px 12px; font-size:0.7rem; cursor:pointer; height: 30px; font-weight: bold;">Gửi</button>
                 </div>
                 
-                ${hasChildren && !isCurrentExpanded ? `
+                ${hasChildren ? `
                     <div onclick="expandComment('${c.id}', '${post.id}')" style="color: #ff8fab; font-size: 0.72rem; margin-left: 20px; cursor: pointer; font-weight: bold; margin-top: 5px; display: flex; align-items: center; gap: 6px;">
-                        <i class="fas fa-level-up-alt fa-rotate-90" style="font-size: 0.6rem;"></i> 
-                        Xem ${totalReplies} phản hồi khác...
+                        ${isCurrentExpanded ? `
+                            <i class="fas fa-chevron-up" style="font-size: 0.6rem;"></i> 
+                            Thu gọn phản hồi
+                        ` : `
+                            <i class="fas fa-level-up-alt fa-rotate-90" style="font-size: 0.6rem;"></i> 
+                            Xem ${totalReplies} phản hồi khác...
+                        `}
                     </div>` : ''}
                 
                 <div class="replies-container">
@@ -24268,24 +24273,32 @@ function toggleCommentReaction(postId, commentId) {
 }
     
    function expandComment(commentId, postId) {
-    if (!expandedComments.includes(commentId)) {
+    const index = expandedComments.indexOf(commentId);
+
+    if (index > -1) {
+        // TRƯỜNG HỢP: Đã tồn tại -> Xóa khỏi mảng để thu gọn lại
+        expandedComments.splice(index, 1);
+        console.log("Hệ thống: Thu gọn phản hồi cư dân. ✨");
+    } else {
+        // TRƯỜNG HỢP: Chưa tồn tại -> Thêm vào mảng để mở rộng
         expandedComments.push(commentId);
-        
-        // MẸO CỰC HAY: Không load lại cả trang!
-        // Thay vì tắt listener toàn hệ thống (gây reload), 
-        // Henry chỉ cần gọi hàm vẽ lại riêng hộp comment của bài viết này.
-        
-        if (postId) {
-            refreshCommentsOnly(postId);
-        } else {
-            // Nếu Henry chưa truyền postId kịp, ta vẫn có thể dùng mẹo nhỏ:
-            // Tìm phần tử cha gần nhất có chứa ID của bài viết
-            const wrapper = document.getElementById(`comm-wrap-${commentId}`);
-            const postCard = wrapper ? wrapper.closest('.status-card') : null;
-            if (postCard) {
-                const foundPostId = postCard.id.replace('post-card-', '');
-                refreshCommentsOnly(foundPostId);
-            }
+        console.log("Hệ thống: Mở rộng phản hồi cư dân. ✨");
+    }
+
+    // MẸO CỰC HAY: Không load lại cả trang!
+    // Thay vì tắt listener toàn hệ thống (gây reload), 
+    // Henry chỉ cần gọi hàm vẽ lại riêng hộp comment của bài viết này.
+    
+    if (postId) {
+        refreshCommentsOnly(postId);
+    } else {
+        // Nếu Henry chưa truyền postId kịp, ta vẫn có thể dùng mẹo nhỏ:
+        // Tìm phần tử cha gần nhất có chứa ID của bài viết
+        const wrapper = document.getElementById(`comm-wrap-${commentId}`);
+        const postCard = wrapper ? wrapper.closest('.status-card') : null;
+        if (postCard) {
+            const foundPostId = postCard.id.replace('post-card-', '');
+            refreshCommentsOnly(foundPostId);
         }
     }
 }
