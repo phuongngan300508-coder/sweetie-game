@@ -23948,7 +23948,7 @@ async function listenToPosts() {
     });
 
     // Hàm renderSinglePost (Giữ nguyên thiết kế và logic của bạn)
-    async function renderSinglePost(post, position, targetContainer = postsContainer) {
+   async function renderSinglePost(post, position, targetContainer = postsContainer) {
     let showThisPost = false;
     if (post.privacy === 'public') showThisPost = true;
     else if (post.uid === myUid) showThisPost = true;
@@ -23969,6 +23969,26 @@ async function listenToPosts() {
         const pAvatarHtml = currentAuthorAvatar 
             ? `<img src="${currentAuthorAvatar}" class="author-avatar" style="width:45px; height:45px; border-radius:50%; object-fit:cover;">` 
             : `<div class="author-avatar" style="width:45px; height:45px; border-radius:50%; background:#ffe4e8; display:flex; align-items:center; justify-content:center; color:#ff8fab; font-size:1.2rem;"><i class="fas ${authorData.gender === 'Nam' ? 'fa-user-tie' : 'fa-user-graduate'}"></i></div>`;
+
+        // CHUẨN BỊ NỘI DUNG MENU (Tách biệt logic chủ bài viết và khách)
+        let menuItemsHtml = `
+            <div onclick="copyPostContent(\`${post.content.replace(/`/g, '\\`').replace(/\n/g, '\\n')}\`)" 
+                 style="padding:10px 15px; cursor:pointer; color:#444; font-size:0.8rem; border-bottom:1px solid #fff3f5;">
+                <i class="fas fa-copy"></i> Sao chép văn bản
+            </div>
+        `;
+
+        if (isMyPost) {
+            menuItemsHtml += `
+                <div onclick="editPost('${post.id}', \`${post.content.replace(/`/g, '\\`').replace(/\n/g, '\\n')}\`)" style="padding:10px 15px; cursor:pointer; color:#444; font-size:0.8rem; border-bottom:1px solid #fff3f5;"><i class="fas fa-edit"></i> Chỉnh sửa nội dung</div>
+                <div onclick="changePostPrivacy('${post.id}')" style="padding:10px 15px; cursor:pointer; color:#444; font-size:0.8rem; border-bottom:1px solid #fff3f5;"><i class="fas fa-lock"></i> Chỉnh sửa quyền riêng tư</div>
+                <div onclick="toggleCommentSettings('${post.id}', ${post.allowComments !== false})" style="padding:10px 15px; cursor:pointer; color:#444; font-size:0.8rem; border-bottom:1px solid #fff3f5;">
+                    <i class="fas ${post.allowComments !== false ? 'fa-comment-slash' : 'fa-comment'}"></i> 
+                    ${post.allowComments !== false ? 'Tắt bình luận' : 'Mở bình luận'}
+                </div>
+                <div onclick="deletePost('${post.id}')" style="padding:10px 15px; cursor:pointer; color:#ff4d4d; font-size:0.8rem;"><i class="fas fa-trash-alt"></i> Xóa bài</div>
+            `;
+        }
 
         const html = `
             <div class="status-card post-item animate__animated animate__fadeIn" id="post-card-${post.id}">
@@ -23994,18 +24014,12 @@ async function listenToPosts() {
                             <i class="far fa-comment-alt"></i> ${totalComments}
                         </div>
 
-                        ${isMyPost ? `<div class="status-dropdown">
-                            <i class="fas fa-ellipsis-v" onclick="toggleStatusMenu(event, 'menu-post-${post.id}')" style="color:#ffb3c1; cursor:pointer; padding:5px;"></i>
-                            <div id="menu-post-${post.id}" class="status-menu-content" style="display:none; position:absolute; right:0; background:white; box-shadow:0 2px 10px rgba(0,0,0,0.1); border-radius:10px; z-index:100; min-width:140px;">
-                                <div onclick="editPost('${post.id}', \`${post.content.replace(/`/g, '\\`').replace(/\n/g, '\\n')}\`)" style="padding:10px 15px; cursor:pointer; color:#444; font-size:0.8rem; border-bottom:1px solid #fff3f5;"><i class="fas fa-edit"></i> Chỉnh sửa nội dung</div>
-                                <div onclick="changePostPrivacy('${post.id}')" style="padding:10px 15px; cursor:pointer; color:#444; font-size:0.8rem; border-bottom:1px solid #fff3f5;"><i class="fas fa-lock"></i> Chỉnh sửa quyền riêng tư</div>
-                                <div onclick="toggleCommentSettings('${post.id}', ${post.allowComments !== false})" style="padding:10px 15px; cursor:pointer; color:#444; font-size:0.8rem; border-bottom:1px solid #fff3f5;">
-                                    <i class="fas ${post.allowComments !== false ? 'fa-comment-slash' : 'fa-comment'}"></i> 
-                                    ${post.allowComments !== false ? 'Tắt bình luận' : 'Mở bình luận'}
-                                </div>
-                                <div onclick="deletePost('${post.id}')" style="padding:10px 15px; cursor:pointer; color:#ff4d4d; font-size:0.8rem;"><i class="fas fa-trash-alt"></i> Xóa bài</div>
+                        <div class="status-dropdown">
+                            <i class="fas fa-ellipsis-v" onclick="toggleStatusMenu(event, 'menu-post-${post.id}')" style="color:#ffb3c1; cursor:pointer; padding:5px 8px;"></i>
+                            <div id="menu-post-${post.id}" class="status-menu-content" style="display:none; position:absolute; right:0; background:white; box-shadow:0 2px 10px rgba(0,0,0,0.1); border-radius:10px; z-index:100; min-width:160px;">
+                                ${menuItemsHtml}
                             </div>
-                        </div>` : ''}
+                        </div>
                     </div>
                 </div>
                 <div class="post-content" style="padding: 10px 0; border-bottom: 1px solid #ffe4e8; word-break: break-word; line-height: 1.5;">
@@ -24975,6 +24989,23 @@ document.addEventListener('keydown', function (e) {
         }
     }
 });
+
+    function copyPostContent(text) {
+    if (!text) return;
+
+    // Sử dụng navigator.clipboard để sao chép
+    navigator.clipboard.writeText(text).then(() => {
+        // Thông báo cho cư dân biết đã thành công
+        if (typeof addNotification === 'function') {
+            addNotification("HỆ THỐNG", "Đã sao chép văn bản vào bộ nhớ tạm! ✨");
+        } else {
+            alert("Đã sao chép văn bản! ✨");
+        }
+    }).catch(err => {
+        console.error('Lỗi khi sao chép:', err);
+        alert("Có lỗi khi sao chép, Henry kiểm tra lại nhé!");
+    });
+}
 </script>
 </body>
 </html>
