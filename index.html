@@ -23825,15 +23825,23 @@ async function selectSavedAccount(stk, name) {
     };
 
     try {
-        await firebase.database().ref('posts').push(newPost);
-        statusInput.value = "";
+        // --- SỬA TẠI ĐÂY: Lấy reference của bài viết mới để có ID ---
+        const postRef = await firebase.database().ref('posts').push(newPost);
+        const newPostId = postRef.key;
 
+        statusInput.value = "";
         closeComposer();
+
+        // --- GỬI THÔNG BÁO TAG TRÊN BÀI VIẾT ---
+        if (typeof handleMentionNotifications === 'function') {
+            // Truyền text và postId, để commentId là null để hệ thống hiểu đây là tag bài viết
+            handleMentionNotifications(text, newPostId, null);
+        }
+
         // --- THÊM THÔNG BÁO VÀO CHUÔNG GAME TẠI ĐÂY ---
         if (typeof addNotification === 'function') {
             addNotification("HỆ THỐNG", "Bạn vừa đăng một trạng thái mới thành công! ✨");
         }
-        // Không cần gọi lại listenToPosts() ở đây vì hàm .on('value') ở dưới sẽ tự cập nhật khi có data mới
     } catch (e) {
         console.error("Lỗi đăng bài:", e);
         alert("Có lỗi xảy ra, thử lại sau nhé!");
@@ -24725,13 +24733,20 @@ async function handleMentionNotifications(text, postId, commentId, ancestors = [
 
                 // 3. Nếu tìm thấy UID, đẩy vào hàng chờ (Queue) để chuông rung
                 if (targetUid) {
+                    // --- PHẦN LOGIC TỰ ĐỘNG PHÂN LOẠI THÔNG BÁO ---
+                    const isPostTag = (commentId === null || commentId === undefined);
+                    const notifyTitle = isPostTag ? "💖 TAG BÀI VIẾT" : "💖 NHẮC ĐẾN";
+                    const notifyMsg = isPostTag 
+                        ? `${userData.profile.name} đã tag bạn trong một bài viết mới! ✨`
+                        : `${userData.profile.name} đã nhắc đến bạn trong một bình luận! ✨`;
+
                     const notificationData = {
-                        title: "💖 NHẮC ĐẾN",
+                        title: notifyTitle,
                         sender: userData.profile.name,
-                        message: `${userData.profile.name} đã nhắc đến bạn trong một bình luận! ✨`,
+                        message: notifyMsg,
                         timestamp: firebase.database.ServerValue.TIMESTAMP,
                         extraData: {
-                            type: 'mention', 
+                            type: isPostTag ? 'post_tag' : 'mention', 
                             postId: postId,
                             commentId: commentId, 
                             ancestors: ancestors, // Gửi kèm ancestors để Auto-Expand
@@ -24741,7 +24756,7 @@ async function handleMentionNotifications(text, postId, commentId, ancestors = [
 
                     // Đẩy vào node notifications_queue theo đúng Rules của Henry
                     await firebase.database().ref(`notifications_queue/${targetUid}`).push(notificationData);
-                    console.log(`🔔 Đã rung chuông thành công cho: ${targetName}`);
+                    console.log(`🔔 Đã rung chuông (${isPostTag ? 'Post' : 'Comment'}) cho: ${targetName}`);
                 }
             } catch (err) {
                 console.error("Lỗi khi gửi thông báo nhắc tên:", err);
@@ -24902,7 +24917,7 @@ loadAllUsernames();
     function formatPostContent(text, isNewPost = false) {
     if (!text) return "";
     
-    // Logic format cũ của Henry (giữ nguyên 100%)
+    // 1. Logic format cũ của Henry (giữ nguyên 100%)
     let formatted = text
         .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
         .replace(/\n/g, '<br>')
@@ -24915,7 +24930,19 @@ loadAllUsernames();
         return `<a href="${url}" target="_blank" style="color: #007bff; text-decoration: underline;">${url}</a>`;
     });
 
-    // --- LOGIC THU GỌN MỚI ---
+    // --- PHẦN THÊM MỚI: NHẬN DIỆN TAG CƯ DÂN TRÊN BÀI VIẾT ---
+    if (typeof globalUsernames !== 'undefined' && globalUsernames.length > 0) {
+        globalUsernames.forEach(username => {
+            const escapedName = username.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const regex = new RegExp(`@${escapedName}(?=\\s|[.,?!]|$)`, 'g');
+            formatted = formatted.replace(regex, (match) => {
+                return `<span style="color: #FF1493; font-weight: bold; cursor: pointer; text-decoration: underline;" onclick="searchFriendByName('${username}')">${match}</span>`;
+            });
+        });
+    }
+    // -------------------------------------------------------
+
+    // --- LOGIC THU GỌN MỚI (Giữ nguyên 100% của Henry) ---
     const threshold = 300;
     const shouldCollapse = text.length > threshold || (text.match(/\n/g) || []).length > 4;
 
