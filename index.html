@@ -7808,12 +7808,23 @@ input[type="date"].sweetie-input-style {
             
             <div class="status-card composer">
                 <textarea id="status-text" placeholder="Bạn đang nghĩ gì thế?"></textarea>
+                
+                <div id="media-preview-container" style="display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap;"></div>
+
                 <div class="composer-footer">
-                    <select id="status-privacy" class="status-select">
-                        <option value="public">🌎 Công khai</option>
-                        <option value="friends">👥 Bạn bè</option>
-                        <option value="private">🔒 Riêng tư</option>
-                    </select>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <input type="file" id="post-media-input" accept="image/*,video/*" style="display: none;" onchange="previewMedia(this)">
+                        <button type="button" onclick="document.getElementById('post-media-input').click()" class="status-select" style="cursor: pointer; padding: 0 10px; border: 1px dashed #ff8fab;">
+                            <i class="fas fa-camera"></i> Media
+                        </button>
+
+                        <select id="status-privacy" class="status-select">
+                            <option value="public">🌎 Công khai</option>
+                            <option value="friends">👥 Bạn bè</option>
+                            <option value="private">🔒 Riêng tư</option>
+                        </select>
+                    </div>
+                    
                     <button onclick="handlePostStatus()" class="btn-send-status">
                         <i class="fas fa-paper-plane"></i> Đăng
                     </button>
@@ -7823,25 +7834,23 @@ input[type="date"].sweetie-input-style {
     </div>
 
     <div class="status-fixed-header">
-    <div class="status-container">
-        <div style="display: flex; justify-content: space-between; align-items: center; background: #fff0f3; padding: 8px 12px; border-radius: 15px; border: 1px solid #ffe4e8; margin-bottom: 10px;">
-            
-            <div style="font-size: 0.85rem; color: #ff8fab; font-weight: bold; white-space: nowrap;">
-                <i class="fas fa-bullhorn"></i> Bản tin cư dân ✨
+        <div class="status-container">
+            <div style="display: flex; justify-content: space-between; align-items: center; background: #fff0f3; padding: 8px 12px; border-radius: 15px; border: 1px solid #ffe4e8; margin-bottom: 10px;">
+                <div style="font-size: 0.85rem; color: #ff8fab; font-weight: bold; white-space: nowrap;">
+                    <i class="fas fa-bullhorn"></i> Bản tin cư dân ✨
+                </div>
+                
+                <div style="display: flex; align-items: center; gap: 4px; background: white; padding: 2px 6px 2px 10px; border-radius: 12px; border: 1px solid #ffcad4; box-shadow: 0 2px 5px rgba(255,143,171,0.1);">
+                    <i class="fas fa-filter" style="font-size: 0.65rem; color: #ff8fab;"></i>
+                    <select id="feed-filter" onchange="changeFeedFilter()" style="border: none; background: transparent; font-size: 0.75rem; color: #d81b60; font-weight: bold; outline: none; cursor: pointer; padding-right: 4px;">
+                        <option value="newest">Mới nhất</option>
+                        <option value="trending">Hot nhất</option>
+                        <option value="oldest">Cũ nhất</option>
+                    </select>
+                </div>
             </div>
-            
-            <div style="display: flex; align-items: center; gap: 4px; background: white; padding: 2px 6px 2px 10px; border-radius: 12px; border: 1px solid #ffcad4; box-shadow: 0 2px 5px rgba(255,143,171,0.1);">
-                <i class="fas fa-filter" style="font-size: 0.65rem; color: #ff8fab;"></i>
-                <select id="feed-filter" onchange="changeFeedFilter()" style="border: none; background: transparent; font-size: 0.75rem; color: #d81b60; font-weight: bold; outline: none; cursor: pointer; padding-right: 4px;">
-                    <option value="newest">Mới nhất</option>
-                    <option value="trending">Hot nhất</option>
-                    <option value="oldest">Cũ nhất</option>
-                </select>
-            </div>
-            
         </div>
     </div>
-</div>
 
     <div class="status-scrollable-content">
         <div class="status-container" id="status-list"></div>
@@ -23792,7 +23801,8 @@ async function selectSavedAccount(stk, name) {
         return;
     }
 
-    if (!text) {
+    // Cho phép đăng nếu có text HOẶC có file media được chọn
+    if (!text && !selectedMediaFile) {
         alert("Nội dung không được để trống nè! ✨");
         return;
     }
@@ -23803,7 +23813,7 @@ async function selectSavedAccount(stk, name) {
         if (banSnap.exists() && banSnap.val() > Date.now()) {
             const timeLeft = new Date(banSnap.val()).toLocaleString('vi-VN');
             alert(`Tài khoản của bạn đang bị cấm đăng bài đến: ${timeLeft} do vi phạm tiêu chuẩn cộng đồng. 🔒`);
-            return; // Dừng hàm, không cho đăng
+            return;
         }
     } catch (err) {
         console.error("Lỗi kiểm tra lệnh cấm:", err);
@@ -23813,28 +23823,56 @@ async function selectSavedAccount(stk, name) {
     // Khóa nút ngay lập tức
     postBtn.disabled = true;
     const originalText = postBtn.innerText;
-    postBtn.innerText = "Đang đăng...";
-
-    const newPost = {
-        uid: userData.profile.uid,
-        username: userData.profile.name || "Cư dân Sweetie",
-        content: text,
-        privacy: privacy,
-        allowComments: true, // THÊM DÒNG NÀY
-        timestamp: firebase.database.ServerValue.TIMESTAMP
-    };
+    postBtn.innerText = "Đang tải lên...";
 
     try {
+        let mediaUrl = "";
+        let mediaType = "";
+
+        // --- BƯỚC MỚI: TẢI LÊN CLOUDINARY NẾU CÓ FILE ---
+        if (selectedMediaFile) {
+            const formData = new FormData();
+            formData.append("file", selectedMediaFile);
+            formData.append("upload_preset", "SWEETIE GAME WORLD"); // THAY BẰNG PRESET CỦA ÔNG
+
+            const resourceType = selectedMediaFile.type.startsWith('video') ? "video" : "image";
+            
+            const response = await fetch(`https://api.cloudinary.com/v1_1/dl4wnxsm3/${resourceType}/upload`, {
+                method: "POST",
+                body: formData
+            });
+
+            if (!response.ok) throw new Error("Tải media lên Cloudinary thất bại!");
+            
+            const data = await response.json();
+            mediaUrl = data.secure_url; // Link ảnh/video trả về
+            mediaType = resourceType;   // Để phân biệt image/video khi render
+        }
+
+        const newPost = {
+            uid: userData.profile.uid,
+            username: userData.profile.name || "Cư dân Sweetie",
+            content: text,
+            privacy: privacy,
+            mediaUrl: mediaUrl,   // Lưu link media
+            mediaType: mediaType, // Lưu loại media
+            allowComments: true,
+            timestamp: firebase.database.ServerValue.TIMESTAMP
+        };
+
         // --- SỬA TẠI ĐÂY: Lấy reference của bài viết mới để có ID ---
         const postRef = await firebase.database().ref('posts').push(newPost);
         const newPostId = postRef.key;
 
         statusInput.value = "";
+        
+        // Reset file media sau khi đăng xong (Hàm này ông viết ở phần xử lý giao diện nhé)
+        if (typeof clearSelectedMedia === 'function') clearSelectedMedia();
+
         closeComposer();
 
         // --- GỬI THÔNG BÁO TAG TRÊN BÀI VIẾT ---
         if (typeof handleMentionNotifications === 'function') {
-            // Truyền text và postId, để commentId là null để hệ thống hiểu đây là tag bài viết
             handleMentionNotifications(text, newPostId, null);
         }
 
@@ -23850,6 +23888,35 @@ async function selectSavedAccount(stk, name) {
         postBtn.disabled = false;
         postBtn.innerText = originalText;
     }
+}
+
+    // Biến tạm để lưu file đang chờ đăng
+let selectedMediaFile = null;
+
+function previewMedia(input) {
+    const container = document.getElementById('media-preview-container');
+    container.innerHTML = "";
+    if (input.files && input.files[0]) {
+        selectedMediaFile = input.files[0];
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const isVideo = selectedMediaFile.type.startsWith('video');
+            const element = isVideo ? `<video src="${e.target.result}" style="width:100px; height:100px; border-radius:10px; object-fit:cover;"></video>` 
+                                     : `<img src="${e.target.result}" style="width:100px; height:100px; border-radius:10px; object-fit:cover;">`;
+            container.innerHTML = `
+                <div style="position:relative;">
+                    ${element}
+                    <i class="fas fa-times-circle" onclick="clearSelectedMedia()" style="position:absolute; top:-5px; right:-5px; color:red; cursor:pointer; background:white; border-radius:50%;"></i>
+                </div>`;
+        };
+        reader.readAsDataURL(selectedMediaFile);
+    }
+}
+
+function clearSelectedMedia() {
+    selectedMediaFile = null;
+    document.getElementById('media-preview-container').innerHTML = "";
+    document.getElementById('post-media-input').value = "";
 }
     
 let expandedComments = []; // Lưu danh sách các commentId đã bấm "Xem thêm"
@@ -23996,16 +24063,25 @@ async function listenToPosts() {
             ? `<img src="${currentAuthorAvatar}" class="author-avatar" style="width:45px; height:45px; border-radius:50%; object-fit:cover;">` 
             : `<div class="author-avatar" style="width:45px; height:45px; border-radius:50%; background:#ffe4e8; display:flex; align-items:center; justify-content:center; color:#ff8fab; font-size:1.2rem;"><i class="fas ${authorData.gender === 'Nam' ? 'fa-user-tie' : 'fa-user-graduate'}"></i></div>`;
 
-        // CHUẨN BỊ NỘI DUNG MENU (Tách biệt logic chủ bài viết và khách)
+        // --- PHẦN THÊM MỚI: HIỂN THỊ ẢNH/VIDEO ---
+        const mediaHtml = post.mediaUrl ? `
+            <div class="post-media" style="margin-top:10px; border-radius:12px; overflow:hidden; background:#f0f0f0; border: 1px solid #ffe4e8;">
+                ${post.mediaType === 'video' 
+                    ? `<video src="${post.mediaUrl}" controls style="width:100%; max-height:400px; display:block; outline:none;"></video>` 
+                    : `<img src="${post.mediaUrl}" onclick="window.open('${post.mediaUrl}', '_blank')" style="width:100%; max-height:500px; object-fit:contain; display:block; cursor:zoom-in;">`
+                }
+            </div>` : "";
+
+        // CHUẨN BỊ NỘI DUNG MENU (Giữ nguyên của Henry)
         let menuItemsHtml = `
             <div onclick="copyPostContent(\`${post.content.replace(/`/g, '\\`').replace(/\n/g, '\\n')}\`)" 
                  style="padding:10px 15px; cursor:pointer; color:#444; font-size:0.8rem; border-bottom:1px solid #fff3f5;">
                 <i class="fas fa-copy"></i> Sao chép văn bản
             </div>
             <div onclick="copyPostLink('${post.id}')" 
-         style="padding:10px 15px; cursor:pointer; color:#ff8fab; font-size:0.8rem; border-bottom:1px solid #fff3f5;">
-        <i class="fas fa-link"></i> Sao chép liên kết bài viết
-    </div>
+                 style="padding:10px 15px; cursor:pointer; color:#ff8fab; font-size:0.8rem; border-bottom:1px solid #fff3f5;">
+                <i class="fas fa-link"></i> Sao chép liên kết bài viết
+            </div>
         `;
 
         if (isMyPost) {
@@ -24019,7 +24095,6 @@ async function listenToPosts() {
                 <div onclick="deletePost('${post.id}')" style="padding:10px 15px; cursor:pointer; color:#ff4d4d; font-size:0.8rem;"><i class="fas fa-trash-alt"></i> Xóa bài</div>
             `;
         } else {
-            // NÚT TỐ CÁO: Chỉ dành cho bài viết của người khác
             menuItemsHtml += `
                 <div onclick="reportContent('post', '${post.id}', '${post.uid}')" 
                      style="padding:10px 15px; cursor:pointer; color:#ff4d4d; font-size:0.8rem;">
@@ -24063,6 +24138,9 @@ async function listenToPosts() {
                 <div class="post-content" style="padding: 10px 0; border-bottom: 1px solid #ffe4e8; word-break: break-word; line-height: 1.5;">
                     ${formatPostContent(post.content, post.timestamp > (Date.now() - 5000))}
                 </div>
+                
+                ${mediaHtml}
+
                 <div class="post-actions" style="display: flex; gap: 15px; padding: 8px 0;">
                     <button class="action-btn" onclick="toggleReaction('${post.id}')" style="background:none; border:none; color:${hasLiked ? '#ff1493' : '#ff8fab'}; cursor:pointer; font-weight:${hasLiked ? 'bold' : 'normal'};">
                         <i class="${hasLiked ? 'fas' : 'far'} fa-heart"></i> ${reactionCount} Tim
