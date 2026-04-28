@@ -24008,35 +24008,41 @@ let selectedMediaFiles = [];
 
 function previewMedia(input) {
     const container = document.getElementById('media-preview-container');
-    // Xóa trắng container mỗi lần chọn mới hoặc ông có thể giữ lại tùy ý
-    container.innerHTML = ""; 
     
     if (input.files && input.files.length > 0) {
-        // Chuyển FileList thành Array để dễ xử lý
-        selectedMediaFiles = Array.from(input.files);
+        // CỘNG DỒN: Lấy ảnh cũ cộng thêm ảnh mới chọn
+        const newFiles = Array.from(input.files);
+        selectedMediaFiles = selectedMediaFiles.concat(newFiles);
 
-        selectedMediaFiles.forEach((file, index) => {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const isVideo = file.type.startsWith('video');
-                const element = isVideo 
-                    ? `<video src="${e.target.result}" style="width:100px; height:100px; border-radius:10px; object-fit:cover;"></video>` 
-                    : `<img src="${e.target.result}" style="width:100px; height:100px; border-radius:10px; object-fit:cover;">`;
-                
-                // Tạo từng item preview với nút xóa riêng lẻ
-                const previewItem = `
-                    <div style="position:relative; display:inline-block; margin-right:5px;">
-                        ${element}
-                        <i class="fas fa-times-circle" onclick="removeSingleMedia(${index})" style="position:absolute; top:-5px; right:-5px; color:red; cursor:pointer; background:white; border-radius:50%;"></i>
-                    </div>`;
-                
-                container.insertAdjacentHTML('beforeend', previewItem);
-            };
-            reader.readAsDataURL(file);
-        });
+        // Vẽ lại toàn bộ preview
+        renderAllPreviews();
     }
 }
 
+// Tách riêng hàm vẽ để mỗi khi xóa hay thêm đều đồng bộ index
+function renderAllPreviews() {
+    const container = document.getElementById('media-preview-container');
+    container.innerHTML = ""; 
+
+    selectedMediaFiles.forEach((file, index) => {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const isVideo = file.type.startsWith('video');
+            const element = isVideo 
+                ? `<video src="${e.target.result}" style="width:100px; height:100px; border-radius:10px; object-fit:cover;"></video>` 
+                : `<img src="${e.target.result}" style="width:100px; height:100px; border-radius:10px; object-fit:cover;">`;
+            
+            const previewItem = `
+                <div style="position:relative; display:inline-block; margin-right:5px; margin-bottom:5px;">
+                    ${element}
+                    <i class="fas fa-times-circle" onclick="removeSingleMedia(${index})" style="position:absolute; top:-5px; right:-5px; color:red; cursor:pointer; background:white; border-radius:50%; font-size:1.2rem;"></i>
+                </div>`;
+            
+            container.insertAdjacentHTML('beforeend', previewItem);
+        };
+        reader.readAsDataURL(file);
+    });
+}
     // Hàm 1: Xóa sạch toàn bộ (Dùng khi đóng modal hoặc sau khi đăng xong)
 function clearSelectedMedia() {
     selectedMediaFiles = [];
@@ -24046,18 +24052,14 @@ function clearSelectedMedia() {
 
 // Hàm 2: Xóa riêng lẻ từng tấm (Được gọi khi nhấn dấu X đỏ trên từng ảnh)
 function removeSingleMedia(index) {
-    // Xóa file trong mảng dữ liệu
+    // Xóa đúng vị trí trong mảng
     selectedMediaFiles.splice(index, 1);
     
-    // Cập nhật lại giao diện preview bằng cách gọi lại hàm vẽ từ mảng hiện tại
-    const container = document.getElementById('media-preview-container');
-    container.innerHTML = "";
-    
-    // Nếu vẫn còn file thì vẽ lại danh sách mới để cập nhật lại index cho các nút xóa
-    if (selectedMediaFiles.length > 0) {
-        const dummyInput = { files: selectedMediaFiles };
-        previewMedia(dummyInput);
-    } else {
+    // Vẽ lại giao diện
+    renderAllPreviews();
+
+    // Nếu xóa hết ảnh thì reset luôn input file
+    if (selectedMediaFiles.length === 0) {
         document.getElementById('post-media-input').value = "";
     }
 }
