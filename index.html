@@ -7215,6 +7215,18 @@ input[type="date"].sweetie-input-style {
 .post-content-inner:not(.post-content-collapsed) {
     max-height: 2000px; /* Một con số đủ lớn để chứa bài viết dài khi mở ra */
 }
+
+    /* Hiệu ứng rung nhẹ khi bài viết được điều hướng tới */
+@keyframes highlightPost {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+    100% { transform: scale(1); }
+}
+
+.post-highlight-active {
+    animation: highlightPost 0.5s ease-in-out 3;
+    border: 2px solid #ff8fab !important;
+}
 </style>
 </head>
 <body>
@@ -12845,13 +12857,9 @@ function switchTab(tabId) {
 
         // --- SỬA TẠI ĐÂY: Fix lỗi căn giữa trên điện thoại ---
         if (tabId === 'tab-global') {
-            // Ép hiển thị flex cho overlay để kích hoạt justify-content: center
             activePanel.style.setProperty('display', 'flex', 'important'); 
-            
-            // Đảm bảo body không bị cuộn làm lệch vị trí popup trên mobile
             document.body.style.overflow = 'hidden'; 
 
-            // Kích hoạt Chat Thế Giới
             if (typeof initGlobalChat === 'function') {
                 initGlobalChat();
                 console.log("Hệ thống: Đã mở Kênh chat thế giới (Căn giữa Mobile/PC).");
@@ -12859,24 +12867,25 @@ function switchTab(tabId) {
         } 
         // --- THÊM RIÊNG CHO TAB BẢN TIN (SỬA ĐỂ CUỘN ĐƯỢC) ---
         else if (tabId === 'tab-status') {
-            // Quan trọng: Phải dùng flex để vùng scrollable-content bên trong hoạt động
             activePanel.style.setProperty('display', 'flex', 'important'); 
             activePanel.style.flexDirection = 'column';
-            
-            // Khóa cuộn trang chính để cuộn mượt bên trong Tab
             document.body.style.overflow = 'hidden'; 
             
-            // Kích hoạt hàm lắng nghe bài đăng từ Firebase
+            // --- CẬP NHẬT LOGIC: Tải xong bài mới kiểm tra Direct Link ---
             if (typeof listenToPosts === 'function') {
-                listenToPosts();
-                console.log("Hệ thống: Đã tải Bản tin Sweetie.");
+                // Đợi listenToPosts (async) hoàn thành xong mới chạy handleDirectLink
+                listenToPosts().then(() => {
+                    if (typeof handleDirectLink === 'function') {
+                        handleDirectLink();
+                    }
+                });
+                console.log("Hệ thống: Đã tải Bản tin Sweetie và chuẩn bị điều hướng ID.");
             }
         }
         // ---------------------------------
         else {
-            // Các tab thông thường
             activePanel.style.setProperty('display', 'block', 'important');
-            document.body.style.overflow = 'auto'; // Trả lại khả năng cuộn trang
+            document.body.style.overflow = 'auto'; 
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
     }
@@ -12892,9 +12901,9 @@ function switchTab(tabId) {
     const postFab = document.getElementById('btn-open-composer');
     if (postFab) {
         if (tabId === 'tab-status') {
-            postFab.style.display = 'flex'; // Hiện nút khi ở tab bản tin
+            postFab.style.display = 'flex'; 
         } else {
-            postFab.style.display = 'none'; // Ẩn nút ở các tab khác
+            postFab.style.display = 'none'; 
         }
     }
 }
@@ -23895,24 +23904,17 @@ async function listenToPosts() {
 
     // --- LOGIC SẮP XẾP ĐA TẦNG (FIX TRIỆT ĐỂ LỖI XÁO TRỘN) ---
     initialPosts.sort((a, b) => {
-        // Luôn ép kiểu Number cho timestamp và reactionCount để so sánh chính xác
         const timeA = Number(a.timestamp || 0);
         const timeB = Number(b.timestamp || 0);
         const reactA = Number(a.reactionCount || 0);
         const reactB = Number(b.reactionCount || 0);
 
         if (currentFilter === 'trending') {
-            // Ưu tiên 1: Tim cao nhất đứng đầu
-            if (reactB !== reactA) {
-                return reactB - reactA;
-            }
-            // Ưu tiên 2: Cùng tim thì bài mới nhất đứng đầu
+            if (reactB !== reactA) return reactB - reactA;
             return timeB - timeA;
         } else if (currentFilter === 'oldest') {
-            // Cũ nhất đứng đầu (Thời gian tăng dần)
             return timeA - timeB;
         } else {
-            // Mặc định: Mới nhất đứng đầu (Thời gian giảm dần)
             return timeB - timeA;
         }
     });
@@ -23925,7 +23927,6 @@ async function listenToPosts() {
     initialLoadDone = true;
 
     // 3. CÁC LISTENER REALTIME (Giữ nguyên 100% logic của Henry)
-    // Tắt listener cũ trước khi gắn mới để tránh trùng lặp khi load lại trang
     postsRef.orderByChild('timestamp').limitToLast(1).off('child_added');
     postsRef.orderByChild('timestamp').limitToLast(1).on('child_added', async (snap) => {
         if (!initialLoadDone) return; 
@@ -23960,6 +23961,10 @@ async function listenToPosts() {
         if (card) card.remove();
     });
 
+    // --- PHẦN THÊM ĐỂ HỖ TRỢ HANDLE DIRECT LINK ---
+    isListingPosts = false; // Mở khóa để có thể gọi lại hàm nếu cần
+    return true; // Báo hiệu đã render xong toàn bộ danh sách ban đầu
+
     // Hàm renderSinglePost (Giữ nguyên thiết kế và logic của bạn)
    async function renderSinglePost(post, position, targetContainer = postsContainer) {
     let showThisPost = false;
@@ -23989,6 +23994,10 @@ async function listenToPosts() {
                  style="padding:10px 15px; cursor:pointer; color:#444; font-size:0.8rem; border-bottom:1px solid #fff3f5;">
                 <i class="fas fa-copy"></i> Sao chép văn bản
             </div>
+            <div onclick="copyPostLink('${post.id}')" 
+         style="padding:10px 15px; cursor:pointer; color:#ff8fab; font-size:0.8rem; border-bottom:1px solid #fff3f5;">
+        <i class="fas fa-link"></i> Sao chép liên kết bài viết
+    </div>
         `;
 
         if (isMyPost) {
@@ -25102,6 +25111,62 @@ document.addEventListener('keydown', function (e) {
         }
     }
 }
+
+    function copyPostLink(postId) {
+    // Lấy URL hiện tại (xóa các tham số cũ nếu có)
+    const baseUrl = window.location.origin + window.location.pathname;
+    
+    // Tạo link đẹp: ID bài viết + đuôi định danh của app
+    const beautifulLink = `${baseUrl}?postID=${postId}_Sweetie_Game_World`;
+
+    navigator.clipboard.writeText(beautifulLink).then(() => {
+        if (typeof addNotification === 'function') {
+            addNotification("HỆ THỐNG", "Đã sao chép liên kết bài viết đẹp! ✨");
+        } else {
+            alert("Đã sao chép link bài viết! 💖");
+        }
+    }).catch(err => {
+        console.error('Lỗi sao chép link:', err);
+    });
+}
+
+    async function handleDirectLink() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const rawPostId = urlParams.get('postID');
+
+    if (rawPostId && rawPostId.includes('_Sweetie_Game_World')) {
+        // Tách lấy ID thật của Firebase
+        const actualPostId = rawPostId.split('_Sweetie_Game_World')[0];
+
+        // 1. Chờ bản tin tải xong (Henry nên gọi listenToPosts trước đó)
+        // Ta dùng một vòng lặp nhỏ để chờ phần tử xuất hiện trong DOM
+        let checkExist = setInterval(function() {
+            const targetPost = document.getElementById(`post-card-${actualPostId}`);
+            
+            if (targetPost) {
+                clearInterval(checkExist);
+                
+                // 2. Tự động cuộn xuống bài viết
+                targetPost.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                
+                // 3. Hiệu ứng làm nổi bật bài viết (Henry thêm CSS này vào nhé)
+                targetPost.style.border = "2px solid #ff8fab";
+                targetPost.style.boxShadow = "0 0 20px rgba(255, 143, 171, 0.5)";
+                
+                setTimeout(() => {
+                    targetPost.style.border = "none";
+                    targetPost.style.boxShadow = "none";
+                }, 3000);
+            }
+        }, 500); // Kiểm tra mỗi 0.5 giây
+
+        // Dừng chờ sau 10 giây nếu không thấy bài (tránh tốn tài nguyên)
+        setTimeout(() => clearInterval(checkExist), 10000);
+    }
+}
+
+// Gọi hàm này sau khi gọi listenToPosts() trong logic khởi chạy của ông
+// Ví dụ: listenToPosts().then(() => handleDirectLink());
 </script>
 </body>
 </html>
