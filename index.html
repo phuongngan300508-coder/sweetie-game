@@ -23788,6 +23788,19 @@ async function selectSavedAccount(stk, name) {
         return;
     }
 
+    // --- KIỂM TRA LỆNH CẤM ĐĂNG BÀI ---
+    try {
+        const banSnap = await firebase.database().ref(`bans/${userData.profile.uid}/banPostUntil`).once('value');
+        if (banSnap.exists() && banSnap.val() > Date.now()) {
+            const timeLeft = new Date(banSnap.val()).toLocaleString('vi-VN');
+            alert(`Tài khoản của bạn đang bị cấm đăng bài đến: ${timeLeft} do vi phạm tiêu chuẩn cộng đồng. 🔒`);
+            return; // Dừng hàm, không cho đăng
+        }
+    } catch (err) {
+        console.error("Lỗi kiểm tra lệnh cấm:", err);
+    }
+    // ----------------------------------
+
     // Khóa nút ngay lập tức
     postBtn.disabled = true;
     const originalText = postBtn.innerText;
@@ -23821,7 +23834,7 @@ async function selectSavedAccount(stk, name) {
         postBtn.innerText = originalText;
     }
 }
-
+    
 let expandedComments = []; // Lưu danh sách các commentId đã bấm "Xem thêm"
 // 1. Hàm Đăng Bài (Đã cập nhật cơ chế giới hạn thụt lề đa cấp)
 let isListingPosts = false; 
@@ -23987,6 +24000,14 @@ async function listenToPosts() {
                     ${post.allowComments !== false ? 'Tắt bình luận' : 'Mở bình luận'}
                 </div>
                 <div onclick="deletePost('${post.id}')" style="padding:10px 15px; cursor:pointer; color:#ff4d4d; font-size:0.8rem;"><i class="fas fa-trash-alt"></i> Xóa bài</div>
+            `;
+        } else {
+            // NÚT TỐ CÁO: Chỉ dành cho bài viết của người khác
+            menuItemsHtml += `
+                <div onclick="reportContent('post', '${post.id}', '${post.uid}')" 
+                     style="padding:10px 15px; cursor:pointer; color:#ff4d4d; font-size:0.8rem;">
+                    <i class="fas fa-flag"></i> Tố cáo bài viết
+                </div>
             `;
         }
 
@@ -24299,6 +24320,19 @@ async function submitReply(postId, commentId) {
     const text = replyInput.value.trim();
     if (!text) return;
 
+    // --- KIỂM TRA LỆNH CẤM BÌNH LUẬN (Dành cho phản hồi) ---
+    try {
+        const banSnap = await firebase.database().ref(`bans/${userData.profile.uid}/banCommentUntil`).once('value');
+        if (banSnap.exists() && banSnap.val() > Date.now()) {
+            const timeLeft = new Date(banSnap.val()).toLocaleString('vi-VN');
+            alert(`Bạn đang bị cấm bình luận và phản hồi đến: ${timeLeft} do vi phạm tiêu chuẩn cộng đồng. 🔒`);
+            return; // Dừng hàm ngay lập tức
+        }
+    } catch (err) {
+        console.error("Lỗi kiểm tra lệnh cấm phản hồi:", err);
+    }
+    // -----------------------------------------------------
+
     // --- PHẦN THÊM MỚI: TRUY VẾT CÁC CẤP CHA ---
     const ancestors = [];
     let currentElement = document.getElementById(`comm-wrap-${commentId}`);
@@ -24539,47 +24573,56 @@ function submitComment(postId) {
         return;
     }
 
-    // --- THÊM BƯỚC KIỂM TRA QUYỀN BÌNH LUẬN ---
-    firebase.database().ref(`posts/${postId}/allowComments`).once('value', (snap) => {
-        if (snap.exists() && snap.val() === false) {
-            alert("Bài viết này đã tắt tính năng bình luận rồi nha! 💖");
-            return;
+    // --- KIỂM TRA LỆNH CẤM BÌNH LUẬN ---
+    firebase.database().ref(`bans/${userData.profile.uid}/banCommentUntil`).once('value', (banSnap) => {
+        if (banSnap.exists() && banSnap.val() > Date.now()) {
+            const timeLeft = new Date(banSnap.val()).toLocaleString('vi-VN');
+            alert(`Bạn đang bị cấm bình luận đến: ${timeLeft} do vi phạm tiêu chuẩn cộng đồng. 🔒`);
+            return; // Dừng việc gửi bình luận
         }
 
-        // Nếu quyền bình luận đang mở, tiến hành gửi dữ liệu
-        const commentData = {
-            uid: userData.profile.uid, // Phải có cái này để khớp với Rules
-            username: userData.profile.name || "Cư dân",
-            text: text,
-            timestamp: firebase.database.ServerValue.TIMESTAMP
-        };
-
-        // Gửi lên Firebase
-        firebase.database().ref(`posts/${postId}/comments`).push(commentData)
-        .then((snap) => { 
-            const newCommentId = snap.key; 
-            handleMentionNotifications(text, postId, newCommentId); 
-            
-            input.value = "";
-            // Reset chiều cao textarea về 36px (hoặc auto) sau khi gửi để không bị trống một mảng to
-            input.style.height = '36px'; 
-
-            if (typeof addNotification === 'function') {
-                addNotification("HỆ THỐNG", "Bình luận của bạn đã được gửi thành công! ✨");
+        // --- THÊM BƯỚC KIỂM TRA QUYỀN BÌNH LUẬN CỦA BÀI VIẾT ---
+        firebase.database().ref(`posts/${postId}/allowComments`).once('value', (snap) => {
+            if (snap.exists() && snap.val() === false) {
+                alert("Bài viết này đã tắt tính năng bình luận rồi nha! 💖");
+                return;
             }
 
-            // CHỈ CUỘN XUỐNG KHI LÀ COMMENT GỐC
-            const commentList = document.getElementById(`comments-list-${postId}`);
-            if (commentList) {
-                commentList.scrollTo({
-                    top: commentList.scrollHeight,
-                    behavior: 'smooth'
-                });
-            }
-        })
-        .catch(err => {
-            console.error("Lỗi gửi bình luận:", err);
-            alert("Không có quyền bình luận, hãy kiểm tra lại Rules!");
+            // Nếu quyền bình luận đang mở và không bị cấm, tiến hành gửi dữ liệu
+            const commentData = {
+                uid: userData.profile.uid, // Phải có cái này để khớp với Rules
+                username: userData.profile.name || "Cư dân",
+                text: text,
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            };
+
+            // Gửi lên Firebase
+            firebase.database().ref(`posts/${postId}/comments`).push(commentData)
+            .then((snap) => { 
+                const newCommentId = snap.key; 
+                handleMentionNotifications(text, postId, newCommentId); 
+                
+                input.value = "";
+                // Reset chiều cao textarea về 36px (hoặc auto) sau khi gửi để không bị trống một mảng to
+                input.style.height = '36px'; 
+
+                if (typeof addNotification === 'function') {
+                    addNotification("HỆ THỐNG", "Bình luận của bạn đã được gửi thành công! ✨");
+                }
+
+                // CHỈ CUỘN XUỐNG KHI LÀ COMMENT GỐC
+                const commentList = document.getElementById(`comments-list-${postId}`);
+                if (commentList) {
+                    commentList.scrollTo({
+                        top: commentList.scrollHeight,
+                        behavior: 'smooth'
+                    });
+                }
+            })
+            .catch(err => {
+                console.error("Lỗi gửi bình luận:", err);
+                alert("Không có quyền bình luận, hãy kiểm tra lại Rules!");
+            });
         });
     });
 }
@@ -25005,6 +25048,59 @@ document.addEventListener('keydown', function (e) {
         console.error('Lỗi khi sao chép:', err);
         alert("Có lỗi khi sao chép, Henry kiểm tra lại nhé!");
     });
+}
+
+    async function reportContent(type, contentId, authorUid) {
+    if (!userData?.profile?.uid) return alert("Cư dân cần đăng nhập để tố cáo nhé! ✨");
+    const myUid = userData.profile.uid;
+    const today = new Date().toLocaleDateString('vi-VN'); // Tạo key theo ngày
+
+    if (confirm("Cư dân xác nhận nội dung này không phù hợp và muốn tố cáo? 🚩")) {
+        const reportRef = firebase.database().ref(`reports/${contentId}`);
+        const userReportRef = reportRef.child('voters').child(myUid);
+
+        try {
+            // 1. Kiểm tra giới hạn 1 lần/ngày cho mỗi nội dung
+            const lastReportDate = (await userReportRef.once('value')).val();
+            if (lastReportDate === today) {
+                return addNotification("HỆ THỐNG", "Hôm nay cư dân đã tố cáo nội dung này rồi nè! ✨");
+            }
+
+            // 2. Ghi nhận lượt tố cáo mới
+            await userReportRef.set(today);
+            
+            // 3. Kiểm tra tổng số lượt tố cáo
+            const snap = await reportRef.child('voters').once('value');
+            const totalReports = snap.numChildren();
+
+            if (totalReports >= 3) {
+                // HÌNH PHẠT: Đạt ngưỡng 3 lượt tố cáo
+                const now = Date.now();
+                const oneWeek = 7 * 24 * 60 * 60 * 1000;
+                const threeDays = 3 * 24 * 60 * 60 * 1000;
+
+                // A. Gỡ nội dung vĩnh viễn
+                const path = type === 'post' ? `posts/${contentId}` : `comments_path_here`; // Tùy cấu trúc comment của Henry
+                await firebase.database().ref(path).remove();
+
+                // B. Cấm tài khoản (Ban)
+                await firebase.database().ref(`bans/${authorUid}`).set({
+                    banPostUntil: now + oneWeek,
+                    banCommentUntil: now + threeDays,
+                    reason: "Bị cộng đồng tố cáo vi phạm tiêu chuẩn quá 3 lần.",
+                    timestamp: now
+                });
+
+                addNotification("HỆ THỐNG", "Nội dung vi phạm đã bị gỡ tự động theo phản hồi cộng đồng! 🛡️");
+                // Xóa luôn node report để dọn dẹp data
+                reportRef.remove();
+            } else {
+                addNotification("HỆ THỐNG", `Cảm ơn cư dân đã báo cáo. (${totalReports}/3) ✨`);
+            }
+        } catch (e) {
+            console.error("Lỗi tố cáo:", e);
+        }
+    }
 }
 </script>
 </body>
