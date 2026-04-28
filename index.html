@@ -7321,6 +7321,12 @@ input[type="date"].sweetie-input-style {
     box-shadow: 0 0 30px rgba(0,0,0,0.5);
     border-radius: 5px;
 }
+
+    #sw-lightbox-content {
+    touch-action: none; /* Ngăn trình duyệt tự cuộn trang khi đang vuốt ảnh */
+    user-select: none;  /* Không cho chọn văn bản khi đang thao tác ảnh */
+    -webkit-user-drag: none; /* Ngăn kéo ảnh kiểu mặc định của trình duyệt */
+}
 </style>
 </head>
 <body>
@@ -25588,6 +25594,42 @@ document.addEventListener('keydown', function(e) {
         }
     }
 });
+
+    let touchStartX = 0;
+let touchEndX = 0;
+
+function handleLightboxTouch() {
+    const lightboxContainer = document.getElementById('sw-lightbox');
+    if (!lightboxContainer) return;
+
+    // 1. Khi cư dân bắt đầu chạm ngón tay vào màn hình
+    lightboxContainer.addEventListener('touchstart', e => {
+        touchStartX = e.changedTouches[0].screenX;
+    }, { passive: true });
+
+    // 2. Khi cư dân nhấc ngón tay ra khỏi màn hình
+    lightboxContainer.addEventListener('touchend', e => {
+        touchEndX = e.changedTouches[0].screenX;
+        checkSwipeDirection();
+    }, { passive: true });
+}
+
+function checkSwipeDirection() {
+    const swipeThreshold = 50; // Quãng đường tối thiểu (pixel) để tính là một cú vuốt
+    
+    // Vuốt từ phải sang trái (Xem ảnh tiếp theo)
+    if (touchStartX - touchEndX > swipeThreshold) {
+        changeLightboxMedia(1);
+    }
+    
+    // Vuốt từ trái sang phải (Xem ảnh trước đó)
+    if (touchEndX - touchStartX > swipeThreshold) {
+        changeLightboxMedia(-1);
+    }
+}
+
+// Gọi hàm này ngay sau khi trang load xong
+document.addEventListener('DOMContentLoaded', handleLightboxTouch);
 </script>
 </body>
 </html>
