@@ -25164,9 +25164,32 @@ document.addEventListener('keydown', function (e) {
         setTimeout(() => clearInterval(checkExist), 10000);
     }
 }
+    
+    // Hàm kiểm tra và tự động điều hướng khi vào App bằng link bài viết
+function autoCheckDirectLinkOnLoad() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const rawPostId = urlParams.get('postID');
 
-// Gọi hàm này sau khi gọi listenToPosts() trong logic khởi chạy của ông
-// Ví dụ: listenToPosts().then(() => handleDirectLink());
+    // Nếu thấy có tham số postID của Sweetie Game World
+    if (rawPostId && rawPostId.includes('_Sweetie_Game_World')) {
+        console.log("Hệ thống: Phát hiện link bài viết, đang chuyển hướng cư dân... ✨");
+        
+        // 1. Tự động gọi hàm chuyển sang tab bản tin
+        // Lưu ý: tabId phải khớp với ID trong hàm switchTab của ông (thường là 'tab-status')
+        if (typeof switchTab === 'function') {
+            switchTab('tab-status'); 
+        }
+        
+        // Lưu ý: Trong switchTab của ông đã có đoạn gọi listenToPosts().then(handleDirectLink)
+        // nên chúng ta không cần gọi lại ở đây nữa, tránh bị load trùng dữ liệu.
+    }
+}
+
+// Chạy ngay khi trang web tải xong
+document.addEventListener('DOMContentLoaded', () => {
+    // Đợi 1 chút để các dữ liệu userData ổn định rồi mới check link
+    setTimeout(autoCheckDirectLinkOnLoad, 1000); 
+});
 </script>
 </body>
 </html>
