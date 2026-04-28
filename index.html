@@ -7808,14 +7808,14 @@ input[type="date"].sweetie-input-style {
             
             <div class="status-card composer">
                 <textarea id="status-text" placeholder="Bạn đang nghĩ gì thế?"></textarea>
-                
-                <div id="media-preview-container" style="display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap;"></div>
+
+                <div id="media-preview-container" style="display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap;"></div>
 
                 <div class="composer-footer">
                     <div style="display: flex; gap: 8px; align-items: center;">
                         <input type="file" id="post-media-input" accept="image/*,video/*" style="display: none;" onchange="previewMedia(this)">
                         <button type="button" onclick="document.getElementById('post-media-input').click()" class="status-select" style="cursor: pointer; padding: 0 10px; border: 1px dashed #ff8fab;">
-                            <i class="fas fa-camera"></i> Media
+                            <i class="fas fa-camera"></i> Ảnh/Video
                         </button>
 
                         <select id="status-privacy" class="status-select">
@@ -7824,7 +7824,7 @@ input[type="date"].sweetie-input-style {
                             <option value="private">🔒 Riêng tư</option>
                         </select>
                     </div>
-                    
+
                     <button onclick="handlePostStatus()" class="btn-send-status">
                         <i class="fas fa-paper-plane"></i> Đăng
                     </button>
@@ -7836,8 +7836,9 @@ input[type="date"].sweetie-input-style {
     <div class="status-fixed-header">
         <div class="status-container">
             <div style="display: flex; justify-content: space-between; align-items: center; background: #fff0f3; padding: 8px 12px; border-radius: 15px; border: 1px solid #ffe4e8; margin-bottom: 10px;">
+                
                 <div style="font-size: 0.85rem; color: #ff8fab; font-weight: bold; white-space: nowrap;">
-                    <i class="fas fa-bullhorn"></i> Bản tin cư dân ✨
+                    <i class="fas fabullhorn"></i> Bản tin cư dân ✨
                 </div>
                 
                 <div style="display: flex; align-items: center; gap: 4px; background: white; padding: 2px 6px 2px 10px; border-radius: 12px; border: 1px solid #ffcad4; box-shadow: 0 2px 5px rgba(255,143,171,0.1);">
@@ -7848,6 +7849,7 @@ input[type="date"].sweetie-input-style {
                         <option value="oldest">Cũ nhất</option>
                     </select>
                 </div>
+                
             </div>
         </div>
     </div>
