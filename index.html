@@ -26045,14 +26045,66 @@ async function uploadSticker() {
 
 // Bước 2: Gửi nhãn dán vào bình luận
 async function sendSticker(stickerUrl, postId) {
+    // --- LỚP BẢO VỆ: Kiểm tra đăng nhập trước khi gửi ---
+    if (!userData || !userData.profile || !userData.profile.uid) {
+        if (typeof addNotification === 'function') {
+            addNotification("HỆ THỐNG", "Cư dân cần đăng nhập để gửi nhãn dán nhé! ✨");
+        } else {
+            alert("Bạn cần đăng nhập để thực hiện tính năng này! 💖");
+        }
+        return;
+    }
+
+    // --- KIỂM TRA LỆNH CẤM BÌNH LUẬN (Đồng bộ với logic submitComment) ---
+    try {
+        const banSnap = await firebase.database().ref(`bans/${userData.profile.uid}/banCommentUntil`).once('value');
+        if (banSnap.exists() && banSnap.val() > Date.now()) {
+            const timeLeft = new Date(banSnap.val()).toLocaleString('vi-VN');
+            alert(`Bạn đang bị cấm gửi nhãn dán đến: ${timeLeft} do vi phạm tiêu chuẩn cộng đồng. 🔒`);
+            return;
+        }
+    } catch (err) {
+        console.error("Lỗi kiểm tra lệnh cấm:", err);
+    }
+
     const commentData = {
         uid: userData.profile.uid,
-        username: userData.profile.name,
+        username: userData.profile.name || "Cư dân",
         sticker: stickerUrl, // Gửi nhãn thay vì text
         timestamp: firebase.database.ServerValue.TIMESTAMP
     };
-    await firebase.database().ref(`posts/${postId}/comments`).push(commentData);
-    closeStickerModal();
+
+    try {
+        // Gửi dữ liệu lên Firebase
+        const snap = await firebase.database().ref(`posts/${postId}/comments`).push(commentData);
+        const newCommentId = snap.key;
+
+        // Tự động đóng modal kho nhãn dán
+        closeStickerModal();
+
+        // Xử lý thông báo tag/nhắc tên (nếu Henry muốn quét tag trong text ẩn, 
+        // nhưng sticker thường không có text nên ta truyền chuỗi rỗng)
+        if (typeof handleMentionNotifications === 'function') {
+            handleMentionNotifications("", postId, newCommentId);
+        }
+
+        if (typeof addNotification === 'function') {
+            addNotification("HỆ THỐNG", "Đã gửi nhãn dán của bạn! ✨");
+        }
+
+        // Tự động cuộn xuống cuối danh sách bình luận để cư dân thấy nhãn vừa gửi
+        const commentList = document.getElementById(`comments-list-${postId}`);
+        if (commentList) {
+            commentList.scrollTo({
+                top: commentList.scrollHeight,
+                behavior: 'smooth'
+            });
+        }
+
+    } catch (e) {
+        console.error("Lỗi gửi nhãn dán:", e);
+        alert("Có lỗi xảy ra khi gửi nhãn dán, Henry kiểm tra lại Rules nhé! 😿");
+    }
 }
 
     // Hàm để ẩn/hiện menu chọn Ảnh/Nhãn dán trong bình luận
