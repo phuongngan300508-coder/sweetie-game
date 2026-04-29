@@ -26139,9 +26139,7 @@ async function uploadSticker() {
     // Lấy nút bấm đang được click thông qua event
     const btn = event.target;
 
-    // Henry dùng lại logic upload Cloudinary như bài đăng nhé
-    // Thêm hiệu ứng thông báo đang tải cho chuyên nghiệp
-    const originalBtnText = "Up nhãn vĩnh viễn"; // Định nghĩa rõ tên nút gốc
+    const originalBtnText = "Up nhãn vĩnh viễn";
     btn.innerText = "Đang tải lên...";
     btn.disabled = true;
 
@@ -26156,17 +26154,27 @@ async function uploadSticker() {
         // Reset input file sau khi up xong
         fileInput.value = "";
 
+        // --- PHẦN THÊM MỚI: THÔNG BÁO VÀO CHUÔNG GAME ---
+        if (typeof addNotification === 'function') {
+            addNotification(
+                "HỆ THỐNG ✨", 
+                "Chúc mừng! Nhãn dán mới đã được thêm vào kho vĩnh viễn của bạn. 🎨",
+                false, // silent = false để phát tiếng ting
+                null,  // extraData
+                "linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)" // Màu hồng pastel cực xinh
+            );
+        }
+
         alert("Nhãn dán đã được đưa vào kho vĩnh viễn! ✨");
 
         // --- PHẦN QUAN TRỌNG: TỰ ĐỘNG CHUYỂN TAB VÀ LOAD KHO ---
-        loadStickerStore();      // Load lại kho để có nhãn mới
-        switchStickerTab('store'); // Tự động chuyển sang tab Kho nhãn
+        loadStickerStore();      
+        switchStickerTab('store'); 
 
     } catch (error) {
         console.error("Lỗi up nhãn:", error);
         alert("Có lỗi khi up nhãn rồi Henry ơi! 😿");
     } finally {
-        // Đảm bảo nút luôn quay về trạng thái cũ kể cả khi thành công hay lỗi
         btn.innerText = originalBtnText;
         btn.disabled = false;
     }
