@@ -14122,26 +14122,35 @@ async function requestNotificationPermission() {
 }
 
 // HÀM BỔ SUNG: Lấy Token từ Firebase và lưu vào Database
-function fetchAndSaveFCMToken() {
-    // Xóa chữ "const" ở đây nếu Henry đã khai báo messaging ở đầu file
-    const fcmMessaging = firebase.messaging(); 
-    
-    fcmMessaging.getToken({ 
-        vapidKey: 'BPFnrd9ax1LeRDNoYkAnCyOW1qxfNCXKBKGGrB383i-gJkV4ltLOqVBUG3EgXfmE_vLZdrNE_yBChJPR_sdlMEs' 
-    })
-    .then((currentToken) => {
-        if (currentToken && currentUser) { // Kiểm tra có currentUser chưa
-            firebase.database().ref('fcm_tokens/' + currentUser).set({
+async function fetchAndSaveFCMToken() {
+    // 1. Kiểm tra xem trình duyệt có hỗ trợ Service Worker không
+    if (!('serviceWorker' in navigator)) return;
+
+    try {
+        // 2. Đăng ký Service Worker thủ công (Sửa lỗi 404)
+        // Dấu './' đảm bảo nó tìm đúng file ngang hàng với index.html trên GitHub
+        const registration = await navigator.serviceWorker.register('./firebase-messaging-sw.js');
+        console.log("Hệ thống: Service Worker đã sẵn sàng!");
+
+        const fcmMessaging = firebase.messaging();
+        
+        // 3. Lấy Token bằng cách truyền registration vào
+        const currentToken = await fcmMessaging.getToken({ 
+            serviceWorkerRegistration: registration,
+            vapidKey: 'BPFnrd9ax1LeRDNoYkAnCyOW1qxfNCXKBKGGrB383i-gJkV4ltLOqVBUG3EgXfmE_vLZdrNE_yBChJPR_sdlMEs' 
+        });
+
+        if (currentToken && currentUser) {
+            await firebase.database().ref('fcm_tokens/' + currentUser).set({
                 token: currentToken,
                 lastUpdated: Date.now(),
                 deviceType: 'web'
             });
             console.log("Hệ thống: Đã lưu Token thành công!");
         }
-    })
-    .catch((err) => {
+    } catch (err) {
         console.error('Lỗi lấy Token:', err);
-    });
+    }
 }
 
 // Nội dung file sw.js
@@ -14155,34 +14164,32 @@ self.addEventListener('push', function(event) {
 });
 
 // 1. Chạy kiểm tra trạng thái game và hạn dùng mỗi 60 giây
-const autoUpdateInterval = setInterval(() => {
-    console.log("Hệ thống: Đang cập nhật trạng thái thời gian thực...");
+const autoUpdateInterval = setInterval(async () => {
+    if (!currentUser) return; // Nếu chưa đăng nhập thì không chạy tốn tài nguyên
+
+    console.log("Hệ thống: Đang quét trạng thái cư dân...");
     
-    // Cập nhật trạng thái đóng/mở cửa của các game theo giờ VN hiện tại
+    // Gom các hàm kiểm tra vào một chỗ
     checkMinigameStatus(); 
-    
-    // Cập nhật lại số lượt chơi và các nhãn (badge) trên card
     updateGameLimitsUI(); 
-    
-    // Kiểm tra xem có cần nhắc nhở điểm danh hay không (nếu sắp hết ngày)
     checkDailyCheckinReminder();
-    
-    // Kiểm tra các thông báo hệ thống mới (nếu có sự kiện vừa bắt đầu)
     checkSystemAlerts();
 
-    // --- THÊM: KIỂM TRA CHUỖI TRÁI TIM VÀ THÔNG BÁO RA MÁY ---
-    if (currentUser) {
-        // Tự động quét xem có sắp đứt chuỗi nuôi tim (48h) hay không
-        verifyStreak(); 
-        
-        // Tự động bắn thông báo ra máy nếu còn 3 tiếng nữa là hết ngày (nhắc nuôi tim)
-        if (typeof checkHeartStreakDeadline === "function") {
-            checkHeartStreakDeadline();
-        }
+    // Kiểm tra chuỗi tim
+    if (typeof verifyStreak === "function") verifyStreak(); 
+    
+    if (typeof checkHeartStreakDeadline === "function") {
+        checkHeartStreakDeadline();
+    }
+    
+    // Mẹo: Cứ mỗi 10 phút thì cập nhật lại Token 1 lần cho chắc
+    const now = new Date();
+    if (now.getMinutes() % 10 === 0) {
+        fetchAndSaveFCMToken();
     }
 
 }, 60000);
-
+    
 // 2. Xử lý khi người dùng ẩn/hiện tab (Optimization)
 // Khi người dùng quay lại Tab sau một thời gian dài, cập nhật ngay lập tức
 document.addEventListener("visibilitychange", () => {
