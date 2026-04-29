@@ -13805,7 +13805,7 @@ function handleNotiClick(index) {
 
     // 1. Lấy thông báo từ mảng dữ liệu của Henry
     const noti = userData.notifications[index];
-    if (!noti || !noti.extraData) return;
+    if (!notis || !noti.extraData) return;
 
     const type = noti.extraData.type;
     const friendName = noti.extraData.friendName || noti.extraData.sender; 
@@ -13861,24 +13861,24 @@ function handleNotiClick(index) {
             const ancestors = noti.extraData.ancestors || []; 
 
             if (postId) {
-                // Bước 1: Auto bung tất cả các nhánh liên quan nếu có lồng nhau
-                const allParents = [...ancestors, parentId].filter(id => id); 
-                
-                allParents.forEach(pId => {
-                    if (!expandedComments.includes(pId)) {
+                // Bước 1: Auto bung tất cả các nhánh liên quan (Gom cả tổ tiên và cha trực tiếp)
+                const idsToExpand = [...ancestors];
+                if (parentId) idsToExpand.push(parentId);
+
+                idsToExpand.forEach(pId => {
+                    if (pId && !expandedComments.includes(pId)) {
                         expandedComments.push(pId);
                         console.log("Hệ thống: Đã auto bung cấp:", pId);
                     }
                 });
 
-                // Bước 2: Chuyển sang tab Bản tin (Đảm bảo tabId là 'tab-status' như ông quy định)
+                // Bước 2: Chuyển sang tab Bản tin
                 if (typeof switchTab === 'function') {
                     switchTab('tab-status'); 
                 }
 
                 // Bước 3: Đợi render và thực hiện dịch chuyển (Scroll)
                 let retryCount = 0;
-                // Nếu có commentId thì tìm comm-item để highlight, không thì tìm post-card bài viết
                 const targetId = commentId ? `comm-item-${commentId}` : `post-card-${postId}`;
 
                 const attemptScroll = () => {
@@ -13888,30 +13888,35 @@ function handleNotiClick(index) {
                         // CHÚC MỪNG: Đã tìm thấy mục tiêu! Cuộn mượt mà đến trung tâm màn hình
                         targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
                         
-                        // Hiệu ứng làm nổi bật (Highlight) để chủ bài dễ nhận diện
-                        targetEl.style.transition = "0.5s";
+                        // Hiệu ứng làm nổi bật (Highlight) "Sweetie Style"
+                        targetEl.style.transition = "all 0.5s ease";
                         targetEl.style.boxShadow = "0 0 20px #ff8fab";
+                        targetEl.style.backgroundColor = "#fffaff"; // Thêm màu nền nhẹ để dễ nhận diện
                         targetEl.style.borderRadius = "12px";
 
                         setTimeout(() => {
-                            if (targetEl) targetEl.style.boxShadow = "none";
+                            if (targetEl) {
+                                targetEl.style.boxShadow = "none";
+                                targetEl.style.backgroundColor = ""; 
+                            }
                         }, 3000);
                     } else {
-                        // Nếu chưa thấy (có thể Firebase đang load chậm), thử lại tối đa 5 lần
-                        if (retryCount < 5) { 
+                        // Nếu chưa thấy, tăng số lần thử lên 7 lần để đợi Firebase nạp nhánh phản hồi con
+                        if (retryCount < 7) { 
                             retryCount++;
+                            // Ép nạp lại để cập nhật DOM cho các nhánh vừa bung
                             if (typeof refreshCommentsOnly === 'function') refreshCommentsOnly(postId);
                             setTimeout(attemptScroll, 600);
                         } else {
-                            // Nếu vẫn không thấy comment thì cuộn về bài viết gốc cho cư dân đỡ lạc đường
+                            // Cuộn về bài viết gốc nếu không tìm thấy phản hồi cụ thể
                             const postEl = document.getElementById(`post-card-${postId}`);
                             if (postEl) postEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
                         }
                     }
                 };
 
-                // Đợi 700ms để tab Status kịp render danh sách ban đầu
-                setTimeout(attemptScroll, 700);
+                // Đợi 800ms để đảm bảo tab Status đã khởi tạo xong
+                setTimeout(attemptScroll, 800);
 
             } else {
                 alert("❌ Không tìm thấy bài viết liên quan!");
