@@ -15427,10 +15427,10 @@ const messaging = firebase.messaging();
 // Đăng ký Service Worker
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', function() {
-        // Henry lưu ý: Dùng đường dẫn linh hoạt để GitHub Pages không bị 404
-        const swPath = window.location.pathname.includes('sweetie-game') 
-            ? './firebase-messaging-sw.js' 
-            : '/firebase-messaging-sw.js';
+        // --- TỐI ƯU ĐƯỜNG DẪN CHO GITHUB PAGES ---
+        // Lấy base path để tránh lỗi 404 dù Henry để web ở root hay sub-folder
+        const basePath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
+        const swPath = basePath + 'firebase-messaging-sw.js';
 
         navigator.serviceWorker.register(swPath)
         .then(function(registration) {
@@ -15489,7 +15489,7 @@ messaging.onMessage((payload) => {
             };
         }
 
-        // 2. Hiển thị thông báo trong Game (Nếu Henry có hàm addNotification)
+        // 2. Hiển thị thông báo trong Game (Sử dụng thiết kế của Henry)
         if (typeof addNotification === 'function') {
             addNotification(
                 "💬 " + notificationTitle.toUpperCase(),
