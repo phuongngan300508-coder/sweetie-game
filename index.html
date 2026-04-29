@@ -7452,6 +7452,27 @@ input[type="date"].sweetie-input-style {
     from { opacity: 0; transform: translateY(5px); }
     to { opacity: 1; transform: translateY(0); }
 }
+
+    .sticker-item:hover {
+    transform: scale(1.1);
+    filter: drop-shadow(0 0 5px #ff8fab);
+}
+
+.sticker-tabs {
+    display: flex;
+    justify-content: space-around;
+    padding: 10px;
+    border-bottom: 1px solid #ffe4e8;
+}
+
+.sticker-tabs button {
+    background: none;
+    border: none;
+    color: #ff8fab;
+    font-weight: bold;
+    cursor: pointer;
+    padding: 5px 15px;
+}
 </style>
 </head>
 <body>
@@ -25900,6 +25921,63 @@ window.addEventListener('click', function() {
         m.style.display = 'none';
     });
 });
+
+    let currentStickerPostId = ''; // Lưu ID bài viết đang được chọn để gửi nhãn
+
+// Hàm mở Modal kho nhãn dán
+function openStickerModal(postId) {
+    currentStickerPostId = postId;
+    const modal = document.getElementById('sticker-modal');
+    if (modal) {
+        modal.style.display = 'flex';
+        loadStickerStore(); // Gọi hàm này để hiển thị danh sách nhãn dán đã có
+    }
+}
+
+// Hàm đóng Modal
+function closeStickerModal() {
+    const modal = document.getElementById('sticker-modal');
+    if (modal) modal.style.display = 'none';
+}
+
+// Hàm chuyển đổi giữa tab "Kho nhãn" và "Tải lên"
+function switchStickerTab(tabName) {
+    const store = document.getElementById('sticker-store');
+    const upload = document.getElementById('sticker-upload-zone');
+    
+    if (tabName === 'store') {
+        store.style.display = 'grid';
+        upload.style.display = 'none';
+    } else {
+        store.style.display = 'none';
+        upload.style.display = 'block';
+    }
+}
+
+// Hàm tải danh sách nhãn dán từ Firebase về hiển thị
+async function loadStickerStore() {
+    const container = document.getElementById('sticker-store');
+    container.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding:20px; color:#ff8fab;"><i class="fas fa-spinner fa-spin"></i> Đang mở kho nhãn...</div>`;
+
+    // Lấy nhãn dán từ kho chung hoặc kho riêng của user (tùy Henry thiết kế)
+    const snap = await firebase.database().ref(`user_stickers/${userData.profile.uid}`).once('value');
+    const stickers = snap.val();
+
+    if (!stickers) {
+        container.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding:20px; color:#888;">Kho còn trống, Henry up nhãn mới đi! ✨</div>`;
+        return;
+    }
+
+    let html = "";
+    Object.keys(stickers).forEach(id => {
+        const url = stickers[id].url;
+        html += `
+            <div class="sticker-item" onclick="sendSticker('${url}', '${currentStickerPostId}')" style="cursor:pointer; transition:0.2s;">
+                <img src="${url}" style="width:100%; border-radius:10px; object-fit:contain;">
+            </div>`;
+    });
+    container.innerHTML = html;
+}
 </script>
 </body>
 </html>
