@@ -6852,15 +6852,26 @@ input[type="date"].sweetie-input-style {
 .composer-footer {
     display: flex;
     justify-content: space-between;
-    margin-top: 10px;
+    align-items: center;
+    flex-wrap: wrap; /* Cho phép các nút xuống dòng nếu thiếu chỗ */
+    gap: 10px;
+    padding-top: 10px;
 }
 
+    /* Điều chỉnh nhóm bên trái (nút ảnh và select) */
+.composer-footer > div {
+    flex-wrap: wrap; /* Cho phép nút Camera và Select nhảy hàng trên đt nhỏ */
+    gap: 5px !important;
+}
+    
 .status-select {
     border: 1px solid #ffc1cc;
     border-radius: 8px;
     padding: 5px;
     color: #ff8fab;
     outline: none;
+    max-width: 130px; /* Giới hạn độ rộng của select để không lấn át */
+    font-size: 0.85rem;
 }
 
 .btn-send-status {
@@ -7133,10 +7144,10 @@ input[type="date"].sweetie-input-style {
     height: 100vh;
     background: rgba(0, 0, 0, 0.7); /* Làm tối nền để nổi bật popup */
     display: flex;
-    align-items: center;      /* Căn giữa dọc */
-    justify-content: center;    /* Căn giữa ngang */
+    align-items: center;
+    justify-content: center;
+    padding: 10px;    /* Căn giữa ngang */
     z-index: 99999;           /* Lớp trên cùng nhất, đè lên Gacha và Vòng quay */
-    padding: 15px;
     box-sizing: border-box;
     backdrop-filter: blur(4px); /* Hiệu ứng làm mờ lớp dưới xịn xò */
     -webkit-backdrop-filter: blur(4px); /* Hỗ trợ Safari */
@@ -7145,11 +7156,15 @@ input[type="date"].sweetie-input-style {
 /* Popup: Co giãn thông minh */
 .sw-post-popup {
     background: white;
-    width: 100%;
-    max-width: 500px;           /* Trên PC tối đa 500px */
+    width: 95%;
+    max-width: 500px;
+    max-height: 90vh;
     border-radius: 20px;
     padding: 18px;
     box-sizing: border-box;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
     box-shadow: 0 20px 50px rgba(0,0,0,0.5); /* Đổ bóng sâu để tạo cảm giác lớp trên cùng */
     position: relative;         /* Đảm bảo căn chỉnh nội bộ chuẩn */
 }
@@ -7326,6 +7341,37 @@ input[type="date"].sweetie-input-style {
     touch-action: none; /* Ngăn trình duyệt tự cuộn trang khi đang vuốt ảnh */
     user-select: none;  /* Không cho chọn văn bản khi đang thao tác ảnh */
     -webkit-user-drag: none; /* Ngăn kéo ảnh kiểu mặc định của trình duyệt */
+}
+
+    #media-preview-container {
+    display: grid; /* Sử dụng Grid thay cho Flex để kiểm soát tốt hơn */
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); 
+    gap: 8px;
+    width: 100%;
+}
+
+#media-preview-container img, 
+#media-preview-container video {
+    width: 100%;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+    @media (max-width: 480px) {
+    .composer-footer {
+        flex-direction: column; /* Chuyển thành hàng dọc */
+        align-items: stretch;
+    }
+    
+    .btn-send-status {
+        width: 100%; /* Nút Đăng chiếm toàn bộ chiều ngang */
+        margin-top: 5px;
+    }
+
+    .status-select {
+        flex: 1; /* Các nút chọn giãn đều nhau */
+    }
 }
 </style>
 </head>
