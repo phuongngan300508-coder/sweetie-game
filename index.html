@@ -26102,7 +26102,14 @@ async function uploadSticker() {
         // Reset input file sau khi up xong
         fileInput.value = "";
 
-        alert("Nhãn dán đã được đưa vào kho vĩnh viễn! ✨");
+        // --- GỬI THÔNG BÁO VÀO CHUÔNG GAME ---
+        if (typeof addNotification === 'function') {
+            addNotification(
+                "HỆ THỐNG ✨", 
+                "Chúc mừng! Nhãn dán mới đã được thêm vào kho vĩnh viễn của bạn. 🎨",
+                "linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)"
+            );
+        }
 
         // --- PHẦN QUAN TRỌNG: TỰ ĐỘNG CHUYỂN TAB VÀ LOAD KHO ---
         loadStickerStore();      // Load lại kho để có nhãn mới
@@ -26117,7 +26124,7 @@ async function uploadSticker() {
         btn.disabled = false;
     }
 }
-
+    
 // Bước 2: Gửi nhãn dán vào bình luận
 async function sendSticker(stickerUrl, postId) {
     // --- LỚP BẢO VỆ: Kiểm tra đăng nhập trước khi gửi ---
@@ -26157,14 +26164,18 @@ async function sendSticker(stickerUrl, postId) {
         // Tự động đóng modal kho nhãn dán
         closeStickerModal();
 
-        // Xử lý thông báo tag/nhắc tên (nếu Henry muốn quét tag trong text ẩn, 
-        // nhưng sticker thường không có text nên ta truyền chuỗi rỗng)
+        // Xử lý thông báo tag/nhắc tên
         if (typeof handleMentionNotifications === 'function') {
             handleMentionNotifications("", postId, newCommentId);
         }
 
+        // --- GỬI THÔNG BÁO VÀO CHUÔNG GAME ---
         if (typeof addNotification === 'function') {
-            addNotification("HỆ THỐNG", "Đã gửi nhãn dán của bạn! ✨");
+            addNotification(
+                "BÌNH LUẬN 💬", 
+                "Bạn vừa gửi một nhãn dán cực dễ thương vào bài viết! 💖",
+                "linear-gradient(135deg, #ff8fab, #ff1493)"
+            );
         }
 
         // Tự động cuộn xuống cuối danh sách bình luận để cư dân thấy nhãn vừa gửi
