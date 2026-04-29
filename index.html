@@ -17139,8 +17139,12 @@ function closeOtherProfile(keepUser = false) {
     const modal = document.getElementById('modal-other-profile');
     if (modal) modal.style.display = 'none';
 
+    // --- PHẦN QUAN TRỌNG: Mở khóa cho Footer ---
+    // Khi đóng Profile, ta phải cho phép Footer được reset bình thường ở lần sau
+    isRespondingRequest = false; 
+
     if (currentViewedUser) {
-        // Tắt lắng nghe Firebase cho người này
+        // Tắt lắng nghe Firebase cho người này để tiết kiệm dữ liệu
         db.ref('users/' + currentViewedUser).off();
         
         // CHỈ xóa biến nếu KHÔNG phải chuyển sang Chat
@@ -17150,6 +17154,42 @@ function closeOtherProfile(keepUser = false) {
     }
 }
 
+    async function acceptFriendAndFinish(name) {
+    try {
+        // 1. Gọi hàm accept gốc của ông để xử lý Firebase
+        await acceptFriend(name); 
+        
+        // 2. Mở khóa cờ hiệu (Cực kỳ quan trọng!)
+        isRespondingRequest = false; 
+        
+        // 3. Vẽ lại Footer để hiện nút "BẠN BÈ" và "NHẮN TIN" ngay lập tức
+        resetProfileFooter(); 
+        
+        console.log(`Sweetie System: Đã kết bạn với ${name} thành công! ✨`);
+    } catch (e) {
+        console.error("Lỗi khi đồng ý kết bạn:", e);
+        isRespondingRequest = false; // Lỗi cũng phải mở khóa để cư dân còn thao tác lại
+    }
+}
+
+    async function rejectFriendAndFinish(name) {
+    try {
+        // 1. Gọi hàm reject gốc (xóa lời mời trên Firebase)
+        await rejectFriend(name); 
+        
+        // 2. Mở khóa
+        isRespondingRequest = false; 
+        
+        // 3. Vẽ lại giao diện (Lúc này nó sẽ hiện nút "KẾT BẠN" vì lời mời đã mất)
+        resetProfileFooter();
+        
+        addNotification("HỆ THỐNG", `Đã từ chối lời mời của ${name}. ✨`);
+    } catch (e) {
+        console.error("Lỗi khi từ chối:", e);
+        isRespondingRequest = false;
+    }
+}
+    
 // Hàm dành riêng cho nút NHẮN TIN trong Profile
 function openChatWithOther() {
     if (currentViewedUser) {
@@ -17378,40 +17418,46 @@ function rejectFriend(friendName) {
 }
     
 function showFriendRequestProfile(friendData) {
-    // 1. Lưu người đang xem
+    // 1. Bật cờ hiệu chặn resetProfileFooter
+    isRespondingRequest = true;
+
+    // 2. Lưu người đang xem
     currentViewedUser = friendData.profile.name;
 
-    // 2. Hiện Modal Profile gốc trước
+    // 3. Hiện Modal Profile gốc
     showOtherUserProfile(friendData);
 
-    // 3. Đè nút "Đồng ý/Từ chối" lên footer sau khi modal đã hiện
+    // 4. Đè nút "Đồng ý/Từ chối" lên footer
     setTimeout(() => {
         const footer = document.querySelector('#modal-other-profile .profile-card-footer');
         if (footer) {
             footer.innerHTML = `
                 <div style="display:flex; gap:10px; width:100%; padding: 0 10px;">
                     <button class="btn-action-pink" style="background:#28a745; flex:1; border:none; box-shadow: 0 4px 15px rgba(40,167,69,0.3); color:white; font-weight:800; border-radius:50px; padding:10px;" 
-                            onclick="acceptFriend('${friendData.profile.name}')">
+                            onclick="acceptFriendAndFinish('${friendData.profile.name}')">
                         <i class="fas fa-check"></i> ĐỒNG Ý
                     </button>
                     <button class="btn-action-white" style="border:1px solid #ccc; flex:1; color: #888; border-radius:50px; padding:10px;" 
-                            onclick="rejectFriend('${friendData.profile.name}')">
+                            onclick="rejectFriendAndFinish('${friendData.profile.name}')">
                         <i class="fas fa-times"></i> TỪ CHỐI
                     </button>
                 </div>
             `;
         }
-    }, 150); // Tăng lên 150ms để đảm bảo mượt mà trên điện thoại
+    }, 200); // Tăng lên 200ms cho chắc chắn
 }
 
 // Thêm 1 dòng này ở ngoài cùng của file code (biến toàn cục)
 let profileFooterVersion = 0;
+let isRespondingRequest = false; // Cờ hiệu để dừng render lại footer
 
 function resetProfileFooter() {
+    // NẾU ĐANG PHẢN HỒI LỜI MỜI THÌ KHÔNG CHO PHÉP RESET FOOTER
+    if (isRespondingRequest) return; 
+
     const footer = document.getElementById('modal-other-profile').querySelector('.profile-card-footer');
     if (!footer || !currentViewedUser || !currentUser) return;
 
-    // Đánh dấu phiên làm việc hiện tại
     const currentVersion = ++profileFooterVersion;
 
     // Bước 0: Kiểm tra xem Henry có đang chặn người này không
