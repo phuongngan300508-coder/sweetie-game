@@ -7127,7 +7127,7 @@ input[type="date"].sweetie-input-style {
     -webkit-backdrop-filter: blur(4px); /* Hỗ trợ Safari */
 }
     
-/* Popup: Giữ vai trò là khung chứa và căn giữa nội dung */
+/* Popup: Giữ nguyên các thuộc tính của bạn và đảm bảo làm tâm neo */
 .sw-post-popup {
     background: white;
     width: 95%;
@@ -7138,14 +7138,13 @@ input[type="date"].sweetie-input-style {
     box-sizing: border-box;
     overflow-y: auto;
     
-    /* CĂN GIỮA NỘI DUNG BÊN TRONG */
     display: flex;
     flex-direction: column;
-    align-items: center; /* Căn giữa theo chiều ngang */
-    justify-content: center; /* Căn giữa theo chiều dọc nếu popup cao hơn card */
+    align-items: center; 
+    justify-content: center;
     
     box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-    position: relative;
+    position: relative; /* Giữ nguyên để làm mốc cho nút đóng */
 }
 
 /* Khung đăng trạng thái (Card con) */
@@ -7168,7 +7167,9 @@ input[type="date"].sweetie-input-style {
     transform: scale(1.02);
 }
 
+/* Header: Giữ nguyên nội dung và thiết kế, thêm width 100% để trải đều */
 .sw-post-header {
+    width: 100%; /* Đảm bảo header luôn rộng bằng popup */
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -7178,20 +7179,25 @@ input[type="date"].sweetie-input-style {
     font-size: 1rem;
     border-bottom: 1px solid #fff0f3;
     padding-bottom: 10px;
+    box-sizing: border-box;
 }
 
+/* Nút Đóng: Sửa thành position absolute để dính chặt vào góc phải */
 .sw-post-close {
+    position: absolute; /* Chuyển sang tuyệt đối để không bị nội dung đẩy */
+    top: 15px;          /* Khoảng cách từ mép trên popup */
+    right: 15px;         /* Khoảng cách từ mép phải popup */
     font-size: 1.2rem;
     cursor: pointer;
     color: #ccc;
     padding: 5px;
     transition: color 0.2s;
+    z-index: 10;         /* Đảm bảo luôn nằm trên cùng */
 }
 
 .sw-post-close:hover {
     color: #ff8fab;
 }
-
     /* Khung chứa nội dung bài viết */
 .post-content-inner {
     position: relative;
