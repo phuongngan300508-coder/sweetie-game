@@ -26082,11 +26082,14 @@ async function uploadSticker() {
     const file = fileInput.files[0];
     if(!file) return;
 
+    // Lấy nút bấm đang được click thông qua event
+    const btn = event.target;
+
     // Henry dùng lại logic upload Cloudinary như bài đăng nhé
     // Thêm hiệu ứng thông báo đang tải cho chuyên nghiệp
-    const originalBtnText = event.target.innerText;
-    event.target.innerText = "Đang tải lên...";
-    event.target.disabled = true;
+    const originalBtnText = "Up nhãn vĩnh viễn"; // Định nghĩa rõ tên nút gốc
+    btn.innerText = "Đang tải lên...";
+    btn.disabled = true;
 
     try {
         const uploadedUrl = await uploadToCloudinary(file); 
@@ -26109,8 +26112,9 @@ async function uploadSticker() {
         console.error("Lỗi up nhãn:", error);
         alert("Có lỗi khi up nhãn rồi Henry ơi! 😿");
     } finally {
-        event.target.innerText = originalBtnText;
-        event.target.disabled = false;
+        // Đảm bảo nút luôn quay về trạng thái cũ kể cả khi thành công hay lỗi
+        btn.innerText = originalBtnText;
+        btn.disabled = false;
     }
 }
 
@@ -26243,6 +26247,13 @@ function switchStickerTab(tabName) {
         upload.style.display = 'block';
         // Thêm active cho nút thứ hai (Tải lên)
         if(tabs[1]) tabs[1].classList.add('active');
+
+        // --- PHẦN SỬA RIÊNG CHO HENRY: RESET NÚT BẤM KHI QUAY LẠI TAB TẢI LÊN ---
+        const uploadBtn = upload.querySelector('button');
+        if (uploadBtn) {
+            uploadBtn.innerText = "Up nhãn vĩnh viễn"; // Trả lại tên nút gốc
+            uploadBtn.disabled = false; // Mở khóa nút
+        }
     }
 }
     
