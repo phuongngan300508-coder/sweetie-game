@@ -13776,7 +13776,8 @@ function renderNotis() {
             if (n.extraData.type === 'friend_request') {
                 actionLabel = "CHẠM ĐỂ PHẢN HỒI";
             } else if (n.extraData.type === 'mention' || n.extraData.type === 'open_post') {
-                actionLabel = "ẤN ĐỂ XEM"; // Nhãn riêng cho Henry
+                // Nhãn riêng giúp chủ bài đăng biết là ấn vào để xem nội dung chi tiết
+                actionLabel = "ẤN ĐỂ XEM CHI TIẾT"; 
             }
         }
 
@@ -13860,7 +13861,7 @@ function handleNotiClick(index) {
             const ancestors = noti.extraData.ancestors || []; 
 
             if (postId) {
-                // Bước 1: Auto bung tất cả các nhánh liên quan
+                // Bước 1: Auto bung tất cả các nhánh liên quan nếu có lồng nhau
                 const allParents = [...ancestors, parentId].filter(id => id); 
                 
                 allParents.forEach(pId => {
@@ -13870,38 +13871,46 @@ function handleNotiClick(index) {
                     }
                 });
 
-                // Bước 2: Chuyển tab
-                switchTab('tab-status'); 
+                // Bước 2: Chuyển sang tab Bản tin (Đảm bảo tabId là 'tab-status' như ông quy định)
+                if (typeof switchTab === 'function') {
+                    switchTab('tab-status'); 
+                }
 
-                // Bước 3: Đợi render và cuộn (Sửa ID tìm kiếm từ wrap sang item)
+                // Bước 3: Đợi render và thực hiện dịch chuyển (Scroll)
                 let retryCount = 0;
-                // Nếu có commentId thì tìm comm-item để highlight đúng mục tiêu, không thì tìm post-card
+                // Nếu có commentId thì tìm comm-item để highlight, không thì tìm post-card bài viết
                 const targetId = commentId ? `comm-item-${commentId}` : `post-card-${postId}`;
 
                 const attemptScroll = () => {
                     let targetEl = document.getElementById(targetId);
                     
                     if (targetEl) {
-                        // CHÚC MỪNG: Đã tìm thấy comment sau khi auto bung!
+                        // CHÚC MỪNG: Đã tìm thấy mục tiêu! Cuộn mượt mà đến trung tâm màn hình
                         targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        targetEl.classList.add('highlight-noti-comment');
+                        
+                        // Hiệu ứng làm nổi bật (Highlight) để chủ bài dễ nhận diện
+                        targetEl.style.transition = "0.5s";
+                        targetEl.style.boxShadow = "0 0 20px #ff8fab";
+                        targetEl.style.borderRadius = "12px";
+
                         setTimeout(() => {
-                            if (targetEl) targetEl.classList.remove('highlight-noti-comment');
+                            if (targetEl) targetEl.style.boxShadow = "none";
                         }, 3000);
                     } else {
-                        // Nếu chưa thấy, có thể do Firebase đang tải nhánh con vừa bung
+                        // Nếu chưa thấy (có thể Firebase đang load chậm), thử lại tối đa 5 lần
                         if (retryCount < 5) { 
                             retryCount++;
                             if (typeof refreshCommentsOnly === 'function') refreshCommentsOnly(postId);
-                            setTimeout(attemptScroll, 500);
+                            setTimeout(attemptScroll, 600);
                         } else {
-                            // Nếu vẫn không thấy thì cuộn về bài viết cho cư dân đỡ lạc
+                            // Nếu vẫn không thấy comment thì cuộn về bài viết gốc cho cư dân đỡ lạc đường
                             const postEl = document.getElementById(`post-card-${postId}`);
                             if (postEl) postEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
                         }
                     }
                 };
 
+                // Đợi 700ms để tab Status kịp render danh sách ban đầu
                 setTimeout(attemptScroll, 700);
 
             } else {
@@ -25303,8 +25312,39 @@ async function submitComment(postId) {
 
                 // Gửi lên Firebase
                 firebase.database().ref(`posts/${postId}/comments`).push(commentData)
-                .then((snap) => { 
+                .then(async (snap) => { 
                     const newCommentId = snap.key; 
+                    
+                    // --- PHẦN THÊM MỚI: THÔNG BÁO CHO CHỦ BÀI VIẾT ---
+                    try {
+                        const postSnap = await firebase.database().ref(`posts/${postId}`).once('value');
+                        const postData = postSnap.val();
+                        
+                        // Nếu bài viết tồn tại và người bình luận không phải là chủ bài
+                        if (postData && postData.uid && postData.uid !== userData.profile.uid) {
+                            const postOwnerUid = postData.uid;
+                            
+                            const notificationData = {
+                                title: "💬 BÌNH LUẬN MỚI",
+                                sender: userData.profile.name,
+                                // Hiển thị nội dung comment rõ ràng (cắt ngắn nếu quá dài)
+                                message: `${userData.profile.name} vừa bình luận bài viết của bạn: "${text.substring(0, 30)}${text.length > 30 ? '...' : ''}"`,
+                                timestamp: firebase.database.ServerValue.TIMESTAMP,
+                                extraData: {
+                                    type: 'open_post', // Dùng type này để handleNotiClick nhận diện mở bài viết
+                                    postId: postId,
+                                    commentId: newCommentId,
+                                    sender: userData.profile.name
+                                }
+                            };
+
+                            // Đẩy vào hàng đợi thông báo của chủ bài viết
+                            await firebase.database().ref(`notifications_queue/${postOwnerUid}`).push(notificationData);
+                        }
+                    } catch (notiErr) {
+                        console.error("Lỗi gửi thông báo cho chủ bài:", notiErr);
+                    }
+                    // -------------------------------------------------
                     
                     // Gửi thông báo nhắc tên nếu có text
                     if (text) handleMentionNotifications(text, postId, newCommentId); 
