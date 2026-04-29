@@ -26078,18 +26078,40 @@ function clearCommMedia(postId) {
 
     // Bước 1: Upload nhãn lên kho vĩnh viễn
 async function uploadSticker() {
-    const file = document.getElementById('sticker-file').files[0];
+    const fileInput = document.getElementById('sticker-file');
+    const file = fileInput.files[0];
     if(!file) return;
 
     // Henry dùng lại logic upload Cloudinary như bài đăng nhé
-    const uploadedUrl = await uploadToCloudinary(file); 
+    // Thêm hiệu ứng thông báo đang tải cho chuyên nghiệp
+    const originalBtnText = event.target.innerText;
+    event.target.innerText = "Đang tải lên...";
+    event.target.disabled = true;
 
-    await firebase.database().ref(`user_stickers/${userData.profile.uid}`).push({
-        url: uploadedUrl,
-        timestamp: Date.now()
-    });
-    alert("Nhãn dán đã được đưa vào kho vĩnh viễn! ✨");
-    loadStickerStore(); // Load lại kho
+    try {
+        const uploadedUrl = await uploadToCloudinary(file); 
+
+        await firebase.database().ref(`user_stickers/${userData.profile.uid}`).push({
+            url: uploadedUrl,
+            timestamp: Date.now()
+        });
+
+        // Reset input file sau khi up xong
+        fileInput.value = "";
+
+        alert("Nhãn dán đã được đưa vào kho vĩnh viễn! ✨");
+
+        // --- PHẦN QUAN TRỌNG: TỰ ĐỘNG CHUYỂN TAB VÀ LOAD KHO ---
+        loadStickerStore();      // Load lại kho để có nhãn mới
+        switchStickerTab('store'); // Tự động chuyển sang tab Kho nhãn
+
+    } catch (error) {
+        console.error("Lỗi up nhãn:", error);
+        alert("Có lỗi khi up nhãn rồi Henry ơi! 😿");
+    } finally {
+        event.target.innerText = originalBtnText;
+        event.target.disabled = false;
+    }
 }
 
 // Bước 2: Gửi nhãn dán vào bình luận
@@ -26214,16 +26236,16 @@ function switchStickerTab(tabName) {
     if (tabName === 'store') {
         store.style.display = 'grid';
         upload.style.display = 'none';
-        // Thêm active cho nút đầu tiên (Kho nhãn)
-        tabs[0].classList.add('active');
+        // Thêm active cho nút đầu tiên (Kho nhãn) - Nút sẽ tự nổi nhờ CSS .active
+        if(tabs[0]) tabs[0].classList.add('active');
     } else {
         store.style.display = 'none';
         upload.style.display = 'block';
         // Thêm active cho nút thứ hai (Tải lên)
-        tabs[1].classList.add('active');
+        if(tabs[1]) tabs[1].classList.add('active');
     }
 }
-
+    
 // Hàm tải danh sách nhãn dán từ Firebase về hiển thị
 async function loadStickerStore() {
     const container = document.getElementById('sticker-store');
