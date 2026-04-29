@@ -25845,28 +25845,51 @@ document.addEventListener('DOMContentLoaded', handleLightboxTouch);
 
     let selectedCommMedia = null;
 
-function previewCommMedia(input) {
+function previewCommMedia(input, postId) {
     if (input.files && input.files[0]) {
-        selectedCommMedia = input.files[0];
+        // Lưu file vào biến tạm theo postId
+        if (!window.selectedCommFiles) window.selectedCommFiles = {};
+        window.selectedCommFiles[postId] = input.files[0];
+
         const reader = new FileReader();
-        const container = document.getElementById('comm-preview-container');
-        const display = document.getElementById('comm-media-display');
+        
+        // Lấy các phần tử hiển thị preview
+        const container = document.getElementById(`comm-preview-container-${postId}`);
+        const display = document.getElementById(`comm-media-display-${postId}`);
+
+        // KIỂM TRA BẢO VỆ: Nếu không tìm thấy container thì dừng lại luôn để không báo lỗi null
+        if (!container || !display) {
+            console.error(`❌ Không tìm thấy khung preview cho bài viết: ${postId}`);
+            return;
+        }
 
         reader.onload = function(e) {
-            container.style.display = 'block';
-            const isVideo = selectedCommMedia.type.startsWith('video');
+            // Hiện khung chứa preview
+            container.style.display = 'block'; 
+
+            const isVideo = window.selectedCommFiles[postId].type.startsWith('video');
+            
+            // Vẽ giao diện preview (thiết kế gọn gàng cho bình luận)
             display.innerHTML = isVideo 
-                ? `<video src="${e.target.result}" style="width:80px; border-radius:10px;"></video>`
-                : `<img src="${e.target.result}" style="width:80px; border-radius:10px; object-fit:cover;">`;
+                ? `<video src="${e.target.result}" style="width:60px; height:60px; border-radius:10px; object-fit:cover;"></video>` 
+                : `<img src="${e.target.result}" style="width:60px; height:60px; border-radius:10px; object-fit:cover;">`;
         };
-        reader.readAsDataURL(selectedCommMedia);
+
+        reader.readAsDataURL(window.selectedCommFiles[postId]);
     }
 }
-
-function clearCommMedia() {
-    selectedCommMedia = null;
-    document.getElementById('comm-preview-container').style.display = 'none';
-    document.getElementById('comm-media-input').value = "";
+    
+function clearCommMedia(postId) {
+    const container = document.getElementById(`comm-preview-container-${postId}`);
+    const input = document.getElementById(`comm-file-${postId}`);
+    
+    if (container) container.style.display = 'none';
+    if (input) input.value = "";
+    
+    // Xóa file khỏi bộ nhớ tạm
+    if (window.selectedCommFiles) {
+        delete window.selectedCommFiles[postId];
+    }
 }
 
     // Bước 1: Upload nhãn lên kho vĩnh viễn
