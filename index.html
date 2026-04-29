@@ -24680,8 +24680,9 @@ async function listenToPosts() {
                                 </div>
                             </div>
 
-                            <input type="file" id="comm-file-${post.id}" accept="image/*,video/*" style="display:none;" onchange="previewCommMedia(this, '${post.id}')">
-
+                            <input type="file" id="comm-file-${post.id}" accept="image/*,video/*" style="display:none;" 
+       onchange="handleCommFileSelect(event, '${post.id}')">
+       
                             <textarea id="comment-input-${post.id}" placeholder="Viết bình luận..." 
                                 style="flex:1; border:1px solid #ffc1cc; border-radius:15px; padding:8px 12px; font-size:0.8rem; outline:none; resize:none; height:36px; line-height:1.2; background: white;"
                                 oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'"></textarea>
@@ -25335,11 +25336,23 @@ async function submitComment(postId) {
 }
 
     // Hàm khi cư dân chọn ảnh để bình luận
-function handleCommFileSelect(event) {
+// Hàm khi cư dân chọn ảnh để bình luận
+function handleCommFileSelect(event, postId) {
     const files = event.target.files;
-    // Gán file vào biến đã khai báo ở trên
-    selectedCommFiles = Array.from(files); 
-    console.log("Đã chọn file để bình luận:", selectedCommFiles);
+    if (files && files[0]) {
+        // Khởi tạo đối tượng nếu chưa có
+        if (typeof selectedCommFiles === 'undefined' || Array.isArray(selectedCommFiles)) {
+            selectedCommFiles = {}; 
+        }
+        // Lưu đúng file vào key là postId
+        selectedCommFiles[postId] = files[0]; 
+        console.log(`✅ Đã chọn file cho bài viết ${postId}:`, selectedCommFiles[postId]);
+        
+        // Gọi hàm preview để cư dân thấy ảnh trước khi gửi
+        if (typeof previewCommMedia === 'function') {
+            previewCommMedia(event.target, postId);
+        }
+    }
 }
     
 function getPrivacyIcon(p) {
@@ -26022,7 +26035,7 @@ document.addEventListener('keydown', function(e) {
     }
 });
 // Khai báo biến để lưu trữ các file cư dân chọn khi bình luận
-let selectedCommFiles = [];
+let selectedCommFiles = {};
     let touchStartX = 0;
 let touchEndX = 0;
 
