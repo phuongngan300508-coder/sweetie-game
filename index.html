@@ -6958,32 +6958,6 @@ input[type="date"].sweetie-input-style {
     padding: 15px 0 0 0;
     width: 100%;
 }
-
-/* Khung đăng trạng thái (Màu hồng Sweetie) */
-.status-card.composer {
-    width: 92%;           /* Đẹp nhất trên mobile */
-    max-width: 500px;     /* Giới hạn trên PC */
-    background: #fff;
-    border-radius: 20px;
-    padding: 15px;
-    border: 2px solid #ffe4e8;
-    box-shadow: 0 8px 20px rgba(255, 182, 193, 0.2);
-    box-sizing: border-box; /* Đảm bảo card này cũng không bị tràn */
-}
-
-    .status-card.composer {
-    background: #fff;
-    border-radius: 20px;
-    padding: 15px;
-    border: 2px solid #ffe4e8;
-    box-shadow: 0 10px 25px rgba(255, 182, 193, 0.3); /* Đổ bóng hồng */
-    transition: transform 0.3s ease;
-}
-
-.status-card.composer:focus-within {
-    transform: scale(1.02); /* Phóng to nhẹ khi người dùng nhấn vào viết */
-}
-
     /* Style cho Reaction và Comment */
 .post-actions {
     display: flex;
@@ -7153,7 +7127,7 @@ input[type="date"].sweetie-input-style {
     -webkit-backdrop-filter: blur(4px); /* Hỗ trợ Safari */
 }
     
-/* Popup: Co giãn thông minh */
+/* Popup: Giữ vai trò là khung chứa và căn giữa nội dung */
 .sw-post-popup {
     background: white;
     width: 95%;
@@ -7163,10 +7137,35 @@ input[type="date"].sweetie-input-style {
     padding: 18px;
     box-sizing: border-box;
     overflow-y: auto;
+    
+    /* CĂN GIỮA NỘI DUNG BÊN TRONG */
     display: flex;
     flex-direction: column;
-    box-shadow: 0 20px 50px rgba(0,0,0,0.5); /* Đổ bóng sâu để tạo cảm giác lớp trên cùng */
-    position: relative;         /* Đảm bảo căn chỉnh nội bộ chuẩn */
+    align-items: center; /* Căn giữa theo chiều ngang */
+    justify-content: center; /* Căn giữa theo chiều dọc nếu popup cao hơn card */
+    
+    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    position: relative;
+}
+
+/* Khung đăng trạng thái (Card con) */
+.status-card.composer {
+    width: 100%;          /* Để nó chiếm hết chiều rộng của popup sau khi trừ padding */
+    background: #fff;
+    border-radius: 20px;
+    padding: 15px;
+    border: 2px solid #ffe4e8;
+    box-shadow: 0 10px 25px rgba(255, 182, 193, 0.3);
+    box-sizing: border-box;
+    transition: transform 0.3s ease;
+    
+    /* Đảm bảo card không tự ý nhảy vị trí */
+    margin: 0 auto; 
+}
+
+/* Các thuộc tính khác giữ nguyên theo yêu cầu của bạn */
+.status-card.composer:focus-within {
+    transform: scale(1.02);
 }
 
 .sw-post-header {
