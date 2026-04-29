@@ -25215,12 +25215,21 @@ async function submitComment(postId) {
 
     const text = input.value.trim();
     
+    // --- KHẮC PHỤC LỖI REFERENCEERROR: Đảm bảo biến tồn tại ---
+    // Nếu selectedCommFiles chưa được định nghĩa toàn cục, ta coi như nó là một đối tượng rỗng
+    const safeSelectedCommFiles = (typeof selectedCommFiles !== 'undefined') ? selectedCommFiles : {};
+
     // KIỂM TRA QUAN TRỌNG: userData phải tồn tại
     // Chỉnh sửa logic: Cho phép gửi nếu có nội dung HOẶC có file media đang chờ
-    const currentMediaFile = selectedCommFiles ? selectedCommFiles[postId] : null;
+    const currentMediaFile = safeSelectedCommFiles[postId] || null;
 
-    if (!text && !currentMediaFile && !userData || !userData.profile || !userData.profile.uid) {
-        alert("Bạn cần đăng nhập hoặc nhập nội dung để bình luận! 💖");
+    if (!text && !currentMediaFile) {
+        alert("Vui lòng nhập nội dung hoặc chọn ảnh để bình luận! 💖");
+        return;
+    }
+
+    if (!userData || !userData.profile || !userData.profile.uid) {
+        alert("Bạn cần đăng nhập để bình luận! 💖");
         return;
     }
 
@@ -25229,7 +25238,7 @@ async function submitComment(postId) {
         if (banSnap.exists() && banSnap.val() > Date.now()) {
             const timeLeft = new Date(banSnap.val()).toLocaleString('vi-VN');
             alert(`Bạn đang bị cấm bình luận đến: ${timeLeft} do vi phạm tiêu chuẩn cộng đồng. 🔒`);
-            return; // Dừng việc gửi bình luận
+            return; 
         }
 
         // --- THÊM BƯỚC KIỂM TRA QUYỀN BÌNH LUẬN CỦA BÀI VIẾT ---
@@ -25246,7 +25255,7 @@ async function submitComment(postId) {
                 if (currentMediaFile) {
                     const formData = new FormData();
                     formData.append("file", currentMediaFile);
-                    formData.append("upload_preset", "SWEETIE GAME WORLD"); // Henry giữ nguyên preset này nhé
+                    formData.append("upload_preset", "SWEETIE GAME WORLD"); 
 
                     const resourceType = currentMediaFile.type.startsWith('video') ? "video" : "image";
                     const response = await fetch(`https://api.cloudinary.com/v1_1/dl4wnxsm3/${resourceType}/upload`, {
@@ -25263,12 +25272,11 @@ async function submitComment(postId) {
                     }
                 }
 
-                // Nếu quyền bình luận đang mở và không bị cấm, tiến hành gửi dữ liệu
                 const commentData = {
-                    uid: userData.profile.uid, // Phải có cái này để khớp với Rules
+                    uid: userData.profile.uid, 
                     username: userData.profile.name || "Cư dân",
                     text: text,
-                    media: mediaData, // Thêm dữ liệu media vào bình luận
+                    media: mediaData, 
                     timestamp: firebase.database.ServerValue.TIMESTAMP
                 };
 
@@ -25279,7 +25287,6 @@ async function submitComment(postId) {
                     handleMentionNotifications(text, postId, newCommentId); 
                     
                     input.value = "";
-                    // Reset chiều cao textarea về 36px (hoặc auto) sau khi gửi để không bị trống một mảng to
                     input.style.height = '36px'; 
 
                     // Dọn dẹp preview media sau khi gửi thành công
@@ -25309,6 +25316,14 @@ async function submitComment(postId) {
             }
         });
     });
+}
+
+    // Hàm khi cư dân chọn ảnh để bình luận
+function handleCommFileSelect(event) {
+    const files = event.target.files;
+    // Gán file vào biến đã khai báo ở trên
+    selectedCommFiles = Array.from(files); 
+    console.log("Đã chọn file để bình luận:", selectedCommFiles);
 }
     
 function getPrivacyIcon(p) {
@@ -25990,7 +26005,8 @@ document.addEventListener('keydown', function(e) {
         }
     }
 });
-
+// Khai báo biến để lưu trữ các file cư dân chọn khi bình luận
+let selectedCommFiles = [];
     let touchStartX = 0;
 let touchEndX = 0;
 
