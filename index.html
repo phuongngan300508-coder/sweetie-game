@@ -7609,6 +7609,29 @@ input[type="date"].sweetie-input-style {
     background: #ffcad4;
     border-radius: 10px;
 }
+
+    /* Trạng thái mặc định của nút tab */
+.sticker-tabs button {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    border-radius: 15px;
+    background: #fff0f3; /* Màu hồng nhạt hơn để làm nền */
+    color: #ff8fab;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease; /* Hiệu ứng chuyển động mượt */
+    border: 1px solid #ffe4e8;
+}
+
+/* HIỆU ỨNG NỔI: Khi nút được nhấn (Active) */
+.sticker-tabs button.active {
+    background: linear-gradient(135deg, #ff8fab, #ff1493); /* Đổi sang gradient hồng đậm */
+    color: white; /* Chữ trắng cho nổi bật */
+    box-shadow: 0 4px 12px rgba(255, 143, 171, 0.5); /* Đổ bóng hồng */
+    transform: translateY(-2px); /* Nổi nhẹ lên trên */
+    border-color: transparent;
+}
 </style>
 </head>
 <body>
@@ -10518,10 +10541,10 @@ input[type="date"].sweetie-input-style {
             <i class="fas fa-times" onclick="closeStickerModal()" style="cursor:pointer; color:#888;"></i>
         </div>
 
-        <div class="sticker-tabs" style="display:flex; border-bottom:1px solid #fff3f5;">
-            <button onclick="switchStickerTab('store')" class="sticker-tab-btn active" style="flex:1; padding:12px; border:none; background:none; color:#ff8fab; font-weight:bold; cursor:pointer;">Kho nhãn</button>
-            <button onclick="switchStickerTab('upload')" class="sticker-tab-btn" style="flex:1; padding:12px; border:none; background:none; color:#888; font-weight:bold; cursor:pointer;">Tải lên</button>
-        </div>
+        <div class="sticker-tabs" style="display:flex; border-bottom:1px solid #fff3f5; background: #fff9fa; padding: 5px;">
+    <button onclick="switchStickerTab('store')" class="sticker-tab-btn active">Kho nhãn</button>
+    <button onclick="switchStickerTab('upload')" class="sticker-tab-btn">Tải lên</button>
+</div>
 
         <div id="sticker-store" class="sticker-grid" style="flex:1; overflow-y:auto; padding:15px; display:grid; grid-template-columns:repeat(3, 1fr); gap:10px;">
             </div>
@@ -26181,12 +26204,23 @@ function switchStickerTab(tabName) {
     const store = document.getElementById('sticker-store');
     const upload = document.getElementById('sticker-upload-zone');
     
+    // 1. Tìm tất cả các nút tab
+    const tabs = document.querySelectorAll('.sticker-tabs button');
+    
+    // 2. Xóa class 'active' khỏi tất cả các nút
+    tabs.forEach(tab => tab.classList.remove('active'));
+
+    // 3. Hiển thị vùng nội dung tương ứng và thêm class 'active'
     if (tabName === 'store') {
         store.style.display = 'grid';
         upload.style.display = 'none';
+        // Thêm active cho nút đầu tiên (Kho nhãn)
+        tabs[0].classList.add('active');
     } else {
         store.style.display = 'none';
         upload.style.display = 'block';
+        // Thêm active cho nút thứ hai (Tải lên)
+        tabs[1].classList.add('active');
     }
 }
 
