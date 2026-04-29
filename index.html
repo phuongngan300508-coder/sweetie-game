@@ -24693,6 +24693,21 @@ const renderNestedComments = async (allComments, post, myUid, parentId = null, l
             ? `<img src="${currentCommAvatar}" class="comment-avatar" style="width:30px; height:30px; border-radius:50%; object-fit:cover;">`
             : `<div class="comment-avatar" style="width:30px; height:30px; border-radius:50%; background:#ffe4e8; display:flex; align-items:center; justify-content:center; color:#ff8fab; font-size:0.7rem;"><i class="fas ${commUserData.gender === 'Nam' ? 'fa-user-tie' : 'fa-user-graduate'}"></i></div>`;
 
+        // --- PHẦN NÂNG CẤP: HIỂN THỊ MEDIA (ẢNH/VIDEO/STICKER) TRONG BÌNH LUẬN ---
+        let mediaHtml = "";
+        if (c.sticker) {
+            mediaHtml = `<div style="margin-top:5px;"><img src="${c.sticker}" style="width:100px; border-radius:10px; display:block;"></div>`;
+        } else if (c.media) {
+            if (c.media.type === 'video') {
+                mediaHtml = `<div style="margin-top:5px;"><video src="${c.media.url}" controls style="max-width:150px; border-radius:10px; display:block;"></video></div>`;
+            } else {
+                mediaHtml = `<div style="margin-top:5px;"><img src="${c.media.url}" style="max-width:150px; border-radius:10px; display:block; cursor:pointer;" onclick="window.open('${c.media.url}', '_blank')"></div>`;
+            }
+        }
+
+        // Fix lỗi replace bằng cách kiểm tra c.text tồn tại
+        const safeTextForEdit = c.text ? c.text.replace(/`/g, '\\`').replace(/\n/g, '\\n') : "";
+
         html += `
             <div class="comment-wrapper" id="comm-wrap-${c.id}" style="margin-left:${marginLeft}px; margin-top:8px; border-left:${borderLeft}; padding-left:${paddingLeft}px;">
                 <div class="comment-item" id="comm-item-${c.id}" style="font-size:0.8rem; padding:8px 12px; background:${level === 0 ? '#fff3f5' : '#fff'}; border-radius:12px; line-height:1.4; position:relative; display:flex; justify-content:space-between; align-items:flex-start; border: ${level > 0 ? '1px solid #fff3f5' : 'none'}">
@@ -24701,7 +24716,9 @@ const renderNestedComments = async (allComments, post, myUid, parentId = null, l
                         <div style="flex:1;">
                             <strong style="color:#d81b60; cursor:pointer;" onclick="searchFriendByID('${c.uid}')">${c.username}</strong> 
                             <span style="font-size: 0.65rem; color: #b0b0b0; font-weight: normal; margin-left: 4px;">• ${getTimeAgo(c.timestamp)}</span>
-                            <br><span>${formatCommentText(c.text)}</span>
+                            <br>
+                            <span>${c.text ? formatCommentText(c.text) : ''}</span>
+                            ${mediaHtml}
                             <div style="margin-top:4px; display: flex; align-items: center; gap: 12px;">
                                 <span onclick="toggleCommentReaction('${post.id}', '${c.id}')" style="color:${hasLikedComm ? '#ff1493' : '#ff8fab'}; font-size:0.7rem; cursor:pointer; font-weight:bold;">
                                     <i class="${hasLikedComm ? 'fas' : 'far'} fa-heart"></i> ${commReactionCount > 0 ? commReactionCount : ''} Thích
@@ -24714,7 +24731,7 @@ const renderNestedComments = async (allComments, post, myUid, parentId = null, l
                         <div class="status-dropdown" style="margin-left:5px;">
                             <i class="fas fa-ellipsis-h" onclick="toggleStatusMenu(event, 'menu-comm-${c.id}')" style="color:#ffb3c1; cursor:pointer; font-size:0.7rem; padding:2px;"></i>
                             <div id="menu-comm-${c.id}" class="status-menu-content" style="display:none; position:absolute; right:0; background:white; box-shadow:0 2px 10px rgba(0,0,0,0.1); border-radius:8px; z-index:100; min-width:80px;">
-                                <div onclick="editComment('${post.id}', '${c.id}', \`${c.text.replace(/`/g, '\\`').replace(/\n/g, '\\n')}\`)" style="padding:8px 12px; cursor:pointer; color:#444; font-size:0.7rem; border-bottom:1px solid #fff3f5;"><i class="fas fa-edit"></i> Sửa</div>
+                                <div onclick="editComment('${post.id}', '${c.id}', \`${safeTextForEdit}\`)" style="padding:8px 12px; cursor:pointer; color:#444; font-size:0.7rem; border-bottom:1px solid #fff3f5;"><i class="fas fa-edit"></i> Sửa</div>
                                 <div onclick="deleteComment('${post.id}', '${c.id}')" style="padding:8px 12px; cursor:pointer; color:#ff4d4d; font-size:0.7rem;"><i class="fas fa-trash"></i> Xóa</div>
                             </div>
                         </div>` : ''}
