@@ -13725,7 +13725,7 @@ function toggleNotiModal() {
 
 // Chỉnh sửa hàm addNotification
 // Sửa hàm addNotification (Thêm tham số extraData)
-function addNotification(title, message, silent = false, extraData = null) {
+function addNotification(title, message, silent = false, extraData = null, customBg = null) {
     if (!userData.notifications) userData.notifications = [];
     
     const newNoti = {
@@ -13734,16 +13734,27 @@ function addNotification(title, message, silent = false, extraData = null) {
         message: message,
         time: getVietnamTime().toLocaleString('vi-VN'),
         unread: true,
-        extraData: extraData // Lưu trữ thông tin người dùng tại đây
+        extraData: extraData,
+        background: customBg // Lưu màu nền vào dữ liệu thông báo
     };
     
     userData.notifications.unshift(newNoti);
     if (userData.notifications.length > 20) userData.notifications.pop();
+    
     saveData();
     updateNotiBadge();
-    if (!silent) playTingSound();
-}
 
+    // Phát tiếng Ting
+    if (!silent) {
+        playTingSound();
+    }
+
+    // Nếu Henry có hàm hiển thị thông báo bay ra (toast), hãy truyền customBg vào đó
+    if (typeof showIngameToast === 'function') {
+        showIngameToast(title, message, customBg);
+    }
+}
+    
 // Sửa hàm renderNotis (Thêm sự kiện onclick vào div thông báo)
 function renderNotis() {
     const listBody = document.getElementById('noti-list-body');
@@ -14028,26 +14039,33 @@ function checkSystemAlerts() {
 function playTingSound() {
     // Kiểm tra cài đặt người dùng trước khi phát
     if (userData.settings && userData.settings.soundEnabled === false) {
-        return; // Nếu tắt thì thoát hàm, không kêu
+        return; 
     }
 
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    // --- PHẦN SỬA QUAN TRỌNG: Đánh thức AudioContext ---
+    if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+    }
+
     const oscillator = audioCtx.createOscillator();
     const gainNode = audioCtx.createGain();
 
     oscillator.connect(gainNode);
     gainNode.connect(audioCtx.destination);
 
+    // Tần số 1320Hz tạo tiếng "Ting" thanh mảnh
     oscillator.type = 'sine'; 
     oscillator.frequency.setValueAtTime(1320, audioCtx.currentTime); 
     
     gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.8);
+    // Hiệu ứng nhỏ dần âm thanh
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
 
     oscillator.start(audioCtx.currentTime);
-    oscillator.stop(audioCtx.currentTime + 0.8);
+    oscillator.stop(audioCtx.currentTime + 0.5); // Giảm xuống 0.5s cho tiếng Ting gọn hơn
 }
-
 // Tìm trong hàm hideSplashScreen()
 function hideSplashScreen() {
     const splash = document.getElementById('splash-screen');
