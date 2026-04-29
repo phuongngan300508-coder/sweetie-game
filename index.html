@@ -10555,6 +10555,25 @@ input[type="date"].sweetie-input-style {
         </div>
     </div>
 </div>
+
+    <div id="friend-msg-modal" class="modal-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); z-index:3000; align-items:center; justify-content:center; backdrop-filter: blur(3px);">
+    <div class="modal-content animate__animated animate__zoomIn" style="background:white; width:90%; max-width:350px; border-radius:25px; overflow:hidden; box-shadow: 0 10px 25px rgba(255, 143, 171, 0.3);">
+        <div style="padding:15px; background:linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%); color:white; text-align:center; font-weight:bold;">
+            <i class="fas fa-paper-plane"></i> Gửi lời nhắn cư dân ✨
+        </div>
+        <div style="padding:20px;">
+            <p style="font-size:0.8rem; color:#888; margin-bottom:10px; text-align:center;">Hãy viết vài dòng làm quen với <strong><span id="target-friend-name"></span></strong> nhé!</p>
+            <textarea id="friend-hello-text" 
+                style="width:100%; height:100px; border:2px solid #ffe4e8; border-radius:15px; padding:12px; font-size:0.85rem; outline:none; resize:none; background:#fff9fa; color:#555;" 
+                placeholder="Ví dụ: Chào bạn, mình muốn kết bạn để cùng chơi game..."></textarea>
+            
+            <div style="display:flex; gap:10px; margin-top:15px;">
+                <button onclick="closeFriendMsgModal()" style="flex:1; padding:10px; border-radius:20px; border:none; background:#f0f0f0; color:#666; font-size:0.8rem; cursor:pointer; font-weight:bold;">Để sau</button>
+                <button onclick="confirmSendFriendRequest()" style="flex:2; padding:10px; border-radius:20px; border:none; background:#ff8fab; color:white; font-size:0.8rem; cursor:pointer; font-weight:bold; box-shadow: 0 4px 10px rgba(255, 143, 171, 0.4);">Gửi lời mời ✨</button>
+            </div>
+        </div>
+    </div>
+</div>
 <script>
   let replyingTo = null; // Lưu tin nhắn đang được trả lời {id, text, sender}
   // Biến cờ để đảm bảo mỗi máy chỉ "nghe" Firebase đúng 1 lần duy nhất
@@ -13781,6 +13800,13 @@ function renderNotis() {
             }
         }
 
+        // --- TỐI ƯU HIỂN THỊ LỜI NHẮN (ZALO STYLE) ---
+        // Nếu là lời mời kết bạn và có lời nhắn đính kèm, ta ưu tiên hiện lời nhắn đó
+        let displayMessage = n.message || "";
+        if (n.extraData && n.extraData.type === 'friend_request' && n.extraData.helloMessage) {
+            displayMessage = `<i class="fas fa-comment-dots" style="opacity:0.6; font-size:0.8em;"></i> "${n.extraData.helloMessage}"`;
+        }
+
         return `
             <div class="noti-item ${n.unread ? 'unread' : ''} ${interactiveClass}" 
                  ${clickAttr} 
@@ -13788,7 +13814,7 @@ function renderNotis() {
                  tabindex="0"
                  style="${hasExtra ? 'cursor: pointer; border-left: 4px solid #ff1493; background: #fffaff; -webkit-tap-highlight-color: rgba(0,0,0,0); touch-action: manipulation;' : ''}">
                 <h4 style="margin:0; color:#d63384; font-size:0.9em;">${n.title}</h4>
-                <p style="margin:5px 0; font-size:0.8em; color:#555;">${n.message}</p>
+                <p style="margin:5px 0; font-size:0.8em; color:#555;">${displayMessage}</p>
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px;">
                     <span class="noti-time" style="font-size:0.7em; color:#aaa;">${n.time}</span>
                     ${hasExtra ? `<span style="font-size:0.7em; color:#ff1493; font-weight:800;">${actionLabel} <i class="fas fa-chevron-right"></i></span>` : ''}
@@ -17115,53 +17141,91 @@ function openChatWithOther() {
     }
 }
 
-// --- HÀM 1: GỬI LỜI MỜI KẾT BẠN (Đã sửa để reset thông báo sau gỡ chặn) ---
-// --- HÀM 1: GỬI LỜI MỜI KẾT BẠN (Đã sửa để hỗ trợ chạm mở Profile) ---
+// Biến lưu trữ tạm thời người đang muốn kết bạn
+let pendingFriendUid = '';
+// --- HÀM 1: GỬI LỜI MỜI KẾT BẠN (Đã sửa để mở Modal soạn lời nhắn) ---
 function sendFriendRequest() {
     if (!currentViewedUser || currentViewedUser === currentUser) return;
 
-    const btn = document.querySelector('.btn-action-pink');
-    if (!btn) return;
+    // 1. Lưu UID người nhận vào biến tạm để dùng khi xác nhận gửi
+    // (Giả sử ông đã khai báo biến pendingFriendUid toàn cục)
+    pendingFriendUid = currentViewedUser; 
 
-    // Đổi trạng thái nút ngay lập tức
+    // 2. Cập nhật tên người nhận lên giao diện Modal
+    const targetNameEl = document.getElementById('target-friend-name');
+    if (targetNameEl) targetNameEl.innerText = currentViewedUser;
+
+    // 3. Reset nội dung ô nhập lời nhắn về mặc định cho ngọt ngào
+    const msgInput = document.getElementById('friend-hello-text');
+    if (msgInput) {
+        msgInput.value = `Mình là ${userData.profile.name || currentUser}, kết bạn với mình nhé! ✨`;
+    }
+
+    // 4. Mở Modal soạn lời nhắn (Thiết kế hồng pastel bo góc 20px như đã bàn)
+    const msgModal = document.getElementById('friend-msg-modal');
+    if (msgModal) {
+        msgModal.style.display = 'flex';
+        // Tự động focus vào ô nhập để cư dân gõ luôn
+        setTimeout(() => msgInput && msgInput.focus(), 100);
+    }
+}
+
+// --- HÀM XÁC NHẬN GỬI (Nơi giữ nguyên 100% logic Firebase của Henry) ---
+function confirmSendFriendRequest() {
+    const helloMessage = document.getElementById('friend-hello-text').value.trim();
+    const btn = document.querySelector('.btn-action-pink');
+    
+    // Đóng modal soạn lời nhắn
+    const msgModal = document.getElementById('friend-msg-modal');
+    if (msgModal) msgModal.style.display = 'none';
+
+    if (!btn || !pendingFriendUid) return;
+
+    // --- BẮT ĐẦU GIỮ NGUYÊN LOGIC GỐC CỦA HENRY ---
     btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ĐANG GỬI...`;
     btn.disabled = true;
 
-    // 1. Gửi yêu cầu vào nhánh friend_requests của người nhận
-    db.ref('friend_requests/' + currentViewedUser + '/' + currentUser).set({
+    db.ref('friend_requests/' + pendingFriendUid + '/' + currentUser).set({
         from: currentUser,
         time: firebase.database.ServerValue.TIMESTAMP,
-        status: 'pending' // Chờ phản hồi
+        status: 'pending',
+        helloMessage: helloMessage || "Kết bạn với mình nhé! ✨" // Thêm lời nhắn vào đây
     }).then(() => {
         btn.innerHTML = `<i class="fas fa-check"></i> ĐÃ GỬI LỜI MỜI`;
         btn.style.background = "#ccc";
         
-        // --- CẬP NHẬT QUAN TRỌNG: Dùng .set() với ID cố định thay vì .push() ---
-        // Việc dùng ID cố định (ví dụ: 'req_' + currentUser) giúp Firebase ghi đè nếu nhấn nhầm nhiều lần
-        // và giúp Henry dễ dàng kiểm soát việc trùng lặp thông báo.
         const requestNotificationId = 'request_from_' + currentUser;
         
-        db.ref('notifications_queue/' + currentViewedUser + '/' + requestNotificationId).set({
+        db.ref('notifications_queue/' + pendingFriendUid + '/' + requestNotificationId).set({
             from: currentUser,
             title: "💌 LỜI MỜI KẾT BẠN",
-            text: `${currentUser} vừa gửi cho bạn một lời mời kết bạn mới!`,
+            // Ghi nội dung lời nhắn ra thông báo để người nhận đọc được luôn
+            text: `${userData.profile.name || currentUser}: "${helloMessage || 'Kết bạn với mình nhé!'}"`,
             type: 'friend_request',
             time: Date.now(),
             extraData: { 
                 type: 'friend_request', 
-                sender: currentUser, // Tên tài khoản Henry
-                data: userData,      // Dữ liệu hồ sơ Henry (để hiện Profile ngay)
-                friendName: currentUser // Backup thêm trường này cho hàm handleNotiClick
+                sender: currentUser,
+                data: userData, 
+                friendName: currentUser,
+                helloMessage: helloMessage // Gửi kèm để handleNotiClick có thể dùng
             }
         });
 
-        addNotification("💌 KẾT BẠN", `Đã gửi lời mời đến ${currentViewedUser}.`);
+        addNotification("💌 KẾT BẠN", `Đã gửi lời mời đến ${pendingFriendUid}.`);
+        pendingFriendUid = ''; // Xóa tạm sau khi gửi xong
     }).catch(err => {
         console.error("Lỗi gửi lời mời:", err);
         btn.disabled = false;
         btn.innerHTML = `<i class="fas fa-user-plus"></i> KẾT BẠN`;
-        btn.style.background = ""; // Trả về màu hồng cũ nếu lỗi
+        btn.style.background = ""; 
     });
+}
+
+    // Bước 2: Hàm đóng Modal
+function closeFriendMsgModal() {
+    document.getElementById('friend-msg-modal').style.display = 'none';
+    pendingFriendUid = '';
 }
 
 // --- HÀM 2: CHẤP NHẬN KẾT BẠN ---
