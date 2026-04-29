@@ -23557,7 +23557,7 @@ async function removeSavedAccount(stk, name) {
         openSavedAccounts();
     } catch (error) {
         console.error("Lỗi khi xóa:", error);
-        alert("❌ Có lỗi xảy ra, Henry thử lại nhé!");
+        alert("❌ Có lỗi xảy ra, bạn thử lại nhé!");
     }
 }
     
@@ -24349,7 +24349,7 @@ async function selectSavedAccount(stk, name) {
         }
     } catch (e) {
         console.error("Lỗi đăng bài:", e);
-        alert("Có lỗi xảy ra khi tải ảnh/video, Henry kiểm tra lại cấu hình Cloudinary nhé!");
+        alert("Có lỗi xảy ra khi tải ảnh/video, bạn kiểm tra lại cấu hình Cloudinary nhé!");
     } finally {
         postBtn.disabled = false;
         postBtn.innerText = originalText;
@@ -25802,7 +25802,7 @@ document.addEventListener('keydown', function (e) {
         }
     }).catch(err => {
         console.error('Lỗi khi sao chép:', err);
-        alert("Có lỗi khi sao chép, Henry kiểm tra lại nhé!");
+        alert("Có lỗi khi sao chép, bạn kiểm tra lại nhé!");
     });
 }
 
@@ -26173,7 +26173,7 @@ async function uploadSticker() {
 
     } catch (error) {
         console.error("Lỗi up nhãn:", error);
-        alert("Có lỗi khi up nhãn rồi Henry ơi! 😿");
+        alert("Có lỗi khi up nhãn rồi bạn ơi! 😿");
     } finally {
         btn.innerText = originalBtnText;
         btn.disabled = false;
@@ -26240,7 +26240,7 @@ async function sendSticker(stickerUrl, postId) {
 
     } catch (e) {
         console.error("Lỗi gửi nhãn dán:", e);
-        alert("Có lỗi xảy ra khi gửi nhãn dán, Henry kiểm tra lại Rules nhé! 😿");
+        alert("Có lỗi xảy ra khi gửi nhãn dán, bạn kiểm tra lại Rules nhé! 😿");
     }
 }
 
@@ -26329,7 +26329,7 @@ async function loadStickerStore() {
     const stickers = snap.val();
 
     if (!stickers) {
-        container.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding:20px; color:#888;">Kho còn trống, Henry up nhãn mới đi! ✨</div>`;
+        container.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding:20px; color:#888;">Kho còn trống, bạn up nhãn mới đi! ✨</div>`;
         return;
     }
 
