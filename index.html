@@ -25209,27 +25209,23 @@ function toggleReaction(postId) {
 
 async function submitComment(postId) {
     const input = document.getElementById(`comment-input-${postId}`);
-    
-    // --- LỚP BẢO VỆ: Ngăn lỗi null khi DOM chưa sẵn sàng hoặc sai ID ---
     if (!input) return; 
 
     const text = input.value.trim();
     
-    // --- KHẮC PHỤC LỖI REFERENCEERROR: Đảm bảo biến tồn tại ---
-    // Nếu selectedCommFiles chưa được định nghĩa toàn cục, ta coi như nó là một đối tượng rỗng
+    // Đảm bảo lấy đúng file media đang chờ cho bài viết này
     const safeSelectedCommFiles = (typeof selectedCommFiles !== 'undefined') ? selectedCommFiles : {};
-
-    // KIỂM TRA QUAN TRỌNG: userData phải tồn tại
-    // Chỉnh sửa logic: Cho phép gửi nếu có nội dung HOẶC có file media đang chờ
     const currentMediaFile = safeSelectedCommFiles[postId] || null;
 
-    if (!text && !currentMediaFile) {
-        alert("Vui lòng nhập nội dung hoặc chọn ảnh để bình luận! 💖");
+    // 1. KIỂM TRA ĐĂNG NHẬP (Phải có UID mới làm được gì tiếp theo)
+    if (!userData || !userData.profile || !userData.profile.uid) {
+        alert("Bạn cần đăng nhập để bình luận! 💖");
         return;
     }
 
-    if (!userData || !userData.profile || !userData.profile.uid) {
-        alert("Bạn cần đăng nhập để bình luận! 💖");
+    // 2. KIỂM TRA NỘI DUNG (Phải có chữ HOẶC có ảnh mới cho gửi)
+    if (!text && !currentMediaFile) {
+        alert("Cư dân hãy nhập nội dung hoặc chọn ảnh để bình luận nhé! ✨");
         return;
     }
 
@@ -25241,7 +25237,7 @@ async function submitComment(postId) {
             return; 
         }
 
-        // --- THÊM BƯỚC KIỂM TRA QUYỀN BÌNH LUẬN CỦA BÀI VIẾT ---
+        // --- KIỂM TRA QUYỀN BÌNH LUẬN CỦA BÀI VIẾT ---
         firebase.database().ref(`posts/${postId}/allowComments`).once('value', async (snap) => {
             if (snap.exists() && snap.val() === false) {
                 alert("Bài viết này đã tắt tính năng bình luận rồi nha! 💖");
@@ -25251,13 +25247,17 @@ async function submitComment(postId) {
             try {
                 let mediaData = null;
 
-                // --- XỬ LÝ TẢI ẢNH/VIDEO LÊN CLOUDINARY (NẾU CÓ) ---
+                // --- LOẠI 1: XỬ LÝ NẾU CÓ KÈM ẢNH/VIDEO ---
                 if (currentMediaFile) {
                     const formData = new FormData();
                     formData.append("file", currentMediaFile);
                     formData.append("upload_preset", "SWEETIE GAME WORLD"); 
 
                     const resourceType = currentMediaFile.type.startsWith('video') ? "video" : "image";
+                    
+                    // Hiển thị trạng thái đang tải lên cho Henry dễ theo dõi
+                    console.log("Đang tải media lên Cloudinary...");
+                    
                     const response = await fetch(`https://api.cloudinary.com/v1_1/dl4wnxsm3/${resourceType}/upload`, {
                         method: "POST",
                         body: formData
@@ -25269,14 +25269,18 @@ async function submitComment(postId) {
                             url: resJson.secure_url,
                             type: resourceType
                         };
+                        console.log("Tải media thành công:", mediaData.url);
+                    } else {
+                        throw new Error("Lỗi phản hồi từ Cloudinary");
                     }
                 }
 
+                // --- LOẠI 2: TẠO DỮ LIỆU BÌNH LUẬN (Dù có media hay không) ---
                 const commentData = {
                     uid: userData.profile.uid, 
                     username: userData.profile.name || "Cư dân",
-                    text: text,
-                    media: mediaData, 
+                    text: text, // Có thể là chuỗi rỗng nếu chỉ gửi ảnh
+                    media: mediaData, // Sẽ là null nếu chỉ gửi chữ
                     timestamp: firebase.database.ServerValue.TIMESTAMP
                 };
 
@@ -25284,35 +25288,40 @@ async function submitComment(postId) {
                 firebase.database().ref(`posts/${postId}/comments`).push(commentData)
                 .then((snap) => { 
                     const newCommentId = snap.key; 
-                    handleMentionNotifications(text, postId, newCommentId); 
                     
+                    // Gửi thông báo nhắc tên nếu có text
+                    if (text) handleMentionNotifications(text, postId, newCommentId); 
+                    
+                    // Reset giao diện
                     input.value = "";
                     input.style.height = '36px'; 
 
-                    // Dọn dẹp preview media sau khi gửi thành công
+                    // Quan trọng: Xóa file đã lưu trong biến sau khi gửi thành công
+                    if (typeof selectedCommFiles !== 'undefined') {
+                        delete selectedCommFiles[postId];
+                    }
+
+                    // Dọn dẹp preview ảnh trên giao diện
                     if (typeof clearCommMedia === 'function') clearCommMedia(postId);
 
                     if (typeof addNotification === 'function') {
-                        addNotification("HỆ THỐNG", "Bình luận của bạn đã được gửi thành công! ✨");
+                        addNotification("BÌNH LUẬN ✨", "Đã gửi bình luận của bạn thành công!");
                     }
 
-                    // CHỈ CUỘN XUỐNG KHI LÀ COMMENT GỐC
+                    // Cuộn xuống xem bình luận mới
                     const commentList = document.getElementById(`comments-list-${postId}`);
                     if (commentList) {
-                        commentList.scrollTo({
-                            top: commentList.scrollHeight,
-                            behavior: 'smooth'
-                        });
+                        commentList.scrollTo({ top: commentList.scrollHeight, behavior: 'smooth' });
                     }
                 })
                 .catch(err => {
-                    console.error("Lỗi gửi bình luận:", err);
-                    alert("Không có quyền bình luận, hãy kiểm tra lại Rules!");
+                    console.error("Lỗi ghi Firebase:", err);
+                    alert("Lỗi bảo mật Firebase, hãy kiểm tra lại Rules!");
                 });
 
             } catch (error) {
-                console.error("Lỗi xử lý upload media:", error);
-                alert("Có lỗi xảy ra khi tải ảnh/video bình luận! 😿");
+                console.error("Lỗi xử lý upload:", error);
+                alert("Không thể tải ảnh lên, nhưng bạn vẫn có thể gửi chữ nhé! 😿");
             }
         });
     });
