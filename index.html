@@ -7425,6 +7425,33 @@ input[type="date"].sweetie-input-style {
     overflow-y: auto;
     padding: 10px;
 }
+
+    /* Popup menu cho dấu cộng bình luận */
+.comm-tools-popup {
+    background: white;
+    border: 1px solid #ffcad4;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(255, 143, 171, 0.2);
+    padding: 5px 0;
+    margin-bottom: 10px;
+    animation: fadeIn 0.2s ease-out;
+}
+
+.comm-tools-popup div {
+    padding: 8px 15px;
+    transition: background 0.2s;
+    color: #d81b60;
+    font-weight: 500;
+}
+
+.comm-tools-popup div:hover {
+    background: #fff0f3;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
 </style>
 </head>
 <body>
@@ -25848,6 +25875,31 @@ async function sendSticker(stickerUrl, postId) {
     await firebase.database().ref(`posts/${postId}/comments`).push(commentData);
     closeStickerModal();
 }
+
+    // Hàm để ẩn/hiện menu chọn Ảnh/Nhãn dán trong bình luận
+function toggleCommTools(event, postId) {
+    // Ngăn sự kiện nổi bọt để không làm ảnh hưởng đến các phần tử cha
+    event.stopPropagation();
+
+    const menu = document.getElementById(`comm-tools-${postId}`);
+    if (!menu) return;
+
+    // Đóng tất cả các menu comm-tools khác đang mở (để tránh bị chồng chéo)
+    document.querySelectorAll('.comm-tools-popup').forEach(m => {
+        if (m.id !== `comm-tools-${postId}`) m.style.display = 'none';
+    });
+
+    // Bật/Tắt menu hiện tại
+    const isHidden = menu.style.display === 'none' || menu.style.display === '';
+    menu.style.display = isHidden ? 'block' : 'none';
+}
+
+// Tự động đóng menu khi cư dân nhấn ra ngoài vùng popup
+window.addEventListener('click', function() {
+    document.querySelectorAll('.comm-tools-popup').forEach(m => {
+        m.style.display = 'none';
+    });
+});
 </script>
 </body>
 </html>
