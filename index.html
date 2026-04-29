@@ -14123,13 +14123,21 @@ async function requestNotificationPermission() {
 
 // HÀM BỔ SUNG: Lấy Token từ Firebase và lưu vào Database
 async function fetchAndSaveFCMToken() {
-    // 1. Kiểm tra xem trình duyệt có hỗ trợ Service Worker không
-    if (!('serviceWorker' in navigator)) return;
+    // 1. Kiểm tra xem trình duyệt có hỗ trợ Service Worker và Push không
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+        console.log("Hệ thống: Trình duyệt không hỗ trợ thông báo đẩy. ✨");
+        return;
+    }
 
     try {
         // 2. Đăng ký Service Worker thủ công (Sửa lỗi 404)
         // Dấu './' đảm bảo nó tìm đúng file ngang hàng với index.html trên GitHub
         const registration = await navigator.serviceWorker.register('./firebase-messaging-sw.js');
+        
+        // --- PHẦN SỬA QUAN TRỌNG: Đợi Service Worker sẵn sàng ---
+        // Dòng này giúp fix lỗi "Cannot read properties of undefined (reading 'pushManager')"
+        await navigator.serviceWorker.ready;
+        
         console.log("Hệ thống: Service Worker đã sẵn sàng!");
 
         const fcmMessaging = firebase.messaging();
@@ -14149,10 +14157,11 @@ async function fetchAndSaveFCMToken() {
             console.log("Hệ thống: Đã lưu Token thành công!");
         }
     } catch (err) {
+        // Henry có thể theo dõi lỗi chi tiết ở console để bảo trì
         console.error('Lỗi lấy Token:', err);
     }
 }
-
+    
 // Nội dung file sw.js
 self.addEventListener('push', function(event) {
     const options = {
