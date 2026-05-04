@@ -7725,6 +7725,17 @@ input[type="date"].sweetie-input-style {
         display: none;
     }
 }
+
+    /* Trạng thái mặc định */
+.reaction-picker {
+    display: none; 
+    /* Các style khác của bạn */
+}
+
+/* Trạng thái khi hiển thị */
+.reaction-picker.show {
+    display: flex;
+}
 </style>
 </head>
 <body>
@@ -18470,12 +18481,21 @@ function handleTouchEnd() {
     clearTimeout(touchTimer);
 }
 
-// 2. Hiện/Ẩn thanh chọn icon
 function toggleReactionPicker(msgId) {
     const picker = document.getElementById(`picker-${msgId}`);
-    const isVisible = picker.style.display === 'flex';
-    document.querySelectorAll('.reaction-picker').forEach(p => p.style.display = 'none');
-    picker.style.display = isVisible ? 'none' : 'flex';
+    
+    // Kiểm tra xem picker hiện tại có đang mở không
+    const isOpen = picker.classList.contains('show');
+
+    // Đóng tất cả các picker khác đang mở
+    document.querySelectorAll('.reaction-picker').forEach(p => {
+        p.classList.remove('show');
+    });
+
+    // Nếu lúc đầu nó chưa mở thì bây giờ mới mở
+    if (!isOpen) {
+        picker.classList.add('show');
+    }
 }
 
 // 3. Gửi cảm xúc lên Firebase
