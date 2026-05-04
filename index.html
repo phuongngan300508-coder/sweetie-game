@@ -7705,13 +7705,21 @@ input[type="date"].sweetie-input-style {
         overflow-y: auto;
     }
 
-    /* Đảm bảo các text và box vẫn căn trái cho đẹp, chỉ có nút là căn giữa */
-    .pc-info-right h2, 
-    .pc-info-right div, 
-    .pc-info-right p {
-        width: 100%;
-        text-align: left;
-    }
+    /* Tìm đoạn này trong CSS của bạn và sửa text-align thành center */
+.pc-info-right h2 {
+    width: 100%;
+    text-align: center; /* Sửa từ left thành center */
+    color: #ad1457;
+    font-size: 32px;
+    margin-bottom: 20px;
+}
+
+/* Các phần div và p vẫn giữ text-align: left để nội dung box không bị nhảy */
+.pc-info-right div, 
+.pc-info-right p {
+    width: 100%;
+    text-align: left;
+}
 
     .pc-info-right::-webkit-scrollbar {
         display: none;
@@ -10722,7 +10730,8 @@ input[type="date"].sweetie-input-style {
     </div>
     
     <div class="pc-info-right">
-        <h2 style="color: #ad1457; font-size: 32px; margin-bottom: 20px;">Cổng Thanh Toán PC</h2>
+        <!-- Tiêu đề này sẽ nằm giữa nhờ CSS text-align: center -->
+        <h2 style="color: #ad1457; font-size: 32px; margin-bottom: 20px;">Cổng Thanh Toán</h2>
         
         <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 25px; border-radius: 16px; margin-bottom: 25px;">
             <h4 style="margin: 0 0 10px 0; color: #1e293b;">Thông tin chuyển khoản</h4>
@@ -10731,14 +10740,13 @@ input[type="date"].sweetie-input-style {
             </p>
         </div>
 
-        <div style="display: flex; align-items: center; gap: 15px; background: #fff9c4; padding: 15px; border-radius: 12px; margin-bottom: 30px;"> <!-- Thêm margin-bottom ở đây -->
+        <div style="display: flex; align-items: center; gap: 15px; background: #fff9c4; padding: 15px; border-radius: 12px; margin-bottom: 30px;">
             <i class="fas fa-copy" style="font-size: 20px; color: #fbc02d;"></i>
             <p style="margin: 0; font-size: 14px; color: #856404;">
                 Để sao chép số tài khoản nhanh: <b>Cài đặt &rarr; Chuyển tiền cho chủ web</b>
             </p>
         </div>
 
-        <!-- Nút bấm căn giữa và có khoảng cách -->
         <button onclick="toggleQRModal()" style="margin: 0 auto; width: 100%; max-width: 250px; padding: 15px; border-radius: 12px; border: none; background: linear-gradient(90deg, #ad1457, #d81b60); color: white; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.3s; display: block;">
             XÁC NHẬN ĐÃ HIỂU
         </button>
