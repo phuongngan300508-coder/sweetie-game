@@ -24987,9 +24987,12 @@ async function listenToPosts() {
                 ${mediaHtml}
 
                 <div class="post-actions" style="display: flex; gap: 15px; padding: 8px 0;">
-                    <button class="action-btn" onclick="toggleReaction('${post.id}')" style="background:none; border:none; color:${hasLiked ? '#ff1493' : '#ff8fab'}; cursor:pointer; font-weight:${hasLiked ? 'bold' : 'normal'};">
-                        <i class="${hasLiked ? 'fas' : 'far'} fa-heart"></i> ${reactionCount} Tim
-                    </button>
+<button class="action-btn" 
+        data-liked="${hasLiked ? 'true' : 'false'}" 
+        onclick="toggleReaction('${post.id}')" 
+        style="background:none; border:none; color:${hasLiked ? '#ff1493' : '#ff8fab'}; cursor:pointer; font-weight:${hasLiked ? 'bold' : 'normal'};">
+    <i class="${hasLiked ? 'fas' : 'far'} fa-heart"></i> ${reactionCount} Tim
+</button>
                     <button class="action-btn" onclick="${post.allowComments !== false ? `document.getElementById('comment-input-${post.id}').focus()` : `alert('Bài viết đã tắt bình luận!')`}" style="background:none; border:none; color:#ff8fab; cursor:pointer;">
                         <i class="far fa-comment"></i> Bình luận
                     </button>
@@ -25544,17 +25547,35 @@ function deleteComment(postId, commentId) {
 
 function toggleReaction(postId) {
     const myUid = userData.profile.uid;
-    const btn = document.querySelector(`#post-card-${postId} .action-btn i.fa-heart`).parentElement;
+    const btn = document.querySelector(`#post-card-${postId} .action-btn`); // Lấy nút cha
+    const icon = btn.querySelector('i.fa-heart');
     
-    // Bước 1: Thay đổi giao diện ngay lập tức (cho người dùng sướng mắt trước)
-    const isLiked = btn.style.color === 'rgb(255, 20, 147)'; // Kiểm tra màu hồng đậm
-    btn.style.color = isLiked ? '#ff8fab' : '#ff1493';
-    
-    // Bước 2: Gửi lên Firebase sau
+    // Kiểm tra trạng thái qua dataset (không dùng màu sắc)
+    const isLiked = btn.dataset.liked === 'true';
+
+    // 1. Cập nhật UI Tức thì (Optimistic UI)
+    if (isLiked) {
+        btn.dataset.liked = 'false';
+        btn.style.color = '#ff8fab'; // Màu mặc định
+        icon.classList.replace('fas', 'far'); // Chuyển tim đặc thành tim rỗng
+    } else {
+        btn.dataset.liked = 'true';
+        btn.style.color = '#ff1493'; // Màu hồng đậm
+        icon.classList.replace('far', 'fas'); // Chuyển tim rỗng thành tim đặc
+    }
+
+    // 2. Gửi dữ liệu lên Firebase
     const ref = firebase.database().ref(`posts/${postId}/reactions/${myUid}`);
-    ref.once('value', snap => {
-        if (snap.exists()) ref.remove();
-        else ref.set(true);
+    ref.once('value').then(snap => {
+        if (snap.exists()) {
+            ref.remove();
+        } else {
+            ref.set(true);
+        }
+    }).catch(err => {
+        // Nếu lỗi thì trả lại màu cũ
+        console.error("Lỗi thả tim:", err);
+        btn.dataset.liked = isLiked ? 'true' : 'false';
     });
 }
 
