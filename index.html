@@ -25118,14 +25118,17 @@ const renderNestedComments = async (allComments, post, myUid, parentId = null, l
                             </div>
                         </div>
                     </div>
-                    ${isMyComment ? `
-                        <div class="status-dropdown" style="margin-left:5px;">
-                            <i class="fas fa-ellipsis-h" onclick="toggleStatusMenu(event, 'menu-comm-${c.id}')" style="color:#ffb3c1; cursor:pointer; font-size:0.7rem; padding:2px;"></i>
-                            <div id="menu-comm-${c.id}" class="status-menu-content" style="display:none; position:absolute; right:0; background:white; box-shadow:0 2px 10px rgba(0,0,0,0.1); border-radius:8px; z-index:100; min-width:80px;">
+                    
+                    <div class="status-dropdown" style="margin-left:5px;">
+                        <i class="fas fa-ellipsis-h" onclick="toggleStatusMenu(event, 'menu-comm-${c.id}')" style="color:#ffb3c1; cursor:pointer; font-size:0.7rem; padding:2px;"></i>
+                        <div id="menu-comm-${c.id}" class="status-menu-content" style="display:none; position:absolute; right:0; background:white; box-shadow:0 2px 10px rgba(0,0,0,0.1); border-radius:8px; z-index:100; min-width:100px;">
+                            <div onclick="copyPostContent(\`${safeTextForEdit}\`)" style="padding:8px 12px; cursor:pointer; color:#444; font-size:0.7rem; border-bottom:1px solid #fff3f5;"><i class="fas fa-copy"></i> Sao chép</div>
+                            ${isMyComment ? `
                                 <div onclick="editComment('${post.id}', '${c.id}', \`${safeTextForEdit}\`)" style="padding:8px 12px; cursor:pointer; color:#444; font-size:0.7rem; border-bottom:1px solid #fff3f5;"><i class="fas fa-edit"></i> Sửa</div>
                                 <div onclick="deleteComment('${post.id}', '${c.id}')" style="padding:8px 12px; cursor:pointer; color:#ff4d4d; font-size:0.7rem;"><i class="fas fa-trash"></i> Xóa</div>
-                            </div>
-                        </div>` : ''}
+                            ` : ''}
+                        </div>
+                    </div>
                 </div>
                 <div id="reply-box-${c.id}" style="display:none; margin-top:5px; gap:5px; margin-left:10px; align-items: flex-end;">
                     <textarea id="input-reply-${c.id}" placeholder="Viết phản hồi..." 
@@ -25547,38 +25550,60 @@ function deleteComment(postId, commentId) {
 
 function toggleReaction(postId) {
     const myUid = userData.profile.uid;
-    const btn = document.querySelector(`#post-card-${postId} .action-btn`); // Lấy nút cha
+    // 1. Tìm đúng các phần tử trong bài viết đó
+    const postCard = document.getElementById(`post-card-${postId}`);
+    const btn = postCard.querySelector('.action-btn');
     const icon = btn.querySelector('i.fa-heart');
     
-    // Kiểm tra trạng thái qua dataset (không dùng màu sắc)
-    const isLiked = btn.dataset.liked === 'true';
+    // Tìm phần hiển thị số tim (cái cục hồng hồng nhỏ ở trên đầu bài viết)
+    const countBadge = postCard.querySelector('[onclick^="showReactionList"]'); 
+    // Tìm phần text "X Tim" ở chính cái nút
+    const btnTextNode = btn; 
 
-    // 1. Cập nhật UI Tức thì (Optimistic UI)
+    // 2. Kiểm tra trạng thái hiện tại qua dataset
+    const isLiked = btn.dataset.liked === 'true';
+    
+    // Lấy số lượng hiện tại (ép kiểu về số để tính toán)
+    // Chỗ này mình sẽ bóc tách lấy con số từ text hiện có
+    let currentCount = parseInt(btn.innerText) || 0;
+
+    // 3. CẬP NHẬT GIAO DIỆN TỨC THÌ (Optimistic Update)
     if (isLiked) {
+        // Nếu đang like -> Bỏ like
+        currentCount = Math.max(0, currentCount - 1);
         btn.dataset.liked = 'false';
-        btn.style.color = '#ff8fab'; // Màu mặc định
-        icon.classList.replace('fas', 'far'); // Chuyển tim đặc thành tim rỗng
+        btn.style.color = '#ff8fab';
+        icon.classList.replace('fas', 'far');
     } else {
+        // Nếu chưa like -> Like
+        currentCount += 1;
         btn.dataset.liked = 'true';
-        btn.style.color = '#ff1493'; // Màu hồng đậm
-        icon.classList.replace('far', 'fas'); // Chuyển tim rỗng thành tim đặc
+        btn.style.color = '#ff1493';
+        icon.classList.replace('far', 'fas');
     }
 
-    // 2. Gửi dữ liệu lên Firebase
+    // Cập nhật con số ở cả 2 nơi (nút bấm và badge ở header)
+    const newText = ` <i class="${currentCount > 0 && (isLiked ? false : true) ? 'fas' : 'far'} fa-heart"></i> ${currentCount} Tim`;
+    btn.innerHTML = newText;
+    
+    if (countBadge) {
+        countBadge.innerHTML = `<i class="fas fa-heart"></i> ${currentCount}`;
+    }
+
+    // 4. GỬI LÊN FIREBASE (Chạy ngầm ở phía sau)
     const ref = firebase.database().ref(`posts/${postId}/reactions/${myUid}`);
     ref.once('value').then(snap => {
         if (snap.exists()) {
-            ref.remove();
+            return ref.remove();
         } else {
-            ref.set(true);
+            return ref.set(true);
         }
     }).catch(err => {
-        // Nếu lỗi thì trả lại màu cũ
-        console.error("Lỗi thả tim:", err);
-        btn.dataset.liked = isLiked ? 'true' : 'false';
+        console.error("Lỗi Firebase:", err);
+        // Nếu lỗi thì Henry có thể cho load lại bài viết hoặc báo lỗi
     });
 }
-
+    
 async function submitComment(postId) {
     const input = document.getElementById(`comment-input-${postId}`);
     if (!input) return; 
@@ -26194,7 +26219,15 @@ document.addEventListener('keydown', function (e) {
 });
     
     function copyPostContent(text) {
-    if (!text) return;
+    // Kiểm tra nếu text bị trống, null hoặc undefined (trường hợp bình luận chỉ có ảnh/sticker)
+    if (!text || text.trim() === "") {
+        if (typeof addNotification === 'function') {
+            addNotification("HỆ THỐNG", "Nội dung này không có văn bản để sao chép nè! ✨");
+        } else {
+            alert("Nội dung này không có văn bản để sao chép nè! ✨");
+        }
+        return;
+    }
 
     // Sử dụng navigator.clipboard để sao chép
     navigator.clipboard.writeText(text).then(() => {
@@ -26209,7 +26242,7 @@ document.addEventListener('keydown', function (e) {
         alert("Có lỗi khi sao chép, bạn kiểm tra lại nhé!");
     });
 }
-
+    
     async function reportContent(type, contentId, authorUid) {
     if (!userData?.profile?.uid) return alert("Cư dân cần đăng nhập để tố cáo nhé! ✨");
     const myUid = userData.profile.uid;
