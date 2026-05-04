@@ -7754,6 +7754,9 @@ input[type="date"].sweetie-input-style {
 <button onclick="toggleModal('modal-wheel')" class="btn-wallet" style="background: #fce4ec; color: #ad1457; border: 2px solid #f8bbd0;">
     <i class="fas fa-dharmachakra"></i> Vòng quay
 </button>
+            <button onclick="toggleQRModal()" class="btn-wallet" style="background: #e3f2fd; color: #1976d2; border: 2px solid #bbdefb;">
+    <i class="fas fa-qrcode"></i> Mã QR Chuyển tiền chủ app
+</button>
         </div>
     </div>
 </div>
@@ -10596,6 +10599,28 @@ input[type="date"].sweetie-input-style {
                 </button>
             </div>
         </div>
+    </div>
+</div>
+
+    <div id="modal-qr-owner" class="modal" style="display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); align-items: center; justify-content: center;">
+    <div style="background: white; padding: 20px; border-radius: 20px; max-width: 380px; width: 90%; text-align: center; position: relative; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
+        <!-- Nút đóng nhanh -->
+        <span onclick="toggleQRModal()" style="position: absolute; right: 15px; top: 10px; font-size: 28px; cursor: pointer; color: #aaa;">&times;</span>
+        
+        <h3 style="color: #ad1457; margin-top: 10px; margin-bottom: 15px; font-family: sans-serif;">Quét Mã Giao Dịch</h3>
+        
+        <!-- Ảnh từ file retouch_2026050414030024.jpg -->
+        <div style="margin-bottom: 15px;">
+            <img src="retouch_2026050414030024.jpg" alt="QR Code" style="width: 100%; border-radius: 15px; border: 1px solid #fce4ec;">
+        </div>
+
+        <!-- Đoạn ghi chú theo yêu cầu -->
+        <div style="background: #fff9f9; border: 1px dashed #ffb1c1; padding: 12px; text-align: left; font-size: 13px; color: #444; line-height: 1.5; border-radius: 10px;">
+            <p style="margin: 0;">📍 <strong>Ghi chú:</strong> Đây là mã chuyển tiền qua ngân hàng thật của chủ app.</p>
+            <p style="margin: 8px 0 0 0;">💡 Nếu bạn muốn <b>copy số tài khoản</b>, hãy vô khu vực <b>cài đặt</b> và ấn chỗ <b>chuyển tiền cho chủ web</b> để copy nhé.</p>
+        </div>
+        
+        <button onclick="toggleQRModal()" style="margin-top: 15px; width: 100%; padding: 10px; border-radius: 10px; border: none; background: linear-gradient(to right, #ff69b4, #ad1457); color: white; font-weight: bold; cursor: pointer;">Đã hiểu</button>
     </div>
 </div>
 <script>
@@ -26540,6 +26565,28 @@ async function loadStickerStore() {
     });
     container.innerHTML = html;
 }
+
+    function toggleQRModal() {
+    const qrModal = document.getElementById('modal-qr-owner');
+    
+    if (qrModal.style.display === "none" || qrModal.style.display === "") {
+        qrModal.style.display = "flex";
+        // Chặn cuộn trang web phía dưới khi đang mở popup
+        document.body.style.overflow = "hidden";
+    } else {
+        qrModal.style.display = "none";
+        // Cho phép cuộn trang lại bình thường
+        document.body.style.overflow = "auto";
+    }
+}
+
+// Đóng popup khi người dùng click vào vùng tối bên ngoài
+window.addEventListener('click', function(event) {
+    const qrModal = document.getElementById('modal-qr-owner');
+    if (event.target === qrModal) {
+        toggleQRModal();
+    }
+});
 </script>
 </body>
 </html>
