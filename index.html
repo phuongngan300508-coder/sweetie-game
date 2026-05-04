@@ -26143,9 +26143,8 @@ document.addEventListener('keydown', function (e) {
     // Kiểm tra xem có phải đang gõ trong textarea bình luận hoặc phản hồi không
     if (e.target && (e.target.id.startsWith('comment-input-') || e.target.id.startsWith('input-reply-'))) {
         
-        // --- ĐOẠN SỬA: Kiểm tra thiết bị và phím bấm ---
-        // Thêm kiểm tra: Nếu là màn hình nhỏ (điện thoại) thì ưu tiên xuống dòng
-        const isMobile = window.innerWidth <= 768; 
+        // --- ĐOẠN SỬA: Nhận diện thiết bị di động chuẩn hơn ---
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
         // Nếu nhấn Enter và (KHÔNG giữ Shift) và (KHÔNG phải điện thoại) -> Mới thực hiện gửi
         if (e.key === 'Enter' && !e.shiftKey && !isMobile) {
