@@ -7691,23 +7691,30 @@ input[type="date"].sweetie-input-style {
         box-shadow: 0 10px 30px rgba(173, 20, 87, 0.15);
     }
 
-    /* Bên phải: Nội dung (SỬA LẠI ĐỂ CÓ THANH CUỘN ẨN) */
     .pc-info-right {
         flex: 1;
         padding: 50px 40px;
         background: #ffffff;
         
-        /* Cấu hình cuộn */
-        overflow-y: auto; 
-        display: block; /* Chuyển từ flex sang block để nội dung trôi tự nhiên khi cuộn */
+        /* Kích hoạt flexbox để căn giữa nút */
+        display: flex;
+        flex-direction: column;
+        align-items: center; /* Căn giữa tất cả các phần tử theo chiều ngang */
+        justify-content: flex-start; /* Nội dung bắt đầu từ trên xuống */
         
-        /* Ẩn thanh cuộn cho PC */
-        -ms-overflow-style: none;  /* IE và Edge */
-        scrollbar-width: none;  /* Firefox */
+        overflow-y: auto;
+    }
+
+    /* Đảm bảo các text và box vẫn căn trái cho đẹp, chỉ có nút là căn giữa */
+    .pc-info-right h2, 
+    .pc-info-right div, 
+    .pc-info-right p {
+        width: 100%;
+        text-align: left;
     }
 
     .pc-info-right::-webkit-scrollbar {
-        display: none; /* Chrome, Safari, Opera */
+        display: none;
     }
 }
 </style>
@@ -10707,33 +10714,36 @@ input[type="date"].sweetie-input-style {
             </div>
         </div>
 
-        <!-- ================= GIAO DIỆN PC (HOÀN TOÀN MỚI) ================= -->
-        <div class="pc-layout">
-            <div class="pc-qr-left">
-                <img src="https://i.postimg.cc/7611YRrV/retouch-2026050414030024.jpg" alt="QR Code">
-                <p style="margin-top: 20px; color: #ad1457; font-weight: bold;">QUÉT MÃ ĐỂ THANH TOÁN</p>
-            </div>
-            
-            <div class="pc-info-right">
-                <h2 style="color: #ad1457; font-size: 32px; margin-bottom: 20px;">Cổng Thanh Toán PC</h2>
-                
-                <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 25px; border-radius: 16px; margin-bottom: 25px;">
-                    <h4 style="margin: 0 0 10px 0; color: #1e293b;">Thông tin chuyển khoản</h4>
-                    <p style="margin: 0; font-size: 15px; color: #64748b; line-height: 1.6;">
-                        Đây là mã QR ngân hàng trực tuyến của chủ sở hữu. Mọi giao dịch được xử lý bảo mật qua hệ thống liên ngân hàng.
-                    </p>
-                </div>
-
-                <div style="display: flex; align-items: center; gap: 15px; background: #fff9c4; padding: 15px; border-radius: 12px;">
-                    <i class="fas fa-copy" style="font-size: 20px; color: #fbc02d;"></i>
-                    <p style="margin: 0; font-size: 14px; color: #856404;">
-                        Để sao chép số tài khoản nhanh: <b>Cài đặt &rarr; Chuyển tiền cho chủ web</b>
-                    </p>
-                </div>
-
-                <button onclick="toggleQRModal()" style="margin-top: auto; padding: 15px; border-radius: 12px; border: none; background: linear-gradient(90deg, #ad1457, #d81b60); color: white; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.3s;">XÁC NHẬN ĐÃ HIỂU</button>
-            </div>
+        <!-- ================= GIAO DIỆN PC (ĐÃ CẬP NHẬT NÚT) ================= -->
+<div class="pc-layout">
+    <div class="pc-qr-left">
+        <img src="https://i.postimg.cc/7611YRrV/retouch-2026050414030024.jpg" alt="QR Code">
+        <p style="margin-top: 20px; color: #ad1457; font-weight: bold;">QUÉT MÃ ĐỂ THANH TOÁN</p>
+    </div>
+    
+    <div class="pc-info-right">
+        <h2 style="color: #ad1457; font-size: 32px; margin-bottom: 20px;">Cổng Thanh Toán PC</h2>
+        
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 25px; border-radius: 16px; margin-bottom: 25px;">
+            <h4 style="margin: 0 0 10px 0; color: #1e293b;">Thông tin chuyển khoản</h4>
+            <p style="margin: 0; font-size: 15px; color: #64748b; line-height: 1.6;">
+                Đây là mã QR ngân hàng trực tuyến của chủ sở hữu. Mọi giao dịch được xử lý bảo mật qua hệ thống liên ngân hàng.
+            </p>
         </div>
+
+        <div style="display: flex; align-items: center; gap: 15px; background: #fff9c4; padding: 15px; border-radius: 12px; margin-bottom: 30px;"> <!-- Thêm margin-bottom ở đây -->
+            <i class="fas fa-copy" style="font-size: 20px; color: #fbc02d;"></i>
+            <p style="margin: 0; font-size: 14px; color: #856404;">
+                Để sao chép số tài khoản nhanh: <b>Cài đặt &rarr; Chuyển tiền cho chủ web</b>
+            </p>
+        </div>
+
+        <!-- Nút bấm căn giữa và có khoảng cách -->
+        <button onclick="toggleQRModal()" style="margin: 0 auto; width: 100%; max-width: 250px; padding: 15px; border-radius: 12px; border: none; background: linear-gradient(90deg, #ad1457, #d81b60); color: white; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.3s; display: block;">
+            XÁC NHẬN ĐÃ HIỂU
+        </button>
+    </div>
+</div>
     </div>
 </div>
 <script>
