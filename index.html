@@ -7657,22 +7657,23 @@ input[type="date"].sweetie-input-style {
 /* GIAO DIỆN RIÊNG BIỆT CHO MÁY TÍNH (PC) */
 @media (min-width: 1024px) {
     .qr-modal-content {
-        max-width: 900px; /* PC rộng rãi hơn */
+        max-width: 900px; 
         width: 80%;
+        height: 600px; /* Cố định chiều cao tổng để kích hoạt cuộn bên trong */
         max-height: 90vh;
         border-radius: 24px;
-        overflow: hidden; /* PC không cần cuộn nội dung tổng */
+        overflow: hidden; /* Quan trọng: Để container chính không cuộn, chỉ cột phải cuộn */
     }
 
-    .mobile-layout { display: none; } /* Ẩn layout mobile */
+    .mobile-layout { display: none; } 
     
     .pc-layout { 
-        display: flex; /* Chia đôi màn hình */
+        display: flex; 
         align-items: stretch;
-        min-height: 500px;
+        height: 100%; /* Chiếm toàn bộ chiều cao của container */
     }
 
-    /* Bên trái: Ảnh */
+    /* Bên trái: Ảnh (Giữ nguyên, cố định) */
     .pc-qr-left {
         flex: 1.2;
         background: #fff5f8;
@@ -7690,14 +7691,23 @@ input[type="date"].sweetie-input-style {
         box-shadow: 0 10px 30px rgba(173, 20, 87, 0.15);
     }
 
-    /* Bên phải: Nội dung */
+    /* Bên phải: Nội dung (SỬA LẠI ĐỂ CÓ THANH CUỘN ẨN) */
     .pc-info-right {
         flex: 1;
         padding: 50px 40px;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
         background: #ffffff;
+        
+        /* Cấu hình cuộn */
+        overflow-y: auto; 
+        display: block; /* Chuyển từ flex sang block để nội dung trôi tự nhiên khi cuộn */
+        
+        /* Ẩn thanh cuộn cho PC */
+        -ms-overflow-style: none;  /* IE và Edge */
+        scrollbar-width: none;  /* Firefox */
+    }
+
+    .pc-info-right::-webkit-scrollbar {
+        display: none; /* Chrome, Safari, Opera */
     }
 }
 </style>
