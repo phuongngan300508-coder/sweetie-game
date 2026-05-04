@@ -25304,8 +25304,16 @@ async function submitReply(postId, commentId) {
     const replyInput = document.getElementById(`input-reply-${commentId}`);
     if (!replyInput) return; 
 
+    // --- PHẦN THÊM: Tìm và vô hiệu hóa nút Gửi phản hồi ---
+    const replyBtn = replyInput.parentElement.querySelector('button');
+    if (replyBtn) replyBtn.disabled = true;
+    // ----------------------------------------------------
+
     const text = replyInput.value.trim();
-    if (!text) return;
+    if (!text) {
+        if (replyBtn) replyBtn.disabled = false;
+        return;
+    }
 
     // --- KIỂM TRA LỆNH CẤM BÌNH LUẬN (Dành cho phản hồi) ---
     try {
@@ -25313,6 +25321,7 @@ async function submitReply(postId, commentId) {
         if (banSnap.exists() && banSnap.val() > Date.now()) {
             const timeLeft = new Date(banSnap.val()).toLocaleString('vi-VN');
             alert(`Bạn đang bị cấm bình luận và phản hồi đến: ${timeLeft} do vi phạm tiêu chuẩn cộng đồng. 🔒`);
+            if (replyBtn) replyBtn.disabled = false;
             return; // Dừng hàm ngay lập tức
         }
     } catch (err) {
@@ -25374,7 +25383,10 @@ async function submitReply(postId, commentId) {
     } catch (e) {
         console.error("Lỗi khi phản hồi:", e);
         alert("Lỗi khi phản hồi: " + e.message);
-    } 
+    } finally {
+        // --- Mở lại nút sau khi hoàn tất ---
+        if (replyBtn) replyBtn.disabled = false;
+    }
 }
     
 // Xóa phản hồi
@@ -25550,6 +25562,11 @@ async function submitComment(postId) {
     const input = document.getElementById(`comment-input-${postId}`);
     if (!input) return; 
 
+    // --- PHẦN THÊM: Tìm và vô hiệu hóa nút Gửi ---
+    const submitBtn = input.parentElement.querySelector('button');
+    if (submitBtn) submitBtn.disabled = true;
+    // --------------------------------------------
+
     const text = input.value.trim();
     
     // Đảm bảo lấy đúng file media đang chờ cho bài viết này
@@ -25559,12 +25576,14 @@ async function submitComment(postId) {
     // 1. KIỂM TRA ĐĂNG NHẬP (Phải có UID mới làm được gì tiếp theo)
     if (!userData || !userData.profile || !userData.profile.uid) {
         alert("Bạn cần đăng nhập để bình luận! 💖");
+        if (submitBtn) submitBtn.disabled = false; // Mở lại nút
         return;
     }
 
     // 2. KIỂM TRA NỘI DUNG (Phải có chữ HOẶC có ảnh mới cho gửi)
     if (!text && !currentMediaFile) {
         alert("Cư dân hãy nhập nội dung hoặc chọn ảnh để bình luận nhé! ✨");
+        if (submitBtn) submitBtn.disabled = false; // Mở lại nút
         return;
     }
 
@@ -25573,6 +25592,7 @@ async function submitComment(postId) {
         if (banSnap.exists() && banSnap.val() > Date.now()) {
             const timeLeft = new Date(banSnap.val()).toLocaleString('vi-VN');
             alert(`Bạn đang bị cấm bình luận đến: ${timeLeft} do vi phạm tiêu chuẩn cộng đồng. 🔒`);
+            if (submitBtn) submitBtn.disabled = false; // Mở lại nút
             return; 
         }
 
@@ -25580,6 +25600,7 @@ async function submitComment(postId) {
         firebase.database().ref(`posts/${postId}/allowComments`).once('value', async (snap) => {
             if (snap.exists() && snap.val() === false) {
                 alert("Bài viết này đã tắt tính năng bình luận rồi nha! 💖");
+                if (submitBtn) submitBtn.disabled = false; // Mở lại nút
                 return;
             }
 
@@ -25687,11 +25708,16 @@ async function submitComment(postId) {
                 .catch(err => {
                     console.error("Lỗi ghi Firebase:", err);
                     alert("Lỗi bảo mật Firebase, hãy kiểm tra lại Rules!");
+                })
+                .finally(() => {
+                    // --- Mở lại nút sau khi hoàn tất ---
+                    if (submitBtn) submitBtn.disabled = false;
                 });
 
             } catch (error) {
                 console.error("Lỗi xử lý upload:", error);
                 alert("Không thể tải ảnh lên, nhưng bạn vẫn có thể gửi chữ nhé! 😿");
+                if (submitBtn) submitBtn.disabled = false; // Mở lại nút để họ gửi lại chữ
             }
         });
     });
@@ -26117,9 +26143,13 @@ document.addEventListener('keydown', function (e) {
     // Kiểm tra xem có phải đang gõ trong textarea bình luận hoặc phản hồi không
     if (e.target && (e.target.id.startsWith('comment-input-') || e.target.id.startsWith('input-reply-'))) {
         
-        // Nếu nhấn Enter và KHÔNG giữ Shift
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault(); // Ngăn trình duyệt xuống dòng mặc định
+        // --- ĐOẠN SỬA: Kiểm tra thiết bị và phím bấm ---
+        // Thêm kiểm tra: Nếu là màn hình nhỏ (điện thoại) thì ưu tiên xuống dòng
+        const isMobile = window.innerWidth <= 768; 
+
+        // Nếu nhấn Enter và (KHÔNG giữ Shift) và (KHÔNG phải điện thoại) -> Mới thực hiện gửi
+        if (e.key === 'Enter' && !e.shiftKey && !isMobile) {
+            e.preventDefault(); // Ngăn trình duyệt xuống dòng mặc định để gửi
 
             const targetId = e.target.id;
             
@@ -26138,10 +26168,11 @@ document.addEventListener('keydown', function (e) {
                     submitReply(postId, commentId);
                 }
             }
-        }
+        } 
+        // Nếu là điện thoại hoặc nhấn Shift+Enter, trình duyệt sẽ tự thực hiện xuống dòng như mặc định
     }
 });
-
+    
     function copyPostContent(text) {
     if (!text) return;
 
