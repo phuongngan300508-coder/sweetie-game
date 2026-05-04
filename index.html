@@ -25542,20 +25542,59 @@ function deleteComment(postId, commentId) {
 
 // --- CÁC HÀM BỔ TRỢ (Cần thêm vào script của bạn) ---
 
-function toggleReaction(postId) {
+async function toggleReaction(postId) {
+    if (!userData || !userData.profile || !userData.profile.uid) {
+        alert("Bạn cần đăng nhập để thả tim nhé! 💖");
+        return;
+    }
+
     const myUid = userData.profile.uid;
+    const myName = userData.profile.name;
     const btn = document.querySelector(`#post-card-${postId} .action-btn i.fa-heart`).parentElement;
     
-    // Bước 1: Thay đổi giao diện ngay lập tức (cho người dùng sướng mắt trước)
-    const isLiked = btn.style.color === 'rgb(255, 20, 147)'; // Kiểm tra màu hồng đậm
+    // Giao diện thay đổi trước cho mượt
+    const isLiked = btn.style.color === 'rgb(255, 20, 147)';
     btn.style.color = isLiked ? '#ff8fab' : '#ff1493';
     
-    // Bước 2: Gửi lên Firebase sau
     const ref = firebase.database().ref(`posts/${postId}/reactions/${myUid}`);
-    ref.once('value', snap => {
-        if (snap.exists()) ref.remove();
-        else ref.set(true);
-    });
+    
+    try {
+        const snap = await ref.once('value');
+        if (snap.exists()) {
+            // Nếu đã tim rồi thì gỡ
+            await ref.remove();
+        } else {
+            // Nếu chưa tim thì đặt là true
+            await ref.set(true);
+
+            // --- PHẦN THÊM MỚI: THÔNG BÁO CHO CHỦ BÀI ---
+            const postSnap = await firebase.database().ref(`posts/${postId}`).once('value');
+            const postData = postSnap.val();
+
+            // Chỉ gửi thông báo nếu: Bài viết tồn tại AND mình không tự tim bài của mình
+            if (postData && postData.uid && postData.uid !== myUid) {
+                const postOwnerUid = postData.uid;
+
+                const notificationData = {
+                    title: "❤️ THẢ TIM",
+                    sender: myName,
+                    message: `${myName} đã yêu thích bài viết của bạn! ✨`,
+                    timestamp: firebase.database.ServerValue.TIMESTAMP,
+                    extraData: {
+                        type: 'open_post', // Để khi bấm vào thông báo nó tự cuộn tới bài này
+                        postId: postId,
+                        sender: myName
+                    }
+                };
+
+                // Đẩy vào hàng đợi thông báo của chủ bài viết
+                await firebase.database().ref(`notifications_queue/${postOwnerUid}`).push(notificationData);
+                console.log("🔔 Đã gửi thông báo thả tim đến chủ bài!");
+            }
+        }
+    } catch (e) {
+        console.error("Lỗi Reaction:", e);
+    }
 }
 
 async function submitComment(postId) {
