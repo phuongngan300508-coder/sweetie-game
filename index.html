@@ -7657,23 +7657,22 @@ input[type="date"].sweetie-input-style {
 /* GIAO DIỆN RIÊNG BIỆT CHO MÁY TÍNH (PC) */
 @media (min-width: 1024px) {
     .qr-modal-content {
-        max-width: 900px;
+        max-width: 900px; /* PC rộng rãi hơn */
         width: 80%;
-        height: 600px; /* Cố định chiều cao tổng của popup trên PC */
         max-height: 90vh;
         border-radius: 24px;
-        overflow: hidden; /* Không cho cả popup cuộn, chỉ cho cột phải cuộn */
+        overflow: hidden; /* PC không cần cuộn nội dung tổng */
     }
 
-    .mobile-layout { display: none; }
+    .mobile-layout { display: none; } /* Ẩn layout mobile */
     
     .pc-layout { 
-        display: flex;
-        height: 100%; /* Đảm bảo layout chiếm hết chiều cao popup */
+        display: flex; /* Chia đôi màn hình */
         align-items: stretch;
+        min-height: 500px;
     }
 
-    /* Bên trái: Ảnh (Cố định, không cuộn) */
+    /* Bên trái: Ảnh */
     .pc-qr-left {
         flex: 1.2;
         background: #fff5f8;
@@ -7683,24 +7682,22 @@ input[type="date"].sweetie-input-style {
         justify-content: center;
         align-items: center;
     }
+    
+    .pc-qr-left img {
+        width: 100%;
+        max-width: 350px;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(173, 20, 87, 0.15);
+    }
 
-    /* BÊN PHẢI: NỘI DUNG (CÓ THANH CUỘN ẨN) */
+    /* Bên phải: Nội dung */
     .pc-info-right {
         flex: 1;
         padding: 50px 40px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
         background: #ffffff;
-        
-        /* Cấu hình cuộn */
-        overflow-y: auto; 
-        display: block; /* Chuyển về block để cuộn tự nhiên */
-        
-        /* Ẩn thanh cuộn cho PC */
-        -ms-overflow-style: none;  /* IE/Edge */
-        scrollbar-width: none;  /* Firefox */
-    }
-
-    .pc-info-right::-webkit-scrollbar {
-        display: none; /* Chrome/Safari */
     }
 }
 </style>
@@ -10700,7 +10697,7 @@ input[type="date"].sweetie-input-style {
             </div>
         </div>
 
-       <!-- Layout PC -->
+        <!-- ================= GIAO DIỆN PC (HOÀN TOÀN MỚI) ================= -->
         <div class="pc-layout">
             <div class="pc-qr-left">
                 <img src="https://i.postimg.cc/7611YRrV/retouch-2026050414030024.jpg" alt="QR Code">
@@ -10708,27 +10705,23 @@ input[type="date"].sweetie-input-style {
             </div>
             
             <div class="pc-info-right">
-                <h2 style="color: #ad1457; font-size: 32px; margin-bottom: 25px;">Cổng Thanh Toán</h2>
+                <h2 style="color: #ad1457; font-size: 32px; margin-bottom: 20px;">Cổng Thanh Toán PC</h2>
                 
-                <!-- Bạn có thể thêm rất nhiều nội dung vào đây mà không sợ vỡ khung -->
-                <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 25px; border-radius: 16px; margin-bottom: 20px;">
-                    <h4 style="margin: 0 0 10px 0;">Thông báo từ hệ thống</h4>
-                    <p style="font-size: 15px; color: #64748b; line-height: 1.6;">Đây là mã QR ngân hàng thật của chủ app. Vui lòng kiểm tra kỹ số tiền và nội dung trước khi thực hiện giao dịch.</p>
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 25px; border-radius: 16px; margin-bottom: 25px;">
+                    <h4 style="margin: 0 0 10px 0; color: #1e293b;">Thông tin chuyển khoản</h4>
+                    <p style="margin: 0; font-size: 15px; color: #64748b; line-height: 1.6;">
+                        Đây là mã QR ngân hàng trực tuyến của chủ sở hữu. Mọi giao dịch được xử lý bảo mật qua hệ thống liên ngân hàng.
+                    </p>
                 </div>
 
-                <div style="background: #fdf2f2; padding: 20px; border-radius: 12px; margin-bottom: 20px;">
-                    <p style="margin: 0; color: #991b1b; font-size: 14px;"><b>Lưu ý:</b> Nếu gặp lỗi trong quá trình thanh toán, hãy chụp màn hình hóa đơn và liên hệ hỗ trợ ngay lập tức.</p>
+                <div style="display: flex; align-items: center; gap: 15px; background: #fff9c4; padding: 15px; border-radius: 12px;">
+                    <i class="fas fa-copy" style="font-size: 20px; color: #fbc02d;"></i>
+                    <p style="margin: 0; font-size: 14px; color: #856404;">
+                        Để sao chép số tài khoản nhanh: <b>Cài đặt &rarr; Chuyển tiền cho chủ web</b>
+                    </p>
                 </div>
 
-                <div style="background: #fff9c4; padding: 15px; border-radius: 12px; display: flex; align-items: center; gap: 10px; margin-bottom: 30px;">
-                    <i class="fas fa-lightbulb" style="color: #fbc02d;"></i>
-                    <p style="margin: 0; font-size: 14px;">Để copy STK: <b>Cài đặt &rarr; Chuyển tiền chủ web</b></p>
-                </div>
-
-                <!-- Thêm nội dung mẫu để test thanh cuộn -->
-                <p style="color: #999; font-size: 13px;">Quy trình: Quét mã -> Nhập tiền -> Gửi hóa đơn.</p>
-                
-                <button onclick="toggleQRModal()" style="margin-top: 20px; width: 100%; padding: 15px; border-radius: 12px; border: none; background: #ad1457; color: white; font-weight: bold; cursor: pointer;">XÁC NHẬN</button>
+                <button onclick="toggleQRModal()" style="margin-top: auto; padding: 15px; border-radius: 12px; border: none; background: linear-gradient(90deg, #ad1457, #d81b60); color: white; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.3s;">XÁC NHẬN ĐÃ HIỂU</button>
             </div>
         </div>
     </div>
