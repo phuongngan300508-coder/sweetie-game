@@ -7633,35 +7633,44 @@ input[type="date"].sweetie-input-style {
     border-color: transparent;
 }
 
-    /* Giao diện mặc định cho Mobile (đã có ở bước trước) */
+    /* Container chính của nội dung Popup */
 .qr-modal-content {
     background: white;
     padding: 20px;
     border-radius: 20px;
-    max-width: 380px; 
     width: 90%;
-    transition: all 0.3s ease;
+    max-width: 380px;
+    
+    /* CỐ ĐỊNH CHIỀU CAO TỐI ĐA */
+    max-height: 85vh; /* Cao tối đa 85% màn hình */
+    overflow-y: auto;  /* Cho phép cuộn dọc */
+    
+    position: relative;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.4);
+    
+    /* ẨN THANH CUỘN (Scrollbar) cho Chrome, Safari và Opera */
+    -webkit-overflow-scrolling: touch; /* Giúp cuộn mượt trên iPhone */
 }
 
-/* GIAO DIỆN DÀNH RIÊNG CHO MÁY TÍNH (PC) */
+.qr-modal-content::-webkit-scrollbar {
+    display: none; /* Ẩn thanh cuộn hoàn toàn */
+}
+
+/* ẨN THANH CUỘN cho IE, Edge và Firefox */
+.qr-modal-content {
+    -ms-overflow-style: none;  /* IE và Edge */
+    scrollbar-width: none;  /* Firefox */
+}
+
+/* Điều chỉnh cho PC (như đã làm ở bước trước) */
 @media (min-width: 768px) {
     .qr-modal-content {
-        max-width: 800px; /* Mở rộng chiều ngang */
-        display: flex;    /* Chia làm 2 cột: Ảnh bên trái, nội dung bên phải */
-        align-items: center;
+        max-width: 800px;
+        display: flex;
+        align-items: flex-start; /* Để nội dung dài không bị đẩy lên trên */
         gap: 20px;
         padding: 30px;
-        border: 4px solid #f8bbd0;
-    }
-
-    .qr-image-side {
-        flex: 1;
-        max-width: 350px;
-    }
-
-    .qr-info-side {
-        flex: 1;
-        text-align: left !important;
+        max-height: 90vh; /* PC có thể cho cao hơn một chút */
     }
 }
 </style>
@@ -10634,34 +10643,35 @@ input[type="date"].sweetie-input-style {
     </div>
 </div>
 
-    <div id="modal-qr-owner" class="modal" style="display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); align-items: center; justify-content: center;">
-    <div class="qr-modal-content" style="position: relative; box-shadow: 0 15px 40px rgba(0,0,0,0.4);">
-        
-        <span onclick="toggleQRModal()" style="position: absolute; right: 15px; top: 10px; font-size: 30px; cursor: pointer; color: #ad1457; z-index: 10;">&times;</span>
+    <div id="modal-qr-owner" class="modal" style="display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); align-items: center; justify-content: center;">
+    
+    <div class="qr-modal-content">
+        <!-- Nút đóng cố định ở góc trên popup -->
+        <div onclick="toggleQRModal()" style="position: sticky; top: -10px; right: -10px; text-align: right; height: 0; z-index: 100;">
+            <span style="font-size: 35px; cursor: pointer; color: #ad1457; background: white; border-radius: 50%; width: 40px; height: 40px; display: inline-block; text-align: center; line-height: 35px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">&times;</span>
+        </div>
 
         <!-- Cột 1: Chứa ảnh QR -->
         <div class="qr-image-side">
-            <img src="https://i.postimg.cc/7611YRrV/retouch-2026050414030024.jpg" alt="QR Code" style="width: 100%; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+            <h3 style="color: #ad1457; margin-bottom: 15px; font-size: 20px; text-align: center;" class="mobile-only-title">Mã QR Giao Dịch</h3>
+            <img src="https://i.postimg.cc/7611YRrV/retouch-2026050414030024.jpg" alt="QR Code" style="width: 100%; border-radius: 15px; display: block; margin: 0 auto;">
         </div>
 
         <!-- Cột 2: Chứa thông tin -->
-        <div class="qr-info-side">
-            <h2 style="color: #ad1457; margin-bottom: 20px; font-size: 24px;">Thanh Toán QR</h2>
-            
+        <div class="qr-info-side" style="margin-top: 20px;">
             <div style="background: #fff3e0; border-left: 5px solid #ff9800; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                <p style="margin: 0; color: #e65100; font-weight: bold;">⚠️ Thông báo hệ thống:</p>
-                <p style="margin: 10px 0 0 0; font-size: 14px; color: #5d4037; line-height: 1.6;">
-                    Đây là mã chuyển tiền qua ngân hàng thật của chủ app. Vui lòng kiểm tra kỹ tên người nhận trước khi xác nhận giao dịch.
+                <p style="margin: 0; color: #e65100; font-weight: bold;">⚠️ Lưu ý quan trọng:</p>
+                <p style="margin: 8px 0 0 0; font-size: 14px; color: #5d4037; line-height: 1.5;">
+                    Đây là mã chuyển tiền qua ngân hàng thật của chủ app. Vui lòng không sửa đổi nội dung chuyển tiền nếu hệ thống có yêu cầu.
                 </p>
             </div>
 
-            <p style="font-size: 14px; color: #666; background: #fce4ec; padding: 10px; border-radius: 5px;">
-                <i class="fas fa-info-circle"></i> Mẹo: Để copy số tài khoản, bạn hãy vào mục <b>Cài đặt</b> > <b>Chuyển tiền cho chủ web</b>.
+            <p style="font-size: 13px; color: #666; background: #fce4ec; padding: 12px; border-radius: 8px; line-height: 1.4;">
+                <i class="fas fa-info-circle"></i> <b>Hướng dẫn:</b> Nếu bạn cần copy số tài khoản, vui lòng vào mục <b>Cài đặt</b> > <b>Chuyển tiền cho chủ web</b>.
             </p>
 
-            <button onclick="toggleQRModal()" style="margin-top: 15px; width: 100%; padding: 12px; border-radius: 30px; border: none; background: #ad1457; color: white; font-weight: bold; cursor: pointer; font-size: 16px;">Đóng cửa sổ</button>
+            <button onclick="toggleQRModal()" style="margin-top: 20px; width: 100%; padding: 12px; border-radius: 10px; border: none; background: #ad1457; color: white; font-weight: bold; cursor: pointer;">Đóng</button>
         </div>
-
     </div>
 </div>
 <script>
