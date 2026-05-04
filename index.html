@@ -14077,46 +14077,51 @@ function handleNotiClick(index) {
                     }
                 });
 
-                // Bước 2: Chuyển sang tab Bản tin (Đảm bảo tabId là 'tab-status' như ông quy định)
+                // Bước 2: Chuyển sang tab Bản tin
                 if (typeof switchTab === 'function') {
                     switchTab('tab-status'); 
                 }
 
                 // Bước 3: Đợi render và thực hiện dịch chuyển (Scroll)
                 let retryCount = 0;
-                // Nếu có commentId thì tìm comm-item để highlight, không thì tìm post-card bài viết
-                const targetId = commentId ? `comm-item-${commentId}` : `post-card-${postId}`;
+                
+                // FIX Ở ĐÂY: Xác định targetId thông minh hơn
+                // Nếu có commentId thì tìm comm-item, nếu không (như thả tim bài viết) thì tìm post-card
+                const targetId = (commentId) ? `comm-item-${commentId}` : `post-card-${postId}`;
 
                 const attemptScroll = () => {
                     let targetEl = document.getElementById(targetId);
                     
                     if (targetEl) {
-                        // CHÚC MỪNG: Đã tìm thấy mục tiêu! Cuộn mượt mà đến trung tâm màn hình
+                        // Cuộn mượt mà đến trung tâm màn hình
                         targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
                         
-                        // Hiệu ứng làm nổi bật (Highlight) để chủ bài dễ nhận diện
+                        // Hiệu ứng làm nổi bật (Highlight)
                         targetEl.style.transition = "0.5s";
                         targetEl.style.boxShadow = "0 0 20px #ff8fab";
                         targetEl.style.borderRadius = "12px";
 
                         setTimeout(() => {
-                            if (targetEl) targetEl.style.boxShadow = "none";
+                            if (targetEl) {
+                                // Trả lại style ban đầu dựa trên loại phần tử
+                                targetEl.style.boxShadow = "none";
+                                if (!commentId) targetEl.style.borderRadius = "none"; // Post card thường không bo góc mạnh như vầy
+                            }
                         }, 3000);
                     } else {
-                        // Nếu chưa thấy (có thể Firebase đang load chậm), thử lại tối đa 5 lần
+                        // Thử lại nếu chưa thấy phần tử
                         if (retryCount < 5) { 
                             retryCount++;
-                            if (typeof refreshCommentsOnly === 'function') refreshCommentsOnly(postId);
+                            // Cố gắng fetch lại comments nếu là mention
+                            if (commentId && typeof refreshCommentsOnly === 'function') refreshCommentsOnly(postId);
                             setTimeout(attemptScroll, 600);
                         } else {
-                            // Nếu vẫn không thấy comment thì cuộn về bài viết gốc cho cư dân đỡ lạc đường
                             const postEl = document.getElementById(`post-card-${postId}`);
                             if (postEl) postEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
                         }
                     }
                 };
 
-                // Đợi 700ms để tab Status kịp render danh sách ban đầu
                 setTimeout(attemptScroll, 700);
 
             } else {
