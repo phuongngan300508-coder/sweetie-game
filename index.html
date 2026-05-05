@@ -27397,7 +27397,6 @@ function listenStories() {
         // BẢO VỆ 2: Tìm nút tạo tin một cách an toàn (GIỮ NGUYÊN)
         const createBtnEl = storyList.querySelector('.create');
         let createBtnHtml = '';
-
         if (createBtnEl) {
             createBtnHtml = createBtnEl.outerHTML;
         } else {
@@ -27415,10 +27414,9 @@ function listenStories() {
 
         if (data) {
             const now = Date.now();
-            let myStories = []; // Mảng chứa tin của Henry
-            let otherStories = []; // Mảng chứa tin người khác
+            const grouped = {}; // Đối tượng để gộp tin theo UID
 
-            // 1. Phân loại tin và lọc logic thời gian
+            // 1. Phân loại, lọc thời gian và GỘP TIN
             Object.keys(data).forEach(id => {
                 const s = data[id];
                 
@@ -27432,38 +27430,79 @@ function listenStories() {
                 // Logic quyền riêng tư (GIỮ NGUYÊN)
                 if (s.privacy === 'private' && s.uid !== myUid) return;
 
-                const storyObj = { id, ...s };
-                if (s.uid === myUid) {
-                    myStories.push(storyObj);
+                // Nếu cư dân này chưa có trong danh sách gộp, tạo mới
+                if (!grouped[s.uid]) {
+                    grouped[s.uid] = {
+                        uid: s.uid,
+                        username: s.username,
+                        avatar: s.avatar,
+                        allStories: []
+                    };
+                }
+                // Thêm tin vào danh sách của cư dân đó
+                grouped[s.uid].allStories.push({ id, ...s });
+            });
+
+            // 2. Sắp xếp tin bên trong từng nhóm (tin cũ xem trước, tin mới xem sau)
+            // Và tách nhóm Henry với nhóm người khác
+            let myGroup = null;
+            let otherGroups = [];
+
+            Object.values(grouped).forEach(group => {
+                group.allStories.sort((a, b) => a.timestamp - b.timestamp);
+                if (group.uid === myUid) {
+                    myGroup = group;
                 } else {
-                    otherStories.push(storyObj);
+                    otherGroups.push(group);
                 }
             });
 
-            // 2. Sắp xếp tin mới nhất lên đầu cho mỗi nhóm
-            myStories.sort((a, b) => b.timestamp - a.timestamp);
-            otherStories.sort((a, b) => b.timestamp - a.timestamp);
+            // Sắp xếp các nhóm người khác: ai có tin mới nhất thì đứng trước
+            otherGroups.sort((a, b) => {
+                const lastA = a.allStories[a.allStories.length - 1].timestamp;
+                const lastB = b.allStories[b.allStories.length - 1].timestamp;
+                return lastB - lastA;
+            });
 
-            // 3. Gộp mảng: Tin của Henry sẽ luôn đứng ngay sau nút Tạo tin
-            const finalStories = myStories.concat(otherStories);
+            // 3. Gộp danh sách cuối cùng: Henry luôn đứng đầu
+            const finalGroups = myGroup ? [myGroup, ...otherGroups] : otherGroups;
 
-            // 4. Render danh sách đã sắp xếp (GIỮ NGUYÊN THIẾT KẾ)
-            finalStories.forEach(s => {
+            // 4. Render danh sách đã gộp (Mỗi cư dân 1 Card duy nhất)
+            finalGroups.forEach(group => {
+                // Lấy tin cuối cùng (mới nhất) để làm ảnh nền/video nền cho Card
+                const latestS = group.allStories[group.allStories.length - 1];
+                
                 const card = `
-                    <div class="story-card" onclick="viewStory('${s.id}')" style="min-width: 100px; height: 160px; border-radius: 15px; position: relative; cursor: pointer; overflow: hidden; flex-shrink: 0; border: ${s.uid === myUid ? '2px solid #ff8fab' : '1px solid #ffe4e8'}; background: url('${s.type==='image'?s.mediaUrl:''}') center/cover no-repeat;">
-                        ${s.type === 'video' ? `<video src="${s.mediaUrl}" muted style="width:100%; height:100%; object-fit:cover;"></video>` : ''}
-                        <div style="position:absolute; top:8px; left:8px; width:30px; height:30px; border-radius:50%; border:2px solid #ff8fab; overflow:hidden; background: white;">
-                            <img src="${s.avatar || 'https://via.placeholder.com/30'}" style="width:100%; height:100%; object-fit:cover;">
+                    <div class="story-card" onclick="viewStory('${group.allStories[0].id}')" style="min-width: 100px; height: 160px; border-radius: 15px; position: relative; cursor: pointer; overflow: hidden; flex-shrink: 0; border: ${group.uid === myUid ? '2px solid #ff8fab' : '1px solid #ffe4e8'}; background: url('${latestS.type === 'image' ? latestS.mediaUrl : ''}') center/cover no-repeat;">
+                        ${latestS.type === 'video' ? `<video src="${latestS.mediaUrl}" muted style="width:100%; height:100%; object-fit:cover;"></video>` : ''}
+                        
+                        
+                        <div style="position:absolute; top:8px; left:8px; width:30px; height:30px; border-radius:50%; border:2px solid #ff8fab; overflow:hidden; background: white; z-index: 2;">
+                            <img src="${group.avatar || 'https://via.placeholder.com/30'}" style="width:100%; height:100%; object-fit:cover;">
                         </div>
-                        <div style="position:absolute; bottom:5px; width:100%; color:white; font-size:0.65rem; text-align:center; font-weight:bold; text-shadow:1px 1px 2px black; padding: 0 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                            ${s.uid === myUid ? 'Tin của bạn' : s.username}
+
+                        
+                        ${group.allStories.length > 1 ? `
+                            <div style="position:absolute; top:8px; right:8px; background:rgba(216, 27, 96, 0.8); color:white; font-size:0.6rem; padding:2px 6px; border-radius:10px; font-weight:bold; z-index: 2;">
+                                ${group.allStories.length}
+                            </div>
+                        ` : ''}
+
+                        
+                        <div style="position:absolute; bottom:5px; width:100%; color:white; font-size:0.65rem; text-align:center; font-weight:bold; text-shadow:1px 1px 2px black; padding: 0 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; z-index: 2;">
+                            ${group.uid === myUid ? 'Tin của bạn' : group.username}
                         </div>
                     </div>`;
                 storyList.insertAdjacentHTML('beforeend', card);
             });
+            
+            // Lưu dữ liệu gộp vào window để hàm chuyển tin có thể truy cập
+            window.groupedStories = grouped;
         }
     });
 }
+
+    
     
 // Xem Story & Đếm mắt Realtime
 let storyTimer;
@@ -27710,33 +27749,59 @@ function closeStoryViewer() {
 }
 
     function handleStoryEnded() {
-    // 1. Lấy danh sách tất cả các thẻ Story đang có (Loại bỏ nút tạo tin)
+    // 1. Lấy dữ liệu gộp từ window (Dữ liệu này được tạo từ hàm listenStories)
+    const grouped = window.groupedStories;
+    if (!grouped) return closeStoryViewer();
+
+    // 2. Tìm xem tin hiện tại thuộc về cư dân nào và ở vị trí thứ mấy của người đó
+    let currentUser = null;
+    let currentIndexInUser = -1;
+
+    for (let uid in grouped) {
+        const idx = grouped[uid].allStories.findIndex(s => s.id === currentViewingStoryId);
+        if (idx !== -1) {
+            currentUser = grouped[uid];
+            currentIndexInUser = idx;
+            break;
+        }
+    }
+
+    // Nếu không tìm thấy dữ liệu tin hiện tại, đóng cho an toàn
+    if (!currentUser) return closeStoryViewer();
+
+    // 3. KIỂM TRA: Nếu vẫn còn tin tiếp theo của CÙNG 1 NGƯỜI
+    if (currentIndexInUser < currentUser.allStories.length - 1) {
+        const nextId = currentUser.allStories[currentIndexInUser + 1].id;
+        console.log("Hệ thống: Đang chuyển sang tin tiếp theo của cùng cư dân...");
+        viewStory(nextId);
+        return; // Dừng lại ở đây vì đã tìm được tin tiếp theo cùng chủ
+    } 
+
+    // 4. Nếu đã hết sạch tin của người này -> Tìm Card của người kế tiếp trên thanh Story
     const storyCards = Array.from(document.querySelectorAll('#story-list .story-card:not(.create)'));
     
-    // 2. Nếu chỉ có duy nhất 1 Story trên toàn hệ thống, đóng ngay khi hết giờ
+    // Nếu chỉ có duy nhất 1 Card (chỉ mình Henry hoặc chỉ 1 người đăng), đóng ngay
     if (storyCards.length <= 1) {
-        console.log("Hệ thống: Chỉ còn 1 tin duy nhất, tự động đóng viewer.");
+        console.log("Hệ thống: Đã xem hết tin của cư dân duy nhất, tự động đóng.");
         closeStoryViewer();
         return;
     }
 
-    // 3. Tìm vị trí (index) của Story đang xem hiện tại
-    const currentIndex = storyCards.findIndex(card => {
-        return card.getAttribute('onclick').includes(currentViewingStoryId);
-    });
+    // Tìm vị trí của Card hiện tại (dựa vào ID tin đầu tiên của User đó)
+    const currentCardIndex = storyCards.findIndex(card => 
+        card.getAttribute('onclick').includes(currentUser.allStories[0].id)
+    );
 
-    // 4. Kiểm tra điều kiện chuyển tiếp
-    // Nếu tìm thấy và KHÔNG phải là tin cuối cùng trong danh sách
-    if (currentIndex !== -1 && currentIndex < storyCards.length - 1) {
-        const nextStoryCard = storyCards[currentIndex + 1];
-        // Trích xuất ID từ chuỗi viewStory('ID_THẬT')
+    // Nếu tìm thấy Card và vẫn còn Card tiếp theo phía sau
+    if (currentCardIndex !== -1 && currentCardIndex < storyCards.length - 1) {
+        const nextStoryCard = storyCards[currentCardIndex + 1];
         const nextStoryId = nextStoryCard.getAttribute('onclick').match(/'([^']+)'/)[1];
         
-        console.log("Hệ thống: Chuyển sang tin tiếp theo của cư dân ✨");
+        console.log("Hệ thống: Đã xem hết tin của người này, nhảy sang người tiếp theo ✨");
         viewStory(nextStoryId); 
     } else {
-        // Nếu là tin cuối cùng hoặc có lỗi index, đóng viewer
-        console.log("Hệ thống: Đã xem hết tất cả tin, quay về bản tin.");
+        // Nếu là tin cuối cùng của người cuối cùng
+        console.log("Hệ thống: Đã xem hết tất cả tin của tất cả cư dân.");
         closeStoryViewer();
     }
 }
