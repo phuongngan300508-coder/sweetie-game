@@ -7840,7 +7840,7 @@ input[type="date"].sweetie-input-style {
 .viewer-header {
     position: absolute;
     top: 0; left: 0; width: 100%;
-    padding: 30px 15px 40px; /* Padding rộng để chữ không dính đỉnh */
+    padding: 35px 25px 40px 15px;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -7872,22 +7872,34 @@ input[type="date"].sweetie-input-style {
 .viewer-actions {
     display: flex;
     align-items: center;
-    gap: 15px;
+    gap: 20px;
     font-size: 1.1rem;
 }
 
 #viewer-view-count {
-    font-size: 0.8rem;
-    background: rgba(255, 255, 255, 0.2);
-    padding: 4px 10px;
+    font-size: 0.75rem;
+    background: rgba(255, 255, 255, 0.15);
+    padding: 4px 12px;
     border-radius: 20px;
-    backdrop-filter: blur(5px);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    white-space: nowrap;
 }
 
 .viewer-close-btn {
     cursor: pointer;
-    padding: 5px;
+    font-size: 1.4rem; /* Làm nút X to hơn tí cho dễ bấm */
+    padding: 10px; /* Tăng vùng chạm (touch target) cho điện thoại */
+    margin-right: -10px; /* Bù trừ lại padding để căn chỉnh đẹp */
     transition: 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+    .viewer-close-btn:active {
+    transform: scale(0.9); /* Hiệu ứng nhấn nút */
+    color: #ff8fab;
 }
 
 .viewer-close-btn:hover { color: #ff8fab; }
