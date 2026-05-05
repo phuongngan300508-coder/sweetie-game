@@ -27387,20 +27387,20 @@ async function handlePostStory() {
 // Lắng nghe và hiển thị Story (Chỉ hiện tin chưa hết hạn)
 function listenStories() {
     const storyList = document.getElementById('story-list');
-    // BẢO VỆ 1: Nếu không thấy khung chứa Story thì dừng luôn
+    // BẢO VỆ 1: Nếu không thấy khung chứa Story thì dừng luôn (GIỮ NGUYÊN)
     if (!storyList) return; 
 
     firebase.database().ref('stories').on('value', async (snap) => {
         const data = snap.val();
+        const myUid = userData.profile.uid; // Lấy UID của chính Henry
         
-        // BẢO VỆ 2: Tìm nút tạo tin một cách an toàn
-        const createBtnEl = storyList.querySelector('.create'); // Tìm theo class chuẩn
+        // BẢO VỆ 2: Tìm nút tạo tin một cách an toàn (GIỮ NGUYÊN)
+        const createBtnEl = storyList.querySelector('.create');
         let createBtnHtml = '';
 
         if (createBtnEl) {
             createBtnHtml = createBtnEl.outerHTML;
         } else {
-            // Nếu không tìm thấy trong DOM, ta tự định nghĩa lại HTML cho nó luôn để làm mồi
             createBtnHtml = `
                 <div class="story-card create" onclick="openStoryComposer()" style="min-width: 100px; height: 160px; background: #ffe4e8; border-radius: 15px; position: relative; cursor: pointer; overflow: hidden; flex-shrink: 0; border: 1px solid #ffcad4;">
                     <div style="height: 110px; background: #fff3f5; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; color: #ff8fab;">
@@ -27410,35 +27410,61 @@ function listenStories() {
                 </div>`;
         }
 
-        // Xóa sạch để vẽ lại nhưng giữ lại nút Tạo tin
+        // Xóa sạch để vẽ lại nhưng giữ lại nút Tạo tin (GIỮ NGUYÊN)
         storyList.innerHTML = createBtnHtml;
 
         if (data) {
             const now = Date.now();
-            for (let id in data) {
+            let myStories = []; // Mảng chứa tin của Henry
+            let otherStories = []; // Mảng chứa tin người khác
+
+            // 1. Phân loại tin và lọc logic thời gian
+            Object.keys(data).forEach(id => {
                 const s = data[id];
+                
+                // Logic xóa tin hết hạn (GIỮ NGUYÊN)
                 if (now > s.expiresAt) {
                     firebase.database().ref(`archives/${s.uid}/stories/${id}`).set(s);
                     firebase.database().ref(`stories/${id}`).remove();
-                    continue;
+                    return;
                 }
-                if (s.privacy === 'private' && s.uid !== userData.profile.uid) continue;
 
+                // Logic quyền riêng tư (GIỮ NGUYÊN)
+                if (s.privacy === 'private' && s.uid !== myUid) return;
+
+                const storyObj = { id, ...s };
+                if (s.uid === myUid) {
+                    myStories.push(storyObj);
+                } else {
+                    otherStories.push(storyObj);
+                }
+            });
+
+            // 2. Sắp xếp tin mới nhất lên đầu cho mỗi nhóm
+            myStories.sort((a, b) => b.timestamp - a.timestamp);
+            otherStories.sort((a, b) => b.timestamp - a.timestamp);
+
+            // 3. Gộp mảng: Tin của Henry sẽ luôn đứng ngay sau nút Tạo tin
+            const finalStories = myStories.concat(otherStories);
+
+            // 4. Render danh sách đã sắp xếp (GIỮ NGUYÊN THIẾT KẾ)
+            finalStories.forEach(s => {
                 const card = `
-                    <div class="story-card" onclick="viewStory('${id}')" style="min-width: 100px; height: 160px; border-radius: 15px; position: relative; cursor: pointer; overflow: hidden; flex-shrink: 0; border: 1px solid #ffe4e8; background: url('${s.type==='image'?s.mediaUrl:''}') center/cover no-repeat;">
+                    <div class="story-card" onclick="viewStory('${s.id}')" style="min-width: 100px; height: 160px; border-radius: 15px; position: relative; cursor: pointer; overflow: hidden; flex-shrink: 0; border: ${s.uid === myUid ? '2px solid #ff8fab' : '1px solid #ffe4e8'}; background: url('${s.type==='image'?s.mediaUrl:''}') center/cover no-repeat;">
                         ${s.type === 'video' ? `<video src="${s.mediaUrl}" muted style="width:100%; height:100%; object-fit:cover;"></video>` : ''}
                         <div style="position:absolute; top:8px; left:8px; width:30px; height:30px; border-radius:50%; border:2px solid #ff8fab; overflow:hidden; background: white;">
                             <img src="${s.avatar || 'https://via.placeholder.com/30'}" style="width:100%; height:100%; object-fit:cover;">
                         </div>
                         <div style="position:absolute; bottom:5px; width:100%; color:white; font-size:0.65rem; text-align:center; font-weight:bold; text-shadow:1px 1px 2px black; padding: 0 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                            ${s.username}
+                            ${s.uid === myUid ? 'Tin của bạn' : s.username}
                         </div>
                     </div>`;
                 storyList.insertAdjacentHTML('beforeend', card);
-            }
+            });
         }
     });
 }
+    
 // Xem Story & Đếm mắt Realtime
 let storyTimer;
 let currentViewingStoryId = null;
