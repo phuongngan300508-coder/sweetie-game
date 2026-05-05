@@ -8316,6 +8316,11 @@ input[type="date"].sweetie-input-style {
 
 <main>
 <div id="tab-status" class="tab-content" style="display:none;">
+    <!-- Nút mở Popup Bài viết của tôi -->
+<div id="btn-my-posts" onclick="openMyPostsPopup()" style="display: none; position: fixed; left: 20px; bottom: 85px; z-index: 99; cursor: pointer; background: white; width: 45px; height: 45px; border-radius: 50%; display: none; align-items: center; justify-content: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border: 2px solid #ffb3c1; color: #ff8fab; transition: 0.3s;">
+    <i class="fas fa-file-alt" style="font-size: 1.2rem;"></i>
+</div>
+    
     <button id="btn-open-composer" class="sw-post-fab">
         <i class="fas fa-pen-nib"></i>
     </button>
@@ -10773,11 +10778,6 @@ input[type="date"].sweetie-input-style {
     </div>
 </div>
     </div>
-</div>
-
-    <!-- Nút mở Popup Bài viết của tôi -->
-<div id="btn-my-posts" onclick="openMyPostsPopup()" style="position: fixed; left: 20px; bottom: 85px; z-index: 99; cursor: pointer; background: white; width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border: 2px solid #ffb3c1; color: #ff8fab; transition: 0.3s;">
-    <i class="fas fa-file-alt" style="font-size: 1.2rem;"></i>
 </div>
 
 <!-- Modal Popup chứa danh sách bài viết -->
@@ -13603,6 +13603,16 @@ function switchTab(tabId) {
             postFab.style.display = 'flex'; 
         } else {
             postFab.style.display = 'none'; 
+        }
+    }
+
+    // --- LOGIC MỚI: Điều khiển hiển thị nút "Bài viết của tôi" ---
+    const myPostsBtn = document.getElementById('btn-my-posts');
+    if (myPostsBtn) {
+        if (tabId === 'tab-status') {
+            myPostsBtn.style.display = 'flex'; // Hiện nút khi ở tab Bản tin
+        } else {
+            myPostsBtn.style.display = 'none'; // Ẩn nút ở các tab khác
         }
     }
 }
