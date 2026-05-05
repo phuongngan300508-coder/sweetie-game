@@ -10781,7 +10781,7 @@ input[type="date"].sweetie-input-style {
 </div>
 
 <!-- Modal Popup chứa danh sách bài viết -->
-<div id="modal-my-posts" class="modal-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:2000; align-items:center; justify-content:center;">
+<div id="modal-my-posts" class="modal-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:20000; align-items:center; justify-content:center;">
     <div class="modal-content animate__animated animate__fadeInUp" style="background:white; width:95%; max-width:500px; border-radius:20px; overflow:hidden; height: 80vh; display: flex; flex-direction: column;">
         
         <!-- Header của Popup -->
@@ -26918,28 +26918,62 @@ function closeMyPostsPopup() {
 }
 
 // 3. Hàm "Nhảy" đến bài viết trong bản tin
-function jumpToPost(postId) {
+async function jumpToPost(postId) {
     closeMyPostsPopup();
     
-    // Đảm bảo đang ở tab bản tin
+    // 1. Chuyển sang tab Bản tin
     if (typeof switchTab === 'function') {
         switchTab('tab-status');
     }
 
-    // Đợi một chút để tab render rồi cuộn tới
+    // 2. Kiểm tra xem bài viết đã có sẵn trong DOM chưa
+    let targetEl = document.getElementById(`post-card-${postId}`);
+
+    if (!targetEl) {
+        console.log("Hệ thống: Bài viết cũ chưa load, đang tiến hành truy xuất từ kho lưu trữ...");
+        
+        try {
+            // Lấy dữ liệu bài viết cụ thể từ Firebase
+            const postSnap = await firebase.database().ref(`posts/${postId}`).once('value');
+            
+            if (postSnap.exists()) {
+                const postData = { id: postSnap.key, ...postSnap.val() };
+                const postsContainer = document.getElementById('status-list');
+                
+                // Chèn bài viết này vào đầu bản tin để Henry nhìn thấy ngay
+                // Lưu ý: Hàm renderSinglePost phải là hàm ông đã viết sẵn trong code chính
+                if (typeof renderSinglePost === 'function') {
+                    await renderSinglePost(postData, 'afterbegin', postsContainer);
+                    // Cập nhật lại targetEl sau khi đã chèn vào DOM
+                    targetEl = document.getElementById(`post-card-${postId}`);
+                }
+            } else {
+                alert("❌ Bài viết này không còn tồn tại trên hệ thống!");
+                return;
+            }
+        } catch (err) {
+            console.error("Lỗi truy xuất bài viết cũ:", err);
+            return;
+        }
+    }
+
+    // 3. Thực hiện cuộn và hiệu ứng (Sử dụng setTimeout để đợi trình duyệt render xong bài mới chèn)
     setTimeout(() => {
-        const targetEl = document.getElementById(`post-card-${postId}`);
         if (targetEl) {
             targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
             
-            // Hiệu ứng highlight cho Henry dễ thấy
-            targetEl.style.transition = "0.5s";
-            targetEl.style.boxShadow = "0 0 25px #ff8fab";
-            setTimeout(() => targetEl.style.boxShadow = "none", 2000);
-        } else {
-            alert("Bài viết này có thể đã bị gỡ hoặc chưa kịp tải lên! ✨");
+            // Hiệu ứng làm nổi bật bài viết cũ vừa được "mò" thấy
+            targetEl.style.transition = "0.8s";
+            targetEl.style.border = "2px solid #ff8fab";
+            targetEl.style.boxShadow = "0 0 30px rgba(255, 143, 171, 0.6)";
+            targetEl.style.borderRadius = "15px";
+
+            setTimeout(() => {
+                targetEl.style.border = "none";
+                targetEl.style.boxShadow = "none";
+            }, 3000);
         }
-    }, 500);
+    }, 300);
 }
 </script>
 </body>
