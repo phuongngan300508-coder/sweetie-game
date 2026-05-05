@@ -27420,6 +27420,10 @@ let currentViewingStoryId = null;
 
 async function viewStory(storyId) {
     currentViewingStoryId = storyId;
+    
+    // Tắt các listener cũ trước khi mở story mới để tránh tốn tài nguyên
+    firebase.database().ref(`stories/${storyId}/views`).off();
+
     const snap = await firebase.database().ref(`stories/${storyId}`).once('value');
     const s = snap.val();
     if (!s) return;
@@ -27428,8 +27432,8 @@ async function viewStory(storyId) {
     viewer.style.display = 'flex';
     
     // Đổ dữ liệu header
-    document.getElementById('viewer-avatar').src = s.avatar || 'link_avatar_mac_dinh';
-    document.getElementById('viewer-username').innerText = s.username;
+    document.getElementById('viewer-avatar').src = s.avatar || 'https://via.placeholder.com/40';
+    document.getElementById('viewer-username').innerText = s.username || "Cư dân ẩn danh";
     
     // Hiển thị Media
     const container = document.getElementById('viewer-media-container');
@@ -27442,27 +27446,28 @@ async function viewStory(storyId) {
     const myUid = userData.profile.uid;
 
     if (s.uid === myUid) {
-        // Nếu là CHỦ STORY: Hiện mắt xem và cho phép click
+        // Nếu là CHỦ STORY: Hiện mắt xem
         viewCountBtn.style.display = 'flex';
+        
+        // Lắng nghe số lượng mắt realtime (CHỈ CHỦ MỚI LẮNG NGHE)
+        firebase.database().ref(`stories/${storyId}/views`).on('value', vSnap => {
+            const count = vSnap.numChildren();
+            viewCountBtn.innerHTML = `<i class="fas fa-eye"></i> ${count}`;
+        });
     } else {
-        // Nếu là NGƯỜI XEM: Ẩn mắt xem
+        // Nếu là NGƯỜI XEM: Ẩn mắt xem hoàn toàn
         viewCountBtn.style.display = 'none';
-        // Tăng mắt xem lên Firebase (Ghi nhận lượt xem cho chủ tin)
+        
+        // Ghi nhận lượt xem - FIX LỖI UNDEFINED TẠI ĐÂY
         firebase.database().ref(`stories/${storyId}/views/${myUid}`).set({
-            name: userData.profile.name,
+            name: userData.profile.name || "Cư dân Sweetie",
             avatar: userData.profile.customAvatar || "",
             timestamp: firebase.database.ServerValue.TIMESTAMP
         });
     }
 
-    // Lắng nghe số lượng mắt realtime (chỉ chủ mới cần thấy số nhảy)
-    firebase.database().ref(`stories/${storyId}/views`).on('value', vSnap => {
-        const count = vSnap.numChildren();
-        viewCountBtn.innerHTML = `<i class="fas fa-eye"></i> ${count}`;
-    });
-
-    // Chạy Progress bar (Giữ nguyên logic cũ của ông)
-    startStoryProgress();
+    // Chạy Progress bar
+    if (typeof startStoryProgress === 'function') startStoryProgress();
 }
 
 // Hàm mở danh sách người xem trượt từ dưới lên
@@ -27471,34 +27476,58 @@ async function openViewerList() {
     const content = document.getElementById('viewer-details-content');
     
     sheet.classList.add('active');
-    content.innerHTML = '<div style="text-align:center; padding:20px;"><i class="fas fa-spinner fa-spin"></i> Đang xem ai đã ghé thăm...</div>';
+    content.innerHTML = '<div style="text-align:center; padding:20px; color:#ff8fab;"><i class="fas fa-spinner fa-spin"></i> Đang xem ai đã ghé thăm...</div>';
 
-    const snap = await firebase.database().ref(`stories/${currentViewingStoryId}/views`).once('value');
-    const viewers = snap.val();
+    try {
+        const snap = await firebase.database().ref(`stories/${currentViewingStoryId}/views`).once('value');
+        const viewers = snap.val();
 
-    if (!viewers) {
-        content.innerHTML = '<div style="text-align:center; padding:40px; color:#aaa;">Chưa có cư dân nào xem tin này ✨</div>';
-        return;
+        if (!viewers) {
+            content.innerHTML = '<div style="text-align:center; padding:40px; color:#aaa;">Chưa có cư dân nào xem tin này ✨</div>';
+            return;
+        }
+
+        let html = "";
+        // Duyệt Object và xử lý an toàn dữ liệu
+        Object.keys(viewers).forEach(uid => {
+            const v = viewers[uid];
+            // Nếu không có ảnh thì dùng icon mặc định
+            const avtHtml = v.avatar 
+                ? `<img src="${v.avatar}" style="width:35px; height:35px; border-radius:50%; object-fit:cover;">`
+                : `<div style="width:35px; height:35px; border-radius:50%; background:#ffe4e8; display:flex; align-items:center; justify-content:center; color:#ff8fab; font-size:0.8rem;"><i class="fas fa-user"></i></div>`;
+
+            html += `
+                <div class="viewer-detail-item" style="display:flex; align-items:center; gap:12px; padding:10px; border-bottom:1px solid #fff5f7;">
+                    ${avtHtml}
+                    <div style="flex:1;">
+                        <div style="font-weight:bold; font-size:0.85rem; color:#d81b60;">${v.name || 'Cư dân ẩn danh'}</div>
+                        <div style="font-size:0.65rem; color:#aaa;">ID: ${uid}</div>
+                    </div>
+                    <div style="font-size:0.6rem; color:#ffb3c1;">${getTimeAgo(v.timestamp)}</div>
+                </div>`;
+        });
+        content.innerHTML = html;
+    } catch (e) {
+        console.error("Lỗi load danh sách xem:", e);
+        content.innerHTML = '<div style="text-align:center; padding:20px; color:red;">Không thể tải danh sách.</div>';
     }
-
-    let html = "";
-    Object.keys(viewers).forEach(uid => {
-        const v = viewers[uid];
-        html += `
-            <div class="viewer-item">
-                <img src="${v.avatar || 'link_mac_dinh'}" alt="avt">
-                <div>
-                    <div style="font-weight:bold; font-size:0.85rem;">${v.name}</div>
-                    <div style="font-size:0.7rem; color:#888;">ID: ${uid}</div>
-                </div>
-            </div>`;
-    });
-    content.innerHTML = html;
 }
 
+// Hàm đóng khung trượt (Cần gọi hàm này)
+function closeViewerList() {
+    const sheet = document.getElementById('viewer-list-sheet');
+    if (sheet) sheet.classList.remove('active');
+}
+
+// Đóng Viewer Story
 function closeStoryViewer() {
+    // Tắt listener realtime để tránh lỗi khi story đã bị xóa
+    if (currentViewingStoryId) {
+        firebase.database().ref(`stories/${currentViewingStoryId}/views`).off();
+    }
+    
     document.getElementById('story-viewer').style.display = 'none';
-    document.getElementById('viewer-list-sheet').classList.remove('active');
+    closeViewerList(); // Tự động đóng khung trượt khi tắt viewer
     document.getElementById('viewer-media-container').innerHTML = '';
     clearTimeout(storyTimer);
 }
