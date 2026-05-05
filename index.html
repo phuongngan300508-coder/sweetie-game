@@ -8035,6 +8035,18 @@ input[type="date"].sweetie-input-style {
     background: #fff; /* Màu trắng cho phần đang chạy */
     transition: width 0s linear;
 }
+
+    /* Ẩn nút điều hướng trên thiết bị di động */
+@media (max-width: 768px) {
+    .nav-btn {
+        display: none !important;
+    }
+}
+
+/* Hiệu ứng hover cho nút trên PC */
+.nav-btn:hover {
+    background: rgba(216, 27, 96, 0.4) !important; /* Màu hồng đặc trưng của Henry */
+}
 </style>
 </head>
 <body>
@@ -11142,17 +11154,17 @@ input[type="date"].sweetie-input-style {
     <div class="viewer-content animate__animated animate__fadeIn">
         
         <!-- Thanh tiến trình đã được nâng cấp (Chia khúc tự động) -->
-<div class="viewer-progress-bar" id="viewer-progress-container" style="display: flex; gap: 4px; padding: 0 2px; background: transparent; height: 3px;">
-    <!-- Các segment sẽ được render tự động bằng JavaScript tại đây -->
-</div>
+        <div class="viewer-progress-bar" id="viewer-progress-container" style="display: flex; gap: 4px; padding: 0 2px; background: transparent; height: 3px;">
+            <!-- Các segment sẽ được render tự động bằng JavaScript tại đây -->
+        </div>
+
         <!-- Header thông tin (Avatar & Tên) -->
-<div class="viewer-header">
-    <!-- Thêm onclick và style cursor cho cả cụm user-info -->
-    <div class="viewer-user-info" id="viewer-user-click" style="cursor: pointer;">
-        <img id="viewer-avatar" src="" alt="avatar">
-        <span id="viewer-username">Tên cư dân</span>
-    </div>
-</div>
+        <div class="viewer-header">
+            <div class="viewer-user-info" id="viewer-user-click" style="cursor: pointer;">
+                <img id="viewer-avatar" src="" alt="avatar">
+                <span id="viewer-username">Tên cư dân</span>
+            </div>
+        </div>
 
         <!-- Cụm nút đóng xích qua trái (GIỮ NGUYÊN) -->
         <div class="viewer-actions">
@@ -11161,8 +11173,18 @@ input[type="date"].sweetie-input-style {
             </div>
         </div>
 
+        <!-- KHU VỰC MỚI: Nút điều hướng thủ công (Chỉ hiển thị trên PC) -->
+        <div class="viewer-navigation">
+            <button class="nav-btn prev" onclick="handleManualNavigate('prev')" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.2); color: white; border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; z-index: 100;">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+            <button class="nav-btn next" onclick="handleManualNavigate('next')" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.2); color: white; border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; z-index: 100;">
+                <i class="fas fa-chevron-right"></i>
+            </button>
+        </div>
+
         <!-- Vùng hiển thị Media (GIỮ NGUYÊN) -->
-        <div id="viewer-media-container"></div>
+        <div id="viewer-media-container" style="width: 100%; height: 100%;"></div>
 
         <!-- Mắt xem: Thêm onclick và mặc định ẩn (Sẽ dùng JS để hiện nếu là chủ) -->
         <span id="viewer-view-count" onclick="openViewerList()" style="display:none; cursor:pointer;">
@@ -11171,17 +11193,16 @@ input[type="date"].sweetie-input-style {
 
         <!-- KHU VỰC MỚI: Khung trượt danh sách người xem (Bottom Sheet) -->
         <div id="viewer-list-sheet" class="sw-bottom-sheet">
-    <!-- Thanh ngang trên đầu: Bấm vào đây để đóng nhanh -->
-    <div class="sheet-handler" onclick="closeViewerList()"></div>
-    
-    <!-- Header: Thêm nút X nhỏ ở góc cho chắc chắn -->
-    <div class="sheet-header">
-        Cư dân đã xem tin
-        <i class="fas fa-chevron-down" onclick="closeViewerList()" style="position:absolute; right:15px; top:12px; cursor:pointer; color:#aaa;"></i>
-    </div>
-    
-    <div id="viewer-details-content" class="sheet-body"></div>
-</div>
+            <!-- Thanh ngang trên đầu: Bấm vào đây để đóng nhanh -->
+            <div class="sheet-handler" onclick="closeViewerList()"></div>
+            
+            <!-- Header: Thêm nút X nhỏ ở góc cho chắc chắn -->
+            <div class="sheet-header">
+                Cư dân đã xem tin
+                <i class="fas fa-chevron-down" onclick="closeViewerList()" style="position:absolute; right:15px; top:12px; cursor:pointer; color:#aaa;"></i>
+            </div>
+            
+            <div id="viewer-details-content" class="sheet-body"></div>
         </div>
 
     </div>
@@ -27880,6 +27901,95 @@ function closeStoryViewer() {
     
 // Khởi chạy
 listenStories();
+
+    function handleManualNavigate(direction) {
+    const storyCards = Array.from(document.querySelectorAll('#story-list .story-card:not(.create)'));
+    const grouped = window.groupedStories;
+    if (!grouped) return;
+
+    // 1. Tìm tin hiện tại thuộc User nào
+    let currentUser = null;
+    let currentIndexInUser = -1;
+    for (let uid in grouped) {
+        const idx = grouped[uid].allStories.findIndex(s => s.id === currentViewingStoryId);
+        if (idx !== -1) {
+            currentUser = grouped[uid];
+            currentIndexInUser = idx;
+            break;
+        }
+    }
+    if (!currentUser) return;
+
+    if (direction === 'next') {
+        // GIỐNG LOGIC TỰ ĐỘNG: Ưu tiên tin cùng User, sau đó mới nhảy Card
+        if (currentIndexInUser < currentUser.allStories.length - 1) {
+            viewStory(currentUser.allStories[currentIndexInUser + 1].id);
+        } else {
+            const currentCardIndex = storyCards.findIndex(card => card.getAttribute('onclick').includes(currentUser.allStories[0].id));
+            if (currentCardIndex !== -1 && currentCardIndex < storyCards.length - 1) {
+                const nextId = storyCards[currentCardIndex + 1].getAttribute('onclick').match(/'([^']+)'/)[1];
+                viewStory(nextId);
+            } else {
+                closeStoryViewer(); // Hết tin thì đóng
+            }
+        }
+    } else if (direction === 'prev') {
+        // LÙI LẠI: Ưu tiên tin trước đó của cùng User
+        if (currentIndexInUser > 0) {
+            viewStory(currentUser.allStories[currentIndexInUser - 1].id);
+        } else {
+            // Nếu là tin đầu tiên của User này, nhảy về tin CUỐI CÙNG của User phía trước
+            const currentCardIndex = storyCards.findIndex(card => card.getAttribute('onclick').includes(currentUser.allStories[0].id));
+            if (currentCardIndex > 0) {
+                const prevCard = storyCards[currentCardIndex - 1];
+                const prevUserFirstId = prevCard.getAttribute('onclick').match(/'([^']+)'/)[1];
+                
+                // Tìm UID của User phía trước để lấy tin cuối cùng của họ
+                for (let uid in grouped) {
+                    if (grouped[uid].allStories[0].id === prevUserFirstId) {
+                        const lastStoryIdx = grouped[uid].allStories.length - 1;
+                        viewStory(grouped[uid].allStories[lastStoryIdx].id);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+}
+
+    // A. ĐIỀU KHIỂN BẰNG BÀN PHÍM
+document.addEventListener('keydown', (e) => {
+    const viewer = document.getElementById('story-viewer');
+    if (viewer.style.display === 'flex') {
+        if (e.key === "ArrowRight") handleManualNavigate('next');
+        if (e.key === "ArrowLeft") handleManualNavigate('prev');
+        if (e.key === "Escape") closeStoryViewer();
+    }
+});
+
+// B. ĐIỀU KHIỂN BẰNG VUỐT (SWIPE) TRÊN ĐIỆN THOẠI
+let touchStartX = 0;
+let touchEndX = 0;
+
+const storyViewerEl = document.getElementById('story-viewer');
+storyViewerEl.addEventListener('touchstart', e => {
+    touchStartX = e.changedTouches[0].screenX;
+}, {passive: true});
+
+storyViewerEl.addEventListener('touchend', e => {
+    touchEndX = e.changedTouches[0].screenX;
+    handleSwipe();
+}, {passive: true});
+
+function handleSwipe() {
+    const swipeThreshold = 50; // Độ dài vuốt tối thiểu
+    if (touchEndX < touchStartX - swipeThreshold) {
+        handleManualNavigate('next'); // Vuốt sang trái -> Xem tin tiếp
+    }
+    if (touchEndX > touchStartX + swipeThreshold) {
+        handleManualNavigate('prev'); // Vuốt sang phải -> Xem tin trước
+    }
+}
 </script>
 </body>
 </html>
