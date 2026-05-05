@@ -27185,35 +27185,50 @@ async function handlePostStory() {
 // Lắng nghe và hiển thị Story (Chỉ hiện tin chưa hết hạn)
 function listenStories() {
     const storyList = document.getElementById('story-list');
+    // BẢO VỆ 1: Nếu không thấy khung chứa Story thì dừng luôn
+    if (!storyList) return; 
+
     firebase.database().ref('stories').on('value', async (snap) => {
         const data = snap.val();
-        // Xóa hết các card cũ (trừ nút Tạo tin)
-        const createBtn = storyList.querySelector('.create-story').outerHTML;
-        storyList.innerHTML = createBtn;
+        
+        // BẢO VỆ 2: Tìm nút tạo tin một cách an toàn
+        const createBtnEl = storyList.querySelector('.create'); // Tìm theo class chuẩn
+        let createBtnHtml = '';
+
+        if (createBtnEl) {
+            createBtnHtml = createBtnEl.outerHTML;
+        } else {
+            // Nếu không tìm thấy trong DOM, ta tự định nghĩa lại HTML cho nó luôn để làm mồi
+            createBtnHtml = `
+                <div class="story-card create" onclick="openStoryComposer()" style="min-width: 100px; height: 160px; background: #ffe4e8; border-radius: 15px; position: relative; cursor: pointer; overflow: hidden; flex-shrink: 0; border: 1px solid #ffcad4;">
+                    <div style="height: 110px; background: #fff3f5; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; color: #ff8fab;">
+                        <i class="fas fa-plus-circle"></i>
+                    </div>
+                    <div style="height: 50px; background: white; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: bold; color: #d81b60;">Tạo tin</div>
+                </div>`;
+        }
+
+        // Xóa sạch để vẽ lại nhưng giữ lại nút Tạo tin
+        storyList.innerHTML = createBtnHtml;
 
         if (data) {
             const now = Date.now();
             for (let id in data) {
                 const s = data[id];
-                
-                // Kiểm tra hết hạn 24h
                 if (now > s.expiresAt) {
-                    // Tự động chuyển vào lưu trữ và xóa khỏi node chính
                     firebase.database().ref(`archives/${s.uid}/stories/${id}`).set(s);
                     firebase.database().ref(`stories/${id}`).remove();
                     continue;
                 }
-
-                // Kiểm tra quyền xem (Sơ khai)
                 if (s.privacy === 'private' && s.uid !== userData.profile.uid) continue;
 
                 const card = `
-                    <div class="story-card" onclick="viewStory('${id}')" style="background: url('${s.type==='image'?s.mediaUrl:''}'); background-size: cover; background-position: center;">
+                    <div class="story-card" onclick="viewStory('${id}')" style="min-width: 100px; height: 160px; border-radius: 15px; position: relative; cursor: pointer; overflow: hidden; flex-shrink: 0; border: 1px solid #ffe4e8; background: url('${s.type==='image'?s.mediaUrl:''}') center/cover no-repeat;">
                         ${s.type === 'video' ? `<video src="${s.mediaUrl}" muted style="width:100%; height:100%; object-fit:cover;"></video>` : ''}
-                        <div style="position:absolute; top:8px; left:8px; width:30px; height:30px; border-radius:50%; border:2px solid #ff8fab; overflow:hidden;">
+                        <div style="position:absolute; top:8px; left:8px; width:30px; height:30px; border-radius:50%; border:2px solid #ff8fab; overflow:hidden; background: white;">
                             <img src="${s.avatar || 'https://via.placeholder.com/30'}" style="width:100%; height:100%; object-fit:cover;">
                         </div>
-                        <div style="position:absolute; bottom:5px; width:100%; color:white; font-size:0.6rem; text-align:center; font-weight:bold; text-shadow:1px 1px 2px black;">
+                        <div style="position:absolute; bottom:5px; width:100%; color:white; font-size:0.65rem; text-align:center; font-weight:bold; text-shadow:1px 1px 2px black; padding: 0 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                             ${s.username}
                         </div>
                     </div>`;
@@ -27222,7 +27237,6 @@ function listenStories() {
         }
     });
 }
-
 // Xem Story & Đếm mắt Realtime
 let storyTimer;
 function viewStory(storyId) {
