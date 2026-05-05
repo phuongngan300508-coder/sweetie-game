@@ -7745,6 +7745,103 @@ input[type="date"].sweetie-input-style {
     background: #ffc1cc;
     border-radius: 10px;
 }
+
+    /* Tối ưu không gian 1/3 và đẩy bài viết */
+.sw-story-area {
+    padding: 10px;
+    background: #fff;
+    overflow-x: auto;
+    white-space: nowrap;
+    border-bottom: 1px solid #ffe4e8;
+    height: 180px; /* Chiếm khoảng 1/3 chiều cao màn hình nhỏ hoặc cố định */
+}
+
+.sw-story-scroll {
+    display: flex;
+    gap: 10px;
+}
+
+.story-card {
+    min-width: 100px;
+    height: 160px;
+    border-radius: 12px;
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+    background: #eee;
+    border: 1px solid #ffe4e8;
+    transition: 0.3s;
+}
+
+.story-card:hover { transform: scale(1.02); }
+
+.create-story-preview {
+    height: 70%;
+    background: #ffe4e8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ff8fab;
+    font-size: 1.5rem;
+}
+
+.story-footer {
+    height: 30%;
+    background: white;
+    font-size: 0.75rem;
+    font-weight: bold;
+    text-align: center;
+    padding-top: 15px;
+    color: #444;
+}
+
+/* Viewer toàn màn hình */
+.sw-story-viewer {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    z-index: 9999;
+    background: black;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.viewer-content {
+    width: 100%;
+    max-width: 450px;
+    height: 95vh;
+    position: relative;
+    background: #111;
+}
+
+#viewer-media-container img, #viewer-media-container video {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.viewer-header {
+    position: absolute;
+    top: 20px; left: 0; width: 100%;
+    padding: 0 15px;
+    display: flex;
+    justify-content: space-between;
+    z-index: 10;
+    color: white;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+}
+/* Thanh Progress */
+.viewer-progress-bar {
+    position: absolute;
+    top: 5px; left: 5px; right: 5px;
+    height: 3px; background: rgba(255,255,255,0.3);
+}
+#viewer-progress { width: 0%; height: 100%; background: white; transition: linear; }
+
+/* Giảm chiều cao phần bài viết để nhường chỗ */
+.status-scrollable-content {
+    height: calc(100vh - 350px) !important;
+}
 </style>
 </head>
 <body>
@@ -8316,17 +8413,33 @@ input[type="date"].sweetie-input-style {
 
 <main>
 <div id="tab-status" class="tab-content" style="display:none;">
-    <!-- Nút mở Popup Bài viết của tôi - Đã đẩy lên cao hơn để tránh đồng hồ -->
-<div id="btn-my-posts" 
-     onclick="openMyPostsPopup()" 
-     title="Khu lưu trữ bài viết của bạn" 
-     style="display: none; position: fixed; left: 20px; bottom: 135px; z-index: 99; cursor: pointer; background: white; width: 45px; height: 45px; border-radius: 50%; align-items: center; justify-content: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border: 2px solid #ffb3c1; color: #ff8fab; transition: 0.3s;">
-    <i class="fas fa-file-alt" style="font-size: 1.2rem;"></i>
-</div>
+    <!-- Nút mở Popup Bài viết của tôi - Đã đẩy lên cao hơn để tránh đồng hồ (GIỮ NGUYÊN 100%) -->
+    <div id="btn-my-posts" 
+         onclick="openMyPostsPopup()" 
+         title="Khu lưu trữ bài viết của bạn" 
+         style="display: none; position: fixed; left: 20px; bottom: 135px; z-index: 99; cursor: pointer; background: white; width: 45px; height: 45px; border-radius: 50%; align-items: center; justify-content: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border: 2px solid #ffb3c1; color: #ff8fab; transition: 0.3s;">
+        <i class="fas fa-file-alt" style="font-size: 1.2rem;"></i>
+    </div>
     
     <button id="btn-open-composer" class="sw-post-fab">
         <i class="fas fa-pen-nib"></i>
     </button>
+
+    <!-- KHU VỰC ĐĂNG STORY MỚI (Tỉ lệ 1/3, lướt ngang chuẩn Facebook) -->
+    <div class="sw-story-area" style="padding: 10px 0; background: #fff; border-bottom: 1px solid #ffe4e8; margin-bottom: 5px;">
+        <div class="status-container">
+            <div id="story-list" style="display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px; scrollbar-width: none; -ms-overflow-style: none;">
+                <!-- Nút tạo story -->
+                <div class="story-card create" onclick="openStoryComposer()" style="min-width: 100px; height: 160px; background: #ffe4e8; border-radius: 15px; position: relative; cursor: pointer; overflow: hidden; flex-shrink: 0; border: 1px solid #ffcad4; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                    <div style="height: 110px; background: #fff3f5; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; color: #ff8fab;">
+                        <i class="fas fa-plus-circle"></i>
+                    </div>
+                    <div style="height: 50px; background: white; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: bold; color: #d81b60;">Tạo tin</div>
+                </div>
+                <!-- Tin của các cư dân khác sẽ render realtime vào đây -->
+            </div>
+        </div>
+    </div>
 
     <div id="composer-modal" class="sw-post-overlay" style="display:none;">
         <div class="sw-post-popup animate__animated animate__zoomIn">
@@ -8363,6 +8476,7 @@ input[type="date"].sweetie-input-style {
         </div>
     </div>
 
+    <!-- PHẦN HEADER CỐ ĐỊNH (GIỮ NGUYÊN 100%) -->
     <div class="status-fixed-header">
         <div class="status-container">
             <div style="display: flex; justify-content: space-between; align-items: center; background: #fff0f3; padding: 8px 12px; border-radius: 15px; border: 1px solid #ffe4e8; margin-bottom: 10px;">
@@ -8384,7 +8498,8 @@ input[type="date"].sweetie-input-style {
         </div>
     </div>
 
-    <div class="status-scrollable-content">
+    <!-- KHU VỰC BÀI VIẾT (Đã giảm độ cao để nhường chỗ cho Story) -->
+    <div class="status-scrollable-content" style="height: calc(100vh - 365px); overflow-y: auto;">
         <div class="status-container" id="status-list"></div>
     </div>
 </div>
@@ -10797,6 +10912,54 @@ input[type="date"].sweetie-input-style {
         <div id="my-posts-container" style="flex: 1; overflow-y: auto; padding: 10px; background: #fff9fa;">
             <!-- Dữ liệu sẽ được đổ vào đây -->
         </div>
+    </div>
+</div>
+
+    <!-- Modal Đăng Story -->
+<div id="story-composer" class="sw-post-overlay" style="display:none;">
+    <div class="sw-post-popup animate__animated animate__backInUp">
+        <div class="sw-post-header">
+            <span><i class="fas fa-camera-retro"></i> Chia sẻ khoảnh khắc</span>
+            <i class="fas fa-times sw-post-close" onclick="closeStoryComposer()"></i>
+        </div>
+        <div class="status-card">
+            <div id="story-preview-box" style="width:100%; height:250px; background:#f0f0f0; border-radius:15px; display:flex; align-items:center; justify-content:center; overflow:hidden; margin-bottom:10px;">
+                <span style="color:#aaa;">Chưa chọn ảnh/video</span>
+            </div>
+            <div style="display:flex; gap:10px; align-items:center; margin-bottom:10px;">
+                <input type="file" id="story-file-input" accept="image/*,video/*" style="display:none;" onchange="previewStoryMedia(this)">
+                <button type="button" onclick="document.getElementById('story-file-input').click()" class="status-select" style="flex:1; border:1px dashed #ff8fab;">
+                    <i class="fas fa-image"></i> Chọn phương tiện
+                </button>
+                <select id="story-privacy" class="status-select" style="width:120px;">
+                    <option value="public">🌎 Công khai</option>
+                    <option value="friends">👥 Bạn bè</option>
+                    <option value="private">🔒 Riêng tư</option>
+                </select>
+            </div>
+            <button onclick="handlePostStory()" id="btn-upload-story" class="btn-send-status" style="width:100%;">
+                <i class="fas fa-magic"></i> Chia sẻ lên Tin
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Viewer Story Toàn màn hình -->
+<div id="story-viewer" class="sw-story-viewer" style="display:none;">
+    <div class="viewer-overlay" onclick="closeStoryViewer()"></div>
+    <div class="viewer-content">
+        <div class="viewer-header">
+            <div class="viewer-user-info">
+                <img id="viewer-avatar" src="" alt="">
+                <span id="viewer-username">User</span>
+            </div>
+            <div class="viewer-actions">
+                <span id="viewer-view-count"><i class="fas fa-eye"></i> 0</span>
+                <i class="fas fa-times" onclick="closeStoryViewer()"></i>
+            </div>
+        </div>
+        <div id="viewer-media-container"></div>
+        <div class="viewer-progress-bar"><div id="viewer-progress"></div></div>
     </div>
 </div>
 <script>
@@ -13543,13 +13706,13 @@ function handleZonePayment(zoneId) {
     
     // --- HÀM CHUYỂN ĐỔI TAB (ĐÃ FIX LỖI LỆCH THANH BAR & CUỘN BẢN TIN) ---
 function switchTab(tabId) {
-    // 1. Ẩn tất cả các Tab Panel (Bao gồm cả tab-content nếu có)
+    // 1. Ẩn tất cả các Tab Panel (Bao gồm cả tab-content nếu có) - GIỮ NGUYÊN 100%
     document.querySelectorAll('.tab-panel, .tab-content').forEach(panel => {
         panel.classList.remove('active');
         panel.style.setProperty('display', 'none', 'important'); 
     });
     
-    // 2. Bỏ trạng thái sáng (active) của tất cả các nút trên thanh Nav
+    // 2. Bỏ trạng thái sáng (active) của tất cả các nút trên thanh Nav - GIỮ NGUYÊN 100%
     document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
 
     // 3. Hiển thị Panel được chọn
@@ -13573,7 +13736,11 @@ function switchTab(tabId) {
             activePanel.style.flexDirection = 'column';
             document.body.style.overflow = 'hidden'; 
             
-            // --- CẬP NHẬT LOGIC: Tải xong bài mới kiểm tra Direct Link ---
+            // --- KÍCH HOẠT STORY VÀ BẢN TIN ---
+            if (typeof listenStories === 'function') {
+                listenStories(); // Gọi hàm load Story mới
+            }
+
             if (typeof listenToPosts === 'function') {
                 // Đợi listenToPosts (async) hoàn thành xong mới chạy handleDirectLink
                 listenToPosts().then(() => {
@@ -26944,6 +27111,165 @@ function jumpToPost(postId) {
         }
     }, 500);
 }
+
+    let currentStoryFile = null;
+
+function openStoryComposer() {
+    document.getElementById('story-composer').style.display = 'flex';
+}
+
+function closeStoryComposer() {
+    document.getElementById('story-composer').style.display = 'none';
+    currentStoryFile = null;
+    document.getElementById('story-preview-box').innerHTML = '<span style="color:#aaa;">Chưa chọn ảnh/video</span>';
+}
+
+// Preview trước khi đăng
+function previewStoryMedia(input) {
+    if (input.files && input.files[0]) {
+        currentStoryFile = input.files[0];
+        const reader = new FileReader();
+        const box = document.getElementById('story-preview-box');
+        
+        reader.onload = function(e) {
+            const isVideo = currentStoryFile.type.startsWith('video');
+            box.innerHTML = isVideo 
+                ? `<video src="${e.target.result}" autoplay muted loop style="height:100%"></video>`
+                : `<img src="${e.target.result}" style="height:100%; object-fit:cover;">`;
+        };
+        reader.readAsDataURL(currentStoryFile);
+    }
+}
+
+// Xử lý đăng Story
+async function handlePostStory() {
+    if (!currentStoryFile || !userData) return alert("Vui lòng chọn ảnh/video! ✨");
+    
+    const btn = document.getElementById('btn-upload-story');
+    btn.disabled = true;
+    btn.innerText = "Đang chia sẻ...";
+
+    try {
+        // 1. Tải lên Cloudinary
+        const formData = new FormData();
+        formData.append("file", currentStoryFile);
+        formData.append("upload_preset", "SWEETIE GAME WORLD");
+        const res = await fetch(`https://api.cloudinary.com/v1_1/dl4wnxsm3/${currentStoryFile.type.startsWith('video')?'video':'image'}/upload`, {
+            method: "POST", body: formData
+        });
+        const media = await res.json();
+
+        // 2. Lưu vào Firebase stories
+        const storyData = {
+            uid: userData.profile.uid,
+            username: userData.profile.name,
+            avatar: userData.profile.customAvatar || "",
+            mediaUrl: media.secure_url,
+            type: currentStoryFile.type.startsWith('video') ? 'video' : 'image',
+            privacy: document.getElementById('story-privacy').value,
+            timestamp: firebase.database.ServerValue.TIMESTAMP,
+            expiresAt: Date.now() + (24 * 60 * 60 * 1000) // 24h sau
+        };
+
+        await firebase.database().ref('stories').push(storyData);
+        closeStoryComposer();
+        addNotification("THÀNH CÔNG", "Tin của bạn đã được đăng! ✨");
+    } catch (e) {
+        alert("Lỗi đăng tin: " + e.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerText = "Chia sẻ lên Tin";
+    }
+}
+
+// Lắng nghe và hiển thị Story (Chỉ hiện tin chưa hết hạn)
+function listenStories() {
+    const storyList = document.getElementById('story-list');
+    firebase.database().ref('stories').on('value', async (snap) => {
+        const data = snap.val();
+        // Xóa hết các card cũ (trừ nút Tạo tin)
+        const createBtn = storyList.querySelector('.create-story').outerHTML;
+        storyList.innerHTML = createBtn;
+
+        if (data) {
+            const now = Date.now();
+            for (let id in data) {
+                const s = data[id];
+                
+                // Kiểm tra hết hạn 24h
+                if (now > s.expiresAt) {
+                    // Tự động chuyển vào lưu trữ và xóa khỏi node chính
+                    firebase.database().ref(`archives/${s.uid}/stories/${id}`).set(s);
+                    firebase.database().ref(`stories/${id}`).remove();
+                    continue;
+                }
+
+                // Kiểm tra quyền xem (Sơ khai)
+                if (s.privacy === 'private' && s.uid !== userData.profile.uid) continue;
+
+                const card = `
+                    <div class="story-card" onclick="viewStory('${id}')" style="background: url('${s.type==='image'?s.mediaUrl:''}'); background-size: cover; background-position: center;">
+                        ${s.type === 'video' ? `<video src="${s.mediaUrl}" muted style="width:100%; height:100%; object-fit:cover;"></video>` : ''}
+                        <div style="position:absolute; top:8px; left:8px; width:30px; height:30px; border-radius:50%; border:2px solid #ff8fab; overflow:hidden;">
+                            <img src="${s.avatar || 'https://via.placeholder.com/30'}" style="width:100%; height:100%; object-fit:cover;">
+                        </div>
+                        <div style="position:absolute; bottom:5px; width:100%; color:white; font-size:0.6rem; text-align:center; font-weight:bold; text-shadow:1px 1px 2px black;">
+                            ${s.username}
+                        </div>
+                    </div>`;
+                storyList.insertAdjacentHTML('beforeend', card);
+            }
+        }
+    });
+}
+
+// Xem Story & Đếm mắt Realtime
+let storyTimer;
+function viewStory(storyId) {
+    firebase.database().ref(`stories/${storyId}`).once('value', snap => {
+        const s = snap.val();
+        const viewer = document.getElementById('story-viewer');
+        viewer.style.display = 'flex';
+        
+        document.getElementById('viewer-avatar').src = s.avatar;
+        document.getElementById('viewer-username').innerText = s.username;
+        const container = document.getElementById('viewer-media-container');
+        
+        container.innerHTML = s.type === 'video' 
+            ? `<video id="story-video" src="${s.mediaUrl}" autoplay></video>`
+            : `<img src="${s.mediaUrl}">`;
+
+        // Tăng số mắt xem (Realtime)
+        const viewsRef = firebase.database().ref(`stories/${storyId}/views/${userData.profile.uid}`);
+        viewsRef.set(true);
+
+        // Lắng nghe số lượng mắt
+        firebase.database().ref(`stories/${storyId}/views`).on('value', vSnap => {
+            document.getElementById('viewer-view-count').innerHTML = `<i class="fas fa-eye"></i> ${vSnap.numChildren()}`;
+        });
+
+        // Chạy thanh progress (5 giây cho ảnh, hoặc theo thời lượng video)
+        const progress = document.getElementById('viewer-progress');
+        progress.style.width = '0%';
+        progress.style.transition = 'none';
+        
+        setTimeout(() => {
+            progress.style.transition = 'width 5s linear';
+            progress.style.width = '100%';
+        }, 100);
+
+        storyTimer = setTimeout(closeStoryViewer, 5100);
+    });
+}
+
+function closeStoryViewer() {
+    document.getElementById('story-viewer').style.display = 'none';
+    document.getElementById('viewer-media-container').innerHTML = '';
+    clearTimeout(storyTimer);
+}
+
+// Khởi chạy
+listenStories();
 </script>
 </body>
 </html>
