@@ -27486,9 +27486,17 @@ async function viewStory(storyId) {
     const viewer = document.getElementById('story-viewer');
     viewer.style.display = 'flex';
     
-    // Đổ dữ liệu header
+    // Đổ dữ liệu header - CẬP NHẬT: Thêm hiển thị thời gian bên phải tên
     document.getElementById('viewer-avatar').src = s.avatar || 'https://via.placeholder.com/40';
-    document.getElementById('viewer-username').innerText = s.username || "Cư dân ẩn danh";
+    
+    // Sử dụng innerHTML để lồng thêm thẻ span chứa thời gian
+    const timeDisplay = getStoryTimeAgo(s.timestamp);
+    document.getElementById('viewer-username').innerHTML = `
+        ${s.username || "Cư dân ẩn danh"} 
+        <span style="font-weight: normal; font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-left: 5px;">
+            • ${timeDisplay}
+        </span>
+    `;
     
     // --- PHẦN THÊM MỚI: Logic click vào chủ Story để mở Profile & mở chuông ---
     const userHeader = document.querySelector('.viewer-user-info');
@@ -27731,6 +27739,19 @@ function closeStoryViewer() {
         console.log("Hệ thống: Đã xem hết tất cả tin, quay về bản tin.");
         closeStoryViewer();
     }
+}
+
+    function getStoryTimeAgo(timestamp) {
+    if (!timestamp) return "";
+    const now = Date.now();
+    const diff = Math.floor((now - timestamp) / 1000); 
+
+    if (diff < 60) return `${diff} giây`;
+    const minutes = Math.floor(diff / 60);
+    if (minutes < 60) return `${minutes} phút`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours} giờ`;
+    return "Gần 1 ngày";
 }
     
 // Khởi chạy
