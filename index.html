@@ -8012,6 +8012,29 @@ input[type="date"].sweetie-input-style {
     opacity: 1;
     pointer-events: auto;
 }
+
+    .viewer-progress-bar {
+    position: absolute;
+    top: 10px;
+    left: 0;
+    width: 100%;
+    z-index: 10;
+}
+
+.progress-segment {
+    flex: 1; /* Tự động chia đều độ rộng */
+    height: 100%;
+    background: rgba(255, 255, 255, 0.3); /* Màu nền mờ cho các khúc chưa chạy */
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.progress-inner {
+    width: 0%;
+    height: 100%;
+    background: #fff; /* Màu trắng cho phần đang chạy */
+    transition: width 0s linear;
+}
 </style>
 </head>
 <body>
@@ -11118,11 +11141,10 @@ input[type="date"].sweetie-input-style {
 <div id="story-viewer" class="sw-story-viewer" style="display:none;">
     <div class="viewer-content animate__animated animate__fadeIn">
         
-        <!-- Thanh tiến trình (GIỮ NGUYÊN) -->
-        <div class="viewer-progress-bar">
-            <div id="viewer-progress"></div>
-        </div>
-
+        <!-- Thanh tiến trình đã được nâng cấp (Chia khúc tự động) -->
+<div class="viewer-progress-bar" id="viewer-progress-container" style="display: flex; gap: 4px; padding: 0 2px; background: transparent; height: 3px;">
+    <!-- Các segment sẽ được render tự động bằng JavaScript tại đây -->
+</div>
         <!-- Header thông tin (Avatar & Tên) -->
 <div class="viewer-header">
     <!-- Thêm onclick và style cursor cho cả cụm user-info -->
@@ -27536,6 +27558,28 @@ async function viewStory(storyId) {
             • ${timeDisplay}
         </span>
     `;
+
+    // --- LOGIC MỚI: Vẽ các phân đoạn thanh Progress (Segments) ---
+    const progressContainer = document.getElementById('viewer-progress-container');
+    if (progressContainer && window.groupedStories && window.groupedStories[s.uid]) {
+        const userGroup = window.groupedStories[s.uid];
+        const total = userGroup.allStories.length;
+        const currentIndex = userGroup.allStories.findIndex(item => item.id === storyId);
+        
+        let segmentsHtml = "";
+        for (let i = 0; i < total; i++) {
+            // i < currentIndex: đã xem xong (100%)
+            // i === currentIndex: đang chờ chạy (0%)
+            // i > currentIndex: chưa tới lượt (0%)
+            let initialWidth = i < currentIndex ? "100%" : "0%";
+            segmentsHtml += `
+                <div class="progress-segment" style="flex: 1; height: 100%; background: rgba(255, 255, 255, 0.3); border-radius: 10px; overflow: hidden;">
+                    <div id="segment-${i}" class="progress-inner" style="width: ${initialWidth}; height: 100%; background: #fff; transition: width 0s linear;"></div>
+                </div>`;
+        }
+        progressContainer.innerHTML = segmentsHtml;
+    }
+    // -----------------------------------------------------------
     
     // --- PHẦN THÊM MỚI: Logic click vào chủ Story để mở Profile & mở chuông ---
     const userHeader = document.querySelector('.viewer-user-info');
@@ -27702,12 +27746,27 @@ function closeStoryViewer() {
 }
 
     function startStoryProgress() {
-    const progress = document.getElementById('viewer-progress');
     const video = document.getElementById('story-video');
     
-    // Reset thanh chạy về 0 ngay lập tức (GIỮ NGUYÊN)
-    progress.style.transition = 'none';
-    progress.style.width = '0%';
+    // 1. Tìm thông tin User và Index hiện tại để biết đang ở khúc nào
+    let currentUserUid = "";
+    let currentIndex = -1;
+    for (let uid in window.groupedStories) {
+        const idx = window.groupedStories[uid].allStories.findIndex(s => s.id === currentViewingStoryId);
+        if (idx !== -1) {
+            currentUserUid = uid;
+            currentIndex = idx;
+            break;
+        }
+    }
+
+    // 2. Lấy đúng phần tử thanh nhỏ (inner segment) đang hiển thị
+    const activeInner = document.getElementById(`segment-${currentIndex}`);
+    if (!activeInner) return;
+
+    // Reset thanh hiện tại về 0 ngay lập tức (GIỮ NGUYÊN logic reset)
+    activeInner.style.transition = 'none';
+    activeInner.style.width = '0%';
 
     // Đợi một chút để browser nhận diện reset rồi mới bắt đầu chạy
     setTimeout(() => {
@@ -27715,8 +27774,8 @@ function closeStoryViewer() {
             // TRƯỜNG HỢP VIDEO: Thanh chạy theo thời lượng video
             video.onplay = () => {
                 const duration = video.duration;
-                progress.style.transition = `width ${duration}s linear`;
-                progress.style.width = '100%';
+                activeInner.style.transition = `width ${duration}s linear`;
+                activeInner.style.width = '100%';
             };
             
             // Khi video kết thúc: Gọi hàm xử lý chuyển tin thay vì đóng ngay
@@ -27730,8 +27789,8 @@ function closeStoryViewer() {
         } else {
             // TRƯỜNG HỢP ẢNH: Chạy mặc định 5 giây
             const photoDuration = 5; 
-            progress.style.transition = `width ${photoDuration}s linear`;
-            progress.style.width = '100%';
+            activeInner.style.transition = `width ${photoDuration}s linear`;
+            activeInner.style.width = '100%';
 
             // Xóa timer cũ nếu có
             clearTimeout(storyTimer);
@@ -27747,7 +27806,7 @@ function closeStoryViewer() {
         }
     }, 100);
 }
-
+    
     function handleStoryEnded() {
     // 1. Lấy dữ liệu gộp từ window (Dữ liệu này được tạo từ hàm listenStories)
     const grouped = window.groupedStories;
