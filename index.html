@@ -7932,7 +7932,8 @@ input[type="date"].sweetie-input-style {
     width: 0%;
     height: 100%;
     background: #fff;
-    transition: width 5s linear;
+    /* Bỏ dòng transition ở đây */
+    transition: none; 
 }
 
 /* Giảm chiều cao phần bài viết để nhường chỗ */
@@ -27575,17 +27576,66 @@ function closeViewerList() {
 
 // Đóng Viewer Story
 function closeStoryViewer() {
-    // Tắt listener realtime để tránh lỗi khi story đã bị xóa
+    // 1. Tắt listener Firebase
     if (currentViewingStoryId) {
         firebase.database().ref(`stories/${currentViewingStoryId}/views`).off();
     }
     
-    document.getElementById('story-viewer').style.display = 'none';
-    closeViewerList(); // Tự động đóng khung trượt khi tắt viewer
-    document.getElementById('viewer-media-container').innerHTML = '';
+    // 2. Dừng Timer tự động đóng
     clearTimeout(storyTimer);
+    
+    // 3. Reset thanh progress về 0
+    const progress = document.getElementById('viewer-progress');
+    if (progress) {
+        progress.style.transition = 'none';
+        progress.style.width = '0%';
+    }
+
+    // 4. Ẩn giao diện và dọn dẹp media
+    document.getElementById('story-viewer').style.display = 'none';
+    closeViewerList(); 
+    
+    const container = document.getElementById('viewer-media-container');
+    if (container) container.innerHTML = '';
 }
 
+    function startStoryProgress() {
+    const progress = document.getElementById('viewer-progress');
+    const video = document.getElementById('story-video');
+    
+    // Reset thanh chạy về 0 ngay lập tức
+    progress.style.transition = 'none';
+    progress.style.width = '0%';
+
+    // Đợi một chút để browser nhận diện reset rồi mới bắt đầu chạy
+    setTimeout(() => {
+        if (video) {
+            // TRƯỜNG HỢP VIDEO: Thanh chạy theo thời lượng video
+            video.onplay = () => {
+                const duration = video.duration;
+                progress.style.transition = `width ${duration}s linear`;
+                progress.style.width = '100%';
+            };
+            
+            // Khi video kết thúc thì tự động đóng
+            video.onended = () => {
+                closeStoryViewer();
+            };
+        } else {
+            // TRƯỜNG HỢP ẢNH: Chạy mặc định 5 giây rồi đóng
+            const photoDuration = 5; // Bạn có thể chỉnh thành 7 tùy ý
+            progress.style.transition = `width ${photoDuration}s linear`;
+            progress.style.width = '100%';
+
+            // Xóa timer cũ nếu có và tạo timer mới để đóng story
+            clearTimeout(storyTimer);
+            storyTimer = setTimeout(() => {
+                closeStoryViewer();
+            }, photoDuration * 1000);
+        }
+    }, 100);
+}
+    
 // Khởi chạy
 listenStories();
 </script>
