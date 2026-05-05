@@ -7745,172 +7745,6 @@ input[type="date"].sweetie-input-style {
     background: #ffc1cc;
     border-radius: 10px;
 }
-
-    /* Container Story */
-.story-wrapper {
-    padding: 15px 10px;
-    background: white;
-    overflow-x: auto;
-    white-space: nowrap;
-    -webkit-overflow-scrolling: touch;
-}
-.story-wrapper::-webkit-scrollbar { display: none; }
-
-.story-container {
-    display: flex;
-    gap: 10px;
-    padding-bottom: 5px;
-}
-
-.story-card {
-    width: 110px;
-    height: 190px;
-    border-radius: 12px;
-    position: relative;
-    overflow: hidden;
-    flex-shrink: 0;
-    cursor: pointer;
-    background: #f0f2f5;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-}
-
-/* Story "Tạo tin" */
-.create-story {
-    background: white;
-    display: flex;
-    flex-direction: column;
-}
-.create-story .story-thumb {
-    height: 140px;
-    background-size: cover;
-    background-position: center;
-}
-.create-story .story-add-btn {
-    width: 32px;
-    height: 32px;
-    background: #ff8fab;
-    border: 3px solid white;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    position: absolute;
-    top: 125px;
-    left: 50%;
-    transform: translateX(-50%);
-}
-.create-story span {
-    margin-top: 25px;
-    text-align: center;
-    font-size: 0.8rem;
-    font-weight: bold;
-    color: #444;
-}
-
-/* Card Story bạn bè */
-.story-card.active-story {
-    border: 1px solid #ffe4e8;
-}
-.story-card img, .story-card video {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: 0.3s;
-}
-.story-card:hover img { transform: scale(1.05); }
-
-.story-user-ava {
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    width: 35px;
-    height: 35px;
-    border-radius: 50%;
-    border: 3px solid #ff8fab;
-    z-index: 2;
-    object-fit: cover;
-}
-
-.story-card .username {
-    position: absolute;
-    bottom: 10px;
-    left: 10px;
-    color: white;
-    font-size: 0.75rem;
-    font-weight: bold;
-    text-shadow: 0 1px 3px rgba(0,0,0,0.6);
-    z-index: 2;
-}
-
-/* Viewer Fullscreen */
-.story-viewer-overlay {
-    position: fixed;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: #1a1a1a;
-    z-index: 20000;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-.story-viewer-container {
-    position: relative;
-    width: 100%;
-    max-width: 450px;
-    height: 100vh;
-    background: black;
-}
-.story-viewer-header {
-    position: absolute;
-    top: 20px; left: 0; width: 100%;
-    padding: 0 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    z-index: 10;
-}
-.story-main-media {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-}
-.story-nav {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 40px;
-    height: 40px;
-    background: rgba(255,255,255,0.2);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    cursor: pointer;
-}
-.story-nav.prev { left: 10px; }
-.story-nav.next { right: 10px; }
-
-/* Nút chọn quyền riêng tư */
-.btn-privacy-opt {
-    padding: 12px;
-    border: 1px solid #ffe4e8;
-    background: white;
-    border-radius: 12px;
-    color: #444;
-    font-weight: bold;
-    cursor: pointer;
-    transition: 0.2s;
-}
-.btn-privacy-opt:hover { background: #fff0f3; color: #ff8fab; }
-
-/* Responsive cho điện thoại */
-@media (max-width: 768px) {
-    .story-card { width: 100px; height: 170px; }
-    .create-story .story-thumb { height: 120px; }
-    .create-story .story-add-btn { top: 105px; }
-}
 </style>
 </head>
 <body>
@@ -8529,40 +8363,26 @@ input[type="date"].sweetie-input-style {
         </div>
     </div>
 
-    <!-- Khu vực STORY giống Facebook -->
-    <div class="story-wrapper">
-        <div class="story-container" id="story-list">
-            <!-- Ô đăng story của tôi -->
-            <div class="story-card create-story" onclick="openStoryComposer()">
-                <div class="story-thumb" id="my-story-avatar-preview"></div>
-                <div class="story-add-btn"><i class="fas fa-plus"></i></div>
-                <span>Tạo tin</span>
-                <input type="file" id="story-file-input" accept="image/*,video/*" style="display:none;" onchange="handleStoryUpload(this)">
-            </div>
-            <!-- Các story của bạn bè sẽ render ở đây -->
-        </div>
-    </div>
-    
     <div class="status-fixed-header">
         <div class="status-container">
             <div style="display: flex; justify-content: space-between; align-items: center; background: #fff0f3; padding: 8px 12px; border-radius: 15px; border: 1px solid #ffe4e8; margin-bottom: 10px;">
+                
                 <div style="font-size: 0.85rem; color: #ff8fab; font-weight: bold; white-space: nowrap;">
                     <i class="fas fa-bullhorn"></i> Bản tin cư dân ✨
                 </div>
-                <!-- Thêm nút mở Kho lưu trữ Story -->
-                <div style="display: flex; gap: 8px;">
-                    <button onclick="openStoryArchive()" style="background:white; border:1px solid #ffcad4; border-radius:10px; padding:2px 8px; font-size:0.7rem; color:#ff8fab; cursor:pointer;">
-                        <i class="fas fa-history"></i> Kho tin
-                    </button>
-                    <div style="display: flex; align-items: center; gap: 4px; background: white; padding: 2px 6px 2px 10px; border-radius: 12px; border: 1px solid #ffcad4;">
-                        <select id="feed-filter" onchange="changeFeedFilter()" style="border: none; background: transparent; font-size: 0.75rem; color: #d81b60; font-weight: bold; outline: none; cursor: pointer;">
-                            <option value="newest">Mới nhất</option>
-                            <option value="trending">Hot nhất</option>
-                        </select>
-                    </div>
+                
+                <div style="display: flex; align-items: center; gap: 4px; background: white; padding: 2px 6px 2px 10px; border-radius: 12px; border: 1px solid #ffcad4; box-shadow: 0 2px 5px rgba(255,143,171,0.1);">
+                    <i class="fas fa-filter" style="font-size: 0.65rem; color: #ff8fab;"></i>
+                    <select id="feed-filter" onchange="changeFeedFilter()" style="border: none; background: transparent; font-size: 0.75rem; color: #d81b60; font-weight: bold; outline: none; cursor: pointer; padding-right: 4px;">
+                        <option value="newest">Mới nhất</option>
+                        <option value="trending">Hot nhất</option>
+                        <option value="oldest">Cũ nhất</option>
+                    </select>
                 </div>
+                
             </div>
         </div>
+    </div>
 
     <div class="status-scrollable-content">
         <div class="status-container" id="status-list"></div>
@@ -10977,48 +10797,6 @@ input[type="date"].sweetie-input-style {
         <div id="my-posts-container" style="flex: 1; overflow-y: auto; padding: 10px; background: #fff9fa;">
             <!-- Dữ liệu sẽ được đổ vào đây -->
         </div>
-    </div>
-</div>
-
-    <!-- CÁC MODAL STORY -->
-    <!-- 1. Modal chọn chế độ đăng story -->
-    <div id="story-privacy-modal" class="sw-post-overlay" style="display:none; z-index: 10001;">
-        <div class="sw-post-popup" style="max-width:300px;">
-            <div class="sw-post-header">Chọn quyền riêng tư tin</div>
-            <div style="padding:15px; display:flex; flex-direction:column; gap:10px;">
-                <button class="btn-privacy-opt" onclick="confirmUploadStory('public')">🌎 Công khai</button>
-                <button class="btn-privacy-opt" onclick="confirmUploadStory('friends')">👥 Bạn bè</button>
-                <button class="btn-privacy-opt" onclick="confirmUploadStory('private')">🔒 Riêng tư</button>
-                <button onclick="document.getElementById('story-privacy-modal').style.display='none'" style="border:none; background:none; color:#888; margin-top:5px;">Hủy</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- 2. Fullscreen Story Viewer -->
-    <div id="story-viewer" class="story-viewer-overlay" style="display:none;">
-        <div class="story-viewer-container">
-            <div class="story-progress-bar" id="story-progress"></div>
-            <div class="story-viewer-header">
-                <div style="display:flex; align-items:center; gap:10px;">
-                    <img id="story-viewer-avatar" src="" style="width:40px; height:40px; border-radius:50%; border:2px solid white;">
-                    <div>
-                        <div id="story-viewer-name" style="color:white; font-weight:bold; font-size:0.9rem;"></div>
-                        <div id="story-viewer-time" style="color:rgba(255,255,255,0.8); font-size:0.7rem;"></div>
-                    </div>
-                </div>
-                <div style="display:flex; align-items:center; gap:15px;">
-                    <div style="color:white; font-size:0.8rem;"><i class="far fa-eye"></i> <span id="story-view-count">0</span></div>
-                    <i class="fas fa-times" onclick="closeStoryViewer()" style="color:white; cursor:pointer; font-size:1.5rem;"></i>
-                </div>
-            </div>
-            <div id="story-viewer-content" class="story-main-media"></div>
-            <div class="story-nav prev" onclick="prevStory()"><i class="fas fa-chevron-left"></i></div>
-            <div class="story-nav next" onclick="nextStory()"><i class="fas fa-chevron-right"></i></div>
-        </div>
-    </div>
-
-    <div class="status-scrollable-content">
-        <div class="status-container" id="status-list"></div>
     </div>
 </div>
 <script>
@@ -27166,192 +26944,6 @@ function jumpToPost(postId) {
         }
     }, 500);
 }
-
-    let currentStories = [];
-let viewingIndex = 0;
-let storyTimer = null;
-let selectedStoryFile = null;
-
-// 1. Mở bộ chọn file
-function openStoryComposer() {
-    document.getElementById('story-file-input').click();
-}
-
-// 2. Xử lý khi chọn file xong -> Hiện Modal chọn quyền riêng tư
-function handleStoryUpload(input) {
-    if (input.files && input.files[0]) {
-        selectedStoryFile = input.files[0];
-        document.getElementById('story-privacy-modal').style.display = 'flex';
-    }
-}
-
-// 3. Thực hiện đăng Story
-async function confirmUploadStory(privacy) {
-    if (!selectedStoryFile) return;
-    
-    const btn = document.querySelector(`.btn-privacy-opt`);
-    document.getElementById('story-privacy-modal').style.display = 'none';
-    
-    if (typeof addNotification === 'function') addNotification("HỆ THỐNG", "Đang tải tin của bạn lên... ✨");
-
-    try {
-        // Upload lên Cloudinary (Dùng lại hàm của Henry)
-        const formData = new FormData();
-        formData.append("file", selectedStoryFile);
-        formData.append("upload_preset", "SWEETIE GAME WORLD");
-        const resourceType = selectedStoryFile.type.startsWith('video') ? "video" : "image";
-        
-        const response = await fetch(`https://api.cloudinary.com/v1_1/dl4wnxsm3/${resourceType}/upload`, {
-            method: "POST",
-            body: formData
-        });
-        const data = await response.json();
-
-        const storyData = {
-            uid: userData.profile.uid,
-            username: userData.profile.name,
-            avatar: userData.profile.customAvatar || '',
-            mediaUrl: data.secure_url,
-            type: resourceType,
-            privacy: privacy,
-            timestamp: firebase.database.ServerValue.TIMESTAMP,
-            expiresAt: Date.now() + (24 * 60 * 60 * 1000), // 24 giờ
-            views: {}
-        };
-
-        await firebase.database().ref('stories').push(storyData);
-        if (typeof addNotification === 'function') addNotification("HỆ THỐNG", "Tin của bạn đã được đăng! 💖");
-        selectedStoryFile = null;
-    } catch (e) {
-        console.error(e);
-        alert("Lỗi đăng tin rồi Henry ơi!");
-    }
-}
-
-// 4. Lắng nghe Story Real-time & Tự động dọn dẹp
-function listenToStories() {
-    const storyList = document.getElementById('story-list');
-    const myUid = userData.profile.uid;
-    const myFriends = userData.friends || {}; // Henry lấy list bạn bè từ userData
-
-    // Hiển thị avatar của tôi vào ô "Tạo tin"
-    const myAva = userData.profile.customAvatar;
-    const myAvaDiv = document.getElementById('my-story-avatar-preview');
-    if(myAva) myAvaDiv.style.backgroundImage = `url(${myAva})`;
-
-    firebase.database().ref('stories').on('value', (snapshot) => {
-        const data = snapshot.val();
-        const now = Date.now();
-        currentStories = [];
-        
-        // Render lại danh sách (Giữ nguyên ô đầu tiên là Tạo tin)
-        storyList.querySelectorAll('.active-story').forEach(el => el.remove());
-
-        if (data) {
-            Object.keys(data).forEach(id => {
-                const s = data[id];
-                
-                // KIỂM TRA HẾT HẠN -> Chuyển vào Archive (Mục lưu trữ)
-                if (s.expiresAt < now) {
-                    firebase.database().ref(`archives/${s.uid}/stories/${id}`).set(s);
-                    firebase.database().ref(`stories/${id}`).remove();
-                    return;
-                }
-
-                // KIỂM TRA QUYỀN XEM
-                let canSee = false;
-                if (s.uid === myUid) canSee = true;
-                else if (s.privacy === 'public') canSee = true;
-                else if (s.privacy === 'friends' && myFriends[s.username]) canSee = true;
-
-                if (canSee) {
-                    currentStories.push({ id, ...s });
-                }
-            });
-
-            // Sắp xếp tin mới nhất của bạn bè lên đầu
-            currentStories.sort((a, b) => b.timestamp - a.timestamp);
-
-            currentStories.forEach((s, index) => {
-                const card = document.createElement('div');
-                card.className = 'story-card active-story';
-                card.onclick = () => openStoryViewer(index);
-                
-                const avaImg = s.avatar ? `<img src="${s.avatar}" class="story-user-ava">` : `<div class="story-user-ava" style="background:#ffe4e8; display:flex; align-items:center; justify-content:center; color:#ff8fab;"><i class="fas fa-user"></i></div>`;
-                
-                card.innerHTML = `
-                    ${avaImg}
-                    <div class="username">${s.uid === myUid ? 'Tin của bạn' : s.username}</div>
-                    ${s.type === 'video' ? `<video src="${s.mediaUrl}#t=0.1" muted></video>` : `<img src="${s.mediaUrl}">`}
-                `;
-                storyList.appendChild(card);
-            });
-        }
-    });
-}
-
-// 5. Trình xem Story (Viewer)
-function openStoryViewer(index) {
-    viewingIndex = index;
-    const viewer = document.getElementById('story-viewer');
-    viewer.style.display = 'flex';
-    renderStoryContent();
-    
-    // Đánh dấu đã xem & Cập nhật số mắt real-time
-    const story = currentStories[viewingIndex];
-    if (story.uid !== userData.profile.uid) {
-        firebase.database().ref(`stories/${story.id}/views/${userData.profile.uid}`).set(Date.now());
-    }
-}
-
-function renderStoryContent() {
-    const s = currentStories[viewingIndex];
-    const content = document.getElementById('story-viewer-content');
-    const name = document.getElementById('story-viewer-name');
-    const ava = document.getElementById('story-viewer-avatar');
-    const time = document.getElementById('story-viewer-time');
-    const viewCount = document.getElementById('story-view-count');
-
-    name.innerText = s.username;
-    ava.src = s.avatar || 'link_default_avatar';
-    time.innerText = getTimeAgo(s.timestamp);
-    viewCount.innerText = s.views ? Object.keys(s.views).length : 0;
-
-    if (s.type === 'video') {
-        content.innerHTML = `<video id="story-video" src="${s.mediaUrl}" autoplay style="width:100%; max-height:80vh;"></video>`;
-        const v = document.getElementById('story-video');
-        v.onended = nextStory;
-    } else {
-        content.innerHTML = `<img src="${s.mediaUrl}" style="width:100%; max-height:80vh; object-fit:contain;">`;
-        clearTimeout(storyTimer);
-        storyTimer = setTimeout(nextStory, 5000); // 5s chuyển ảnh
-    }
-}
-
-function nextStory() {
-    if (viewingIndex < currentStories.length - 1) {
-        viewingIndex++;
-        renderStoryContent();
-    } else {
-        closeStoryViewer();
-    }
-}
-
-function prevStory() {
-    if (viewingIndex > 0) {
-        viewingIndex--;
-        renderStoryContent();
-    }
-}
-
-function closeStoryViewer() {
-    document.getElementById('story-viewer').style.display = 'none';
-    document.getElementById('story-viewer-content').innerHTML = '';
-    clearTimeout(storyTimer);
-}
-
-// Khởi chạy khi vào tab
-listenToStories();
 </script>
 </body>
 </html>
