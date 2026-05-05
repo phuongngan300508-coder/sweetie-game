@@ -7840,12 +7840,12 @@ input[type="date"].sweetie-input-style {
 .viewer-header {
     position: absolute;
     top: 0; left: 0; width: 100%;
-    padding: 35px 25px 40px 15px;
+    /* Giảm padding-right lại để không đẩy nút X ra ngoài */
+    padding: 35px 15px 40px 15px; 
     display: flex;
-    justify-content: space-between;
     align-items: center;
     z-index: 11;
-    background: linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, transparent 100%);
+    background: linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, transparent 100%);
     color: white;
 }
 
@@ -7853,6 +7853,8 @@ input[type="date"].sweetie-input-style {
     display: flex;
     align-items: center;
     gap: 10px;
+    /* Đảm bảo tên không đè lên nút actions */
+    max-width: 60%; 
 }
 
 #viewer-avatar {
@@ -7870,16 +7872,18 @@ input[type="date"].sweetie-input-style {
 }
 
 .viewer-actions {
+    position: absolute;
+    right: 15px; 
+    top: 35px;
     display: flex;
     align-items: center;
-    gap: 20px;
-    font-size: 1.1rem;
+    gap: 12px;
 }
 
 #viewer-view-count {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     background: rgba(255, 255, 255, 0.15);
-    padding: 4px 12px;
+    padding: 4px 10px;
     border-radius: 20px;
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -7888,18 +7892,21 @@ input[type="date"].sweetie-input-style {
 
 .viewer-close-btn {
     cursor: pointer;
-    font-size: 1.4rem; /* Làm nút X to hơn tí cho dễ bấm */
-    padding: 10px; /* Tăng vùng chạm (touch target) cho điện thoại */
-    margin-right: -10px; /* Bù trừ lại padding để căn chỉnh đẹp */
-    transition: 0.2s;
+    font-size: 1.6rem; /* Làm nút X to rõ hơn */
+    width: 40px;
+    height: 40px;
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: 0.2s;
+    background: rgba(0,0,0,0.2); /* Thêm nền mờ nhẹ để nút X luôn nổi bật */
+    border-radius: 50%;
 }
 
     .viewer-close-btn:active {
-    transform: scale(0.9); /* Hiệu ứng nhấn nút */
+    transform: scale(0.9);
     color: #ff8fab;
+    background: rgba(255,255,255,0.2);
 }
 
 .viewer-close-btn:hover { color: #ff8fab; }
@@ -11043,6 +11050,7 @@ input[type="date"].sweetie-input-style {
                 <img id="viewer-avatar" src="" alt="avatar">
                 <span id="viewer-username">Tên cư dân</span>
             </div>
+            <!-- Cụm Actions này giờ đã được cố định Absolute bên phải -->
             <div class="viewer-actions">
                 <span id="viewer-view-count"><i class="fas fa-eye"></i> 0</span>
                 <div class="viewer-close-btn" onclick="closeStoryViewer()">
@@ -11055,6 +11063,7 @@ input[type="date"].sweetie-input-style {
         <div id="viewer-media-container"></div>
 
     </div>
+</div>
 </div>
 <script>
   let replyingTo = null; // Lưu tin nhắn đang được trả lời {id, text, sender}
