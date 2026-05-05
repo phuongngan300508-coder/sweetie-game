@@ -7939,6 +7939,61 @@ input[type="date"].sweetie-input-style {
 .status-scrollable-content {
     height: calc(100vh - 350px) !important;
 }
+
+    /* Khung trượt từ dưới lên */
+.sw-bottom-sheet {
+    position: absolute;
+    bottom: -100%; /* Giấu dưới đáy */
+    left: 0; width: 100%;
+    height: 60%;
+    background: white;
+    border-top-left-radius: 20px;
+    border-top-right-radius: 20px;
+    z-index: 100;
+    transition: bottom 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 -5px 20px rgba(0,0,0,0.2);
+}
+
+.sw-bottom-sheet.active { bottom: 0; }
+
+.sheet-handler {
+    width: 40px; height: 5px;
+    background: #ddd;
+    border-radius: 10px;
+    margin: 10px auto;
+    cursor: pointer;
+}
+
+.sheet-header {
+    padding: 10px;
+    text-align: center;
+    font-weight: bold;
+    color: #ff8fab;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.sheet-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px;
+}
+
+/* Item người xem trong danh sách */
+.viewer-detail-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 8px;
+    border-bottom: 1px solid #fff5f7;
+}
+
+.viewer-detail-item img {
+    width: 35px; height: 35px;
+    border-radius: 50%;
+    object-fit: cover;
+}
 </style>
 </head>
 <body>
@@ -11045,12 +11100,12 @@ input[type="date"].sweetie-input-style {
 <div id="story-viewer" class="sw-story-viewer" style="display:none;">
     <div class="viewer-content animate__animated animate__fadeIn">
         
-        <!-- Thanh tiến trình -->
+        <!-- Thanh tiến trình (GIỮ NGUYÊN) -->
         <div class="viewer-progress-bar">
             <div id="viewer-progress"></div>
         </div>
 
-        <!-- Header thông tin (Avatar & Tên) -->
+        <!-- Header thông tin (Avatar & Tên - GIỮ NGUYÊN) -->
         <div class="viewer-header">
             <div class="viewer-user-info">
                 <img id="viewer-avatar" src="" alt="avatar">
@@ -11058,18 +11113,29 @@ input[type="date"].sweetie-input-style {
             </div>
         </div>
 
-        <!-- Cụm nút đóng xích qua trái -->
+        <!-- Cụm nút đóng xích qua trái (GIỮ NGUYÊN) -->
         <div class="viewer-actions">
             <div class="viewer-close-btn" onclick="closeStoryViewer()">
                 <i class="fas fa-times"></i>
             </div>
         </div>
 
-        <!-- Vùng hiển thị Media -->
+        <!-- Vùng hiển thị Media (GIỮ NGUYÊN) -->
         <div id="viewer-media-container"></div>
 
-        <!-- Mắt xem đưa xuống góc trái bên dưới -->
-        <span id="viewer-view-count"><i class="fas fa-eye"></i> 0</span>
+        <!-- Mắt xem: Thêm onclick và mặc định ẩn (Sẽ dùng JS để hiện nếu là chủ) -->
+        <span id="viewer-view-count" onclick="openViewerList()" style="display:none; cursor:pointer;">
+            <i class="fas fa-eye"></i> 0
+        </span>
+
+        <!-- KHU VỰC MỚI: Khung trượt danh sách người xem (Bottom Sheet) -->
+        <div id="viewer-list-sheet" class="sw-bottom-sheet">
+            <div class="sheet-handler" onclick="closeViewerList()"></div>
+            <div class="sheet-header">Cư dân đã xem tin</div>
+            <div id="viewer-details-content" class="sheet-body">
+                <!-- Danh sách người xem sẽ render ở đây -->
+            </div>
+        </div>
 
     </div>
 </div>
@@ -27350,45 +27416,89 @@ function listenStories() {
 }
 // Xem Story & Đếm mắt Realtime
 let storyTimer;
-function viewStory(storyId) {
-    firebase.database().ref(`stories/${storyId}`).once('value', snap => {
-        const s = snap.val();
-        const viewer = document.getElementById('story-viewer');
-        viewer.style.display = 'flex';
-        
-        document.getElementById('viewer-avatar').src = s.avatar;
-        document.getElementById('viewer-username').innerText = s.username;
-        const container = document.getElementById('viewer-media-container');
-        
-        container.innerHTML = s.type === 'video' 
-            ? `<video id="story-video" src="${s.mediaUrl}" autoplay></video>`
-            : `<img src="${s.mediaUrl}">`;
+let currentViewingStoryId = null;
 
-        // Tăng số mắt xem (Realtime)
-        const viewsRef = firebase.database().ref(`stories/${storyId}/views/${userData.profile.uid}`);
-        viewsRef.set(true);
+async function viewStory(storyId) {
+    currentViewingStoryId = storyId;
+    const snap = await firebase.database().ref(`stories/${storyId}`).once('value');
+    const s = snap.val();
+    if (!s) return;
 
-        // Lắng nghe số lượng mắt
-        firebase.database().ref(`stories/${storyId}/views`).on('value', vSnap => {
-            document.getElementById('viewer-view-count').innerHTML = `<i class="fas fa-eye"></i> ${vSnap.numChildren()}`;
+    const viewer = document.getElementById('story-viewer');
+    viewer.style.display = 'flex';
+    
+    // Đổ dữ liệu header
+    document.getElementById('viewer-avatar').src = s.avatar || 'link_avatar_mac_dinh';
+    document.getElementById('viewer-username').innerText = s.username;
+    
+    // Hiển thị Media
+    const container = document.getElementById('viewer-media-container');
+    container.innerHTML = s.type === 'video' 
+        ? `<video id="story-video" src="${s.mediaUrl}" autoplay style="width:100%; height:100%; object-fit:contain;"></video>`
+        : `<img src="${s.mediaUrl}" style="width:100%; height:100%; object-fit:contain;">`;
+
+    // --- LOGIC PHÂN QUYỀN MẮT XEM ---
+    const viewCountBtn = document.getElementById('viewer-view-count');
+    const myUid = userData.profile.uid;
+
+    if (s.uid === myUid) {
+        // Nếu là CHỦ STORY: Hiện mắt xem và cho phép click
+        viewCountBtn.style.display = 'flex';
+    } else {
+        // Nếu là NGƯỜI XEM: Ẩn mắt xem
+        viewCountBtn.style.display = 'none';
+        // Tăng mắt xem lên Firebase (Ghi nhận lượt xem cho chủ tin)
+        firebase.database().ref(`stories/${storyId}/views/${myUid}`).set({
+            name: userData.profile.name,
+            avatar: userData.profile.customAvatar || "",
+            timestamp: firebase.database.ServerValue.TIMESTAMP
         });
+    }
 
-        // Chạy thanh progress (5 giây cho ảnh, hoặc theo thời lượng video)
-        const progress = document.getElementById('viewer-progress');
-        progress.style.width = '0%';
-        progress.style.transition = 'none';
-        
-        setTimeout(() => {
-            progress.style.transition = 'width 5s linear';
-            progress.style.width = '100%';
-        }, 100);
-
-        storyTimer = setTimeout(closeStoryViewer, 5100);
+    // Lắng nghe số lượng mắt realtime (chỉ chủ mới cần thấy số nhảy)
+    firebase.database().ref(`stories/${storyId}/views`).on('value', vSnap => {
+        const count = vSnap.numChildren();
+        viewCountBtn.innerHTML = `<i class="fas fa-eye"></i> ${count}`;
     });
+
+    // Chạy Progress bar (Giữ nguyên logic cũ của ông)
+    startStoryProgress();
+}
+
+// Hàm mở danh sách người xem trượt từ dưới lên
+async function openViewerList() {
+    const sheet = document.getElementById('viewer-list-sheet');
+    const content = document.getElementById('viewer-details-content');
+    
+    sheet.classList.add('active');
+    content.innerHTML = '<div style="text-align:center; padding:20px;"><i class="fas fa-spinner fa-spin"></i> Đang xem ai đã ghé thăm...</div>';
+
+    const snap = await firebase.database().ref(`stories/${currentViewingStoryId}/views`).once('value');
+    const viewers = snap.val();
+
+    if (!viewers) {
+        content.innerHTML = '<div style="text-align:center; padding:40px; color:#aaa;">Chưa có cư dân nào xem tin này ✨</div>';
+        return;
+    }
+
+    let html = "";
+    Object.keys(viewers).forEach(uid => {
+        const v = viewers[uid];
+        html += `
+            <div class="viewer-item">
+                <img src="${v.avatar || 'link_mac_dinh'}" alt="avt">
+                <div>
+                    <div style="font-weight:bold; font-size:0.85rem;">${v.name}</div>
+                    <div style="font-size:0.7rem; color:#888;">ID: ${uid}</div>
+                </div>
+            </div>`;
+    });
+    content.innerHTML = html;
 }
 
 function closeStoryViewer() {
     document.getElementById('story-viewer').style.display = 'none';
+    document.getElementById('viewer-list-sheet').classList.remove('active');
     document.getElementById('viewer-media-container').innerHTML = '';
     clearTimeout(storyTimer);
 }
