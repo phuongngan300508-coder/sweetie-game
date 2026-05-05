@@ -7836,11 +7836,10 @@ input[type="date"].sweetie-input-style {
     object-fit: contain; /* Luôn giữ tỉ lệ, căn giữa */
 }
 
-/* Header mượt mà hơn với Gradient */
+/* Header: Chỉ chứa thông tin User - GIỮ NGUYÊN 100% */
 .viewer-header {
     position: absolute;
     top: 0; left: 0; width: 100%;
-    /* Giảm padding-right lại để không đẩy nút X ra ngoài */
     padding: 35px 15px 40px 15px; 
     display: flex;
     align-items: center;
@@ -7853,7 +7852,6 @@ input[type="date"].sweetie-input-style {
     display: flex;
     align-items: center;
     gap: 10px;
-    /* Đảm bảo tên không đè lên nút actions */
     max-width: 60%; 
 }
 
@@ -7873,33 +7871,41 @@ input[type="date"].sweetie-input-style {
 
 .viewer-actions {
     position: absolute;
-    right: 15px; 
+    right: 30px; 
     top: 35px;
     display: flex;
     align-items: center;
-    gap: 12px;
+    z-index: 12;
 }
-
+    
+/* MẮT XEM: Đưa xuống tay trái bên dưới giống Facebook */
 #viewer-view-count {
-    font-size: 0.7rem;
-    background: rgba(255, 255, 255, 0.15);
-    padding: 4px 10px;
+    position: absolute;
+    bottom: 30px; /* Cách đáy 30px */
+    left: 20px;   /* Cách lề trái 20px */
+    font-size: 0.75rem;
+    background: rgba(0, 0, 0, 0.4); /* Nền tối hơn để nổi bật */
+    padding: 6px 12px;
     border-radius: 20px;
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.1);
     white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    z-index: 11;
 }
-
+    
 .viewer-close-btn {
     cursor: pointer;
-    font-size: 1.6rem; /* Làm nút X to rõ hơn */
+    font-size: 1.6rem;
     width: 40px;
     height: 40px;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: 0.2s;
-    background: rgba(0,0,0,0.2); /* Thêm nền mờ nhẹ để nút X luôn nổi bật */
+    background: rgba(0,0,0,0.2);
     border-radius: 50%;
 }
 
@@ -11044,26 +11050,28 @@ input[type="date"].sweetie-input-style {
             <div id="viewer-progress"></div>
         </div>
 
-        <!-- Header thông tin -->
+        <!-- Header thông tin (Avatar & Tên) -->
         <div class="viewer-header">
             <div class="viewer-user-info">
                 <img id="viewer-avatar" src="" alt="avatar">
                 <span id="viewer-username">Tên cư dân</span>
             </div>
-            <!-- Cụm Actions này giờ đã được cố định Absolute bên phải -->
-            <div class="viewer-actions">
-                <span id="viewer-view-count"><i class="fas fa-eye"></i> 0</span>
-                <div class="viewer-close-btn" onclick="closeStoryViewer()">
-                    <i class="fas fa-times"></i>
-                </div>
+        </div>
+
+        <!-- Cụm nút đóng xích qua trái -->
+        <div class="viewer-actions">
+            <div class="viewer-close-btn" onclick="closeStoryViewer()">
+                <i class="fas fa-times"></i>
             </div>
         </div>
 
         <!-- Vùng hiển thị Media -->
         <div id="viewer-media-container"></div>
 
+        <!-- Mắt xem đưa xuống góc trái bên dưới -->
+        <span id="viewer-view-count"><i class="fas fa-eye"></i> 0</span>
+
     </div>
-</div>
 </div>
 <script>
   let replyingTo = null; // Lưu tin nhắn đang được trả lời {id, text, sender}
