@@ -8317,7 +8317,10 @@ input[type="date"].sweetie-input-style {
 <main>
 <div id="tab-status" class="tab-content" style="display:none;">
     <!-- Nút mở Popup Bài viết của tôi - Đã đẩy lên cao hơn để tránh đồng hồ -->
-<div id="btn-my-posts" onclick="openMyPostsPopup()" style="display: none; position: fixed; left: 20px; bottom: 135px; z-index: 99; cursor: pointer; background: white; width: 45px; height: 45px; border-radius: 50%; align-items: center; justify-content: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border: 2px solid #ffb3c1; color: #ff8fab; transition: 0.3s;">
+<div id="btn-my-posts" 
+     onclick="openMyPostsPopup()" 
+     title="Khu lưu trữ bài viết của bạn" 
+     style="display: none; position: fixed; left: 20px; bottom: 135px; z-index: 99; cursor: pointer; background: white; width: 45px; height: 45px; border-radius: 50%; align-items: center; justify-content: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border: 2px solid #ffb3c1; color: #ff8fab; transition: 0.3s;">
     <i class="fas fa-file-alt" style="font-size: 1.2rem;"></i>
 </div>
     
@@ -26937,7 +26940,7 @@ function jumpToPost(postId) {
             targetEl.style.boxShadow = "0 0 25px #ff8fab";
             setTimeout(() => targetEl.style.boxShadow = "none", 2000);
         } else {
-            alert("Bài viết này đã nằm ngoài tầm tìm kiếm, bạn vui lòng mở chế độ xem bài viết là 'Cũ nhất' để tìm lại nhé! ✨");
+            alert("Bài viết này đã nằm ngoài tầm tìm kiếm, bạn vui lòng mở chế độ xem bài viết là 'Cũ nhất/Mới nhất' để tìm lại nhé! ✨");
         }
     }, 500);
 }
