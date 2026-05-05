@@ -27472,6 +27472,10 @@ let currentViewingStoryId = null;
 async function viewStory(storyId) {
     currentViewingStoryId = storyId;
     
+    // --- BỔ SUNG: Tự động đóng khung trượt danh sách khi chuyển tin ---
+    if (typeof closeViewerList === 'function') closeViewerList();
+    // ---------------------------------------------------------------
+
     // Tắt các listener cũ trước khi mở story mới để tránh tốn tài nguyên
     firebase.database().ref(`stories/${storyId}/views`).off();
 
@@ -27498,7 +27502,6 @@ async function viewStory(storyId) {
             }
         };
     }
-    // -------------------------------------------------------------------------
 
     // Hiển thị Media
     const container = document.getElementById('viewer-media-container');
@@ -27523,7 +27526,7 @@ async function viewStory(storyId) {
         // Nếu là NGƯỜI XEM: Ẩn mắt xem hoàn toàn
         viewCountBtn.style.display = 'none';
         
-        // Ghi nhận lượt xem - FIX LỖI UNDEFINED TẠI ĐÂY
+        // Ghi nhận lượt xem
         firebase.database().ref(`stories/${storyId}/views/${myUid}`).set({
             name: userData.profile.name || "Cư dân Sweetie",
             avatar: userData.profile.customAvatar || "",
@@ -27534,7 +27537,7 @@ async function viewStory(storyId) {
     // Chạy Progress bar
     if (typeof startStoryProgress === 'function') startStoryProgress();
 }
-
+    
 async function openViewerList() {
     const sheet = document.getElementById('viewer-list-sheet');
     const content = document.getElementById('viewer-details-content');
@@ -27655,7 +27658,7 @@ function closeStoryViewer() {
     const progress = document.getElementById('viewer-progress');
     const video = document.getElementById('story-video');
     
-    // Reset thanh chạy về 0 ngay lập tức
+    // Reset thanh chạy về 0 ngay lập tức (GIỮ NGUYÊN)
     progress.style.transition = 'none';
     progress.style.width = '0%';
 
@@ -27669,23 +27672,65 @@ function closeStoryViewer() {
                 progress.style.width = '100%';
             };
             
-            // Khi video kết thúc thì tự động đóng
+            // Khi video kết thúc: Gọi hàm xử lý chuyển tin thay vì đóng ngay
             video.onended = () => {
-                closeStoryViewer();
+                if (typeof handleStoryEnded === 'function') {
+                    handleStoryEnded();
+                } else {
+                    closeStoryViewer();
+                }
             };
         } else {
-            // TRƯỜNG HỢP ẢNH: Chạy mặc định 5 giây rồi đóng
-            const photoDuration = 5; // Bạn có thể chỉnh thành 7 tùy ý
+            // TRƯỜNG HỢP ẢNH: Chạy mặc định 5 giây
+            const photoDuration = 5; 
             progress.style.transition = `width ${photoDuration}s linear`;
             progress.style.width = '100%';
 
-            // Xóa timer cũ nếu có và tạo timer mới để đóng story
+            // Xóa timer cũ nếu có
             clearTimeout(storyTimer);
+            
+            // Tạo timer mới: Hết thời gian sẽ gọi hàm xử lý chuyển tin
             storyTimer = setTimeout(() => {
-                closeStoryViewer();
+                if (typeof handleStoryEnded === 'function') {
+                    handleStoryEnded();
+                } else {
+                    closeStoryViewer();
+                }
             }, photoDuration * 1000);
         }
     }, 100);
+}
+
+    function handleStoryEnded() {
+    // 1. Lấy danh sách tất cả các thẻ Story đang có (Loại bỏ nút tạo tin)
+    const storyCards = Array.from(document.querySelectorAll('#story-list .story-card:not(.create)'));
+    
+    // 2. Nếu chỉ có duy nhất 1 Story trên toàn hệ thống, đóng ngay khi hết giờ
+    if (storyCards.length <= 1) {
+        console.log("Hệ thống: Chỉ còn 1 tin duy nhất, tự động đóng viewer.");
+        closeStoryViewer();
+        return;
+    }
+
+    // 3. Tìm vị trí (index) của Story đang xem hiện tại
+    const currentIndex = storyCards.findIndex(card => {
+        return card.getAttribute('onclick').includes(currentViewingStoryId);
+    });
+
+    // 4. Kiểm tra điều kiện chuyển tiếp
+    // Nếu tìm thấy và KHÔNG phải là tin cuối cùng trong danh sách
+    if (currentIndex !== -1 && currentIndex < storyCards.length - 1) {
+        const nextStoryCard = storyCards[currentIndex + 1];
+        // Trích xuất ID từ chuỗi viewStory('ID_THẬT')
+        const nextStoryId = nextStoryCard.getAttribute('onclick').match(/'([^']+)'/)[1];
+        
+        console.log("Hệ thống: Chuyển sang tin tiếp theo của cư dân ✨");
+        viewStory(nextStoryId); 
+    } else {
+        // Nếu là tin cuối cùng hoặc có lỗi index, đóng viewer
+        console.log("Hệ thống: Đã xem hết tất cả tin, quay về bản tin.");
+        closeStoryViewer();
+    }
 }
     
 // Khởi chạy
