@@ -8047,28 +8047,6 @@ input[type="date"].sweetie-input-style {
 .nav-btn:hover {
     background: rgba(216, 27, 96, 0.4) !important; /* Màu hồng đặc trưng của Henry */
 }
-
-    /* CSS bổ sung để tối ưu giao diện */
-    .nav-btn:hover {
-        background: #ff8fab !important;
-        border-color: #ff8fab !important;
-        transform: scale(1.1);
-    }
-
-    /* Ẩn nút mũi tên và giãn khung Story khi ở trên điện thoại */
-    @media (max-width: 768px) {
-        .nav-btn {
-            display: none !important;
-        }
-        .viewer-navigation-layout {
-            gap: 0 !important;
-        }
-        .viewer-content {
-            max-width: 100% !important;
-            height: 100vh !important;
-            border-radius: 0 !important;
-        }
-    }
 </style>
 </head>
 <body>
@@ -11172,62 +11150,60 @@ input[type="date"].sweetie-input-style {
 </div>
 
 <!-- Viewer Story Toàn màn hình -->
-<div id="story-viewer" class="sw-story-viewer" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 9999; align-items: center; justify-content: center;">
-    
-    <!-- KHU VỰC ĐIỀU HƯỚNG BÊN NGOÀI -->
-    <div class="viewer-navigation-layout" style="display: flex; align-items: center; gap: 30px; width: 100%; max-width: 800px; justify-content: center; position: relative;">
+<div id="story-viewer" class="sw-story-viewer" style="display:none;">
+    <div class="viewer-content animate__animated animate__fadeIn">
         
-        <!-- Nút Trái (Nằm ngoài) -->
-        <button class="nav-btn prev" onclick="handleManualNavigate('prev')" style="background: rgba(255,255,255,0.1); color: white; border: 2px solid rgba(255,255,255,0.2); width: 55px; height: 55px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; transition: 0.3s; flex-shrink: 0;">
-            <i class="fas fa-chevron-left"></i>
-        </button>
+        <!-- Thanh tiến trình đã được nâng cấp (Chia khúc tự động) -->
+        <div class="viewer-progress-bar" id="viewer-progress-container" style="display: flex; gap: 4px; padding: 0 2px; background: transparent; height: 3px;">
+            <!-- Các segment sẽ được render tự động bằng JavaScript tại đây -->
+        </div>
 
-        <!-- KHUNG STORY CHÍNH (GIỮ NGUYÊN NỘI DUNG BÊN TRONG) -->
-        <div class="viewer-content animate__animated animate__fadeIn" style="position: relative; width: 100%; max-width: 420px; height: 85vh; background: #000; border-radius: 15px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
-            
-            <!-- Thanh tiến trình (Chia khúc tự động) -->
-            <div class="viewer-progress-bar" id="viewer-progress-container" style="position: absolute; top: 10px; left: 0; width: 100%; display: flex; gap: 4px; padding: 0 10px; z-index: 10; height: 3px;">
-                <!-- Các segment render tự động -->
-            </div>
-
-            <!-- Header thông tin (Avatar & Tên) -->
-            <div class="viewer-header" style="position: absolute; top: 20px; left: 15px; z-index: 10;">
-                <div class="viewer-user-info" id="viewer-user-click" style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
-                    <img id="viewer-avatar" src="" alt="avatar" style="width: 35px; height: 35px; border-radius: 50%; border: 2px solid #ff8fab; object-fit: cover;">
-                    <span id="viewer-username" style="color: white; font-weight: bold; font-size: 0.9rem; text-shadow: 1px 1px 3px rgba(0,0,0,0.8);">Tên cư dân</span>
-                </div>
-            </div>
-
-            <!-- Cụm nút đóng -->
-            <div class="viewer-actions" style="position: absolute; top: 18px; right: 15px; z-index: 10;">
-                <div class="viewer-close-btn" onclick="closeStoryViewer()" style="color: white; font-size: 1.2rem; cursor: pointer; opacity: 0.8;">
-                    <i class="fas fa-times"></i>
-                </div>
-            </div>
-
-            <!-- Vùng hiển thị Media -->
-            <div id="viewer-media-container" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;"></div>
-
-            <!-- Mắt xem -->
-            <span id="viewer-view-count" onclick="openViewerList()" style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: none; cursor: pointer; background: rgba(0,0,0,0.5); color: white; padding: 5px 15px; border-radius: 20px; font-size: 0.8rem; backdrop-filter: blur(5px); z-index: 10;">
-                <i class="fas fa-eye"></i> 0
-            </span>
-
-            <!-- Bottom Sheet danh sách người xem -->
-            <div id="viewer-list-sheet" class="sw-bottom-sheet">
-                <div class="sheet-handler" onclick="closeViewerList()"></div>
-                <div class="sheet-header">
-                    Cư dân đã xem tin
-                    <i class="fas fa-chevron-down" onclick="closeViewerList()" style="position:absolute; right:15px; top:12px; cursor:pointer; color:#aaa;"></i>
-                </div>
-                <div id="viewer-details-content" class="sheet-body"></div>
+        <!-- Header thông tin (Avatar & Tên) -->
+        <div class="viewer-header">
+            <div class="viewer-user-info" id="viewer-user-click" style="cursor: pointer;">
+                <img id="viewer-avatar" src="" alt="avatar">
+                <span id="viewer-username">Tên cư dân</span>
             </div>
         </div>
 
-        <!-- Nút Phải (Nằm ngoài) -->
-        <button class="nav-btn next" onclick="handleManualNavigate('next')" style="background: rgba(255,255,255,0.1); color: white; border: 2px solid rgba(255,255,255,0.2); width: 55px; height: 55px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; transition: 0.3s; flex-shrink: 0;">
-            <i class="fas fa-chevron-right"></i>
-        </button>
+        <!-- Cụm nút đóng xích qua trái (GIỮ NGUYÊN) -->
+        <div class="viewer-actions">
+            <div class="viewer-close-btn" onclick="closeStoryViewer()">
+                <i class="fas fa-times"></i>
+            </div>
+        </div>
+
+        <!-- KHU VỰC MỚI: Nút điều hướng thủ công (Chỉ hiển thị trên PC) -->
+        <div class="viewer-navigation">
+            <button class="nav-btn prev" onclick="handleManualNavigate('prev')" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.2); color: white; border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; z-index: 100;">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+            <button class="nav-btn next" onclick="handleManualNavigate('next')" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.2); color: white; border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; z-index: 100;">
+                <i class="fas fa-chevron-right"></i>
+            </button>
+        </div>
+
+        <!-- Vùng hiển thị Media (GIỮ NGUYÊN) -->
+        <div id="viewer-media-container" style="width: 100%; height: 100%;"></div>
+
+        <!-- Mắt xem: Thêm onclick và mặc định ẩn (Sẽ dùng JS để hiện nếu là chủ) -->
+        <span id="viewer-view-count" onclick="openViewerList()" style="display:none; cursor:pointer;">
+            <i class="fas fa-eye"></i> 0
+        </span>
+
+        <!-- KHU VỰC MỚI: Khung trượt danh sách người xem (Bottom Sheet) -->
+        <div id="viewer-list-sheet" class="sw-bottom-sheet">
+            <!-- Thanh ngang trên đầu: Bấm vào đây để đóng nhanh -->
+            <div class="sheet-handler" onclick="closeViewerList()"></div>
+            
+            <!-- Header: Thêm nút X nhỏ ở góc cho chắc chắn -->
+            <div class="sheet-header">
+                Cư dân đã xem tin
+                <i class="fas fa-chevron-down" onclick="closeViewerList()" style="position:absolute; right:15px; top:12px; cursor:pointer; color:#aaa;"></i>
+            </div>
+            
+            <div id="viewer-details-content" class="sheet-body"></div>
+        </div>
 
     </div>
 </div>
