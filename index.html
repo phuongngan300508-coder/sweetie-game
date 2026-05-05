@@ -7994,6 +7994,23 @@ input[type="date"].sweetie-input-style {
     border-radius: 50%;
     object-fit: cover;
 }
+
+    .viewer-content::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5);
+    opacity: 0;
+    pointer-events: none;
+    transition: 0.3s;
+    z-index: 90;
+}
+
+/* Khi sheet mở thì hiện lớp phủ đen mờ */
+.viewer-content:has(.sw-bottom-sheet.active)::after {
+    opacity: 1;
+    pointer-events: auto;
+}
 </style>
 </head>
 <body>
@@ -11130,11 +11147,17 @@ input[type="date"].sweetie-input-style {
 
         <!-- KHU VỰC MỚI: Khung trượt danh sách người xem (Bottom Sheet) -->
         <div id="viewer-list-sheet" class="sw-bottom-sheet">
-            <div class="sheet-handler" onclick="closeViewerList()"></div>
-            <div class="sheet-header">Cư dân đã xem tin</div>
-            <div id="viewer-details-content" class="sheet-body">
-                <!-- Danh sách người xem sẽ render ở đây -->
-            </div>
+    <!-- Thanh ngang trên đầu: Bấm vào đây để đóng nhanh -->
+    <div class="sheet-handler" onclick="closeViewerList()"></div>
+    
+    <!-- Header: Thêm nút X nhỏ ở góc cho chắc chắn -->
+    <div class="sheet-header">
+        Cư dân đã xem tin
+        <i class="fas fa-chevron-down" onclick="closeViewerList()" style="position:absolute; right:15px; top:12px; cursor:pointer; color:#aaa;"></i>
+    </div>
+    
+    <div id="viewer-details-content" class="sheet-body"></div>
+</div>
         </div>
 
     </div>
@@ -27487,11 +27510,41 @@ async function openViewerList() {
             return;
         }
 
-        let html = "";
-        // Duyệt Object và xử lý an toàn dữ liệu
-        Object.keys(viewers).forEach(uid => {
+        const uids = Object.keys(viewers);
+        
+        // --- BƯỚC QUAN TRỌNG: Lấy dữ liệu thật từ node users ---
+        const userPromises = uids.map(async (uid) => {
             const v = viewers[uid];
-            // Nếu không có ảnh thì dùng icon mặc định
+            // Tìm thông tin profile mới nhất của UID này trong node users
+            const userSnap = await firebase.database().ref('users').orderByChild('profile/uid').equalTo(uid).once('value');
+            const userDataFound = userSnap.val();
+            
+            let finalName = v.name || 'Cư dân ẩn danh';
+            let finalAvatar = v.avatar || '';
+
+            if (userDataFound) {
+                const userKey = Object.keys(userDataFound)[0];
+                const profile = userDataFound[userKey].profile;
+                if (profile) {
+                    finalName = profile.name || finalName;
+                    finalAvatar = profile.customAvatar || finalAvatar;
+                }
+            }
+
+            return {
+                uid: uid,
+                name: finalName,
+                avatar: finalAvatar,
+                timestamp: v.timestamp
+            };
+        });
+
+        // Đợi tất cả các yêu cầu truy vấn hoàn tất
+        const listWithFullInfo = await Promise.all(userPromises);
+
+        let html = "";
+        listWithFullInfo.forEach(v => {
+            // Nếu không có ảnh thì dùng icon mặc định - Giữ nguyên thiết kế của Henry
             const avtHtml = v.avatar 
                 ? `<img src="${v.avatar}" style="width:35px; height:35px; border-radius:50%; object-fit:cover;">`
                 : `<div style="width:35px; height:35px; border-radius:50%; background:#ffe4e8; display:flex; align-items:center; justify-content:center; color:#ff8fab; font-size:0.8rem;"><i class="fas fa-user"></i></div>`;
@@ -27500,19 +27553,20 @@ async function openViewerList() {
                 <div class="viewer-detail-item" style="display:flex; align-items:center; gap:12px; padding:10px; border-bottom:1px solid #fff5f7;">
                     ${avtHtml}
                     <div style="flex:1;">
-                        <div style="font-weight:bold; font-size:0.85rem; color:#d81b60;">${v.name || 'Cư dân ẩn danh'}</div>
-                        <div style="font-size:0.65rem; color:#aaa;">ID: ${uid}</div>
+                        <div style="font-weight:bold; font-size:0.85rem; color:#d81b60;">${v.name}</div>
+                        <div style="font-size:0.65rem; color:#aaa;">ID: ${v.uid}</div>
                     </div>
                     <div style="font-size:0.6rem; color:#ffb3c1;">${getTimeAgo(v.timestamp)}</div>
                 </div>`;
         });
+        
         content.innerHTML = html;
     } catch (e) {
         console.error("Lỗi load danh sách xem:", e);
         content.innerHTML = '<div style="text-align:center; padding:20px; color:red;">Không thể tải danh sách.</div>';
     }
 }
-
+    
 // Hàm đóng khung trượt (Cần gọi hàm này)
 function closeViewerList() {
     const sheet = document.getElementById('viewer-list-sheet');
