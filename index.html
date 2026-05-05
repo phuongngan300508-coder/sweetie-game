@@ -25549,7 +25549,13 @@ function deleteComment(postId, commentId) {
 // --- CÁC HÀM BỔ TRỢ (Cần thêm vào script của bạn) ---
 
 function toggleReaction(postId) {
+    if (!userData || !userData.profile || !userData.profile.uid) {
+        alert("Bạn cần đăng nhập để thả tim nhé! 💖");
+        return;
+    }
+
     const myUid = userData.profile.uid;
+    const myName = userData.profile.name;
     // 1. Tìm đúng các phần tử trong bài viết đó
     const postCard = document.getElementById(`post-card-${postId}`);
     const btn = postCard.querySelector('.action-btn');
@@ -25564,7 +25570,6 @@ function toggleReaction(postId) {
     const isLiked = btn.dataset.liked === 'true';
     
     // Lấy số lượng hiện tại (ép kiểu về số để tính toán)
-    // Chỗ này mình sẽ bóc tách lấy con số từ text hiện có
     let currentCount = parseInt(btn.innerText) || 0;
 
     // 3. CẬP NHẬT GIAO DIỆN TỨC THÌ (Optimistic Update)
@@ -25583,7 +25588,7 @@ function toggleReaction(postId) {
     }
 
     // Cập nhật con số ở cả 2 nơi (nút bấm và badge ở header)
-    const newText = ` <i class="${currentCount > 0 && (isLiked ? false : true) ? 'fas' : 'far'} fa-heart"></i> ${currentCount} Tim`;
+    const newText = ` <i class="${btn.dataset.liked === 'true' ? 'fas' : 'far'} fa-heart"></i> ${currentCount} Tim`;
     btn.innerHTML = newText;
     
     if (countBadge) {
@@ -25592,15 +25597,43 @@ function toggleReaction(postId) {
 
     // 4. GỬI LÊN FIREBASE (Chạy ngầm ở phía sau)
     const ref = firebase.database().ref(`posts/${postId}/reactions/${myUid}`);
-    ref.once('value').then(snap => {
+    ref.once('value').then(async (snap) => {
         if (snap.exists()) {
             return ref.remove();
         } else {
-            return ref.set(true);
+            // Ghi nhận lượt thả tim lên DB
+            await ref.set(true);
+
+            // --- PHẦN THÊM MỚI: THÔNG BÁO CHO CHỦ BÀI VIẾT ---
+            try {
+                const postSnap = await firebase.database().ref(`posts/${postId}`).once('value');
+                const postData = postSnap.val();
+
+                // Nếu bài viết tồn tại và người thả tim không phải là chủ bài
+                if (postData && postData.uid && postData.uid !== myUid) {
+                    const postOwnerUid = postData.uid;
+
+                    const notificationData = {
+                        title: "❤️ THẢ TIM MỚI",
+                        sender: myName,
+                        message: `${myName} đã thả tim bài viết của bạn! ✨`,
+                        timestamp: firebase.database.ServerValue.TIMESTAMP,
+                        extraData: {
+                            type: 'open_post', // Nhấn thông báo sẽ cuộn đến bài viết
+                            postId: postId,
+                            sender: myName
+                        }
+                    };
+
+                    // Đẩy vào hàng đợi thông báo của chủ bài viết để rung chuông
+                    await firebase.database().ref(`notifications_queue/${postOwnerUid}`).push(notificationData);
+                }
+            } catch (notiErr) {
+                console.error("Lỗi gửi thông báo thả tim:", notiErr);
+            }
         }
     }).catch(err => {
         console.error("Lỗi Firebase:", err);
-        // Nếu lỗi thì Henry có thể cho load lại bài viết hoặc báo lỗi
     });
 }
     
