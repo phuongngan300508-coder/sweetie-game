@@ -26918,62 +26918,28 @@ function closeMyPostsPopup() {
 }
 
 // 3. Hàm "Nhảy" đến bài viết trong bản tin
-async function jumpToPost(postId) {
+function jumpToPost(postId) {
     closeMyPostsPopup();
     
-    // 1. Chuyển sang tab Bản tin
+    // Đảm bảo đang ở tab bản tin
     if (typeof switchTab === 'function') {
         switchTab('tab-status');
     }
 
-    // 2. Kiểm tra xem bài viết đã có sẵn trong DOM chưa
-    let targetEl = document.getElementById(`post-card-${postId}`);
-
-    if (!targetEl) {
-        console.log("Hệ thống: Bài viết cũ chưa load, đang tiến hành truy xuất từ kho lưu trữ...");
-        
-        try {
-            // Lấy dữ liệu bài viết cụ thể từ Firebase
-            const postSnap = await firebase.database().ref(`posts/${postId}`).once('value');
-            
-            if (postSnap.exists()) {
-                const postData = { id: postSnap.key, ...postSnap.val() };
-                const postsContainer = document.getElementById('status-list');
-                
-                // Chèn bài viết này vào đầu bản tin để Henry nhìn thấy ngay
-                // Lưu ý: Hàm renderSinglePost phải là hàm ông đã viết sẵn trong code chính
-                if (typeof renderSinglePost === 'function') {
-                    await renderSinglePost(postData, 'afterbegin', postsContainer);
-                    // Cập nhật lại targetEl sau khi đã chèn vào DOM
-                    targetEl = document.getElementById(`post-card-${postId}`);
-                }
-            } else {
-                alert("❌ Bài viết này không còn tồn tại trên hệ thống!");
-                return;
-            }
-        } catch (err) {
-            console.error("Lỗi truy xuất bài viết cũ:", err);
-            return;
-        }
-    }
-
-    // 3. Thực hiện cuộn và hiệu ứng (Sử dụng setTimeout để đợi trình duyệt render xong bài mới chèn)
+    // Đợi một chút để tab render rồi cuộn tới
     setTimeout(() => {
+        const targetEl = document.getElementById(`post-card-${postId}`);
         if (targetEl) {
             targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
             
-            // Hiệu ứng làm nổi bật bài viết cũ vừa được "mò" thấy
-            targetEl.style.transition = "0.8s";
-            targetEl.style.border = "2px solid #ff8fab";
-            targetEl.style.boxShadow = "0 0 30px rgba(255, 143, 171, 0.6)";
-            targetEl.style.borderRadius = "15px";
-
-            setTimeout(() => {
-                targetEl.style.border = "none";
-                targetEl.style.boxShadow = "none";
-            }, 3000);
+            // Hiệu ứng highlight cho Henry dễ thấy
+            targetEl.style.transition = "0.5s";
+            targetEl.style.boxShadow = "0 0 25px #ff8fab";
+            setTimeout(() => targetEl.style.boxShadow = "none", 2000);
+        } else {
+            alert("Bài viết này đã nằm ngoài tầm tìm kiếm, bạn vui lòng mở chế độ xem bài viết là 'Cũ nhất' để tìm lại nhé! ✨");
         }
-    }, 300);
+    }, 500);
 }
 </script>
 </body>
