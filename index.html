@@ -8653,17 +8653,19 @@ input[type="date"].sweetie-input-style {
         <i class="fas fa-pen-nib"></i>
     </button>
 
-    <!-- KHU VỰC ĐĂNG STORY MỚI (Tỉ lệ 1/3, lướt ngang chuẩn Facebook) -->
-    <div class="sw-story-area" style="padding: 10px 0; background: #fff; border-bottom: 1px solid #ffe4e8; margin-bottom: 5px;">
-        <div class="status-container">
-            <div id="story-list" style="display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px; scrollbar-width: none; -ms-overflow-style: none;">
-                <!-- Nút tạo story -->
-                <div class="story-card create" onclick="openStoryComposer()" style="min-width: 100px; height: 160px; background: #ffe4e8; border-radius: 15px; position: relative; cursor: pointer; overflow: hidden; flex-shrink: 0; border: 1px solid #ffcad4; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
-                    <div style="height: 110px; background: #fff3f5; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; color: #ff8fab;">
-                        <i class="fas fa-plus-circle"></i>
-                    </div>
-                    <div style="height: 50px; background: white; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: bold; color: #d81b60;">Tạo tin</div>
+   <!-- KHU VỰC ĐĂNG STORY MỚI (Ghìm cố định, không cuộn dọc) -->
+<div class="sw-story-area" style="padding: 5px 0; background: #fff; border-bottom: 1px solid #ffe4e8; height: 180px; overflow: hidden; display: flex; align-items: center;">
+    <div class="status-container" style="width: 100%; height: 165px; overflow: hidden;">
+        <!-- story-list: Khóa cuộn dọc (overflow-y: hidden), chỉ mở cuộn ngang -->
+        <div id="story-list" style="display: flex; gap: 10px; overflow-x: auto; overflow-y: hidden; padding: 0 10px; height: 100%; align-items: center; scrollbar-width: none; -ms-overflow-style: none;">
+            
+            <!-- Nút tạo story -->
+            <div class="story-card create" onclick="openStoryComposer()" style="min-width: 100px; width: 100px; height: 160px; background: #ffe4e8; border-radius: 15px; position: relative; cursor: pointer; overflow: hidden; flex-shrink: 0; border: 1px solid #ffcad4; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                <div style="height: 110px; background: #fff3f5; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; color: #ff8fab;">
+                    <i class="fas fa-plus-circle"></i>
                 </div>
+                <div style="height: 50px; background: white; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: bold; color: #d81b60;">Tạo tin</div>
+            </div>
                 <!-- Tin của các cư dân khác sẽ render realtime vào đây -->
             </div>
         </div>
