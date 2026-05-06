@@ -28012,33 +28012,34 @@ function handleSwipe() {
     }
 }
 
-    const slider = document.getElementById('story-list');
+    // Đổi 'slider' thành 'storySlider' để không trùng với biến cũ của ông
+const storySlider = document.getElementById('story-list');
 let isDown = false;
 let startX;
 let scrollLeft;
 
-if (slider) {
-    slider.addEventListener('mousedown', (e) => {
+if (storySlider) {
+    storySlider.addEventListener('mousedown', (e) => {
         isDown = true;
-        slider.classList.add('active');
-        startX = e.pageX - slider.offsetLeft;
-        scrollLeft = slider.scrollLeft;
+        storySlider.classList.add('active');
+        startX = e.pageX - storySlider.offsetLeft;
+        scrollLeft = storySlider.scrollLeft;
     });
     
-    slider.addEventListener('mouseleave', () => {
+    storySlider.addEventListener('mouseleave', () => {
         isDown = false;
     });
     
-    slider.addEventListener('mouseup', () => {
+    storySlider.addEventListener('mouseup', () => {
         isDown = false;
     });
     
-    slider.addEventListener('mousemove', (e) => {
+    storySlider.addEventListener('mousemove', (e) => {
         if (!isDown) return;
         e.preventDefault();
-        const x = e.pageX - slider.offsetLeft;
-        const walk = (x - startX) * 2; // Tốc độ lướt (có thể chỉnh số 2 này)
-        slider.scrollLeft = scrollLeft - walk;
+        const x = e.pageX - storySlider.offsetLeft;
+        const walk = (x - startX) * 2; 
+        storySlider.scrollLeft = scrollLeft - walk;
     });
 }
 </script>
