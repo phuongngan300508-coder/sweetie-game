@@ -27537,9 +27537,13 @@ function listenStories() {
     // BẢO VỆ 1: Nếu không thấy khung chứa Story thì dừng luôn (GIỮ NGUYÊN)
     if (!storyList) return; 
 
+    // --- SỬA LỖI TẠI ĐÂY: Kiểm tra currentUser thay vì truy cập trực tiếp userData.profile.uid ---
+    if (typeof currentUser === 'undefined' || !currentUser) return;
+    const myUid = currentUser; 
+    // ---------------------------------------------------------------------------
+
     // --- CẬP NHẬT: Lắng nghe danh sách bạn bè realtime để luôn có dữ liệu mới nhất ---
     let myFriendsList = [];
-    const myUid = userData.profile.uid;
     firebase.database().ref(`users/${myUid}/friends`).on('value', fSnap => {
         myFriendsList = fSnap.val() ? Object.keys(fSnap.val()) : [];
     });
