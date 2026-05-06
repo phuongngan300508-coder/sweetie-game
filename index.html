@@ -28012,35 +28012,39 @@ function handleSwipe() {
     }
 }
 
-    // Đổi 'slider' thành 'storySlider' để không trùng với biến cũ của ông
-const storySlider = document.getElementById('story-list');
-let isDown = false;
-let startX;
-let scrollLeft;
+    // Bọc vào ngoặc nhọn để tạo scope riêng, tránh lỗi "already been declared"
+{
+    const storySlider = document.getElementById('story-list');
+    let storyIsDown = false; // Đổi tên thành storyIsDown cho chắc chắn
+    let startX;
+    let scrollLeft;
 
-if (storySlider) {
-    storySlider.addEventListener('mousedown', (e) => {
-        isDown = true;
-        storySlider.classList.add('active');
-        startX = e.pageX - storySlider.offsetLeft;
-        scrollLeft = storySlider.scrollLeft;
-    });
-    
-    storySlider.addEventListener('mouseleave', () => {
-        isDown = false;
-    });
-    
-    storySlider.addEventListener('mouseup', () => {
-        isDown = false;
-    });
-    
-    storySlider.addEventListener('mousemove', (e) => {
-        if (!isDown) return;
-        e.preventDefault();
-        const x = e.pageX - storySlider.offsetLeft;
-        const walk = (x - startX) * 2; 
-        storySlider.scrollLeft = scrollLeft - walk;
-    });
+    if (storySlider) {
+        storySlider.addEventListener('mousedown', (e) => {
+            storyIsDown = true;
+            storySlider.style.cursor = 'grabbing';
+            startX = e.pageX - storySlider.offsetLeft;
+            scrollLeft = storySlider.scrollLeft;
+        });
+        
+        storySlider.addEventListener('mouseleave', () => {
+            storyIsDown = false;
+            storySlider.style.cursor = 'pointer';
+        });
+        
+        storySlider.addEventListener('mouseup', () => {
+            storyIsDown = false;
+            storySlider.style.cursor = 'pointer';
+        });
+        
+        storySlider.addEventListener('mousemove', (e) => {
+            if (!storyIsDown) return;
+            e.preventDefault();
+            const x = e.pageX - storySlider.offsetLeft;
+            const walk = (x - startX) * 2; // Tốc độ cuộn
+            storySlider.scrollLeft = scrollLeft - walk;
+        });
+    }
 }
 </script>
 </body>
