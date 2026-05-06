@@ -8071,37 +8071,15 @@ input[type="date"].sweetie-input-style {
     scrollbar-width: none;  /* Firefox */
 }
 
-    .sw-privacy-popup {
-    position: fixed;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.8);
-    z-index: 9999; /* Luôn trên cùng */
+    .privacy-item:hover { background: #fff5f7; }
+.privacy-item.active { background: #fff0f3; }
+.privacy-item.active .check-icon { display: block !important; }
+.viewer-more-btn {
+    width: 40px; height: 40px; 
+    background: rgba(0,0,0,0.3); 
+    border-radius: 50%; 
     display: flex; align-items: center; justify-content: center;
-}
-.privacy-modal {
-    background: white; width: 90%; max-width: 350px;
-    border-radius: 20px; padding: 20px; text-align: center;
-}
-.privacy-header h3 { color: #d81b60; margin-bottom: 5px; }
-.privacy-header p { font-size: 0.8rem; color: #777; margin-bottom: 20px; }
-.privacy-options { text-align: left; margin-bottom: 20px; }
-.privacy-item {
-    display: flex; align-items: center; gap: 15px;
-    padding: 12px; border-radius: 12px; cursor: pointer;
-    transition: 0.3s; position: relative;
-}
-.privacy-item:hover { background: #fff0f3; }
-.privacy-item i:not(.fa-check) { font-size: 1.2rem; color: #ff8fab; width: 25px; }
-.privacy-info span { display: block; font-weight: bold; color: #444; font-size: 0.9rem; }
-.privacy-info small { color: #999; font-size: 0.7rem; }
-.check-mark { 
-    position: absolute; right: 15px; color: #4caf50; 
-    display: none; /* Ẩn mặc định */
-}
-.privacy-close-btn {
-    width: 100%; padding: 10px; border: none;
-    border-radius: 10px; background: #ffe4e8;
-    color: #d81b60; font-weight: bold; cursor: pointer;
+    color: white; font-size: 1.2rem;
 }
 </style>
 </head>
@@ -11226,53 +11204,8 @@ input[type="date"].sweetie-input-style {
 
         <!-- Cụm nút đóng xích qua trái (GIỮ NGUYÊN) -->
         <div class="viewer-actions">
-            <!-- Nút Ba Chấm (Chỉ hiện cho chủ Story) -->
-<div id="viewer-more-options" class="viewer-more-btn" onclick="openStorySettings()" style="display:none; position: absolute; right: 50px; top: 12px; color: white; font-size: 1.2rem; cursor: pointer; z-index: 101;">
+            <div class="viewer-more-btn" id="story-more-options" onclick="togglePrivacyPopup()" style="display:none; cursor:pointer;">
     <i class="fas fa-ellipsis-h"></i>
-</div>
-
-<!-- Popup Chỉnh Quyền Riêng Tư (Nằm trên cùng) -->
-<div id="story-privacy-popup" class="sw-privacy-popup" style="display:none;">
-    <div class="privacy-modal animate__animated animate__zoomIn">
-        <div class="privacy-header">
-            <h3>Cài đặt quyền riêng tư</h3>
-            <p>Ai có thể xem tin này của bạn?</p>
-        </div>
-        
-        <div class="privacy-options">
-            <!-- Option: Công khai -->
-            <div class="privacy-item" onclick="updateStoryPrivacy('public')">
-                <i class="fas fa-globe-americas"></i>
-                <div class="privacy-info">
-                    <span>Công khai</span>
-                    <small>Bất kỳ ai trên Sweetie Game World</small>
-                </div>
-                <div id="check-public" class="check-mark"><i class="fas fa-check"></i></div>
-            </div>
-
-            <!-- Option: Bạn bè -->
-            <div class="privacy-item" onclick="updateStoryPrivacy('friends')">
-                <i class="fas fa-users"></i>
-                <div class="privacy-info">
-                    <span>Bạn bè</span>
-                    <small>Chỉ những người bạn của bạn</small>
-                </div>
-                <div id="check-friends" class="check-mark"><i class="fas fa-check"></i></div>
-            </div>
-
-            <!-- Option: Riêng tư -->
-            <div class="privacy-item" onclick="updateStoryPrivacy('private')">
-                <i class="fas fa-lock"></i>
-                <div class="privacy-info">
-                    <span>Chỉ mình tôi</span>
-                    <small>Chỉ bạn mới có thể thấy tin này</small>
-                </div>
-                <div id="check-private" class="check-mark"><i class="fas fa-check"></i></div>
-            </div>
-        </div>
-
-        <button class="privacy-close-btn" onclick="closeStorySettings()">Đóng</button>
-    </div>
 </div>
             <div class="viewer-close-btn" onclick="closeStoryViewer()">
                 <i class="fas fa-times"></i>
@@ -11311,6 +11244,49 @@ input[type="date"].sweetie-input-style {
             <div id="viewer-details-content" class="sheet-body"></div>
         </div>
 
+    </div>
+</div>
+
+    <!-- Popup Chỉnh sửa Quyền riêng tư (Thêm vào cuối body hoặc ngoài viewer) -->
+<div id="privacy-modal" class="sw-modal" style="display:none; position:fixed; z-index:2000; inset:0; background:rgba(0,0,0,0.5); align-items:center; justify-content:center;">
+    <div class="modal-content animate__animated animate__zoomIn" style="background:white; width:90%; max-width:320px; border-radius:20px; overflow:hidden; border:3px solid #ffcad4;">
+        <div style="background:#ffe4e8; padding:15px; text-align:center; font-weight:bold; color:#d81b60; border-bottom:1px solid #ffcad4;">
+            Cài đặt quyền riêng tư ✨
+        </div>
+        
+        <div id="privacy-options-list" style="padding:10px;">
+            <!-- Option: Công khai -->
+            <div class="privacy-item" onclick="updateStoryPrivacy('public')" id="opt-public" style="display:flex; align-items:center; gap:12px; padding:12px; cursor:pointer; border-radius:10px;">
+                <i class="fas fa-globe-asia" style="color:#4caf50;"></i>
+                <div style="flex:1;">
+                    <div style="font-size:0.9rem; font-weight:bold;">Công khai</div>
+                    <div style="font-size:0.7rem; color:#888;">Tất cả cư dân đều thấy</div>
+                </div>
+                <i class="fas fa-check-circle check-icon" style="display:none; color:#ff8fab;"></i>
+            </div>
+
+            <!-- Option: Bạn bè -->
+            <div class="privacy-item" onclick="updateStoryPrivacy('friends')" id="opt-friends" style="display:flex; align-items:center; gap:12px; padding:12px; cursor:pointer; border-radius:10px;">
+                <i class="fas fa-users" style="color:#2196f3;"></i>
+                <div style="flex:1;">
+                    <div style="font-size:0.9rem; font-weight:bold;">Bạn bè</div>
+                    <div style="font-size:0.7rem; color:#888;">Chỉ bạn bè mới có thể xem</div>
+                </div>
+                <i class="fas fa-check-circle check-icon" style="display:none; color:#ff8fab;"></i>
+            </div>
+
+            <!-- Option: Riêng tư -->
+            <div class="privacy-item" onclick="updateStoryPrivacy('private')" id="opt-private" style="display:flex; align-items:center; gap:12px; padding:12px; cursor:pointer; border-radius:10px;">
+                <i class="fas fa-lock" style="color:#f44336;"></i>
+                <div style="flex:1;">
+                    <div style="font-size:0.9rem; font-weight:bold;">Chỉ mình tôi</div>
+                    <div style="font-size:0.7rem; color:#888;">Chỉ mình bạn thấy tin này</div>
+                </div>
+                <i class="fas fa-check-circle check-icon" style="display:none; color:#ff8fab;"></i>
+            </div>
+        </div>
+
+        <button onclick="togglePrivacyPopup()" style="width:100%; padding:15px; border:none; background:#fff; color:#aaa; font-size:0.8rem; cursor:pointer; border-top:1px solid #eee;">Đóng</button>
     </div>
 </div>
 <script>
@@ -27537,20 +27513,9 @@ function listenStories() {
     // BẢO VỆ 1: Nếu không thấy khung chứa Story thì dừng luôn (GIỮ NGUYÊN)
     if (!storyList) return; 
 
-    // --- SỬA LỖI TẠI ĐÂY: Kiểm tra currentUser thay vì truy cập trực tiếp userData.profile.uid ---
-    if (typeof currentUser === 'undefined' || !currentUser) return;
-    const myUid = currentUser; 
-    // ---------------------------------------------------------------------------
-
-    // --- CẬP NHẬT: Lắng nghe danh sách bạn bè realtime để luôn có dữ liệu mới nhất ---
-    let myFriendsList = [];
-    firebase.database().ref(`users/${myUid}/friends`).on('value', fSnap => {
-        myFriendsList = fSnap.val() ? Object.keys(fSnap.val()) : [];
-    });
-    // ---------------------------------------------------------------------------
-
-    firebase.database().ref('stories').on('value', (snap) => {
+    firebase.database().ref('stories').on('value', async (snap) => {
         const data = snap.val();
+        const myUid = userData.profile.uid; // Lấy UID của chính Henry
         
         // BẢO VỆ 2: Tìm nút tạo tin một cách an toàn (GIỮ NGUYÊN)
         const createBtnEl = storyList.querySelector('.create');
@@ -27572,7 +27537,7 @@ function listenStories() {
 
         if (data) {
             const now = Date.now();
-            const grouped = {}; 
+            const grouped = {}; // Đối tượng để gộp tin theo UID
 
             // 1. Phân loại, lọc thời gian và GỘP TIN
             Object.keys(data).forEach(id => {
@@ -27585,15 +27550,8 @@ function listenStories() {
                     return;
                 }
 
-                // --- LOGIC QUYỀN RIÊNG TƯ (ĐÃ FIX: Henry luôn thấy tin mình + check list bạn bè) ---
-                if (s.uid !== myUid) {
-                    // Nếu là tin riêng tư của người khác -> Ẩn
-                    if (s.privacy === 'private') return;
-                    
-                    // Nếu là tin bạn bè -> Chỉ hiện nếu s.uid nằm trong danh sách bạn bè
-                    if (s.privacy === 'friends' && !myFriendsList.includes(s.uid)) return;
-                }
-                // ---------------------------------------------------------------------------
+                // Logic quyền riêng tư (GIỮ NGUYÊN)
+                if (s.privacy === 'private' && s.uid !== myUid) return;
 
                 // Nếu cư dân này chưa có trong danh sách gộp, tạo mới
                 if (!grouped[s.uid]) {
@@ -27609,6 +27567,7 @@ function listenStories() {
             });
 
             // 2. Sắp xếp tin bên trong từng nhóm (tin cũ xem trước, tin mới xem sau)
+            // Và tách nhóm Henry với nhóm người khác
             let myGroup = null;
             let otherGroups = [];
 
@@ -27633,22 +27592,26 @@ function listenStories() {
 
             // 4. Render danh sách đã gộp (Mỗi cư dân 1 Card duy nhất)
             finalGroups.forEach(group => {
+                // Lấy tin cuối cùng (mới nhất) để làm ảnh nền/video nền cho Card
                 const latestS = group.allStories[group.allStories.length - 1];
                 
                 const card = `
                     <div class="story-card" onclick="viewStory('${group.allStories[0].id}')" style="min-width: 100px; height: 160px; border-radius: 15px; position: relative; cursor: pointer; overflow: hidden; flex-shrink: 0; border: ${group.uid === myUid ? '2px solid #ff8fab' : '1px solid #ffe4e8'}; background: url('${latestS.type === 'image' ? latestS.mediaUrl : ''}') center/cover no-repeat;">
                         ${latestS.type === 'video' ? `<video src="${latestS.mediaUrl}" muted style="width:100%; height:100%; object-fit:cover;"></video>` : ''}
                         
+                        
                         <div style="position:absolute; top:8px; left:8px; width:30px; height:30px; border-radius:50%; border:2px solid #ff8fab; overflow:hidden; background: white; z-index: 2;">
                             <img src="${group.avatar || 'https://via.placeholder.com/30'}" style="width:100%; height:100%; object-fit:cover;">
                         </div>
 
+                        
                         ${group.allStories.length > 1 ? `
                             <div style="position:absolute; top:8px; right:8px; background:rgba(216, 27, 96, 0.8); color:white; font-size:0.6rem; padding:2px 6px; border-radius:10px; font-weight:bold; z-index: 2;">
                                 ${group.allStories.length}
                             </div>
                         ` : ''}
 
+                        
                         <div style="position:absolute; bottom:5px; width:100%; color:white; font-size:0.65rem; text-align:center; font-weight:bold; text-shadow:1px 1px 2px black; padding: 0 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; z-index: 2;">
                             ${group.uid === myUid ? 'Tin của bạn' : group.username}
                         </div>
@@ -27661,6 +27624,8 @@ function listenStories() {
         }
     });
 }
+
+    
     
 // Xem Story & Đếm mắt Realtime
 let storyTimer;
@@ -27704,6 +27669,9 @@ async function viewStory(storyId) {
         
         let segmentsHtml = "";
         for (let i = 0; i < total; i++) {
+            // i < currentIndex: đã xem xong (100%)
+            // i === currentIndex: đang chờ chạy (0%)
+            // i > currentIndex: chưa tới lượt (0%)
             let initialWidth = i < currentIndex ? "100%" : "0%";
             segmentsHtml += `
                 <div class="progress-segment" style="flex: 1; height: 100%; background: rgba(255, 255, 255, 0.3); border-radius: 10px; overflow: hidden;">
@@ -27733,15 +27701,15 @@ async function viewStory(storyId) {
         ? `<video id="story-video" src="${s.mediaUrl}" autoplay style="width:100%; height:100%; object-fit:contain;"></video>`
         : `<img src="${s.mediaUrl}" style="width:100%; height:100%; object-fit:contain;">`;
 
-    // --- LOGIC PHÂN QUYỀN MẮT XEM & CÀI ĐẶT ---
+    // --- LOGIC PHÂN QUYỀN MẮT XEM & NÚT TÙY CHỈNH (CẬP NHẬT) ---
     const viewCountBtn = document.getElementById('viewer-view-count');
-    const moreOptionsBtn = document.getElementById('viewer-more-options'); // Nút 3 chấm mới
+    const moreBtn = document.getElementById('story-more-options'); // Nút ba chấm
     const myUid = userData.profile.uid;
 
     if (s.uid === myUid) {
-        // Nếu là CHỦ STORY: Hiện mắt xem và nút 3 chấm
+        // Nếu là CHỦ STORY: Hiện mắt xem và nút ba chấm
+        if (moreBtn) moreBtn.style.display = 'flex'; 
         viewCountBtn.style.display = 'flex';
-        if (moreOptionsBtn) moreOptionsBtn.style.display = 'flex';
         
         // Lắng nghe số lượng mắt realtime (CHỈ CHỦ MỚI LẮNG NGHE)
         firebase.database().ref(`stories/${storyId}/views`).on('value', vSnap => {
@@ -27749,9 +27717,9 @@ async function viewStory(storyId) {
             viewCountBtn.innerHTML = `<i class="fas fa-eye"></i> ${count}`;
         });
     } else {
-        // Nếu là NGƯỜI XEM: Ẩn mắt xem và nút 3 chấm
+        // Nếu là NGƯỜI XEM: Ẩn mắt xem và nút ba chấm hoàn toàn
+        if (moreBtn) moreBtn.style.display = 'none';
         viewCountBtn.style.display = 'none';
-        if (moreOptionsBtn) moreOptionsBtn.style.display = 'none';
         
         // Ghi nhận lượt xem
         firebase.database().ref(`stories/${storyId}/views/${myUid}`).set({
@@ -28141,56 +28109,52 @@ function handleSwipe() {
     }
 }
 
-    // Mở popup cài đặt
-async function openStorySettings() {
-    const popup = document.getElementById('story-privacy-popup');
-    popup.style.display = 'flex';
-    
-    // Tạm dừng video nếu đang phát
-    const video = document.getElementById('story-video');
-    if (video) video.pause();
-    clearTimeout(storyTimer); // Dừng đếm ngược ảnh
+    // Mở/Đóng Popup Quyền riêng tư
+async function togglePrivacyPopup() {
+    const modal = document.getElementById('privacy-modal');
+    if (modal.style.display === 'none' || modal.style.display === '') {
+        // Trước khi mở, lấy quyền hiện tại từ Firebase để hiển thị dấu tích
+        const snap = await firebase.database().ref(`stories/${currentViewingStoryId}/privacy`).once('value');
+        const currentPrivacy = snap.val() || 'public';
 
-    // Lấy trạng thái hiện tại từ Firebase để hiện dấu tick
-    const snap = await firebase.database().ref(`stories/${currentViewingStoryId}/privacy`).once('value');
-    const currentPrivacy = snap.val() || 'public';
+        // Reset class active
+        document.querySelectorAll('.privacy-item').forEach(el => el.classList.remove('active'));
+        // Active đúng cái hiện tại
+        const activeOpt = document.getElementById(`opt-${currentPrivacy}`);
+        if (activeOpt) activeOpt.classList.add('active');
 
-    // Reset và hiển thị dấu tick đúng chỗ
-    document.querySelectorAll('.check-mark').forEach(el => el.style.display = 'none');
-    const checkId = `check-${currentPrivacy}`;
-    if (document.getElementById(checkId)) {
-        document.getElementById(checkId).style.display = 'block';
+        modal.style.display = 'flex';
+    } else {
+        modal.style.display = 'none';
     }
 }
 
-// Đóng popup và tiếp tục chạy story
-function closeStorySettings() {
-    document.getElementById('story-privacy-popup').style.display = 'none';
-    
-    // Tiếp tục chạy (đơn giản nhất là gọi lại hàm start để tính lại thời gian)
-    startStoryProgress();
-}
-
-// Cập nhật quyền riêng tư lên Firebase
-async function updateStoryPrivacy(newType) {
+// Hàm cập nhật lên Firebase
+async function updateStoryPrivacy(newPrivacy) {
     if (!currentViewingStoryId) return;
 
     try {
+        // Cập nhật lên Database
         await firebase.database().ref(`stories/${currentViewingStoryId}`).update({
-            privacy: newType
+            privacy: newPrivacy
         });
 
-        // Hiệu ứng phản hồi nhanh
-        document.querySelectorAll('.check-mark').forEach(el => el.style.display = 'none');
-        document.getElementById(`check-${newType}`).style.display = 'block';
-
-        addNotification("CẬP NHẬT", "Đã thay đổi quyền riêng tư tin này! ✨");
+        // Hiệu ứng thông báo
+        addNotification("CẬP NHẬT", "Đã đổi quyền riêng tư của tin! 🔓");
         
-        // Tự động đóng sau 0.5s để người dùng thấy dấu tick đã đổi
-        setTimeout(closeStorySettings, 500);
+        // Đóng popup
+        togglePrivacyPopup();
+        
+        // Cập nhật lại biến local nếu cần (không bắt buộc vì listenStories sẽ lo việc render lại card ngoài)
+        if (window.groupedStories) {
+            for (let uid in window.groupedStories) {
+                const story = window.groupedStories[uid].allStories.find(s => s.id === currentViewingStoryId);
+                if (story) story.privacy = newPrivacy;
+            }
+        }
         
     } catch (e) {
-        alert("Không thể cập nhật: " + e.message);
+        alert("Lỗi khi cập nhật: " + e.message);
     }
 }
 </script>
