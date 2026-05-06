@@ -8070,17 +8070,6 @@ input[type="date"].sweetie-input-style {
     -ms-overflow-style: none;  /* IE và Edge */
     scrollbar-width: none;  /* Firefox */
 }
-
-    .privacy-item:hover { background: #fff5f7; }
-.privacy-item.active { background: #fff0f3; }
-.privacy-item.active .check-icon { display: block !important; }
-.viewer-more-btn {
-    width: 40px; height: 40px; 
-    background: rgba(0,0,0,0.3); 
-    border-radius: 50%; 
-    display: flex; align-items: center; justify-content: center;
-    color: white; font-size: 1.2rem;
-}
 </style>
 </head>
 <body>
@@ -11204,9 +11193,6 @@ input[type="date"].sweetie-input-style {
 
         <!-- Cụm nút đóng xích qua trái (GIỮ NGUYÊN) -->
         <div class="viewer-actions">
-            <div class="viewer-more-btn" id="story-more-options" onclick="togglePrivacyPopup()" style="display:none; cursor:pointer;">
-    <i class="fas fa-ellipsis-h"></i>
-</div>
             <div class="viewer-close-btn" onclick="closeStoryViewer()">
                 <i class="fas fa-times"></i>
             </div>
@@ -11244,49 +11230,6 @@ input[type="date"].sweetie-input-style {
             <div id="viewer-details-content" class="sheet-body"></div>
         </div>
 
-    </div>
-</div>
-
-    <!-- Popup Chỉnh sửa Quyền riêng tư (Thêm vào cuối body hoặc ngoài viewer) -->
-<div id="privacy-modal" class="sw-modal" style="display:none; position:fixed; z-index:300000; inset:0; background:rgba(0,0,0,0.5); align-items:center; justify-content:center;">
-    <div class="modal-content animate__animated animate__zoomIn" style="background:white; width:90%; max-width:320px; border-radius:20px; overflow:hidden; border:3px solid #ffcad4;">
-        <div style="background:#ffe4e8; padding:15px; text-align:center; font-weight:bold; color:#d81b60; border-bottom:1px solid #ffcad4;">
-            Cài đặt quyền riêng tư ✨
-        </div>
-        
-        <div id="privacy-options-list" style="padding:10px;">
-            <!-- Option: Công khai -->
-            <div class="privacy-item" onclick="updateStoryPrivacy('public')" id="opt-public" style="display:flex; align-items:center; gap:12px; padding:12px; cursor:pointer; border-radius:10px;">
-                <i class="fas fa-globe-asia" style="color:#4caf50;"></i>
-                <div style="flex:1;">
-                    <div style="font-size:0.9rem; font-weight:bold;">Công khai</div>
-                    <div style="font-size:0.7rem; color:#888;">Tất cả cư dân đều thấy</div>
-                </div>
-                <i class="fas fa-check-circle check-icon" style="display:none; color:#ff8fab;"></i>
-            </div>
-
-            <!-- Option: Bạn bè -->
-            <div class="privacy-item" onclick="updateStoryPrivacy('friends')" id="opt-friends" style="display:flex; align-items:center; gap:12px; padding:12px; cursor:pointer; border-radius:10px;">
-                <i class="fas fa-users" style="color:#2196f3;"></i>
-                <div style="flex:1;">
-                    <div style="font-size:0.9rem; font-weight:bold;">Bạn bè</div>
-                    <div style="font-size:0.7rem; color:#888;">Chỉ bạn bè mới có thể xem</div>
-                </div>
-                <i class="fas fa-check-circle check-icon" style="display:none; color:#ff8fab;"></i>
-            </div>
-
-            <!-- Option: Riêng tư -->
-            <div class="privacy-item" onclick="updateStoryPrivacy('private')" id="opt-private" style="display:flex; align-items:center; gap:12px; padding:12px; cursor:pointer; border-radius:10px;">
-                <i class="fas fa-lock" style="color:#f44336;"></i>
-                <div style="flex:1;">
-                    <div style="font-size:0.9rem; font-weight:bold;">Chỉ mình tôi</div>
-                    <div style="font-size:0.7rem; color:#888;">Chỉ mình bạn thấy tin này</div>
-                </div>
-                <i class="fas fa-check-circle check-icon" style="display:none; color:#ff8fab;"></i>
-            </div>
-        </div>
-
-        <button onclick="togglePrivacyPopup()" style="width:100%; padding:15px; border:none; background:#fff; color:#aaa; font-size:0.8rem; cursor:pointer; border-top:1px solid #eee;">Đóng</button>
     </div>
 </div>
 <script>
@@ -27701,14 +27644,12 @@ async function viewStory(storyId) {
         ? `<video id="story-video" src="${s.mediaUrl}" autoplay style="width:100%; height:100%; object-fit:contain;"></video>`
         : `<img src="${s.mediaUrl}" style="width:100%; height:100%; object-fit:contain;">`;
 
-    // --- LOGIC PHÂN QUYỀN MẮT XEM & NÚT TÙY CHỈNH (CẬP NHẬT) ---
+    // --- LOGIC PHÂN QUYỀN MẮT XEM ---
     const viewCountBtn = document.getElementById('viewer-view-count');
-    const moreBtn = document.getElementById('story-more-options'); // Nút ba chấm
     const myUid = userData.profile.uid;
 
     if (s.uid === myUid) {
-        // Nếu là CHỦ STORY: Hiện mắt xem và nút ba chấm
-        if (moreBtn) moreBtn.style.display = 'flex'; 
+        // Nếu là CHỦ STORY: Hiện mắt xem
         viewCountBtn.style.display = 'flex';
         
         // Lắng nghe số lượng mắt realtime (CHỈ CHỦ MỚI LẮNG NGHE)
@@ -27717,8 +27658,7 @@ async function viewStory(storyId) {
             viewCountBtn.innerHTML = `<i class="fas fa-eye"></i> ${count}`;
         });
     } else {
-        // Nếu là NGƯỜI XEM: Ẩn mắt xem và nút ba chấm hoàn toàn
-        if (moreBtn) moreBtn.style.display = 'none';
+        // Nếu là NGƯỜI XEM: Ẩn mắt xem hoàn toàn
         viewCountBtn.style.display = 'none';
         
         // Ghi nhận lượt xem
@@ -28106,55 +28046,6 @@ function handleSwipe() {
             const walk = (x - startX) * 2; // Tốc độ cuộn
             storySlider.scrollLeft = scrollLeft - walk;
         });
-    }
-}
-
-    // Mở/Đóng Popup Quyền riêng tư
-async function togglePrivacyPopup() {
-    const modal = document.getElementById('privacy-modal');
-    if (modal.style.display === 'none' || modal.style.display === '') {
-        // Trước khi mở, lấy quyền hiện tại từ Firebase để hiển thị dấu tích
-        const snap = await firebase.database().ref(`stories/${currentViewingStoryId}/privacy`).once('value');
-        const currentPrivacy = snap.val() || 'public';
-
-        // Reset class active
-        document.querySelectorAll('.privacy-item').forEach(el => el.classList.remove('active'));
-        // Active đúng cái hiện tại
-        const activeOpt = document.getElementById(`opt-${currentPrivacy}`);
-        if (activeOpt) activeOpt.classList.add('active');
-
-        modal.style.display = 'flex';
-    } else {
-        modal.style.display = 'none';
-    }
-}
-
-// Hàm cập nhật lên Firebase
-async function updateStoryPrivacy(newPrivacy) {
-    if (!currentViewingStoryId) return;
-
-    try {
-        // Cập nhật lên Database
-        await firebase.database().ref(`stories/${currentViewingStoryId}`).update({
-            privacy: newPrivacy
-        });
-
-        // Hiệu ứng thông báo
-        addNotification("CẬP NHẬT", "Đã đổi quyền riêng tư của tin! 🔓");
-        
-        // Đóng popup
-        togglePrivacyPopup();
-        
-        // Cập nhật lại biến local nếu cần (không bắt buộc vì listenStories sẽ lo việc render lại card ngoài)
-        if (window.groupedStories) {
-            for (let uid in window.groupedStories) {
-                const story = window.groupedStories[uid].allStories.find(s => s.id === currentViewingStoryId);
-                if (story) story.privacy = newPrivacy;
-            }
-        }
-        
-    } catch (e) {
-        alert("Lỗi khi cập nhật: " + e.message);
     }
 }
 </script>
