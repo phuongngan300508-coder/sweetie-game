@@ -27534,8 +27534,8 @@ async function handlePostStory() {
 // Lắng nghe và hiển thị Story (Chỉ hiện tin chưa hết hạn)
 function listenStories() {
     const storyList = document.getElementById('story-list');
-    // BẢO VỆ 1: Nếu không thấy khung chứa Story hoặc userData chưa sẵn sàng thì dừng (ĐÃ FIX LỖI UID)
-    if (!storyList || !window.userData || !userData.profile) return; 
+    // BẢO VỆ 1: Nếu không thấy khung chứa Story thì dừng luôn (GIỮ NGUYÊN)
+    if (!storyList) return; 
 
     // --- CẬP NHẬT: Lắng nghe danh sách bạn bè realtime để luôn có dữ liệu mới nhất ---
     let myFriendsList = [];
