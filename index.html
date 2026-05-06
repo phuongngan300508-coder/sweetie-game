@@ -25173,19 +25173,67 @@ async function selectSavedAccount(stk, name) {
     // Chuyển thành mảng để lưu nhiều file cùng lúc
 let selectedMediaFiles = []; 
 
-function previewMedia(input) {
+async function previewMedia(input) {
     const container = document.getElementById('media-preview-container');
     
     if (input.files && input.files.length > 0) {
-        // CỘNG DỒN: Lấy ảnh cũ cộng thêm ảnh mới chọn
-        const newFiles = Array.from(input.files);
-        selectedMediaFiles = selectedMediaFiles.concat(newFiles);
+        // --- LOGIC KIỂM TRA GIỚI HẠN (THÊM MỚI) ---
+        const MAX_SIZE_MB = 200;
+        const MAX_DURATION_SEC = 120; // 2 phút
+        const incomingFiles = Array.from(input.files);
+        const validFiles = [];
+
+        for (const file of incomingFiles) {
+            // 1. Kiểm tra dung lượng
+            const fileSizeMB = file.size / (1024 * 1024);
+            if (fileSizeMB > MAX_SIZE_MB) {
+                alert(`File "${file.name}" quá lớn (${fileSizeMB.toFixed(1)}MB). Giới hạn là ${MAX_SIZE_MB}MB thôi bạn ơi!`);
+                continue; // Bỏ qua file này, tiếp tục kiểm tra file khác
+            }
+
+            // 2. Kiểm tra thời lượng video
+            if (file.type.startsWith('video/')) {
+                try {
+                    const duration = await getVideoDuration(file);
+                    if (duration > MAX_DURATION_SEC) {
+                        alert(`Video "${file.name}" dài hơn 2 phút rồi. Bạn vui lòng cắt ngắn lại nhé!`);
+                        continue;
+                    }
+                } catch (e) {
+                    console.error("Lỗi đọc thời lượng video:", e);
+                }
+            }
+            
+            // Nếu vượt qua hết các bài kiểm tra thì mới thêm vào danh sách hợp lệ
+            validFiles.push(file);
+        }
+        // ------------------------------------------
+
+        // CỘNG DỒN: Chỉ lấy những ảnh/video hợp lệ cộng thêm vào danh sách cũ
+        selectedMediaFiles = selectedMediaFiles.concat(validFiles);
 
         // Vẽ lại toàn bộ preview
         renderAllPreviews();
+        
+        // Reset input để có thể chọn lại cùng một file nếu muốn
+        input.value = "";
     }
 }
 
+// Hàm phụ bổ trợ (Henry cần thêm hàm này ở bên ngoài để đọc thời lượng video)
+function getVideoDuration(file) {
+    return new Promise((resolve, reject) => {
+        const video = document.createElement('video');
+        video.preload = 'metadata';
+        video.onloadedmetadata = () => {
+            window.URL.revokeObjectURL(video.src);
+            resolve(video.duration);
+        };
+        video.onerror = () => reject("Không thể đọc định dạng video");
+        video.src = URL.createObjectURL(file);
+    });
+}
+    
 // Tách riêng hàm vẽ để mỗi khi xóa hay thêm đều đồng bộ index
 function renderAllPreviews() {
     const container = document.getElementById('media-preview-container');
