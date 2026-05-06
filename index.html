@@ -27537,13 +27537,14 @@ function listenStories() {
     // BẢO VỆ 1: Nếu không thấy khung chứa Story thì dừng luôn (GIỮ NGUYÊN)
     if (!storyList) return; 
 
-    // --- CẬP NHẬT: Lắng nghe danh sách bạn bè realtime để luôn có dữ liệu mới nhất ---
+    const myUid = userData.profile.uid; // Lấy UID của chính Henry
+
+    // --- CẬP NHẬT: Lắng nghe danh sách bạn bè để check quyền hiển thị ---
     let myFriendsList = [];
-    const myUid = userData.profile.uid;
     firebase.database().ref(`users/${myUid}/friends`).on('value', fSnap => {
         myFriendsList = fSnap.val() ? Object.keys(fSnap.val()) : [];
     });
-    // ---------------------------------------------------------------------------
+    // ------------------------------------------------------------------
 
     firebase.database().ref('stories').on('value', (snap) => {
         const data = snap.val();
@@ -27581,15 +27582,16 @@ function listenStories() {
                     return;
                 }
 
-                // --- LOGIC QUYỀN RIÊNG TƯ (ĐÃ FIX: Henry luôn thấy tin mình + check list bạn bè) ---
+                // --- LOGIC QUYỀN RIÊNG TƯ (FIX THEO YÊU CẦU: CHECK KẾT BẠN ID) ---
                 if (s.uid !== myUid) {
-                    // Nếu là tin riêng tư của người khác -> Ẩn
+                    // Nếu là tin riêng tư -> Ẩn luôn
                     if (s.privacy === 'private') return;
                     
-                    // Nếu là tin bạn bè -> Chỉ hiện nếu s.uid nằm trong danh sách bạn bè
+                    // Nếu là tin bạn bè -> Kiểm tra xem ID người đăng có trong list bạn bè của Henry không
+                    // (Vì hệ thống bạn bè của bạn là 2 chiều khi kết bạn thành công)
                     if (s.privacy === 'friends' && !myFriendsList.includes(s.uid)) return;
                 }
-                // ---------------------------------------------------------------------------
+                // ---------------------------------------------------------------
 
                 // Nếu cư dân này chưa có trong danh sách gộp, tạo mới
                 if (!grouped[s.uid]) {
