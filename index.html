@@ -27541,10 +27541,6 @@ function listenStories() {
         const data = snap.val();
         const myUid = userData.profile.uid; // Lấy UID của chính Henry
         
-        // --- BỔ SUNG: Lấy danh sách bạn bè hiện tại để lọc ---
-        const friendsSnap = await firebase.database().ref(`users/${myUid}/friends`).once('value');
-        const myFriends = friendsSnap.val() || {};
-
         // BẢO VỆ 2: Tìm nút tạo tin một cách an toàn (GIỮ NGUYÊN)
         const createBtnEl = storyList.querySelector('.create');
         let createBtnHtml = '';
@@ -27567,7 +27563,7 @@ function listenStories() {
             const now = Date.now();
             const grouped = {}; // Đối tượng để gộp tin theo UID
 
-            // 1. Phân loại, lọc thời gian và GỘP TIN (ĐÃ CẬP NHẬT LOGIC RIÊNG TƯ)
+            // 1. Phân loại, lọc thời gian và GỘP TIN
             Object.keys(data).forEach(id => {
                 const s = data[id];
                 
@@ -27578,18 +27574,8 @@ function listenStories() {
                     return;
                 }
 
-                // --- LOGIC QUYỀN RIÊNG TƯ MỚI (CHỈ SỬA KHÚC NÀY) ---
-                if (s.uid !== myUid) { // Nếu không phải tin của tôi
-                    if (s.privacy === 'private') {
-                        return; // Ẩn hoàn toàn nếu là 'Chỉ mình tôi'
-                    }
-                    if (s.privacy === 'friends') {
-                        // Nếu là 'Bạn bè', kiểm tra UID chủ Story có trong node 'friends' của tôi không
-                        if (!myFriends.hasOwnProperty(s.uid)) return; 
-                    }
-                    // Nếu là 'public' (công khai) thì mặc định chạy tiếp xuống dưới
-                }
-                // ---------------------------------------------------
+                // Logic quyền riêng tư (GIỮ NGUYÊN)
+                if (s.privacy === 'private' && s.uid !== myUid) return;
 
                 // Nếu cư dân này chưa có trong danh sách gộp, tạo mới
                 if (!grouped[s.uid]) {
@@ -27663,6 +27649,8 @@ function listenStories() {
     });
 }
 
+    
+    
 // Xem Story & Đếm mắt Realtime
 let storyTimer;
 let currentViewingStoryId = null;
