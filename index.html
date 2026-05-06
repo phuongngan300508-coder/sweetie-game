@@ -8047,6 +8047,29 @@ input[type="date"].sweetie-input-style {
 .nav-btn:hover {
     background: rgba(216, 27, 96, 0.4) !important; /* Màu hồng đặc trưng của Henry */
 }
+
+    /* Khung chứa danh sách Story */
+#story-list {
+    display: flex;
+    gap: 12px;
+    padding: 10px;
+    overflow-x: auto; /* Cho phép cuộn ngang */
+    scroll-behavior: smooth; /* Hiệu ứng cuộn mượt mà */
+    white-space: nowrap;
+    
+    /* Ẩn thanh cuộn cho Chrome, Safari và Opera */
+    -webkit-overflow-scrolling: touch; /* Giúp cuộn mượt trên iOS */
+}
+
+#story-list::-webkit-scrollbar {
+    display: none; /* Ẩn thanh cuộn trên các trình duyệt dùng Webkit */
+}
+
+/* Ẩn thanh cuộn cho IE, Edge và Firefox */
+#story-list {
+    -ms-overflow-style: none;  /* IE và Edge */
+    scrollbar-width: none;  /* Firefox */
+}
 </style>
 </head>
 <body>
@@ -27987,6 +28010,36 @@ function handleSwipe() {
     if (touchEndX > touchStartX + swipeThreshold) {
         handleManualNavigate('prev'); // Vuốt sang phải -> Xem tin trước
     }
+}
+
+    const slider = document.getElementById('story-list');
+let isDown = false;
+let startX;
+let scrollLeft;
+
+if (slider) {
+    slider.addEventListener('mousedown', (e) => {
+        isDown = true;
+        slider.classList.add('active');
+        startX = e.pageX - slider.offsetLeft;
+        scrollLeft = slider.scrollLeft;
+    });
+    
+    slider.addEventListener('mouseleave', () => {
+        isDown = false;
+    });
+    
+    slider.addEventListener('mouseup', () => {
+        isDown = false;
+    });
+    
+    slider.addEventListener('mousemove', (e) => {
+        if (!isDown) return;
+        e.preventDefault();
+        const x = e.pageX - slider.offsetLeft;
+        const walk = (x - startX) * 2; // Tốc độ lướt (có thể chỉnh số 2 này)
+        slider.scrollLeft = scrollLeft - walk;
+    });
 }
 </script>
 </body>
