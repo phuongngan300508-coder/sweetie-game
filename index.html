@@ -27581,15 +27581,15 @@ function listenStories() {
                     return;
                 }
 
-                // --- LOGIC QUYỀN RIÊNG TƯ (ĐÃ FIX: Henry luôn thấy tin mình + check list bạn bè) ---
+                // --- LOGIC QUYỀN RIÊNG TƯ (ĐÃ CẬP NHẬT KẾT HỢP LIST BẠN BÈ) ---
                 if (s.uid !== myUid) {
                     // Nếu là tin riêng tư của người khác -> Ẩn
                     if (s.privacy === 'private') return;
                     
-                    // Nếu là tin bạn bè -> Chỉ hiện nếu s.uid nằm trong danh sách bạn bè
+                    // Nếu là tin bạn bè -> Chỉ hiện nếu s.uid (người đăng) nằm trong danh sách bạn bè của Henry
                     if (s.privacy === 'friends' && !myFriendsList.includes(s.uid)) return;
                 }
-                // ---------------------------------------------------------------------------
+                // -----------------------------------------------------------
 
                 // Nếu cư dân này chưa có trong danh sách gộp, tạo mới
                 if (!grouped[s.uid]) {
