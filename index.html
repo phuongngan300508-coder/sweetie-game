@@ -27537,17 +27537,9 @@ function listenStories() {
     // BẢO VỆ 1: Nếu không thấy khung chứa Story thì dừng luôn (GIỮ NGUYÊN)
     if (!storyList) return; 
 
-    const myUid = userData.profile.uid; // Lấy UID của chính Henry
-
-    // --- CẬP NHẬT: Lắng nghe danh sách bạn bè để check quyền hiển thị ---
-    let myFriendsList = [];
-    firebase.database().ref(`users/${myUid}/friends`).on('value', fSnap => {
-        myFriendsList = fSnap.val() ? Object.keys(fSnap.val()) : [];
-    });
-    // ------------------------------------------------------------------
-
-    firebase.database().ref('stories').on('value', (snap) => {
+    firebase.database().ref('stories').on('value', async (snap) => {
         const data = snap.val();
+        const myUid = userData.profile.uid; // Lấy UID của chính Henry
         
         // BẢO VỆ 2: Tìm nút tạo tin một cách an toàn (GIỮ NGUYÊN)
         const createBtnEl = storyList.querySelector('.create');
@@ -27569,7 +27561,7 @@ function listenStories() {
 
         if (data) {
             const now = Date.now();
-            const grouped = {}; 
+            const grouped = {}; // Đối tượng để gộp tin theo UID
 
             // 1. Phân loại, lọc thời gian và GỘP TIN
             Object.keys(data).forEach(id => {
@@ -27582,16 +27574,8 @@ function listenStories() {
                     return;
                 }
 
-                // --- LOGIC QUYỀN RIÊNG TƯ (FIX THEO YÊU CẦU: CHECK KẾT BẠN ID) ---
-                if (s.uid !== myUid) {
-                    // Nếu là tin riêng tư -> Ẩn luôn
-                    if (s.privacy === 'private') return;
-                    
-                    // Nếu là tin bạn bè -> Kiểm tra xem ID người đăng có trong list bạn bè của Henry không
-                    // (Vì hệ thống bạn bè của bạn là 2 chiều khi kết bạn thành công)
-                    if (s.privacy === 'friends' && !myFriendsList.includes(s.uid)) return;
-                }
-                // ---------------------------------------------------------------
+                // Logic quyền riêng tư (GIỮ NGUYÊN)
+                if (s.privacy === 'private' && s.uid !== myUid) return;
 
                 // Nếu cư dân này chưa có trong danh sách gộp, tạo mới
                 if (!grouped[s.uid]) {
@@ -27607,6 +27591,7 @@ function listenStories() {
             });
 
             // 2. Sắp xếp tin bên trong từng nhóm (tin cũ xem trước, tin mới xem sau)
+            // Và tách nhóm Henry với nhóm người khác
             let myGroup = null;
             let otherGroups = [];
 
@@ -27631,22 +27616,26 @@ function listenStories() {
 
             // 4. Render danh sách đã gộp (Mỗi cư dân 1 Card duy nhất)
             finalGroups.forEach(group => {
+                // Lấy tin cuối cùng (mới nhất) để làm ảnh nền/video nền cho Card
                 const latestS = group.allStories[group.allStories.length - 1];
                 
                 const card = `
                     <div class="story-card" onclick="viewStory('${group.allStories[0].id}')" style="min-width: 100px; height: 160px; border-radius: 15px; position: relative; cursor: pointer; overflow: hidden; flex-shrink: 0; border: ${group.uid === myUid ? '2px solid #ff8fab' : '1px solid #ffe4e8'}; background: url('${latestS.type === 'image' ? latestS.mediaUrl : ''}') center/cover no-repeat;">
                         ${latestS.type === 'video' ? `<video src="${latestS.mediaUrl}" muted style="width:100%; height:100%; object-fit:cover;"></video>` : ''}
                         
+                        
                         <div style="position:absolute; top:8px; left:8px; width:30px; height:30px; border-radius:50%; border:2px solid #ff8fab; overflow:hidden; background: white; z-index: 2;">
                             <img src="${group.avatar || 'https://via.placeholder.com/30'}" style="width:100%; height:100%; object-fit:cover;">
                         </div>
 
+                        
                         ${group.allStories.length > 1 ? `
                             <div style="position:absolute; top:8px; right:8px; background:rgba(216, 27, 96, 0.8); color:white; font-size:0.6rem; padding:2px 6px; border-radius:10px; font-weight:bold; z-index: 2;">
                                 ${group.allStories.length}
                             </div>
                         ` : ''}
 
+                        
                         <div style="position:absolute; bottom:5px; width:100%; color:white; font-size:0.65rem; text-align:center; font-weight:bold; text-shadow:1px 1px 2px black; padding: 0 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; z-index: 2;">
                             ${group.uid === myUid ? 'Tin của bạn' : group.username}
                         </div>
@@ -27659,6 +27648,8 @@ function listenStories() {
         }
     });
 }
+
+    
     
 // Xem Story & Đếm mắt Realtime
 let storyTimer;
