@@ -27541,6 +27541,11 @@ function listenStories() {
         const data = snap.val();
         const myUid = userData.profile.uid; // Lấy UID của chính Henry
         
+        // --- BỔ SUNG: Lấy danh sách bạn bè để kiểm tra quyền riêng tư ---
+        const myFriendsSnap = await firebase.database().ref(`users/${myUid}/friends`).once('value');
+        const myFriendsList = myFriendsSnap.val() ? Object.keys(myFriendsSnap.val()) : [];
+        // ---------------------------------------------------------------
+
         // BẢO VỆ 2: Tìm nút tạo tin một cách an toàn (GIỮ NGUYÊN)
         const createBtnEl = storyList.querySelector('.create');
         let createBtnHtml = '';
@@ -27574,8 +27579,13 @@ function listenStories() {
                     return;
                 }
 
-                // Logic quyền riêng tư (GIỮ NGUYÊN)
+                // --- LOGIC QUYỀN RIÊNG TƯ (CẬP NHẬT) ---
+                // 1. Nếu là tin riêng tư: Chỉ chủ nhân mới thấy
                 if (s.privacy === 'private' && s.uid !== myUid) return;
+
+                // 2. Nếu là tin bạn bè: Chỉ hiện nếu mình là chủ tin HOẶC người đó là bạn mình
+                if (s.privacy === 'friends' && s.uid !== myUid && !myFriendsList.includes(s.uid)) return;
+                // --------------------------------------
 
                 // Nếu cư dân này chưa có trong danh sách gộp, tạo mới
                 if (!grouped[s.uid]) {
@@ -27648,8 +27658,6 @@ function listenStories() {
         }
     });
 }
-
-    
     
 // Xem Story & Đếm mắt Realtime
 let storyTimer;
