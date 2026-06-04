@@ -9615,15 +9615,21 @@ input[type="date"].sweetie-input-style {
 <div id="modal-transfer-info" class="modal-overlay" style="z-index: 10002;">
     <div class="modal-content modal-small animate__animated animate__zoomIn" style="border: 3px solid #ffb6c1;">
         <div class="modal-header" style="background: #ff1493; color: white; border-bottom: none;">
-    <span style="display: flex; align-items: center; gap: 10px;">
-        <i class="fas fa-qrcode"></i> QUÉT MÃ CHUYỂN TIỀN
-    </span>
-    <span class="close-modal" onclick="toggleModal('modal-transfer-info')" style="color: white; opacity: 1;">&times;</span>
-</div>
+            <span style="display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-qrcode"></i> QUÉT MÃ CHUYỂN TIỀN
+            </span>
+            <span class="close-modal" onclick="toggleModal('modal-transfer-info')" style="color: white; opacity: 1; cursor: pointer;">&times;</span>
+        </div>
+
         <div class="modal-body" style="text-align: center;">
             <p style="font-size: 0.8em; color: #d63384; margin-bottom: 15px; font-weight: 700;">
-                Hãy quét mã hoặc copy STK bên dưới để chuyển tiền phí chơi cho chủ web nhé! ✨
+                Chọn ngân hàng và quét mã để chuyển khoản:
             </p>
+
+            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <button onclick="changeBank('VCB')" style="flex: 1; padding: 8px; border: 2px solid #ff1493; background: #ff1493; color: white; border-radius: 10px; cursor: pointer; font-weight: bold;">VCB</button>
+                <button onclick="changeBank('TCB')" style="flex: 1; padding: 8px; border: 2px solid #005aab; background: #005aab; color: white; border-radius: 10px; cursor: pointer; font-weight: bold;">TCB</button>
+            </div>
 
             <div style="background: white; padding: 15px; border-radius: 20px; display: inline-block; border: 2px solid #ffe4e1; margin-bottom: 15px; position: relative;">
                 <img id="owner-qr" src="https://img.vietqr.io/image/vietcombank-1047882142-pink.jpg?accountName=DAO%20NGUYEN%20PHUONG%20NGAN" 
@@ -9632,11 +9638,9 @@ input[type="date"].sweetie-input-style {
             </div>
 
             <div style="text-align: left; background: #fff5f8; padding: 15px; border-radius: 15px; border: 1px dashed #ffb6c1;">
-                <div style="margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                        <small style="color: #b191b1; font-size: 0.7em; font-weight: 800;">NGÂN HÀNG</small><br>
-                        <b style="color: #5d3d5d; font-size: 0.9em;">VIETCOMBANK (VCB)</b>
-                    </div>
+                <div style="margin-bottom: 10px;">
+                    <small style="color: #b191b1; font-size: 0.7em; font-weight: 800;">NGÂN HÀNG</small><br>
+                    <b id="bank-name" style="color: #5d3d5d; font-size: 0.9em;">VIETCOMBANK (VCB)</b>
                 </div>
 
                 <div style="margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
@@ -9644,9 +9648,7 @@ input[type="date"].sweetie-input-style {
                         <small style="color: #b191b1; font-size: 0.7em; font-weight: 800;">SỐ TÀI KHOẢN</small><br>
                         <b id="owner-stk" style="color: #ff1493; font-size: 1.1em; letter-spacing: 1px;">1047882142</b>
                     </div>
-                    <button onclick="copySTK()" style="background: #ff69b4; color: white; border: none; padding: 5px 12px; border-radius: 10px; font-size: 0.75em; cursor: pointer; font-weight: 800;">
-                        COPY
-                    </button>
+                    <button onclick="copySTK()" style="background: #ff69b4; color: white; border: none; padding: 5px 12px; border-radius: 10px; font-size: 0.75em; cursor: pointer; font-weight: 800;">COPY</button>
                 </div>
 
                 <div>
@@ -9654,16 +9656,16 @@ input[type="date"].sweetie-input-style {
                     <b style="color: #5d3d5d; font-size: 0.9em;">DAO NGUYEN PHUONG NGAN</b>
                 </div>
             </div>
-
-            <p style="font-size: 0.7em; color: #888; margin-top: 15px; line-height: 1.4;">
-                <i>* Lưu ý: Sau khi chuyển khoản thành công, hãy chụp màn hình bill và gửi cho chủ web để được cộng tiền vào ví sớm nhất!</i>
-            </p>
             
-            <button onclick="toggleModal('modal-transfer-info')" class="btn-login" style="margin-top: 15px; background: #ff69b4;">ĐÃ HIỂU</button>
+<p style="font-size: 0.7em; color: #888; margin-top: 15px; line-height: 1.4;">
+                <i>* Lưu ý: Sau khi chuyển khoản thành công, hãy chụp màn hình bill và gửi cho chủ web để được cộng tiền vào ví sớm nhất!</i>
+</p>
+            
+            <button onclick="toggleModal('modal-transfer-info')" class="btn-login" style="margin-top: 15px; background: #ff69b4; width: 100%;">ĐÃ HIỂU</button>
         </div>
     </div>
-</div>
-
+</div>           
+            
 <div id="modal-edit-profile" class="modal-overlay">
     <div class="modal-content modal-small animate__animated animate__zoomIn">
         <div class="modal-header">
@@ -28196,6 +28198,23 @@ async function updateStoryPrivacy(newType) {
         alert("Không thể cập nhật: " + e.message);
     }
 }
+
+    function changeBank(bank) {
+    const qrImg = document.getElementById('owner-qr');
+    const stkDisplay = document.getElementById('owner-stk');
+    const nameDisplay = document.getElementById('bank-name');
+
+    if (bank === 'VCB') {
+        qrImg.src = "https://img.vietqr.io/image/vietcombank-1047882142-pink.jpg?accountName=DAO%20NGUYEN%20PHUONG%20NGAN";
+        stkDisplay.innerText = "1047882142";
+        nameDisplay.innerText = "VIETCOMBANK (VCB)";
+    } else {
+        // Link tạo QR Techcombank tự động
+        qrImg.src = "https://img.vietqr.io/image/techcombank-300508290526-compact2.jpg?accountName=DAO%20NGUYEN%20PHUONG%20NGAN";
+        stkDisplay.innerText = "300508290526";
+        nameDisplay.innerText = "TECHCOMBANK (TCB)";
+    }
+    }
 </script>
 </body>
 </html>
