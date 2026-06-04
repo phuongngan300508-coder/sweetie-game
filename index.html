@@ -9528,8 +9528,8 @@ input[type="date"].sweetie-input-style {
 
 <div style="background: #fff5f8; border: 2px solid #ffe4e1; border-radius: 20px; padding: 15px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; cursor: pointer;" onclick="toggleModal('modal-transfer-info')">
     <div>
-        <b style="color: #d63384;">Chuyển tiền cho Chủ Web</b>
-        <p style="font-size: 0.75em; color: #b191b1; margin: 3px 0 0 0;">Lấy mã QR hoặc STK Vietcombank</p>
+        <b style="color: #d63384;">Chuyển tiền cho Chủ App</b>
+        <p style="font-size: 0.75em; color: #b191b1; margin: 3px 0 0 0;">Lấy mã QR hoặc STK của chủ app</p>
     </div>
     <div style="background: #ff69b4; color: white; width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(255,105,180,0.3);">
         <i class="fas fa-university"></i>
@@ -28205,12 +28205,13 @@ async function updateStoryPrivacy(newType) {
     const nameDisplay = document.getElementById('bank-name');
 
     if (bank === 'VCB') {
+        // Giữ nguyên mã VCB hiện tại
         qrImg.src = "https://img.vietqr.io/image/vietcombank-1047882142-pink.jpg?accountName=DAO%20NGUYEN%20PHUONG%20NGAN";
         stkDisplay.innerText = "1047882142";
         nameDisplay.innerText = "VIETCOMBANK (VCB)";
     } else {
-        // Link tạo QR Techcombank tự động
-        qrImg.src = "https://img.vietqr.io/image/techcombank-300508290526-compact2.jpg?accountName=DAO%20NGUYEN%20PHUONG%20NGAN";
+        // CẬP NHẬT: Thay đổi 'compact2' thành 'pink' để có giao diện giống VCB
+        qrImg.src = "https://img.vietqr.io/image/techcombank-300508290526-pink.jpg?accountName=DAO%20NGUYEN%20PHUONG%20NGAN";
         stkDisplay.innerText = "300508290526";
         nameDisplay.innerText = "TECHCOMBANK (TCB)";
     }
