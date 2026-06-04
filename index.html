@@ -9627,8 +9627,10 @@ input[type="date"].sweetie-input-style {
             </p>
 
             <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-                <button onclick="changeBank('VCB')" style="flex: 1; padding: 8px; border: 2px solid #ff1493; background: #ff1493; color: white; border-radius: 10px; cursor: pointer; font-weight: bold;">VCB</button>
-                <button onclick="changeBank('TCB')" style="flex: 1; padding: 8px; border: 2px solid #005aab; background: #005aab; color: white; border-radius: 10px; cursor: pointer; font-weight: bold;">TCB</button>
+    <button id="btn-vcb" onclick="changeBank('VCB')" 
+            style="flex: 1; padding: 10px; border: 2px solid #ff1493; background: #ff1493; color: white; border-radius: 10px; cursor: pointer; font-weight: bold; transform: scale(1.05); transition: 0.3s;">VCB</button>
+    <button id="btn-tcb" onclick="changeBank('TCB')" 
+            style="flex: 1; padding: 10px; border: 2px solid #005aab; background: white; color: #005aab; border-radius: 10px; cursor: pointer; font-weight: bold; transition: 0.3s;">TCB</button>
             </div>
 
             <div style="background: white; padding: 15px; border-radius: 20px; display: inline-block; border: 2px solid #ffe4e1; margin-bottom: 15px; position: relative;">
@@ -28203,19 +28205,37 @@ async function updateStoryPrivacy(newType) {
     const qrImg = document.getElementById('owner-qr');
     const stkDisplay = document.getElementById('owner-stk');
     const nameDisplay = document.getElementById('bank-name');
+    
+    // Lấy các nút
+    const btnVcb = document.getElementById('btn-vcb');
+    const btnTcb = document.getElementById('btn-tcb');
 
     if (bank === 'VCB') {
-        // Giữ nguyên mã VCB hiện tại
         qrImg.src = "https://img.vietqr.io/image/vietcombank-1047882142-pink.jpg?accountName=DAO%20NGUYEN%20PHUONG%20NGAN";
         stkDisplay.innerText = "1047882142";
         nameDisplay.innerText = "VIETCOMBANK (VCB)";
+        
+        // Hiệu ứng chọn VCB
+        btnVcb.style.background = "#ff1493";
+        btnVcb.style.color = "white";
+        btnVcb.style.transform = "scale(1.05)";
+        btnTcb.style.background = "white";
+        btnTcb.style.color = "#005aab";
+        btnTcb.style.transform = "scale(1)";
     } else {
-        // CẬP NHẬT: Thay đổi 'compact2' thành 'pink' để có giao diện giống VCB
         qrImg.src = "https://img.vietqr.io/image/techcombank-300508290526-pink.jpg?accountName=DAO%20NGUYEN%20PHUONG%20NGAN";
         stkDisplay.innerText = "300508290526";
         nameDisplay.innerText = "TECHCOMBANK (TCB)";
+        
+        // Hiệu ứng chọn TCB
+        btnTcb.style.background = "#005aab";
+        btnTcb.style.color = "white";
+        btnTcb.style.transform = "scale(1.05)";
+        btnVcb.style.background = "white";
+        btnVcb.style.color = "#ff1493";
+        btnVcb.style.transform = "scale(1)";
     }
-    }
+}
 </script>
 </body>
 </html>
