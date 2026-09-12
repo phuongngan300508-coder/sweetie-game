@@ -11591,39 +11591,35 @@ function checkMinigameStatus() {
         updateCardStatus(vqElem, !isVQOpen, vqStatusLabel, vqStatusClass);
     }
 
-    // --- LOGIC ĐÀO VÀNG (Mở từ 02/09 đến hết ngày 07/09 hàng năm) ---
-    const dvStart = new Date(year, 8, 2, 0, 0, 0).getTime();  // 02/09 (tháng 9 là index 8)
-    const dvEnd = new Date(year, 8, 7, 23, 59, 59).getTime(); // Hết ngày 07/09
-    const isDVOpen = (currentTime >= dvStart && currentTime <= dvEnd);
+    // --- LOGIC ĐÀO VÀNG (Mở từ 02/09 đến hết 07/09 hàng năm) ---
+const isDVOpen = (month === 9 && date >= 2 && date <= 7);
+refreshEventTurn('daoVang', isDVOpen);
 
-    // Reset lượt khi mở cửa đợt mới
-    refreshEventTurn('daoVang', isDVOpen);
+const dvElem = document.getElementById('daoVang');
+const dvTxt = document.getElementById('dvText');
 
-    const dvElem = document.getElementById('daoVang');
-    const dvTxt = document.getElementById('dvText');
+if (dvElem) {
+    let dvLabel = "";
+    let dvClass = "";
+    let dvDesc = "";
 
-    if (dvElem) {
-        let dvLabel = "";
-        let dvClass = "";
-        let dvDesc = "";
-
-        if (isDVOpen) {
-            dvDesc = "SỰ KIỆN ĐANG DIỄN RA (Đến hết 07/09)";
-            dvLabel = "MỞ CỬA";
-            dvClass = "status-open";
-        } else if (currentTime < dvStart) {
-            dvDesc = "SỰ KIỆN QUỐC KHÁNH: MỞ TỪ 02/09 - 07/09 HÀNG NĂM";
-            dvLabel = "HẸN GẶP 02/09";
-            dvClass = "status-upcoming";
-        } else {
-            dvDesc = "SỰ KIỆN QUỐC KHÁNH ĐÃ KẾT THÚC";
-            dvLabel = "ĐÃ ĐÓNG CỬA";
-            dvClass = "status-closed";
-        }
-
-        if (dvTxt) dvTxt.innerText = dvDesc;
-        updateCardStatus(dvElem, !isDVOpen, dvLabel, dvClass);
+    if (isDVOpen) {
+        dvDesc = "SỰ KIỆN ĐANG DIỄN RA (Đến hết 07/09)";
+        dvLabel = "MỞ CỬA";
+        dvClass = "status-open";
+    } else if (month < 9 || (month === 9 && date < 2)) {
+        dvDesc = "SỰ KIỆN QUỐC KHÁNH: MỞ TỪ 02/09 - 07/09 HÀNG NĂM";
+        dvLabel = "HẸN GẶP 02/09";
+        dvClass = "status-upcoming";
+    } else {
+        dvDesc = "SỰ KIỆN NĂM NAY ĐÃ KẾT THÚC (Mở lại 02/09 sang năm)";
+        dvLabel = "HẸN GẶP 02/09";
+        dvClass = "status-closed";
     }
+
+    if (dvTxt) dvTxt.innerText = dvDesc;
+    updateCardStatus(dvElem, !isDVOpen, dvLabel, dvClass);
+}
 
     // --- LOGIC SAOGLE QUIZ (Mở tháng 10 hàng năm) ---
     const isSQOpen = (month === 10);
@@ -11744,74 +11740,49 @@ function checkMinigameStatus() {
         updateCardStatus(lxElem, !isLiXiOpen, lxLabel, lxClass);
     }
 
-    // Cửa hàng bán cá (Mở từ 1/3/2026)
-    const openDateCa = new Date('2026-03-01T00:00:00');
-    updateCardStatus(document.getElementById('cuaHangBanCa'), currentTime < openDateCa, currentTime < openDateCa ? 'MỞ LẠI TỪ 01/03' : 'MỞ CỬA', currentTime < openDateCa ? 'status-closed' : 'status-open');
+   // --- CỬA HÀNG BÁN CÁ (Đã cập nhật: Mở cửa vĩnh viễn) ---
+    updateCardStatus(document.getElementById('cuaHangBanCa'), false, 'MỞ CỬA', 'status-open');
 
-    // Vé cào ngọt ngào (Thứ 6 hàng tuần sau 23/1)
-    const reOpenDateVeCao = new Date(2026, 0, 23).getTime();
-    const isVeCaoActive = currentTime >= reOpenDateVeCao && day === 5;
-    updateCardStatus(document.getElementById('veCaoNgotNgao'), !isVeCaoActive, isVeCaoActive ? "ĐANG MỞ CỬA" : (currentTime < reOpenDateVeCao ? "HẸN 23/1" : "CHỈ MỞ THỨ 6"), isVeCaoActive ? "status-open" : "status-closed");
-
-    // --- LOGIC TÌM ĐIỂM KHÁC NHAU (Mở 05/05 đến hết 10/05 hàng năm) ---
-    const startTDKN = new Date(year, 4, 5, 0, 0, 0).getTime(); // 05/05
-    const endTDKN = new Date(year, 4, 11, 0, 0, 0).getTime();   // Hết 10/05 (trước 11/05)
-    const isTDKNOpen = (currentTime >= startTDKN && currentTime < endTDKN);
-    refreshEventTurn('timDiemKhacNhau', isTDKNOpen);
+    // --- VÉ CÀO NGỌT NGÀO (Đã cập nhật: Chỉ mở Thứ 6 hàng tuần, không giới hạn năm) ---
+    const isVeCaoActive = (day === 5);
+    updateCardStatus(
+        document.getElementById('veCaoNgotNgao'), 
+        !isVeCaoActive, 
+        isVeCaoActive ? "ĐANG MỞ CỬA" : "CHỈ MỞ THỨ 6", 
+        isVeCaoActive ? "status-open" : "status-closed"
+    );
     
-    const tdknElem = document.getElementById('timDiemKhacNhau');
-    const tdknText = document.getElementById('timDiemText');
+    // --- FIX LOGIC XẾP HÌNH (Mở 01/04 đến hết 05/04 hàng năm) ---
+const isXHOpen = (month === 4 && date >= 1 && date <= 5);
+refreshEventTurn('xepHinh', isXHOpen);
 
-    let tdknStatusLabel = "";
-    let tdknStatusClass = "";
+const xhElem = document.getElementById('xepHinh');
+const xhText = document.getElementById('xepHinhText');
 
-    if (isTDKNOpen) {
-        if (tdknText) tdknText.innerText = "SỰ KIỆN ĐANG DIỄN RA (Đến 10/05)";
-        tdknStatusLabel = "MỞ CỬA";
-        tdknStatusClass = "status-open";
-    } else if (currentTime < startTDKN) {
-        if (tdknText) tdknText.innerText = "MỞ GIỚI HẠN TỪ 05/05 - 10/05 HÀNG NĂM";
-        tdknStatusLabel = "CHƯA MỞ CỬA";
-        tdknStatusClass = "status-upcoming";
-    } else {
-        if (tdknText) tdknText.innerText = "SỰ KIỆN ĐÃ KẾT THÚC";
-        tdknStatusLabel = "ĐÃ ĐÓNG CỬA";
-        tdknStatusClass = "status-closed";
-    }
+if (xhElem) {
+    let xhStatusLabel = isXHOpen ? "MỞ CỬA" : (month < 4 ? "CHƯA MỞ CỬA" : "ĐÃ ĐÓNG CỬA");
+    let xhStatusClass = isXHOpen ? "status-open" : (month < 4 ? "status-upcoming" : "status-closed");
+    let xhDesc = isXHOpen ? "SỰ KIỆN ĐANG DIỄN RA (Đến 05/04)" : "MỞ GIỚI HẠN TỪ 01/04 - 05/04 HÀNG NĂM";
 
-    if (tdknElem) {
-        updateCardStatus(tdknElem, !isTDKNOpen, tdknStatusLabel, tdknStatusClass);
-    }
-    
-    // --- LOGIC XẾP HÌNH (Mở 01/04 đến hết 05/04 hàng năm) ---
-    const startXH = new Date(year, 3, 1, 0, 0, 0).getTime(); // 01/04
-    const endXH = new Date(year, 3, 6, 0, 0, 0).getTime();    // Hết 05/04 (trước 06/04)
-    const isXHOpen = (currentTime >= startXH && currentTime < endXH);
-    refreshEventTurn('xepHinh', isXHOpen);
+    if (xhText) xhText.innerText = xhDesc;
+    updateCardStatus(xhElem, !isXHOpen, xhStatusLabel, xhStatusClass);
+}
 
-    const xhElem = document.getElementById('xepHinh');
-    const xhText = document.getElementById('xepHinhText');
+// --- FIX LOGIC TÌM ĐIỂM KHÁC NHAU (Mở 05/05 đến hết 10/05 hàng năm) ---
+const isTDKNOpen = (month === 5 && date >= 5 && date <= 10);
+refreshEventTurn('timDiemKhacNhau', isTDKNOpen);
 
-    let xhStatusLabel = "";
-    let xhStatusClass = "";
+const tdknElem = document.getElementById('timDiemKhacNhau');
+const tdknText = document.getElementById('timDiemText');
 
-    if (isXHOpen) {
-        if (xhText) xhText.innerText = "SỰ KIỆN ĐANG DIỄN RA (Đến 05/04)";
-        xhStatusLabel = "MỞ CỬA";
-        xhStatusClass = "status-open";
-    } else if (currentTime < startXH) {
-        if (xhText) xhText.innerText = "MỞ GIỚI HẠN TỪ 01/04 - 05/04 HÀNG NĂM";
-        xhStatusLabel = "CHƯA MỞ CỬA";
-        xhStatusClass = "status-upcoming";
-    } else {
-        if (xhText) xhText.innerText = "SỰ KIỆN ĐÃ KẾT THÚC";
-        xhStatusLabel = "ĐÃ ĐÓNG CỬA";
-        xhStatusClass = "status-closed";
-    }
+if (tdknElem) {
+    let tdknStatusLabel = isTDKNOpen ? "MỞ CỬA" : (month < 5 ? "CHƯA MỞ CỬA" : "ĐÃ ĐÓNG CỬA");
+    let tdknStatusClass = isTDKNOpen ? "status-open" : (month < 5 ? "status-upcoming" : "status-closed");
+    let tdknDesc = isTDKNOpen ? "SỰ KIỆN ĐANG DIỄN RA (Đến 10/05)" : "MỞ GIỚI HẠN TỪ 05/05 - 10/05 HÀNG NĂM";
 
-    if (xhElem) {
-        updateCardStatus(xhElem, !isXHOpen, xhStatusLabel, xhStatusClass);
-    }
+    if (tdknText) tdknText.innerText = tdknDesc;
+    updateCardStatus(tdknElem, !isTDKNOpen, tdknStatusLabel, tdknStatusClass);
+}
 
     // --- LOGIC GAME CUỐI TUẦN ---
     const isWeekend = (day === 6 || day === 0);
@@ -11849,10 +11820,9 @@ function checkMinigameStatus() {
     if (cocText) cocText.innerText = isCocOpen ? "MỞ CỬA VĨNH VIỄN" : "MỞ VĨNH VIỄN TỪ 1/6/2026";
     updateCardStatus(document.getElementById('doanCoc'), !isCocOpen, isCocOpen ? 'MỞ CỬA' : 'CHƯA MỞ', isCocOpen ? 'status-open' : 'status-closed');
 
-    // Casino Games (Mở lại từ T2/2026 trừ tháng 1)
-    const isCasinoOpen = isFeb2026 || year > 2026 || (year === 2026 && month > 2) || isDec2026;
+    // --- CASINO GAMES (Đã cập nhật: Mở cửa vĩnh viễn) ---
     ['dayXu', 'xiDach', 'tienLen', 'taiXiu'].forEach(id => {
-        updateCardStatus(document.getElementById(id), isJan2026 || !isCasinoOpen, isJan2026 ? 'MỞ LẠI 1/2' : 'MỞ CỬA', isJan2026 ? 'status-closed' : 'status-open');
+        updateCardStatus(document.getElementById(id), false, 'MỞ CỬA', 'status-open');
     });
 
     // Các game luôn luôn mở (Always Open)
@@ -14164,31 +14134,6 @@ const CAROUSEL_EVENTS = [
 ];
 
 const GAME_SCHEDULE = [
-    // --- CÁC SỰ KIỆN THÁNG 3 & 4/2026 (HIỆN TẠI) ---
-    { id: 'sweetBrewManager', title: 'SWEET BREW MANAGER', start: '2026-03-01', end: '2026-04-01', icon: 'fa-coffee', bg: 'cafe-bg' },
-    { id: 'goldenCrustBakery', title: 'GOLDEN CRUST BAKERY', start: '2026-03-01', end: '2026-04-01', icon: 'fa-birthday-cake', bg: 'bakery-bg' },
-    { id: 'xepHinh', title: 'XẾP HÌNH (BLOCK BLAST)', start: '2026-04-01', end: '2026-04-06', icon: 'fa-th-large', bg: 'game-bg' },
-    { id: 'flappyPink', title: 'FLAPPY PINK', start: '2026-04-01', end: '2026-05-01', icon: 'fa-dove', bg: 'vq-bg' },
-    { id: 'dapChuột', title: 'TRÒ ĐẬP CHUỘT', start: '2026-04-01', end: '2026-05-01', icon: 'fa-hammer', bg: 'nature-bg' },
-
-    // --- CÁC SỰ KIỆN MỞ LẠI TRONG NĂM 2026 ---
-    // Vòng quay siêu hời (Mở từ tháng 5)
-    { id: 'vongQuaySieuHoi', title: 'VÒNG QUAY SIÊU HỜI', start: '2026-05-01', end: '2026-09-01', icon: 'fa-dharmachakra', bg: 'vq-bg' },
-    
-    // Tìm điểm khác nhau (Tháng 5)
-    { id: 'timDiemKhacNhau', title: 'TÌM ĐIỂM KHÁC NHAU', start: '2026-05-05', end: '2026-05-11', icon: 'fa-eye', bg: 'eye-bg' },
-    
-    // --- TRÒ CHƠI MỞ VĨNH VIỄN (MỚI BỔ SUNG) ---
-    { id: 'doanCoc', title: 'TRÒ ĐOÁN CỐC', start: '2026-06-01', end: '2026-07-01', icon: 'fa-mug-hot', bg: 'lt-bg' },
-    // Truy tìm kho báu đợt 1 (Tháng 7)
-    { id: 'truyTimKhoBau', title: 'TRUY TÌM KHO BÁU (HÈ)', start: '2026-07-01', end: '2026-07-04', icon: 'fa-map-marked-alt', bg: 'summer-bg' },
-
-    // Sweet Brew & Bakery đợt tháng 8
-    { id: 'sweetBrewManager', title: 'SWEET BREW MANAGER(RE-OPEN)', start: '2026-08-01', end: '2026-09-01', icon: 'fa-coffee', bg: 'cafe-bg' },
-    { id: 'goldenCrustBakery', title: 'GOLDEN CRUST BAKERY (RE-OPEN)', start: '2026-08-01', end: '2026-09-01', icon: 'fa-birthday-cake', bg: 'bakery-bg' },
-
-    // Đào vàng dịp lễ 2/9
-    { id: 'daoVang', title: 'ĐÀO VÀNG (LỄ 2/9)', start: '2026-09-02', end: '2026-09-07', icon: 'fa-gem', bg: 'dv-bg' },
 
     // Saogle Quiz (Tháng 10)
     { id: 'saogleQuiz', title: 'SAOGLE QUIZ', start: '2026-10-10', end: '2026-10-16', icon: 'fa-question-circle', bg: 'eye-bg' },
