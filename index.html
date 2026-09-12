@@ -11458,7 +11458,7 @@ function getWeekNumber(d) {
     return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
 }
 
-   function checkMinigameStatus() {
+function checkMinigameStatus() {
     const vn = getVietnamTime();
     const day = vn.getDay(); 
     const currentWeek = getWeekNumber(vn);
@@ -11477,11 +11477,11 @@ function getWeekNumber(d) {
         console.log("Hệ thống: Đã reset điểm danh tuần mới");
     }
 
-// --- HÀM PHỤ: RESET LƯỢT THEO ĐỢT MỞ (MỚI) ---
+    // --- HÀM PHỤ: RESET LƯỢT THEO ĐỢT MỞ ---
     const refreshEventTurn = (gameId, isOpen, customLimit) => {
-        if (!isOpen || !userData.gamePlays) return;
+        if (!isOpen || !userData || !userData.gamePlays) return;
         
-        // Tạo mã định danh cho đợt (Ví dụ: lotoTet_3_2026)
+        // Tạo mã định danh cho đợt theo tháng-năm
         const batchKey = `${gameId}_${month}_${year}`;
         if (!userData.eventResets) userData.eventResets = {};
 
@@ -11499,355 +11499,202 @@ function getWeekNumber(d) {
         }
     };
     
-    // Định nghĩa các mốc thời gian logic
+    // Định nghĩa các mốc thời gian logic hỗ trợ
     const isJan2026 = (year === 2026 && month === 1);
     const isFeb2026 = (year === 2026 && month === 2);
-    const isMar2026 = (year === 2026 && month === 3);
     const isDec2026 = (year === 2026 && month === 12);
-    const isPastT12_2026 = (year > 2026) || (year === 2026 && month > 12);
-    const isPermanentOpenFrom2026 = year > 2026 || (year === 2026 && month >= 1);
 
-    // --- 1. CẬP NHẬT CÁC GAME THEO DANH SÁCH MỚI (HENRY UPDATE) ---
+    // --- 1. CẬP NHẬT CÁC GAME THEO CHU KỲ HÀNG NĂM ---
 
-    // --- LOGIC NGỰA CHIẾN MAY MẮN (Tháng 1/2027) ---
-const startNgua = new Date(2027, 0, 1, 0, 0, 0).getTime(); // 01/01/2027
-const endNgua = new Date(2027, 0, 31, 23, 59, 59).getTime(); // Hết 31/01/2027
-const isNguaOpen = (currentTime >= startNgua && currentTime <= endNgua);
+    // --- LOGIC NGỰA CHIẾN MAY MẮN (Mở tháng 1 hàng năm) ---
+    const isNguaOpen = (month === 1);
+    refreshEventTurn('nguachien', isNguaOpen);
 
-// --- MỚI: Reset lượt khi mở cửa ---
-refreshEventTurn('nguachien', isNguaOpen);
+    const nguaElem = document.getElementById('nguachien');
+    const nguaTxt = document.getElementById('nguaText');
 
-const nguaElem = document.getElementById('nguachien');
-const nguaTxt = document.getElementById('nguaText');
-
-if (nguaElem) {
-    let nguaLabel = isNguaOpen ? "MỞ CỬA" : (currentTime < startNgua ? "HẸN GẶP 01/01/2027" : "ĐÃ ĐÓNG CỬA");
-    let nguaClass = isNguaOpen ? "status-open" : (currentTime < startNgua ? "status-upcoming" : "status-closed");
-    if (nguaTxt) {
-        nguaTxt.innerText = isNguaOpen ? "SỰ KIỆN ĐANG DIỄN RA (Tháng 1/2027)" : (currentTime < startNgua ? "MỞ LẠI VÀO NGÀY 01/01/2027" : "SỰ KIỆN ĐÃ KẾT THÚC");
+    if (nguaElem) {
+        let nguaLabel = isNguaOpen ? "MỞ CỬA" : "HẸN GẶP T1";
+        let nguaClass = isNguaOpen ? "status-open" : "status-upcoming";
+        if (nguaTxt) {
+            nguaTxt.innerText = isNguaOpen ? "SỰ KIỆN ĐANG DIỄN RA (Tháng 1)" : "MỞ LẠI VÀO THÁNG 1 HÀNG NĂM";
+        }
+        updateCardStatus(nguaElem, !isNguaOpen, nguaLabel, nguaClass);
     }
-    updateCardStatus(nguaElem, !isNguaOpen, nguaLabel, nguaClass);
-}
 
-// --- LOGIC VALENTINE'S QUEST (Tháng 2/2027) ---
-const startVal = new Date(2027, 1, 1, 0, 0, 0).getTime(); // 01/02/2027
-const endVal = new Date(2027, 1, 28, 23, 59, 59).getTime(); // Hết 28/02/2027
-const isValOpen = (currentTime >= startVal && currentTime <= endVal);
+    // --- LOGIC VALENTINE'S QUEST (Mở tháng 2 hàng năm) ---
+    const isValOpen = (month === 2);
+    refreshEventTurn('valentineQuest', isValOpen);
 
-// --- MỚI: Reset lượt khi mở cửa ---
-refreshEventTurn('valentineQuest', isValOpen);
+    const valElem = document.getElementById('valentineQuest');
+    const valTxt = document.getElementById('valText');
 
-const valElem = document.getElementById('valentineQuest');
-const valTxt = document.getElementById('valText');
-
-if (valElem) {
-    let valLabel = isValOpen ? "MỞ CỬA" : (currentTime < startVal ? "HẸN GẶP 01/02/2027" : "ĐÃ ĐÓNG CỬA");
-    let valClass = isValOpen ? "status-open" : (currentTime < startVal ? "status-upcoming" : "status-closed");
-    if (valTxt) {
-        valTxt.innerText = isValOpen ? "SỰ KIỆN ĐANG DIỄN RA (Tháng 2/2027)" : (currentTime < startVal ? "MỞ LẠI VÀO NGÀY 01/02/2027" : "SỰ KIỆN ĐÃ KẾT THÚC");
+    if (valElem) {
+        let valLabel = isValOpen ? "MỞ CỬA" : "HẸN GẶP T2";
+        let valClass = isValOpen ? "status-open" : "status-upcoming";
+        if (valTxt) {
+            valTxt.innerText = isValOpen ? "SỰ KIỆN ĐANG DIỄN RA (Tháng 2)" : "MỞ LẠI VÀO THÁNG 2 HÀNG NĂM";
+        }
+        updateCardStatus(valElem, !isValOpen, valLabel, valClass);
     }
-    updateCardStatus(valElem, !isValOpen, valLabel, valClass);
-}
 
-// --- LOGIC SHOP (Sweet Brew & Golden Bakery) ---
-const startShop1 = new Date(2026, 7, 1, 0, 0, 0).getTime();
-const endShop1 = new Date(2026, 7, 31, 23, 59, 59).getTime();
-const startShop2 = new Date(2027, 2, 1, 0, 0, 0).getTime();
-const endShop2 = new Date(2027, 2, 31, 23, 59, 59).getTime();
+    // --- LOGIC SHOP (Sweet Brew & Golden Bakery - Mở tháng 3 và tháng 8 hàng năm) ---
+    const isShopOpen = (month === 3 || month === 8);
+    refreshEventTurn('sweetBrewManager', isShopOpen);
+    refreshEventTurn('goldenCrustBakery', isShopOpen);
 
-const isShopOpen = (currentTime >= startShop1 && currentTime <= endShop1) || 
-                   (currentTime >= startShop2 && currentTime <= endShop2);
+    let shopStatusLabel = isShopOpen ? "MỞ CỬA" : (month < 3 || month > 8 ? "HẸN GẶP T3" : "HẸN GẶP T8");
+    let shopStatusClass = isShopOpen ? "status-open" : "status-upcoming";
+    let shopDescription = isShopOpen ? "SỰ KIỆN ĐANG DIỄN RA (Đang mở cửa)" : "MỞ LẠI VÀO THÁNG 3 VÀ THÁNG 8 HÀNG NĂM";
 
-// --- MỚI: Reset lượt khi mở cửa ---
-refreshEventTurn('sweetBrewManager', isShopOpen);
-refreshEventTurn('goldenCrustBakery', isShopOpen);
+    const sbElem = document.getElementById('sweetBrewManager');
+    const sbText = document.getElementById('sbText');
+    if (sbElem) {
+        if (sbText) sbText.innerText = shopDescription;
+        updateCardStatus(sbElem, !isShopOpen, shopStatusLabel, shopStatusClass);
+    }
 
-let shopStatusLabel = "";
-let shopStatusClass = "";
-let shopDescription = "";
+    const gcElem = document.getElementById('goldenCrustBakery');
+    const gcText = document.getElementById('gcText');
+    if (gcElem) {
+        if (gcText) gcText.innerText = shopDescription;
+        updateCardStatus(gcElem, !isShopOpen, shopStatusLabel, shopStatusClass);
+    }
 
-if (isShopOpen) {
-    shopDescription = "SỰ KIỆN ĐANG DIỄN RA (Đang mở cửa)";
-    shopStatusLabel = "MỞ CỬA";
-    shopStatusClass = "status-open";
-} else {
-    if (currentTime < startShop1) {
-        shopDescription = "HẸN GẶP LẠI VÀO 01/08/2026";
-        shopStatusLabel = "HẸN GẶP T8/2026";
-        shopStatusClass = "status-upcoming";
-    } else if (currentTime > endShop1 && currentTime < startShop2) {
-        shopDescription = "HẸN GẶP LẠI VÀO 01/03/2027";
-        shopStatusLabel = "HẸN GẶP T3/2027";
-        shopStatusClass = "status-upcoming";
+    // --- LOGIC VÒNG QUAY SIÊU HỜI (Mở từ T5 đến T8) ---
+    const vqStart = new Date(year, 4, 1, 0, 0, 0).getTime();
+    const vqEnd = new Date(year, 7, 31, 23, 59, 59).getTime();
+    const isVQOpen = (currentTime >= vqStart && currentTime <= vqEnd);
+    refreshEventTurn('vongQuaySieuHoi', isVQOpen);
+
+    const vqElem = document.getElementById('vongQuaySieuHoi');
+    const vqText = document.getElementById('vqText');
+
+    let vqStatusLabel = "";
+    let vqStatusClass = "";
+
+    if (isVQOpen) {
+        if (vqText) vqText.innerText = "SỰ KIỆN ĐANG DIỄN RA (Đến 31/08)";
+        vqStatusLabel = "MỞ CỬA";
+        vqStatusClass = "status-open";
+    } else if (currentTime < vqStart) {
+        if (vqText) vqText.innerText = "SỰ KIỆN HÈ: MỞ TỪ 01/05 - 31/08 HÀNG NĂM";
+        vqStatusLabel = "HẸN GẶP 01/05";
+        vqStatusClass = "status-upcoming";
     } else {
-        shopDescription = "SỰ KIỆN ĐÃ KẾT THÚC";
-        shopStatusLabel = "ĐÃ ĐÓNG CỬA";
-        shopStatusClass = "status-closed";
-    }
-}
-
-const sbElem = document.getElementById('sweetBrewManager');
-const sbText = document.getElementById('sbText');
-if (sbElem) {
-    if (sbText) sbText.innerText = shopDescription;
-    updateCardStatus(sbElem, !isShopOpen, shopStatusLabel, shopStatusClass);
-}
-
-const gcElem = document.getElementById('goldenCrustBakery');
-const gcText = document.getElementById('gcText');
-if (gcElem) {
-    if (gcText) gcText.innerText = shopDescription;
-    updateCardStatus(gcElem, !isShopOpen, shopStatusLabel, shopStatusClass);
-}
-
-// --- LOGIC VÒNG QUAY SIÊU HỜI ---
-const vqStart = new Date(2026, 4, 1, 0, 0, 0).getTime();
-const vqEnd = new Date(2026, 7, 31, 23, 59, 59).getTime();
-const isVQOpen = (currentTime >= vqStart && currentTime <= vqEnd);
-
-// --- MỚI: Reset lượt khi mở cửa ---
-refreshEventTurn('vongQuaySieuHoi', isVQOpen);
-
-const vqElem = document.getElementById('vongQuaySieuHoi');
-const vqText = document.getElementById('vqText');
-
-let vqStatusLabel = "";
-let vqStatusClass = "";
-
-if (isVQOpen) {
-    if (vqText) vqText.innerText = "SỰ KIỆN ĐANG DIỄN RA (Đến 31/08)";
-    vqStatusLabel = "MỞ CỬA";
-    vqStatusClass = "status-open";
-} else if (currentTime < vqStart) {
-    if (vqText) vqText.innerText = "SỰ KIỆN HÈ: MỞ TỪ 01/05 - 31/08/2026";
-    vqStatusLabel = "HẸN GẶP 01/05";
-    vqStatusClass = "status-upcoming";
-} else {
-    if (vqText) vqText.innerText = "SỰ KIỆN HÈ ĐÃ KẾT THÚC";
-    vqStatusLabel = "ĐÃ ĐÓNG CỬA";
-    vqStatusClass = "status-closed";
-}
-
-if (vqElem) {
-    updateCardStatus(vqElem, !isVQOpen, vqStatusLabel, vqStatusClass);
-}
-
-// --- LOGIC ĐÀO VÀNG ---
-const dvStart = new Date(2026, 8, 2, 0, 0, 0).getTime();
-const dvEnd = new Date(2026, 8, 6, 23, 59, 59).getTime();
-const isDVOpen = (currentTime >= dvStart && currentTime <= dvEnd);
-
-// --- MỚI: Reset lượt khi mở cửa ---
-refreshEventTurn('daoVang', isDVOpen);
-
-const dvElem = document.getElementById('daoVang');
-const dvTxt = document.getElementById('dvText');
-
-if (dvElem) {
-    let dvLabel = "";
-    let dvClass = "";
-    let dvDesc = "";
-
-    if (isDVOpen) {
-        dvDesc = "SỰ KIỆN ĐANG DIỄN RA (Đến 06/09)";
-        dvLabel = "MỞ CỬA";
-        dvClass = "status-open";
-    } else if (currentTime < dvStart) {
-        dvDesc = "SỰ KIỆN QUỐC KHÁNH: MỞ TỪ 02/09 - 06/09/2026";
-        dvLabel = "HẸN GẶP 02/09";
-        dvClass = "status-upcoming";
-    } else {
-        dvDesc = "SỰ KIỆN QUỐC KHÁNH ĐÃ KẾT THÚC";
-        dvLabel = "ĐÃ ĐÓNG CỬA";
-        dvClass = "status-closed";
+        if (vqText) vqText.innerText = "SỰ KIỆN HÈ ĐÃ KẾT THÚC";
+        vqStatusLabel = "ĐÃ ĐÓNG CỬA";
+        vqStatusClass = "status-closed";
     }
 
-    if (dvTxt) dvTxt.innerText = dvDesc;
-    updateCardStatus(dvElem, !isDVOpen, dvLabel, dvClass);
-}
-
-// --- LOGIC SAOGLE QUIZ ---
-const sqStart = new Date(2026, 9, 10, 0, 0, 0).getTime();
-const sqEnd = new Date(2026, 9, 15, 23, 59, 59).getTime();
-const isSQOpen = (currentTime >= sqStart && currentTime <= sqEnd);
-
-// --- MỚI: Reset lượt khi mở cửa ---
-refreshEventTurn('saogleQuiz', isSQOpen);
-
-const sqElem = document.getElementById('saogleQuiz');
-const sqText = document.getElementById('saogleQuizText');
-
-let sqStatusLabel = "";
-let sqStatusClass = "";
-
-if (isSQOpen) {
-    if (sqText) sqText.innerText = "SỰ KIỆN ĐANG DIỄN RA (Đến 15/10)";
-    sqStatusLabel = "MỞ CỬA";
-    sqStatusClass = "status-open";
-} else if (currentTime < sqStart) {
-    if (sqText) sqText.innerText = "SỰ KIỆN MỞ LẠI VÀO NGÀY 10/10/2026";
-    sqStatusLabel = "HẸN GẶP 10/10";
-    sqStatusClass = "status-upcoming";
-} else {
-    if (sqText) sqText.innerText = "SỰ KIỆN ĐÃ KẾT THÚC";
-    sqStatusLabel = "ĐÃ ĐÓNG CỬA";
-    sqStatusClass = "status-closed";
-}
-
-if (sqElem) {
-    updateCardStatus(sqElem, !isSQOpen, sqStatusLabel, sqStatusClass);
-}
-
-// --- LOGIC LÔ TÔ TẾT (06/02 - 28/02/2027) ---
-const lotoStart = new Date(2027, 1, 6, 0, 0, 0).getTime();
-const lotoEnd = new Date(2027, 1, 28, 23, 59, 59).getTime();
-const isLotoOpen = (currentTime >= lotoStart && currentTime <= lotoEnd);
-
-// --- MỚI: Reset lượt khi mở cửa (Tự động nhận diện 2 lượt từ GAME_LIMITS) ---
-refreshEventTurn('lotoTet', isLotoOpen);
-
-const lotoElem = document.getElementById('lotoTet');
-const lotoTxt = document.getElementById('lotoText');
-
-if (lotoElem) {
-    let lotoLabel = "";
-    let lotoClass = "";
-    let lotoDesc = "";
-
-    if (isLotoOpen) {
-        lotoDesc = "SỰ KIỆN ĐANG DIỄN RA (Đến hết tháng 02)";
-        lotoLabel = "MỞ CỬA";
-        lotoClass = "status-open";
-    } else if (currentTime < lotoStart) {
-        lotoDesc = "SỰ KIỆN TẾT: MỞ TỪ 06/02 - 28/02/2027";
-        lotoLabel = "HẸN GẶP 06/02/2027";
-        lotoClass = "status-upcoming";
-    } else {
-        lotoDesc = "SỰ KIỆN LÔ TÔ TẾT ĐÃ KẾT THÚC";
-        lotoLabel = "ĐÃ ĐÓNG CỬA";
-        lotoClass = "status-closed";
+    if (vqElem) {
+        updateCardStatus(vqElem, !isVQOpen, vqStatusLabel, vqStatusClass);
     }
 
-    if (lotoTxt) lotoTxt.innerText = lotoDesc;
-    updateCardStatus(lotoElem, !isLotoOpen, lotoLabel, lotoClass);
-}
+    // --- LOGIC ĐÀO VÀNG (Mở tháng 9 hàng năm) ---
+    const isDVOpen = (month === 9);
+    refreshEventTurn('daoVang', isDVOpen);
 
-// --- LOGIC TRUY TÌM KHO BÁU ---
-const kbStart1 = new Date(2026, 6, 1, 0, 0, 0).getTime();
-const kbEnd1 = new Date(2026, 6, 3, 23, 59, 59).getTime();
-const kbStart2 = new Date(2026, 10, 3, 0, 0, 0).getTime();
-const kbEnd2 = new Date(2026, 10, 8, 23, 59, 59).getTime();
+    const dvElem = document.getElementById('daoVang');
+    const dvTxt = document.getElementById('dvText');
 
-const isKBOpen = (currentTime >= kbStart1 && currentTime <= kbEnd1) || 
-                 (currentTime >= kbStart2 && currentTime <= kbEnd2);
+    if (dvElem) {
+        let dvLabel = isDVOpen ? "MỞ CỬA" : "HẸN GẶP T9";
+        let dvClass = isDVOpen ? "status-open" : "status-upcoming";
+        let dvDesc = isDVOpen ? "SỰ KIỆN ĐANG DIỄN RA (Tháng 9)" : "MỞ LẠI VÀO THÁNG 9 HÀNG NĂM";
 
-// --- MỚI: Reset lượt khi mở cửa ---
-refreshEventTurn('truyTimKhoBau', isKBOpen);
-
-const kbElem = document.getElementById('truyTimKhoBau');
-const kbTxtArea = document.getElementById('kbText');
-
-let kbStatusLabel = "";
-let kbStatusClass = "";
-
-if (isKBOpen) {
-    if (kbTxtArea) kbTxtArea.innerText = "SỰ KIỆN ĐANG DIỄN RA - TRUY TÌM NGAY!";
-    kbStatusLabel = "MỞ CỬA";
-    kbStatusClass = "status-open";
-} else {
-    if (currentTime < kbStart1) {
-        if (kbTxtArea) kbTxtArea.innerText = "ĐỢT 1: MỞ TỪ 01/07 - 03/07/2026";
-        kbStatusLabel = "HẸN GẶP 01/07";
-        kbStatusClass = "status-upcoming";
-    } else if (currentTime > kbEnd1 && currentTime < kbStart2) {
-        if (kbTxtArea) kbTxtArea.innerText = "ĐỢT 2: MỞ TỪ 03/11 - 08/11/2026";
-        kbStatusLabel = "HẸN GẶP 03/11";
-        kbStatusClass = "status-upcoming";
-    } else {
-        if (kbTxtArea) kbTxtArea.innerText = "SỰ KIỆN TRUY TÌM KHO BÁU ĐÃ KẾT THÚC";
-        kbStatusLabel = "ĐÃ ĐÓNG CỬA";
-        kbStatusClass = "status-closed";
-    }
-}
-
-if (kbElem) {
-    updateCardStatus(kbElem, !isKBOpen, kbStatusLabel, kbStatusClass);
-}
-
-// --- LOGIC GIÁNG SINH ---
-const startNoel = new Date(2026, 11, 1, 0, 0, 0).getTime();
-const endNoel = new Date(2026, 11, 31, 23, 59, 59).getTime();
-const isNoelOpen = (currentTime >= startNoel && currentTime <= endNoel);
-
-// --- MỚI: Reset lượt khi mở cửa ---
-refreshEventTurn('santaWorkshop', isNoelOpen);
-refreshEventTurn('suKienNoel', isNoelOpen);
-
-let noelStatusLabel = "";
-let noelStatusClass = "";
-let noelDescription = "";
-
-if (isNoelOpen) {
-    noelDescription = "SỰ KIỆN ĐANG DIỄN RA (Chúc mừng Giáng Sinh!)";
-    noelStatusLabel = "MỞ CỬA";
-    noelStatusClass = "status-open";
-} else if (currentTime < startNoel) {
-    noelDescription = "MỞ CỬA TỪ 01/12 - 31/12/2026";
-    noelStatusLabel = "HẸN GẶP T12";
-    noelStatusClass = "status-upcoming";
-} else {
-    noelDescription = "SỰ KIỆN GIÁNG SINH ĐÃ KẾT THÚC";
-    noelStatusLabel = "ĐÃ ĐÓNG CỬA";
-    noelStatusClass = "status-closed";
-}
-
-const santaElem = document.getElementById('santaWorkshop');
-const santaTxt = document.getElementById('santaText');
-if (santaElem) {
-    if (santaTxt) santaTxt.innerText = noelDescription;
-    updateCardStatus(santaElem, !isNoelOpen, noelStatusLabel, noelStatusClass);
-}
-
-const noelElem = document.getElementById('suKienNoel');
-const noelTxt = document.getElementById('noelText');
-if (noelElem) {
-    if (noelTxt) noelTxt.innerText = noelDescription;
-    updateCardStatus(noelElem, !isNoelOpen, noelStatusLabel, noelStatusClass);
-}
-
-// --- LOGIC LÌ XÌ NĂM MỚI ---
-const lxStart = new Date(2027, 0, 1, 0, 0, 0).getTime();
-const lxEnd = new Date(2027, 0, 3, 23, 59, 59).getTime();
-const isLiXiOpen = (currentTime >= lxStart && currentTime <= lxEnd);
-
-// --- MỚI: Reset lượt khi mở cửa ---
-refreshEventTurn('liXiNamMoi', isLiXiOpen);
-
-const lxElem = document.getElementById('liXiNamMoi');
-const lxTxt = document.getElementById('lixiText');
-
-if (lxElem) {
-    let lxLabel = "";
-    let lxClass = "";
-    let lxDesc = "";
-
-    if (isLiXiOpen) {
-        lxDesc = "SỰ KIỆN ĐANG DIỄN RA - NHẬN LÌ XÌ NGAY!";
-        lxLabel = "NHẬN LÌ XÌ";
-        lxClass = "status-open";
-    } else if (currentTime < lxStart) {
-        lxDesc = "CHỈ MỞ TỪ 01/01 - 03/01/2027";
-        lxLabel = "HẸN GẶP TẾT 2027";
-        lxClass = "status-upcoming";
-    } else {
-        lxDesc = "SỰ KIỆN LÌ XÌ NĂM MỚI ĐÃ KẾT THÚC";
-        lxLabel = "ĐÃ ĐÓNG CỬA";
-        lxClass = "status-closed";
+        if (dvTxt) dvTxt.innerText = dvDesc;
+        updateCardStatus(dvElem, !isDVOpen, dvLabel, dvClass);
     }
 
-    if (lxTxt) lxTxt.innerText = lxDesc;
-    updateCardStatus(lxElem, !isLiXiOpen, lxLabel, lxClass);
-}
+    // --- LOGIC SAOGLE QUIZ (Mở tháng 10 hàng năm) ---
+    const isSQOpen = (month === 10);
+    refreshEventTurn('saogleQuiz', isSQOpen);
+
+    const sqElem = document.getElementById('saogleQuiz');
+    const sqText = document.getElementById('saogleQuizText');
+
+    let sqStatusLabel = isSQOpen ? "MỞ CỬA" : "HẸN GẶP T10";
+    let sqStatusClass = isSQOpen ? "status-open" : "status-upcoming";
+    let sqDesc = isSQOpen ? "SỰ KIỆN ĐANG DIỄN RA (Tháng 10)" : "MỞ LẠI VÀO THÁNG 10 HÀNG NĂM";
+
+    if (sqElem) {
+        if (sqText) sqText.innerText = sqDesc;
+        updateCardStatus(sqElem, !isSQOpen, sqStatusLabel, sqStatusClass);
+    }
+
+    // --- LOGIC LÔ TÔ TẾT (06/02 - 28/02) ---
+    const lotoStart = new Date(year, 1, 6, 0, 0, 0).getTime();
+    const lotoEnd = new Date(year, 1, 28, 23, 59, 59).getTime();
+    const isLotoOpen = (currentTime >= lotoStart && currentTime <= lotoEnd);
+    refreshEventTurn('lotoTet', isLotoOpen);
+
+    const lotoElem = document.getElementById('lotoTet');
+    const lotoTxt = document.getElementById('lotoText');
+
+    if (lotoElem) {
+        let lotoLabel = isLotoOpen ? "MỞ CỬA" : (currentTime < lotoStart ? "HẸN GẶP 06/02" : "ĐÃ ĐÓNG CỬA");
+        let lotoClass = isLotoOpen ? "status-open" : (currentTime < lotoStart ? "status-upcoming" : "status-closed");
+        let lotoDesc = isLotoOpen ? "SỰ KIỆN ĐANG DIỄN RA (Đến hết tháng 02)" : "SỰ KIỆN TẾT: MỞ TỪ 06/02 - 28/02 HÀNG NĂM";
+
+        if (lotoTxt) lotoTxt.innerText = lotoDesc;
+        updateCardStatus(lotoElem, !isLotoOpen, lotoLabel, lotoClass);
+    }
+
+    // --- LOGIC TRUY TÌM KHO BÁU (Mở tháng 7 và tháng 11 hàng năm) ---
+    const isKBOpen = (month === 7 || month === 11);
+    refreshEventTurn('truyTimKhoBau', isKBOpen);
+
+    const kbElem = document.getElementById('truyTimKhoBau');
+    const kbTxtArea = document.getElementById('kbText');
+
+    let kbStatusLabel = isKBOpen ? "MỞ CỬA" : "HẸN T7 & T11";
+    let kbStatusClass = isKBOpen ? "status-open" : "status-upcoming";
+    let kbDesc = isKBOpen ? "SỰ KIỆN ĐANG DIỄN RA - TRUY TÌM NGAY!" : "MỞ LẠI VÀO THÁNG 7 VÀ THÁNG 11 HÀNG NĂM";
+
+    if (kbElem) {
+        if (kbTxtArea) kbTxtArea.innerText = kbDesc;
+        updateCardStatus(kbElem, !isKBOpen, kbStatusLabel, kbStatusClass);
+    }
+
+    // --- LOGIC GIÁNG SINH (Santa Workshop & Sự kiện Noel - Mở tháng 12 hàng năm) ---
+    const isNoelOpen = (month === 12);
+    refreshEventTurn('santaWorkshop', isNoelOpen);
+    refreshEventTurn('suKienNoel', isNoelOpen);
+
+    let noelStatusLabel = isNoelOpen ? "MỞ CỬA" : "HẸN GẶP T12";
+    let noelStatusClass = isNoelOpen ? "status-open" : "status-upcoming";
+    let noelDescription = isNoelOpen ? "SỰ KIỆN ĐANG DIỄN RA (Chúc mừng Giáng Sinh!)" : "MỞ CỬA THÁNG 12 HÀNG NĂM";
+
+    const santaElem = document.getElementById('santaWorkshop');
+    const santaTxt = document.getElementById('santaText');
+    if (santaElem) {
+        if (santaTxt) santaTxt.innerText = noelDescription;
+        updateCardStatus(santaElem, !isNoelOpen, noelStatusLabel, noelStatusClass);
+    }
+
+    const noelElem = document.getElementById('suKienNoel');
+    const noelTxt = document.getElementById('noelText');
+    if (noelElem) {
+        if (noelTxt) noelTxt.innerText = noelDescription;
+        updateCardStatus(noelElem, !isNoelOpen, noelStatusLabel, noelStatusClass);
+    }
+
+    // --- LOGIC LÌ XÌ NĂM MỚI (Mở ngày 1, 2, 3 tháng 1 hàng năm) ---
+    const isLiXiOpen = (month === 1 && date >= 1 && date <= 3);
+    refreshEventTurn('liXiNamMoi', isLiXiOpen);
+
+    const lxElem = document.getElementById('liXiNamMoi');
+    const lxTxt = document.getElementById('lixiText');
+
+    if (lxElem) {
+        let lxLabel = isLiXiOpen ? "NHẬN LÌ XÌ" : "HẸN GẶP 01/01";
+        let lxClass = isLiXiOpen ? "status-open" : "status-upcoming";
+        let lxDesc = isLiXiOpen ? "SỰ KIỆN ĐANG DIỄN RA - NHẬN LÌ XÌ NGAY!" : "CHỈ MỞ TỪ NGÀY 01/01 ĐẾN 03/01 HÀNG NĂM";
+
+        if (lxTxt) lxTxt.innerText = lxDesc;
+        updateCardStatus(lxElem, !isLiXiOpen, lxLabel, lxClass);
+    }
 
     // Cửa hàng bán cá (Mở từ 1/3/2026)
     const openDateCa = new Date('2026-03-01T00:00:00');
@@ -11858,10 +11705,11 @@ if (lxElem) {
     const isVeCaoActive = currentTime >= reOpenDateVeCao && day === 5;
     updateCardStatus(document.getElementById('veCaoNgotNgao'), !isVeCaoActive, isVeCaoActive ? "ĐANG MỞ CỬA" : (currentTime < reOpenDateVeCao ? "HẸN 23/1" : "CHỈ MỞ THỨ 6"), isVeCaoActive ? "status-open" : "status-closed");
 
-    // --- LOGIC TÌM ĐIỂM KHÁC NHAU (Tối ưu trạng thái hiển thị) ---
-    const startTDKN = new Date(2026, 4, 5, 0, 0, 0).getTime(); // 05/05
-    const endTDKN = new Date(2026, 4, 11, 0, 0, 0).getTime();  // Hết 10/05
+    // --- LOGIC TÌM ĐIỂM KHÁC NHAU (Mở 05/05 đến hết 10/05 hàng năm) ---
+    const startTDKN = new Date(year, 4, 5, 0, 0, 0).getTime(); // 05/05
+    const endTDKN = new Date(year, 4, 11, 0, 0, 0).getTime();   // Hết 10/05 (trước 11/05)
     const isTDKNOpen = (currentTime >= startTDKN && currentTime < endTDKN);
+    refreshEventTurn('timDiemKhacNhau', isTDKNOpen);
     
     const tdknElem = document.getElementById('timDiemKhacNhau');
     const tdknText = document.getElementById('timDiemText');
@@ -11870,77 +11718,68 @@ if (lxElem) {
     let tdknStatusClass = "";
 
     if (isTDKNOpen) {
-        // ĐANG TRONG THỜI GIAN SỰ KIỆN
         if (tdknText) tdknText.innerText = "SỰ KIỆN ĐANG DIỄN RA (Đến 10/05)";
         tdknStatusLabel = "MỞ CỬA";
         tdknStatusClass = "status-open";
     } else if (currentTime < startTDKN) {
-        // CHƯA ĐẾN NGÀY MỞ (SẮP RA MẮT)
-        if (tdknText) tdknText.innerText = "MỞ GIỚI HẠN TỪ 05/05 - 10/05/2026";
+        if (tdknText) tdknText.innerText = "MỞ GIỚI HẠN TỪ 05/05 - 10/05 HÀNG NĂM";
         tdknStatusLabel = "CHƯA MỞ CỬA";
-        tdknStatusClass = "status-upcoming"; // Dùng màu vàng/cam để báo hiệu sắp tới
+        tdknStatusClass = "status-upcoming";
     } else {
-        // ĐÃ QUA NGÀY 10/05 (SỰ KIỆN KẾT THÚC)
         if (tdknText) tdknText.innerText = "SỰ KIỆN ĐÃ KẾT THÚC";
         tdknStatusLabel = "ĐÃ ĐÓNG CỬA";
-        tdknStatusClass = "status-closed"; // Dùng màu hồng/đỏ để báo kết thúc
+        tdknStatusClass = "status-closed";
     }
 
     if (tdknElem) {
         updateCardStatus(tdknElem, !isTDKNOpen, tdknStatusLabel, tdknStatusClass);
     }
     
-    // --- LOGIC XẾP HÌNH (Tự động thay đổi text & trạng thái) ---
-const startXH = new Date(2026, 3, 1, 0, 0, 0).getTime(); // 01/04
-const endXH = new Date(2026, 3, 5, 23, 59, 59).getTime(); // Hết ngày 05/04
-const isXHOpen = (currentTime >= startXH && currentTime <= endXH);
+    // --- LOGIC XẾP HÌNH (Mở 01/04 đến hết 05/04 hàng năm) ---
+    const startXH = new Date(year, 3, 1, 0, 0, 0).getTime(); // 01/04
+    const endXH = new Date(year, 3, 6, 0, 0, 0).getTime();    // Hết 05/04 (trước 06/04)
+    const isXHOpen = (currentTime >= startXH && currentTime < endXH);
+    refreshEventTurn('xepHinh', isXHOpen);
 
-const xhElem = document.getElementById('xepHinh');
-const xhText = document.getElementById('xepHinhText');
+    const xhElem = document.getElementById('xepHinh');
+    const xhText = document.getElementById('xepHinhText');
 
-let xhStatusLabel = "";
-let xhStatusClass = "";
+    let xhStatusLabel = "";
+    let xhStatusClass = "";
 
-if (isXHOpen) {
-    // 1. TRONG THỜI GIAN SỰ KIỆN
-    if (xhText) xhText.innerText = "SỰ KIỆN ĐANG DIỄN RA (Đến 05/04)";
-    xhStatusLabel = "MỞ CỬA";
-    xhStatusClass = "status-open";
-} else if (currentTime < startXH) {
-    // 2. TRƯỚC NGÀY MỞ
-    if (xhText) xhText.innerText = "MỞ GIỚI HẠN TỪ 01/04 - 05/04/2026";
-    xhStatusLabel = "CHƯA MỞ CỬA";
-    xhStatusClass = "status-upcoming";
-} else {
-    // 3. SAU KHI KẾT THÚC
-    if (xhText) xhText.innerText = "SỰ KIỆN ĐÃ KẾT THÚC";
-    xhStatusLabel = "ĐÃ ĐÓNG CỬA";
-    xhStatusClass = "status-closed";
-}
+    if (isXHOpen) {
+        if (xhText) xhText.innerText = "SỰ KIỆN ĐANG DIỄN RA (Đến 05/04)";
+        xhStatusLabel = "MỞ CỬA";
+        xhStatusClass = "status-open";
+    } else if (currentTime < startXH) {
+        if (xhText) xhText.innerText = "MỞ GIỚI HẠN TỪ 01/04 - 05/04 HÀNG NĂM";
+        xhStatusLabel = "CHƯA MỞ CỬA";
+        xhStatusClass = "status-upcoming";
+    } else {
+        if (xhText) xhText.innerText = "SỰ KIỆN ĐÃ KẾT THÚC";
+        xhStatusLabel = "ĐÃ ĐÓNG CỬA";
+        xhStatusClass = "status-closed";
+    }
 
-if (xhElem) {
-    // Cập nhật trạng thái card và khóa link nếu không phải thời gian mở
-    updateCardStatus(xhElem, !isXHOpen, xhStatusLabel, xhStatusClass);
-}
-    // --- LOGIC GAME CUỐI TUẦN (PHÂN CẤP THỜI GIAN) ---
+    if (xhElem) {
+        updateCardStatus(xhElem, !isXHOpen, xhStatusLabel, xhStatusClass);
+    }
+
+    // --- LOGIC GAME CUỐI TUẦN ---
     const isWeekend = (day === 6 || day === 0);
     const isAprilOpen = (year === 2026 && month >= 4) || year > 2026;
     const canOpenWeekend = isWeekend && isAprilOpen;
 
-    // 1. Xử lý Flappy Pink & Đập Chuột
     let weekendStatusText = "";
     let weekendStatusClass = "";
 
     if (!isAprilOpen) {
-        // Trường hợp chưa đến tháng 4/2026
         weekendStatusText = "CHƯA MỞ CỬA (Hẹn T4/2026)";
         weekendStatusClass = "status-upcoming";
     } else if (isAprilOpen && !isWeekend) {
-        // Đã đến tháng 4 nhưng đang là Thứ 2 - Thứ 6
         weekendStatusText = "ĐÓNG CỬA (Giữa tuần)";
         weekendStatusClass = "status-closed";
     } else {
-        // Đang trong tháng 4 và là Thứ 7/CN
         weekendStatusText = "MỞ CỬA";
         weekendStatusClass = "status-open";
     }
@@ -11948,7 +11787,6 @@ if (xhElem) {
     updateCardStatus(document.getElementById('flappyPink'), !canOpenWeekend, weekendStatusText, weekendStatusClass);
     updateCardStatus(document.getElementById('dapChuột'), !canOpenWeekend, weekendStatusText, weekendStatusClass);
 
-    // 2. Xử lý Kebab Chef (Mở vĩnh viễn cuối tuần, không đợi tháng 4)
     updateCardStatus(
         document.getElementById('kebabChef'), 
         !isWeekend, 
@@ -11974,32 +11812,27 @@ if (xhElem) {
         updateCardStatus(document.getElementById(id), false, 'MỞ CỬA', 'status-open');
     });
 
-   // --- 3. LOGIC ƯU ĐÃI THỎ PHIÊU LƯU & ZONE ACCESS ---
-// Kiểm tra xem userData và gamePlays có tồn tại không trước khi truy cập
-const isNhanGiongDone = (userData && userData.gamePlays && userData.gamePlays['cuaHangNhanGiong']) 
-                        ? userData.gamePlays['cuaHangNhanGiong'].count > 0 
-                        : false;
+    // --- 3. LOGIC ƯU ĐÃI THỎ PHIÊU LƯU & ZONE ACCESS ---
+    const isNhanGiongDone = (userData && userData.gamePlays && userData.gamePlays['cuaHangNhanGiong']) 
+                            ? userData.gamePlays['cuaHangNhanGiong'].count > 0 
+                            : false;
 
-const thoCard = document.getElementById('thoPhieuLuuVoTan');
+    const thoCard = document.getElementById('thoPhieuLuuVoTan');
 
-if (thoCard) {
-    const fee = isNhanGiongDone ? 25000 : 30000;
-    thoCard.setAttribute('data-fee', fee);
-    const costText = thoCard.querySelector('.cost');
-    
-    if (costText) {
-        costText.innerText = `PHÍ: ${fee.toLocaleString()} ĐỒNG ${isNhanGiongDone ? '(ƯU ĐÃI)' : ''}`;
-        costText.style.color = isNhanGiongDone ? "#28a745" : "#d63384";
+    if (thoCard) {
+        const fee = isNhanGiongDone ? 25000 : 30000;
+        thoCard.setAttribute('data-fee', fee);
+        const costText = thoCard.querySelector('.cost');
+        
+        if (costText) {
+            costText.innerText = `PHÍ: ${fee.toLocaleString()} ĐỒNG ${isNhanGiongDone ? '(ƯU ĐÃI)' : ''}`;
+            costText.style.color = isNhanGiongDone ? "#28a745" : "#d63384";
+        }
+
+        updateCardStatus(thoCard, false, 'MỞ CỬA', 'status-open');
     }
-
-    // --- DÒNG QUAN TRỌNG: Cập nhật trạng thái để hết hiện "Đang kiểm tra" ---
-    // Vì game này mở vĩnh viễn, ta để disabled là false và hiện "MỞ CỬA"
-    updateCardStatus(thoCard, false, 'MỞ CỬA', 'status-open');
-}
     
     checkPiggyInterest();
-    // (Lưu ý: Bạn cần gọi hàm xử lý Zone Access tại đây nếu nó nằm riêng lẻ)
-    // Logic Zone Access giữ nguyên như cũ...
 
     // --- MỚI: LOGIC KIỂM TRA PHÍ KHU VỰC (ZONE ACCESS) ---
 if (!userData.zoneAccess) userData.zoneAccess = {};
