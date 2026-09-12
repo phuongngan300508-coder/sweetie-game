@@ -21878,15 +21878,21 @@ function initGlobalChat() {
     const inputField = document.getElementById('global-input');
     if (inputField && !inputField.dataset.listener) {
         
+        // Ép bàn phím di động hiển thị nút "Xuống dòng" (Enter) thay vì "Gửi" / "Hoàn tất"
+        inputField.setAttribute('enterkeyhint', 'enter');
+
         // Bắt sự kiện bàn phím
         inputField.addEventListener('keydown', (e) => {
-            // Kiểm tra xem người dùng có dùng màn hình cảm ứng / di động không
-            const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+            // Kiểm tra chính xác thiết bị di động (Bao gồm Cảm ứng & User Agent)
+            const isMobile = ('ontouchstart' in window) || 
+                             (navigator.maxTouchPoints > 0) || 
+                             /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
             if (e.key === 'Enter') {
                 if (isMobile) {
-                    // TRÊN ĐIỆN THOẠI: Phím Enter/Xuống dòng trên bàn phím ảo sẽ chỉ XUỐNG DÒNG
-                    // Người dùng bấm nút Gửi (Send icon) trên màn hình để gửi tin.
+                    // TRÊN ĐIỆN THOẠI: Bấm Enter/Xuống dòng chỉ thêm dòng mới
+                    // Người dùng sẽ bấm nút Gửi trên giao diện ứng dụng để gửi tin nhắn
+                    e.stopPropagation();
                     return;
                 } else {
                     // TRÊN MÁY TÍNH:
@@ -21904,10 +21910,10 @@ function initGlobalChat() {
             }
         });
 
-        // Tự động điều chỉnh chiều cao textarea theo độ dài văn bản khi gõ
+        // Tự động điều chỉnh chiều cao textarea theo độ dài văn bản khi gõ hoặc xuống dòng
         inputField.addEventListener('input', function() {
             this.style.height = 'auto';
-            this.style.height = Math.min(this.scrollHeight, 100) + 'px';
+            this.style.height = Math.min(this.scrollHeight, 120) + 'px';
         });
 
         inputField.dataset.listener = "true"; 
@@ -21921,7 +21927,6 @@ function sendGlobalMessage() {
     if (!text || !currentUser) return;
 
     const msgData = {
-        // SỬA TẠI ĐÂY: Dùng UID (SGW...) thay vì tên để khi ấn avatar có thể tìm đúng profile
         sender: userData.profile.uid, 
         senderName: userData.profile.name,
         senderAvatar: userData.profile.customAvatar || "",
