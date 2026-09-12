@@ -14120,25 +14120,44 @@ const CAROUSEL_EVENTS = [
 ];
 
 const GAME_SCHEDULE = [
+    // --- CÁC SỰ KIỆN NĂM 2026 ---
+    { id: 'saogleQuiz', title: 'SAOGLE QUIZ (2026)', start: '2026-10-10', end: '2026-10-16', icon: 'fa-question-circle', bg: 'eye-bg' },
+    { id: 'truyTimKhoBau', title: 'TRUY TÌM KHO BÁU (ĐÔNG 2026)', start: '2026-11-01', end: '2026-11-07', icon: 'fa-map-marked-alt', bg: 'summer-bg' },
+    { id: 'santaWorkshop', title: 'SANTA\'S WORKSHOP (2026)', start: '2026-12-01', end: '2027-01-01', icon: 'fa-gifts', bg: 'xmas-bg' },
+    { id: 'suKienNoel', title: 'SỰ KIỆN NOEL (2026)', start: '2026-12-01', end: '2027-01-01', icon: 'fa-tree', bg: 'xmas-bg' },
 
-    // Saogle Quiz (Tháng 10)
-    { id: 'saogleQuiz', title: 'SAOGLE QUIZ', start: '2026-10-10', end: '2026-10-16', icon: 'fa-question-circle', bg: 'eye-bg' },
-
-    // Truy tìm kho báu đợt 2 (Tháng 11)
-    { id: 'truyTimKhoBau', title: 'TRUY TÌM KHO BÁU (ĐÔNG)', start: '2026-11-03', end: '2026-11-09', icon: 'fa-map-marked-alt', bg: 'summer-bg' },
-
-    // Santa Workshop (Tháng 12)
-    { id: 'santaWorkshop', title: 'SANTA\'S WORKSHOP', start: '2026-12-01', end: '2027-01-01', icon: 'fa-gifts', bg: 'xmas-bg' },
-
-    { id: 'suKienNoel', title: 'SỰ KIỆN NOEL', start: '2026-12-01', end: '2027-01-01', icon: 'fa-tree', bg: 'xmas-bg' },
-    // --- SỰ KIỆN ĐẦU NĂM 2027 ---
+    // --- CÁC SỰ KIỆN ĐẦU NĂM 2027 ---
     { id: 'nguachien', title: 'NGỰA CHIẾN (TẾT 2027)', start: '2027-01-01', end: '2027-02-01', icon: 'fa-horse', bg: 'dv-bg' },
     { id: 'liXiNamMoi', title: 'LÌ XÌ NĂM MỚI 2027', start: '2027-01-01', end: '2027-01-04', icon: 'fa-envelope-open-text', bg: 'lt-bg' },
     { id: 'valentineQuest', title: 'VALENTINE\'S QUEST', start: '2027-02-01', end: '2027-03-01', icon: 'fa-heart', bg: 'cafe-bg' },
     { id: 'lotoTet', title: 'LÔ TÔ TẾT 2027', start: '2027-02-06', end: '2027-03-01', icon: 'fa-receipt', bg: 'lt-bg' },
-// --- THÁNG 3 NĂM 2027 (MỚI BỔ SUNG) ---
+
+    // --- CÁC SỰ KIỆN MỞ LẠI TRONG NĂM 2027 ---
     { id: 'sweetBrewManager', title: 'SWEET BREW MANAGER (2027)', start: '2027-03-01', end: '2027-04-01', icon: 'fa-coffee', bg: 'cafe-bg' },
-    { id: 'goldenCrustBakery', title: 'GOLDEN CRUST BAKERY (2027)', start: '2027-03-01', end: '2027-04-01', icon: 'fa-birthday-cake', bg: 'bakery-bg' }
+    { id: 'goldenCrustBakery', title: 'GOLDEN CRUST BAKERY (2027)', start: '2027-03-01', end: '2027-04-01', icon: 'fa-birthday-cake', bg: 'bakery-bg' },
+    { id: 'xepHinh', title: 'XẾP HÌNH (BLOCK BLAST 2027)', start: '2027-04-01', end: '2027-04-06', icon: 'fa-th-large', bg: 'game-bg' },
+    { id: 'vongQuaySieuHoi', title: 'VÒNG QUAY SIÊU HỜI (2027)', start: '2027-05-01', end: '2027-09-01', icon: 'fa-dharmachakra', bg: 'vq-bg' },
+    { id: 'timDiemKhacNhau', title: 'TÌM ĐIỂM KHÁC NHAU (2027)', start: '2027-05-05', end: '2027-05-11', icon: 'fa-eye', bg: 'eye-bg' },
+
+    // Truy tìm kho báu đợt 1 năm 2027 (01/07 - hết 06/07/2027)
+    { id: 'truyTimKhoBau', title: 'TRUY TÌM KHO BÁU (HÈ 2027)', start: '2027-07-01', end: '2027-07-07', icon: 'fa-map-marked-alt', bg: 'summer-bg' },
+
+    // Sweet Brew & Bakery đợt tháng 8/2027
+    { id: 'sweetBrewManager', title: 'SWEET BREW MANAGER(RE-OPEN 2027)', start: '2027-08-01', end: '2027-09-01', icon: 'fa-coffee', bg: 'cafe-bg' },
+    { id: 'goldenCrustBakery', title: 'GOLDEN CRUST BAKERY (RE-OPEN 2027)', start: '2027-08-01', end: '2027-09-01', icon: 'fa-birthday-cake', bg: 'bakery-bg' },
+
+    // Đào vàng dịp lễ 2/9 năm 2027 (02/09 - hết 07/09/2027)
+    { id: 'daoVang', title: 'ĐÀO VÀNG (LỄ 2/9 2027)', start: '2027-09-02', end: '2027-09-08', icon: 'fa-gem', bg: 'dv-bg' },
+
+    // Saogle Quiz (Tháng 10/2027)
+    { id: 'saogleQuiz', title: 'SAOGLE QUIZ (2027)', start: '2027-10-10', end: '2027-10-16', icon: 'fa-question-circle', bg: 'eye-bg' },
+
+    // Truy tìm kho báu đợt 2 năm 2027 (01/11 - hết 06/11/2027)
+    { id: 'truyTimKhoBau', title: 'TRUY TÌM KHO BÁU (ĐÔNG 2027)', start: '2027-11-01', end: '2027-11-07', icon: 'fa-map-marked-alt', bg: 'summer-bg' },
+
+    // Santa Workshop & Noel năm 2027 (Tháng 12/2027)
+    { id: 'santaWorkshop', title: 'SANTA\'S WORKSHOP (2027)', start: '2027-12-01', end: '2028-01-01', icon: 'fa-gifts', bg: 'xmas-bg' },
+    { id: 'suKienNoel', title: 'SỰ KIỆN NOEL (2027)', start: '2027-12-01', end: '2028-01-01', icon: 'fa-tree', bg: 'xmas-bg' }
 ];
 
 let currentSlide = 0;
