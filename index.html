@@ -21874,34 +21874,32 @@ function initGlobalChat() {
         }
     });
 
-    // 4. XỬ LÝ NHẬP LIỆU & XUỐNG DÒNG DÀNH CHO CẢ MÁY TÍNH VÀ ĐIỆN THOẠI
+    // 4. XỬ LÝ NHẬP LIỆU & XUỐNG DÒNG (ĐÃ SỬA CHÍNH XÁC LOGIC XUỐNG DÒNG)
     const inputField = document.getElementById('global-input');
     if (inputField && !inputField.dataset.listener) {
         
-        // Ép bàn phím di động hiển thị nút "Xuống dòng" (Enter) thay vì "Gửi" / "Hoàn tất"
+        // Gợi ý bàn phím điện thoại hiển thị phím xuống dòng
         inputField.setAttribute('enterkeyhint', 'enter');
 
-        // Bắt sự kiện bàn phím
         inputField.addEventListener('keydown', (e) => {
-            // Kiểm tra chính xác thiết bị di động (Bao gồm Cảm ứng & User Agent)
+            // Kiểm tra xem thiết bị có phải di động hay không
             const isMobile = ('ontouchstart' in window) || 
                              (navigator.maxTouchPoints > 0) || 
                              /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
             if (e.key === 'Enter') {
                 if (isMobile) {
-                    // TRÊN ĐIỆN THOẠI: Bấm Enter/Xuống dòng chỉ thêm dòng mới
-                    // Người dùng sẽ bấm nút Gửi trên giao diện ứng dụng để gửi tin nhắn
-                    e.stopPropagation();
+                    // TRÊN ĐIỆN THOẠI:
+                    // Không gọi e.preventDefault(), cho phép trình duyệt chèn ký tự xuống dòng (\n) tự nhiên
                     return;
                 } else {
                     // TRÊN MÁY TÍNH:
                     if (e.shiftKey) {
-                        // Shift + Enter -> Xuống dòng
+                        // Shift + Enter -> Cho phép xuống dòng tự nhiên
                         return;
                     } else {
-                        // Enter -> Gửi tin nhắn
-                        e.preventDefault();
+                        // Bấm Enter đơn lẻ -> Gửi tin nhắn
+                        e.preventDefault(); 
                         if (typeof sendGlobalMessage === 'function') {
                             sendGlobalMessage();
                         }
@@ -21910,7 +21908,7 @@ function initGlobalChat() {
             }
         });
 
-        // Tự động điều chỉnh chiều cao textarea theo độ dài văn bản khi gõ hoặc xuống dòng
+        // Tự động điều chỉnh chiều cao ô nhập khi xuống dòng hoặc gõ đoạn văn dài
         inputField.addEventListener('input', function() {
             this.style.height = 'auto';
             this.style.height = Math.min(this.scrollHeight, 120) + 'px';
@@ -21938,7 +21936,7 @@ function sendGlobalMessage() {
 
     db.ref('global_chat/messages').push(msgData).then(() => {
         input.value = ""; 
-        input.style.height = 'auto'; // Reset chiều cao ô textarea về mặc định sau khi gửi
+        input.style.height = 'auto'; // Reset chiều cao ô textarea về mặc định
         input.focus();
         
         // Cuộn xuống sau khi gửi
@@ -21960,7 +21958,7 @@ function escapeHtml(text) {
         .replace(/'/g, "&#039;");
 }
 
-// --- 3. HIỂN THỊ TIN NHẮN (Style giống thế giới Liên Quân) ---
+// --- 3. HIỂN THỊ TIN NHẮN ---
 async function renderGlobalMessage(id, msg) {
     const area = document.getElementById('global-messages-area');
     if (!area) return;
@@ -21978,7 +21976,7 @@ async function renderGlobalMessage(id, msg) {
     let messageBodyHtml = "";
 
     if (msg.redPacketId) {
-        // --- HIỂN THỊ KHUNG LÌ XÌ TRƯỚC (KHÔNG DÙNG AWAIT) ---
+        // --- HIỂN THỊ KHUNG LÌ XÌ ---
         const rawText = msg.text ? msg.text.replace('🧧 ', '') : "Chúc mừng năm mới!";
         const displayMsg = escapeHtml(rawText);
         const redPacketColor = "#ff1493"; 
@@ -22023,7 +22021,6 @@ async function renderGlobalMessage(id, msg) {
             </style>
         `;
 
-        // Lắng nghe trạng thái Real-time để cập nhật UI sau khi render xong
         db.ref(`global_chat/red_packets/${msg.redPacketId}`).on('value', (snap) => {
             const data = snap.val();
             const el = document.getElementById(`rp-${msg.redPacketId}`);
@@ -22060,7 +22057,6 @@ async function renderGlobalMessage(id, msg) {
         `;
     }
 
-    // --- PHẦN RENDER CHUNG: CHÈN VÀO CUỐI THEO TRÌNH TỰ THỜI GIAN ---
     const html = `
         <div class="animate__animated animate__fadeInUp" style="display: flex; gap: 8px; ${isMe ? 'flex-direction: row-reverse;' : 'flex-direction: row;'} align-items: flex-start; margin-bottom: 8px;">
             <div onclick="searchFriendByID('${msg.sender}')" style="cursor:pointer; flex-shrink: 0;">
