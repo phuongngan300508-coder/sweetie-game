@@ -11561,35 +11561,21 @@ function checkMinigameStatus() {
         updateCardStatus(gcElem, !isShopOpen, shopStatusLabel, shopStatusClass);
     }
 
-    // --- LOGIC VÒNG QUAY SIÊU HỜI (Mở từ T5 đến T8) ---
-    const vqStart = new Date(year, 4, 1, 0, 0, 0).getTime();
-    const vqEnd = new Date(year, 7, 31, 23, 59, 59).getTime();
-    const isVQOpen = (currentTime >= vqStart && currentTime <= vqEnd);
-    refreshEventTurn('vongQuaySieuHoi', isVQOpen);
+   // --- LOGIC VÒNG QUAY SIÊU HỜI (Mở từ T5 đến T8 hàng năm) ---
+const isVQOpen = (month >= 5 && month <= 8);
+refreshEventTurn('vongQuaySieuHoi', isVQOpen);
 
-    const vqElem = document.getElementById('vongQuaySieuHoi');
-    const vqText = document.getElementById('vqText');
+const vqElem = document.getElementById('vongQuaySieuHoi');
+const vqText = document.getElementById('vqText');
 
-    let vqStatusLabel = "";
-    let vqStatusClass = "";
+if (vqElem) {
+    let vqStatusLabel = isVQOpen ? "MỞ CỬA" : "HẸN GẶP 01/05";
+    let vqStatusClass = isVQOpen ? "status-open" : "status-upcoming";
+    let vqDesc = isVQOpen ? "SỰ KIỆN ĐANG DIỄN RA (Đến 31/08)" : "SỰ KIỆN HÈ: MỞ TỪ 01/05 - 31/08 HÀNG NĂM";
 
-    if (isVQOpen) {
-        if (vqText) vqText.innerText = "SỰ KIỆN ĐANG DIỄN RA (Đến 31/08)";
-        vqStatusLabel = "MỞ CỬA";
-        vqStatusClass = "status-open";
-    } else if (currentTime < vqStart) {
-        if (vqText) vqText.innerText = "SỰ KIỆN HÈ: MỞ TỪ 01/05 - 31/08 HÀNG NĂM";
-        vqStatusLabel = "HẸN GẶP 01/05";
-        vqStatusClass = "status-upcoming";
-    } else {
-        if (vqText) vqText.innerText = "SỰ KIỆN HÈ ĐÃ KẾT THÚC";
-        vqStatusLabel = "ĐÃ ĐÓNG CỬA";
-        vqStatusClass = "status-closed";
-    }
-
-    if (vqElem) {
-        updateCardStatus(vqElem, !isVQOpen, vqStatusLabel, vqStatusClass);
-    }
+    if (vqText) vqText.innerText = vqDesc;
+    updateCardStatus(vqElem, !isVQOpen, vqStatusLabel, vqStatusClass);
+}
 
     // --- LOGIC ĐÀO VÀNG (Mở từ 02/09 đến hết 07/09 hàng năm) ---
 const isDVOpen = (month === 9 && date >= 2 && date <= 7);
