@@ -8103,6 +8103,27 @@ input[type="date"].sweetie-input-style {
     border-radius: 10px; background: #ffe4e8;
     color: #d81b60; font-weight: bold; cursor: pointer;
 }
+
+    /* Đảm bảo khung Tab cho phép cuộn tự nhiên */
+#tab-status {
+    height: 100% !important;
+    max-height: 100vh !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch; /* Cuộn mượt trên Safari/iOS */
+}
+
+/* Gỡ bỏ giới hạn chiều cao và cuộn riêng của danh sách bài viết */
+#tab-status .status-scrollable-content {
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+}
+
+/* Đảm bảo Story hiển thị theo luồng tự nhiên */
+#tab-status .sw-story-area {
+    position: static !important;
+    flex-shrink: 0;
+}
 </style>
 </head>
 <body>
@@ -8673,8 +8694,8 @@ input[type="date"].sweetie-input-style {
 </section>
 
 <main>
-<div id="tab-status" class="tab-content" style="display:none; height: 100%; overflow-y: auto;">
-    <!-- Nút mở Popup Bài viết của tôi (GIỮ NGUYÊN) -->
+<div id="tab-status" class="tab-content" style="display:none;">
+    <!-- Nút mở Popup Bài viết của tôi -->
     <div id="btn-my-posts" 
          onclick="openMyPostsPopup()" 
          title="Khu lưu trữ bài viết của bạn" 
@@ -8686,10 +8707,9 @@ input[type="date"].sweetie-input-style {
         <i class="fas fa-pen-nib"></i>
     </button>
 
-    <!-- 1. KHU VỰC ĐĂNG STORY (Bây giờ đã nằm chung luồng cuộn, sẽ cuộn lên cùng bài viết) -->
-    <div class="sw-story-area" style="padding: 10px 0; background: #fff; border-bottom: 1px solid #ffe4e8; min-height: 180px; display: flex; align-items: center;">
+    <!-- 1. KHU VỰC STORY (Sẽ cuộn trôi lên cùng bài viết) -->
+    <div class="sw-story-area" style="padding: 10px 0; background: #fff; border-bottom: 1px solid #ffe4e8; min-height: 180px;">
         <div class="status-container" style="width: 100%; height: 165px; overflow: hidden;">
-            <!-- story-list: Cuộn ngang danh sách story -->
             <div id="story-list" style="display: flex; gap: 10px; overflow-x: auto; overflow-y: hidden; padding: 0 10px; height: 100%; align-items: center; scrollbar-width: none; -ms-overflow-style: none;">
                 
                 <!-- Nút tạo story -->
@@ -8700,20 +8720,18 @@ input[type="date"].sweetie-input-style {
                     <div style="height: 50px; background: white; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: bold; color: #d81b60;">Tạo tin</div>
                 </div>
 
-                <!-- Tin của các cư dân khác sẽ render realtime vào đây -->
+                <!-- Tin của các cư dân khác -->
             </div>
         </div>
     </div>
 
-    <!-- 2. PHẦN HEADER BẢN TIN (Bản tin cư dân & Bộ lọc) -->
+    <!-- 2. PHẦN BẢN TIN CƯ DÂN & BỘ LỌC -->
     <div class="status-header-area" style="padding-top: 10px;">
         <div class="status-container">
             <div style="display: flex; justify-content: space-between; align-items: center; background: #fff0f3; padding: 8px 12px; border-radius: 15px; border: 1px solid #ffe4e8; margin-bottom: 10px;">
-                
                 <div style="font-size: 0.85rem; color: #ff8fab; font-weight: bold; white-space: nowrap;">
                     <i class="fas fa-bullhorn"></i> Bản tin cư dân ✨
                 </div>
-                
                 <div style="display: flex; align-items: center; gap: 4px; background: white; padding: 2px 6px 2px 10px; border-radius: 12px; border: 1px solid #ffcad4; box-shadow: 0 2px 5px rgba(255,143,171,0.1);">
                     <i class="fas fa-filter" style="font-size: 0.65rem; color: #ff8fab;"></i>
                     <select id="feed-filter" onchange="changeFeedFilter()" style="border: none; background: transparent; font-size: 0.75rem; color: #d81b60; font-weight: bold; outline: none; cursor: pointer; padding-right: 4px;">
@@ -8722,44 +8740,37 @@ input[type="date"].sweetie-input-style {
                         <option value="oldest">Cũ nhất</option>
                     </select>
                 </div>
-                
             </div>
         </div>
     </div>
 
-    <!-- 3. KHU VỰC BÀI VIẾT (Tự động cuộn tiếp nối theo Story và Header) -->
-    <div class="status-scrollable-content">
+    <!-- 3. KHU VỰC DANH SÁCH BÀI VIẾT -->
+    <div class="status-scrollable-content" style="height: auto; overflow: visible;">
         <div class="status-container" id="status-list"></div>
     </div>
 
-    <!-- MODAL POPUP ĐĂNG BÀI (GIỮ NGUYÊN) -->
+    <!-- MODAL POPUP ĐĂNG BÀI -->
     <div id="composer-modal" class="sw-post-overlay" style="display:none;">
         <div class="sw-post-popup animate__animated animate__zoomIn">
             <div class="sw-post-header">
                 <span><i class="fas fa-pen-nib"></i> Đăng trạng thái mới</span>
                 <i class="fas fa-times sw-post-close" onclick="closeComposer()"></i>
             </div>
-            
             <div class="status-card composer">
                 <textarea id="status-text" placeholder="Bạn đang nghĩ gì thế?"></textarea>
-
                 <div id="media-preview-container" style="display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap;"></div>
-
                 <div class="composer-footer">
                     <div style="display: flex; gap: 8px; align-items: center;">
                         <input type="file" id="post-media-input" accept="image/*,video/*" multiple style="display: none;" onchange="previewMedia(this)">
-                        
                         <button type="button" onclick="document.getElementById('post-media-input').click()" class="status-select" style="cursor: pointer; padding: 0 10px; border: 1px dashed #ff8fab;">
                             <i class="fas fa-camera"></i> Ảnh/Video
                         </button>
-
                         <select id="status-privacy" class="status-select">
                             <option value="public">🌎 Công khai</option>
                             <option value="friends">👥 Bạn bè</option>
                             <option value="private">🔒 Riêng tư</option>
                         </select>
                     </div>
-
                     <button onclick="handlePostStatus()" class="btn-send-status">
                         <i class="fas fa-paper-plane"></i> Đăng
                     </button>
