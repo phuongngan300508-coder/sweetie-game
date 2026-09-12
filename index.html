@@ -11591,17 +11591,35 @@ function checkMinigameStatus() {
         updateCardStatus(vqElem, !isVQOpen, vqStatusLabel, vqStatusClass);
     }
 
-    // --- LOGIC ĐÀO VÀNG (Mở tháng 9 hàng năm) ---
-    const isDVOpen = (month === 9);
+    // --- LOGIC ĐÀO VÀNG (Mở từ 02/09 đến hết ngày 07/09 hàng năm) ---
+    const dvStart = new Date(year, 8, 2, 0, 0, 0).getTime();  // 02/09 (tháng 9 là index 8)
+    const dvEnd = new Date(year, 8, 7, 23, 59, 59).getTime(); // Hết ngày 07/09
+    const isDVOpen = (currentTime >= dvStart && currentTime <= dvEnd);
+
+    // Reset lượt khi mở cửa đợt mới
     refreshEventTurn('daoVang', isDVOpen);
 
     const dvElem = document.getElementById('daoVang');
     const dvTxt = document.getElementById('dvText');
 
     if (dvElem) {
-        let dvLabel = isDVOpen ? "MỞ CỬA" : "HẸN GẶP T9";
-        let dvClass = isDVOpen ? "status-open" : "status-upcoming";
-        let dvDesc = isDVOpen ? "SỰ KIỆN ĐANG DIỄN RA (Tháng 9)" : "MỞ LẠI VÀO THÁNG 9 HÀNG NĂM";
+        let dvLabel = "";
+        let dvClass = "";
+        let dvDesc = "";
+
+        if (isDVOpen) {
+            dvDesc = "SỰ KIỆN ĐANG DIỄN RA (Đến hết 07/09)";
+            dvLabel = "MỞ CỬA";
+            dvClass = "status-open";
+        } else if (currentTime < dvStart) {
+            dvDesc = "SỰ KIỆN QUỐC KHÁNH: MỞ TỪ 02/09 - 07/09 HÀNG NĂM";
+            dvLabel = "HẸN GẶP 02/09";
+            dvClass = "status-upcoming";
+        } else {
+            dvDesc = "SỰ KIỆN QUỐC KHÁNH ĐÃ KẾT THÚC";
+            dvLabel = "ĐÃ ĐÓNG CỬA";
+            dvClass = "status-closed";
+        }
 
         if (dvTxt) dvTxt.innerText = dvDesc;
         updateCardStatus(dvElem, !isDVOpen, dvLabel, dvClass);
@@ -11641,20 +11659,50 @@ function checkMinigameStatus() {
         updateCardStatus(lotoElem, !isLotoOpen, lotoLabel, lotoClass);
     }
 
-    // --- LOGIC TRUY TÌM KHO BÁU (Mở tháng 7 và tháng 11 hàng năm) ---
-    const isKBOpen = (month === 7 || month === 11);
-    refreshEventTurn('truyTimKhoBau', isKBOpen);
+    // --- LOGIC TRUY TÌM KHO BÁU (Mở đợt 1: 01/07 - 06/07, đợt 2: 01/11 - 06/11 hàng năm) ---
+    const ttkbDot1Start = new Date(year, 6, 1, 0, 0, 0).getTime();   // 01/07 (tháng 7 là index 6)
+    const ttkbDot1End   = new Date(year, 6, 6, 23, 59, 59).getTime();  // Hết ngày 06/07
 
-    const kbElem = document.getElementById('truyTimKhoBau');
-    const kbTxtArea = document.getElementById('kbText');
+    const ttkbDot2Start = new Date(year, 10, 1, 0, 0, 0).getTime();  // 01/11 (tháng 11 là index 10)
+    const ttkbDot2End   = new Date(year, 10, 6, 23, 59, 59).getTime(); // Hết ngày 06/11
 
-    let kbStatusLabel = isKBOpen ? "MỞ CỬA" : "HẸN T7 & T11";
-    let kbStatusClass = isKBOpen ? "status-open" : "status-upcoming";
-    let kbDesc = isKBOpen ? "SỰ KIỆN ĐANG DIỄN RA - TRUY TÌM NGAY!" : "MỞ LẠI VÀO THÁNG 7 VÀ THÁNG 11 HÀNG NĂM";
+    // Trạng thái đang mở cửa ở 1 trong 2 đợt
+    const isTTKBDot1Open = (currentTime >= ttkbDot1Start && currentTime <= ttkbDot1End);
+    const isTTKBDot2Open = (currentTime >= ttkbDot2Start && currentTime <= ttkbDot2End);
+    const isTTKBOpen     = isTTKBDot1Open || isTTKBDot2Open;
 
-    if (kbElem) {
-        if (kbTxtArea) kbTxtArea.innerText = kbDesc;
-        updateCardStatus(kbElem, !isKBOpen, kbStatusLabel, kbStatusClass);
+    // Reset lượt khi mở cửa đợt mới
+    refreshEventTurn('truyTimKhoBau', isTTKBOpen);
+
+    const ttkbElem = document.getElementById('truyTimKhoBau');
+    const ttkbTxt  = document.getElementById('ttkbText');
+
+    if (ttkbElem) {
+        let ttkbLabel = "";
+        let ttkbClass = "";
+        let ttkbDesc  = "";
+
+        if (isTTKBOpen) {
+            const endText = isTTKBDot1Open ? "06/07" : "06/11";
+            ttkbDesc  = `SỰ KIỆN ĐANG DIỄN RA (Đến hết ${endText})`;
+            ttkbLabel = "MỞ CỬA";
+            ttkbClass = "status-open";
+        } else if (currentTime < ttkbDot1Start) {
+            ttkbDesc  = "SỰ KIỆN HÈ: MỞ TỪ 01/07 - 06/07 HÀNG NĂM";
+            ttkbLabel = "HẸN GẶP 01/07";
+            ttkbClass = "status-upcoming";
+        } else if (currentTime > ttkbDot1End && currentTime < ttkbDot2Start) {
+            ttkbDesc  = "SỰ KIỆN ĐÔNG: MỞ TỪ 01/11 - 06/11 HÀNG NĂM";
+            ttkbLabel = "HẸN GẶP 01/11";
+            ttkbClass = "status-upcoming";
+        } else {
+            ttkbDesc  = "SỰ KIỆN NĂM NAY ĐÃ KẾT THÚC";
+            ttkbLabel = "ĐÃ ĐÓNG CỬA";
+            ttkbClass = "status-closed";
+        }
+
+        if (ttkbTxt) ttkbTxt.innerText = ttkbDesc;
+        updateCardStatus(ttkbElem, !isTTKBOpen, ttkbLabel, ttkbClass);
     }
 
     // --- LOGIC GIÁNG SINH (Santa Workshop & Sự kiện Noel - Mở tháng 12 hàng năm) ---
