@@ -18755,14 +18755,16 @@ switchTab = function(tabId) {
 }
 
 function copySTK() {
-    const stk = "1047882142";
+    // Lấy số tài khoản và tên ngân hàng đang hiển thị trên giao diện
+    const stk = document.getElementById('owner-stk').innerText.trim();
+    const bankName = document.getElementById('bank-name').innerText.trim();
+
     navigator.clipboard.writeText(stk).then(() => {
-        // Tạo hiệu ứng thông báo nhỏ
-        alert("✨ Đã copy số tài khoản: " + stk);
+        // Thông báo cho người dùng
+        alert(`✨ Đã copy số tài khoản: ${stk} (${bankName})`);
         
-        // Hoặc dùng hệ thống thông báo của Henry nếu muốn chuyên nghiệp hơn:
-        if(typeof addNotification === 'function') {
-            addNotification("📋 HỆ THỐNG", "Đã copy số tài khoản Vietcombank vào bộ nhớ tạm.");
+        if (typeof addNotification === 'function') {
+            addNotification("📋 HỆ THỐNG", `Đã copy số tài khoản ${bankName} vào bộ nhớ tạm.`);
         }
     }).catch(err => {
         console.error('Lỗi khi copy: ', err);
