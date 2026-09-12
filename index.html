@@ -5517,6 +5517,7 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
 }
 
 /* Các Style chi tiết giữ nguyên giao diện hồng của bạn */
+/* Các Style chi tiết giữ nguyên giao diện hồng của bạn */
 .chat-header {
     padding: 18px;
     background: linear-gradient(135deg, #ff69b4, #ff1493);
@@ -5543,15 +5544,24 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
     border-top: 1px solid #ffe4e1;
     display: flex;
     gap: 10px;
+    align-items: flex-end; /* ĐÃ SỬA: Căn nút gửi xuống đáy khi textarea dãn chiều cao */
 }
 
 #global-input {
-    width: 100%;
-    padding: 12px 18px;
-    border-radius: 25px;
+    flex: 1;                  /* ĐÃ SỬA: Thay width: 100% bằng flex: 1 để co dãn chuẩn trong flexbox */
+    padding: 10px 18px;       /* ĐÃ SỬA: Điều chỉnh padding cho cân đối khi dãn dòng */
+    border-radius: 20px;      /* ĐÃ SỬA: Đổi bán kính bo góc thích hợp cho textarea nhiều dòng */
     border: 1.5px solid #ffc0cb;
     outline: none;
     background: #fffafb;
+    resize: none;             /* ĐÃ THÊM: Chặn người dùng kéo dãn giao diện thủ công */
+    height: 42px;             /* ĐÃ THÊM: Chiều cao ban đầu (1 dòng) */
+    min-height: 42px;         /* ĐÃ THÊM: Chiều cao tối thiểu */
+    max-height: 120px;        /* ĐÃ THÊM: Giới hạn chiều cao tối đa khi xuống dòng nhiều */
+    line-height: 1.4;         /* ĐÃ THÊM: Giúp khoảng cách giữa các dòng chữ chuẩn xác */
+    overflow-y: auto;         /* ĐÃ THÊM: Hiện thanh cuộn nội bộ khi gõ quá max-height */
+    font-family: inherit;     /* ĐÃ THÊM: Đồng bộ font chữ với giao diện */
+    box-sizing: border-box;   /* ĐÃ THÊM: Đảm bảo padding không làm vỡ kích thước ô */
 }
 
 .send-btn {
@@ -5565,6 +5575,7 @@ input:checked + .sweetie-slider:before { transform: translateX(22px); }
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;           /* ĐÃ THÊM: Giữ nút gửi không bị méo khi textarea phình to */
 }
 
 .close-popup-btn {
@@ -8830,31 +8841,34 @@ input[type="date"].sweetie-input-style {
         </button>
 
         <div class="chat-header">
-            <i class="fas fa-users"></i> KÊNH CHAT THẾ GIỚI
-            <div id="global-online-count">Đang kết nối...</div>
-        </div>
+    <i class="fas fa-users"></i> KÊNH CHAT THẾ GIỚI
+    <div id="global-online-count">Đang kết nối...</div>
+</div>
 
-        <div id="global-messages-area"></div>
+<div id="global-messages-area"></div>
 
-       <div class="chat-input-area">
+<div class="chat-input-area" style="position: relative;">
     <button onclick="toggleRedPacketMenu()" class="add-btn" style="background: none; border: none; color: #ff69b4; font-size: 1.2rem; padding: 0 10px; cursor: pointer;">
         <i class="fas fa-plus-circle"></i>
     </button>
+    
     <div style="flex: 1; position: relative; display: flex; align-items: center;">
-        <input type="text" id="global-input" placeholder="Nhắn gì đó với thế giới...">
+        <!-- ĐÃ SỬA: Thay <input> bằng <textarea> và thêm các thuộc tính hỗ trợ xuống dòng -->
+        <textarea id="global-input" placeholder="Nhắn gì đó với thế giới..." rows="1" enterkeyhint="enter"></textarea>
     </div>
+
     <button onclick="sendGlobalMessage()" class="send-btn">
         <i class="fas fa-paper-plane"></i>
     </button>
     
     <div id="chat-extra-menu" style="display:none; position: absolute; bottom: 60px; left: 10px; background: white; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); padding: 10px; z-index: 100;">
-    <div onclick="openRedPacketCreator()" style="display: flex; flex-direction: column; align-items: center; gap: 5px; cursor: pointer; padding: 10px;">
-        <div style="width: 45px; height: 45px; background: #ff1493; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; box-shadow: 0 4px 10px rgba(255, 20, 147, 0.3);">
-            <i class="fas fa-gift"></i>
+        <div onclick="openRedPacketCreator()" style="display: flex; flex-direction: column; align-items: center; gap: 5px; cursor: pointer; padding: 10px;">
+            <div style="width: 45px; height: 45px; background: #ff1493; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; box-shadow: 0 4px 10px rgba(255, 20, 147, 0.3);">
+                <i class="fas fa-gift"></i>
+            </div>
+            <span style="font-size: 0.7rem; font-weight: bold; color: #333;">Lì xì</span>
         </div>
-        <span style="font-size: 0.7rem; font-weight: bold; color: #333;">Lì xì</span>
     </div>
-</div>
 </div>
         </div>
     </div>
