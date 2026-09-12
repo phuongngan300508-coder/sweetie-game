@@ -21800,23 +21800,19 @@ let isFirstLoad = true;
 const sessionStartTime = Date.now(); // Lưu mốc thời gian bắt đầu phiên làm việc
 
 function initGlobalChat() {
-    // --- KHẮC PHỤC LỖI TỰ MỞ POPUP ---
     const chatTab = document.getElementById('tab-global');
-
     const globalArea = document.getElementById('global-messages-area');
     if (!globalArea) return;
 
-    // --- QUAN TRỌNG: GỠ BỎ LISTENER CŨ ĐỂ TRÁNH LẶP THÔNG BÁO ---
+    // --- GỠ BỎ LISTENER CŨ ---
     db.ref('global_chat/messages').off();
     db.ref('status').off();
 
     // Reset nội dung cũ
     globalArea.innerHTML = '<div style="text-align:center; font-size:0.7em; color:#ccc; padding:10px;">Đang tải tin nhắn thế giới...</div>';
 
-    // --- GIẢI PHÁP: CHỈ DÙNG CHILD_ADDED ĐỂ RENDER ---
-    // Cách này giúp tin nhắn hiện ra từng cái một, không bao giờ bị lặp hay load lại cả bảng
+    // --- LẮNG NGHE TIN NHẮN MỚI (CHILD_ADDED) ---
     db.ref('global_chat/messages').limitToLast(50).on('child_added', (snapshot) => {
-        // Xóa dòng "Đang tải" nếu đây là tin nhắn đầu tiên
         if (globalArea.innerHTML.includes("Đang tải tin nhắn")) {
             globalArea.innerHTML = '';
         }
@@ -21825,11 +21821,11 @@ function initGlobalChat() {
         const key = snapshot.key;
         if (!msg) return;
 
-        // 1. VẼ TIN NHẮN LÊN GIAO DIỆN (Bao gồm cả tin cũ và mới)
+        // 1. VẼ TIN NHẮN LÊN GIAO DIỆN
         renderGlobalMessage(key, msg);
         globalArea.scrollTop = globalArea.scrollHeight;
 
-        // 2. LOGIC THÔNG BÁO (Chỉ chạy cho tin nhắn mới phát sinh sau khi mở app)
+        // 2. LOGIC THÔNG BÁO
         if (msg.timestamp > sessionStartTime) {
             const isMe = msg.sender === userData.profile.uid;
             const chatTabEl = document.getElementById('tab-global');
@@ -21837,7 +21833,6 @@ function initGlobalChat() {
             const isTabHidden = document.hidden || document.visibilityState === 'hidden';
 
             if (!isMe) {
-                // Thông báo trong game
                 if (!isChatOpen && typeof addNotification === 'function') {
                     addNotification(
                         "💬 TIN NHẮN THẾ GIỚI", 
@@ -21846,7 +21841,6 @@ function initGlobalChat() {
                     );
                 }
 
-                // Thông báo hệ thống
                 if (isTabHidden && "Notification" in window && Notification.permission === "granted") {
                     const n = new Notification(`🌸 ${msg.senderName}`, {
                         body: msg.text,
@@ -21865,7 +21859,7 @@ function initGlobalChat() {
         }
     });
 
-    // 3. LẮNG NGHE SỐ NGƯỜI ĐANG ONLINE (Giữ nguyên)
+    // 3. LẮNG NGHE SỐ NGƯỜI ONLINE
     db.ref('status').on('value', (snap) => {
         const data = snap.val() || {};
         const onlineCount = Object.values(data).filter(s => s.state === 'online').length;
@@ -21880,12 +21874,42 @@ function initGlobalChat() {
         }
     });
 
-    // 4. Nhấn Enter gửi tin (Giữ nguyên)
+    // 4. XỬ LÝ NHẬP LIỆU & XUỐNG DÒNG DÀNH CHO CẢ MÁY TÍNH VÀ ĐIỆN THOẠI
     const inputField = document.getElementById('global-input');
     if (inputField && !inputField.dataset.listener) {
-        inputField.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') sendGlobalMessage();
+        
+        // Bắt sự kiện bàn phím
+        inputField.addEventListener('keydown', (e) => {
+            // Kiểm tra xem người dùng có dùng màn hình cảm ứng / di động không
+            const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+
+            if (e.key === 'Enter') {
+                if (isMobile) {
+                    // TRÊN ĐIỆN THOẠI: Phím Enter/Xuống dòng trên bàn phím ảo sẽ chỉ XUỐNG DÒNG
+                    // Người dùng bấm nút Gửi (Send icon) trên màn hình để gửi tin.
+                    return;
+                } else {
+                    // TRÊN MÁY TÍNH:
+                    if (e.shiftKey) {
+                        // Shift + Enter -> Xuống dòng
+                        return;
+                    } else {
+                        // Enter -> Gửi tin nhắn
+                        e.preventDefault();
+                        if (typeof sendGlobalMessage === 'function') {
+                            sendGlobalMessage();
+                        }
+                    }
+                }
+            }
         });
+
+        // Tự động điều chỉnh chiều cao textarea theo độ dài văn bản khi gõ
+        inputField.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 100) + 'px';
+        });
+
         inputField.dataset.listener = "true"; 
     }
 }
@@ -21909,13 +21933,26 @@ function sendGlobalMessage() {
 
     db.ref('global_chat/messages').push(msgData).then(() => {
         input.value = ""; 
+        input.style.height = 'auto'; // Reset chiều cao ô textarea về mặc định sau khi gửi
         input.focus();
+        
         // Cuộn xuống sau khi gửi
         const globalArea = document.getElementById('global-messages-area');
         if (globalArea) {
             globalArea.scrollTop = globalArea.scrollHeight;
         }
     });
+}
+
+// Hàm hỗ trợ mã hóa ký tự đặc biệt để an toàn khi dùng innerHTML + pre-wrap
+function escapeHtml(text) {
+    if (!text) return "";
+    return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 }
 
 // --- 3. HIỂN THỊ TIN NHẮN (Style giống thế giới Liên Quân) ---
@@ -21937,7 +21974,8 @@ async function renderGlobalMessage(id, msg) {
 
     if (msg.redPacketId) {
         // --- HIỂN THỊ KHUNG LÌ XÌ TRƯỚC (KHÔNG DÙNG AWAIT) ---
-        const displayMsg = msg.text ? msg.text.replace('🧧 ', '') : "Chúc mừng năm mới!";
+        const rawText = msg.text ? msg.text.replace('🧧 ', '') : "Chúc mừng năm mới!";
+        const displayMsg = escapeHtml(rawText);
         const redPacketColor = "#ff1493"; 
 
         messageBodyHtml = `
@@ -22002,6 +22040,8 @@ async function renderGlobalMessage(id, msg) {
 
     } else {
         const isThanks = msg.text && msg.text.includes('💌');
+        const formattedText = escapeHtml(msg.text);
+
         messageBodyHtml = `
             <div style="display: inline-block; padding: 10px 14px; border-radius: 18px; font-size: 0.85em; 
                         background: ${isMe ? 'linear-gradient(135deg, #ff69b4, #ff1493)' : 'white'}; 
@@ -22010,9 +22050,8 @@ async function renderGlobalMessage(id, msg) {
                         border: ${isMe ? 'none' : '1px solid #ffe4e1'};
                         ${isMe ? 'border-top-right-radius: 2px;' : 'border-top-left-radius: 2px;'}
                         ${isThanks ? 'font-style: italic; border: 1px solid #ffb6c1;' : ''}
-                        word-break: break-word;">
-                ${msg.text}
-            </div>
+                        word-break: break-word;
+                        white-space: pre-wrap;">${formattedText}</div>
         `;
     }
 
