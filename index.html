@@ -10231,11 +10231,14 @@ input[type="date"].sweetie-input-style {
     <div class="input-container">
         <i class="fas fa-plus-circle" onclick="toggleMediaMenu()" style="cursor:pointer; color:#ff1493; font-size:1.4em; flex-shrink: 0;"></i>
         
-        <input type="text" 
-        id="chat-input" 
-        placeholder="Gửi lời ngọt ngào..." 
-        onkeypress="if(event.key === 'Enter') sendMessage()"
-        oninput="handleTypingStatus()">
+        <textarea 
+    id="chat-input" 
+    placeholder="Gửi lời ngọt ngào..." 
+    rows="1"
+    enterkeyhint="enter"
+    style="flex: 1; border: none; outline: none; resize: none; max-height: 100px; padding: 8px 12px; font-family: inherit; font-size: 0.9em; border-radius: 15px; background: #fff5f8;"
+    oninput="handleTypingStatus(); this.style.height = 'auto'; this.style.height = Math.min(this.scrollHeight, 100) + 'px';">
+</textarea>
 
         <div id="voice-recording-bar" style="display: none; align-items: center; flex: 1; background: #fff5f8; padding: 0 10px; border-radius: 20px; height: 35px; border: 1px solid #ffc0cb; margin: 0 5px;">
             <i class="fas fa-trash-alt" onclick="cancelRecording()" style="color: #ff4d4d; cursor: pointer; padding: 5px;"></i>
@@ -16754,17 +16757,20 @@ function toggleChat() {
     }
 }
 
-// --- 2. SỬA HÀM GỬI TIN NHẮN (Giữ nguyên 100% nội dung - Fix lỗi không cần F5) ---
-// Thêm tham số mặc định để dùng cho cả nhắn tin thường và chuyển tiền
+// --- 2. SỬA HÀM GỬI TIN NHẮN (ĐÃ BỔ SUNG LINK & XUỐNG DÒNG) ---
 async function sendMessage(overrideText = null, transferData = null) {
     const input = document.getElementById('chat-input');
-    // Nếu có overrideText (từ voice/media) hoặc transferData thì dùng, không thì lấy từ input
-    const text = overrideText || (transferData ? `🌸 Đã gửi ${transferData.amount.toLocaleString()} VNĐ` : input.value.trim());
+    
+    // Lấy nội dung văn bản
+    const rawText = overrideText || (transferData ? `🌸 Đã gửi ${transferData.amount.toLocaleString()} VNĐ` : input.value.trim());
     
     // Kiểm tra nội dung và người nhận
-    if (!text && !transferData || !currentChatFriend) return;
+    if (!rawText && !transferData || !currentChatFriend) return;
 
-    // --- LOGIC TỰ ĐỘNG BỎ LƯU TRỮ & KIỂM TRA CHẶN (GIỮ NGUYÊN) ---
+    // Tự động nhận diện Link và escape HTML an toàn cho tin nhắn văn bản
+    const text = transferData ? rawText : linkify(rawText);
+
+    // --- LOGIC TỰ ĐỘNG BỎ LƯU TRỮ & KIỂM TRA CHẶN ---
     let archivedFriends = JSON.parse(localStorage.getItem(`archived_${currentUser}`)) || [];
     if (archivedFriends.includes(currentChatFriend)) {
         archivedFriends = archivedFriends.filter(id => id !== currentChatFriend);
@@ -16785,7 +16791,7 @@ async function sendMessage(overrideText = null, transferData = null) {
     const displayTime = now.getHours().toString().padStart(2, '0') + ":" + 
                         now.getMinutes().toString().padStart(2, '0');
 
-    // --- 1. CHUẨN BỊ DỮ LIỆU TIN NHẮN (BỔ SUNG LOGIC CHUYỂN TIỀN) ---
+    // --- 1. CHUẨN BỊ DỮ LIỆU TIN NHẮN ---
     const messageData = {
         sender: currentUser,
         text: text,
@@ -16793,17 +16799,12 @@ async function sendMessage(overrideText = null, transferData = null) {
         displayTime: displayTime
     };
 
-    // Nếu là chuyển tiền, đính kèm thông tin bank_transfer
     if (transferData) {
         messageData.type = 'bank_transfer';
         messageData.amount = transferData.amount;
-        messageData.status = 'pending'; // Chờ nhận
+        messageData.status = 'pending';
         messageData.senderCard = transferData.senderCard;
-        // DÒNG QUAN TRỌNG NHẤT: Lưu lời nhắn vào messageData
         messageData.note = transferData.note; 
-
-        // --- SỬA TẠI ĐÂY: LƯU THÊM NGÂN HÀNG NGƯỜI GỬI VÀO TIN NHẮN ---
-        // Phải lưu vào đây thì ô tin nhắn bên phía đối phương mới biết Henry dùng bank gì để đổi màu
         messageData.senderBankType = transferData.senderBankType || 'sweetie';
     }
 
@@ -16824,7 +16825,6 @@ async function sendMessage(overrideText = null, transferData = null) {
     const msgRef = db.ref('chats/' + chatRoomId + '/messages').push(); 
     msgRef.set(messageData).then(() => {
         
-        // --- TỰ ĐỘNG CUỘN XUỐNG DƯỚI CÙNG (GIỮ NGUYÊN) ---
         setTimeout(() => {
             const chatBox = document.getElementById('chat-messages-area');
             if (chatBox) {
@@ -16832,11 +16832,11 @@ async function sendMessage(overrideText = null, transferData = null) {
             }
         }, 100);
 
-        // 3. BẮN THÔNG BÁO (Trong App & Push)
+        // 3. BẮN THÔNG BÁO
         const notificationData = {
             from: currentUser,
             friendName: currentUser, 
-            text: text,
+            text: rawText,
             type: msgType, 
             time: Date.now(),
             displayTime: displayTime,
@@ -16847,7 +16847,7 @@ async function sendMessage(overrideText = null, transferData = null) {
 
         db.ref('push_notifications/' + currentChatFriend).push({
             title: msgTitle,
-            body: `${currentUser}: ${text}`,
+            body: `${currentUser}: ${rawText}`,
             icon: (userData.profile && userData.profile.customAvatar) ? userData.profile.customAvatar : "https://i.postimg.cc/J7bjdwFH/Gemini-Generated-Image-(3).png",
             tag: "chat-" + currentUser, 
             from: currentUser
@@ -16856,20 +16856,48 @@ async function sendMessage(overrideText = null, transferData = null) {
         // 4. Tăng badge số lượng tin chưa đọc
         db.ref(`unread_counts/${currentChatFriend}/${currentUser}`).transaction(c => (c || 0) + 1);
 
-        // 5. XOÁ TRẠNG THÁI TRẢ LỜI
+        // 5. XOÁ TRẠNG THÁI TRẢ LỜI & RESET Ô NHẬP LIỆU
         if (replyingTo) {
             replyingTo = null; 
             const replyBar = document.getElementById('chat-reply-bar');
             if (replyBar) replyBar.style.display = 'none'; 
         }
 
-        input.value = ""; // Xoá ô nhập liệu
+        input.value = ""; // Xoá ô nhập
+        input.style.height = 'auto'; // Reset chiều cao ô Textarea
         input.focus(); 
     }).catch((err) => {
         console.error("Lỗi gửi tin nhắn:", err);
         alert("Không thể gửi tin nhắn!");
     });
 }
+
+// --- LOGIC BẮT SỰ KIỆN NÚT ENTER TRÊN THIẾT BỊ ---
+document.addEventListener('DOMContentLoaded', () => {
+    const chatInput = document.getElementById('chat-input');
+    if (chatInput) {
+        chatInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+                
+                if (isMobile) {
+                    // Trên điện thoại: Cho phép bấm Enter xuống dòng tự nhiên
+                    return;
+                } else {
+                    // Trên máy tính:
+                    if (e.shiftKey) {
+                        // Shift + Enter -> Xuống dòng
+                        return;
+                    } else {
+                        // Enter đơn lẻ -> Gửi tin nhắn
+                        e.preventDefault();
+                        sendMessage();
+                    }
+                }
+            }
+        });
+    }
+});
     
 // --- 1. HÀM CẬP NHẬT MÀU QR (Sửa lại cho chuẩn) ---
 function updateQRColor(newColor) {
@@ -17197,86 +17225,111 @@ function renderSingleMessage(msgId, msg, position = 'bottom', targetContainer = 
         }
     }
 
-   // --- 4. LOGIC MEDIA, STICKER, VOICE, CALL & BANK TRANSFER ---
-    let finalMsgText = msg.text || "";
-    if (typeof currentSearchKeyword !== 'undefined' && currentSearchKeyword && msg.text) {
-        const regex = new RegExp(`(${currentSearchKeyword})`, 'gi');
-        finalMsgText = msg.text.replace(regex, '<b style="background: yellow; color: black; padding: 0 2px; border-radius: 3px;">$1</b>');
-    }
+    // --- 4. LOGIC MEDIA, STICKER, VOICE, CALL & BANK TRANSFER (ĐÃ SỬA NHẬN DIỆN LINK) ---
+    let rawMsgText = msg.text || "";
 
-    let bodyContentHtml = `<div class="text-content">${finalMsgText}</div>`;
-    
-   // --- PHẦN XỬ LÝ Ô TIN NHẮN CHUYỂN TIỀN (CẬP NHẬT THEO BANK NGƯỜI GỬI) ---
-if (msg.type === 'bank_transfer') {
-    const amount = msg.amount || 0;
-    const status = msg.status || 'pending';
-    const note = msg.note || "Chuyển tiền qua Sweetie Bank"; 
+    // Hàm mã hoá HTML + Nhận diện URL và biến thành link bấm được
+    const processTextWithLinks = (text) => {
+        if (!text) return "";
+        
+        // 1. Safe escape HTML chống XSS
+        let escaped = text
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
 
-    // --- SỬA TẠI ĐÂY: Henry lấy trực tiếp từ msg.senderBankType ---
-    // Vì trong hàm sendMessage Henry lưu là: messageData.senderBankType = ...
-    const sBankType = msg.senderBankType || 'sweetie';
+        // 2. Highlight từ khóa nếu đang tìm kiếm
+        if (typeof currentSearchKeyword !== 'undefined' && currentSearchKeyword) {
+            const regex = new RegExp(`(${currentSearchKeyword})`, 'gi');
+            escaped = escaped.replace(regex, '<b style="background: yellow; color: black; padding: 0 2px; border-radius: 3px;">$1</b>');
+        }
 
-    const BANK_THEMES = {
-        'sweetie': { name: 'SWEETIE BANK', color1: '#ff4081', color2: '#d81b60', soft1: '#ffb2d1', soft2: '#f48fb1' },
-        'honey':   { name: 'HONEY BANK',   color1: '#f39c12', color2: '#e67e22', soft1: '#f9e3b4', soft2: '#f39c1280' },
-        'cloud':   { name: 'CLOUD BANK',   color1: '#3498db', color2: '#2980b9', soft1: '#b3d9ff', soft2: '#3498db80' }
+        // 3. Regex tự động tìm URL (http, https, www)
+        const urlPattern = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])|(\bwww\.[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;
+        
+        const linkColor = isMe ? '#ffe4e1' : '#007bff';
+
+        return escaped.replace(urlPattern, function(match) {
+            let href = match;
+            if (!href.match(/^https?:\/\//i)) {
+                href = 'http://' + href;
+            }
+            return `<a href="${href}" target="_blank" rel="noopener noreferrer" style="color: ${linkColor}; text-decoration: underline; word-break: break-all;" onclick="event.stopPropagation();">${match}</a>`;
+        });
     };
 
-    const theme = BANK_THEMES[sBankType] || BANK_THEMES['sweetie'];
+    let finalMsgText = processTextWithLinks(rawMsgText);
+    let bodyContentHtml = `<div class="text-content" style="white-space: pre-wrap;">${finalMsgText}</div>`;
     
-    let statusLabel = `${theme.name} Transfer`;
-    let subLabel = "Nhấn để nhận tiền ✨";
-    let cardOpacity = 1;
-    let bgColor = `linear-gradient(135deg, ${theme.color1}, ${theme.color2})`; // Màu theo ngân hàng gửi
-    let iconColor = "#fff";
+    // --- PHẦN XỬ LÝ Ô TIN NHẮN CHUYỂN TIỀN ---
+    if (msg.type === 'bank_transfer') {
+        const amount = msg.amount || 0;
+        const status = msg.status || 'pending';
+        const note = msg.note || "Chuyển tiền qua Sweetie Bank"; 
+        const sBankType = msg.senderBankType || 'sweetie';
 
-    if (status === 'accepted') {
-        statusLabel = "Đã nhận tiền";
-        subLabel = "Giao dịch thành công ✅";
-        cardOpacity = 0.8;
-        bgColor = `linear-gradient(135deg, ${theme.soft1}, ${theme.soft2})`; // Màu nhạt theo ngân hàng gửi
-    } else if (status === 'refused') {
-        statusLabel = "Giao dịch đã hoàn";
-        subLabel = "Đã từ chối/hoàn tiền ❌";
-        cardOpacity = 0.8;
-        bgColor = "#e0e0e0"; // Màu xám khi từ chối (giữ nguyên)
-    }
+        const BANK_THEMES = {
+            'sweetie': { name: 'SWEETIE BANK', color1: '#ff4081', color2: '#d81b60', soft1: '#ffb2d1', soft2: '#f48fb1' },
+            'honey':   { name: 'HONEY BANK',   color1: '#f39c12', color2: '#e67e22', soft1: '#f9e3b4', soft2: '#f39c1280' },
+            'cloud':   { name: 'CLOUD BANK',   color1: '#3498db', color2: '#2980b9', soft1: '#b3d9ff', soft2: '#3498db80' }
+        };
 
-    bodyContentHtml = `
-        <div class="wechat-pay-card" style="width: 240px; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1); opacity: ${cardOpacity}; font-family: sans-serif; cursor: default;">
-            <div style="background: ${bgColor}; padding: 15px; display: flex; align-items: center; gap: 15px;">
-                <div style="width: 42px; height: 42px; background: rgba(255,255,255,0.25); border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                    <i class="fas fa-hand-holding-usd" style="color: ${iconColor}; font-size: 1.4rem;"></i>
-                </div>
-                <div style="display: flex; flex-direction: column; overflow: hidden;">
-                    <span style="font-size: 0.95rem; color: white; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                        ${amount.toLocaleString()} VNĐ
-                    </span>
-                    <span style="font-size: 0.75rem; color: rgba(255,255,255,0.85); font-weight: 500;">
-                        ${note}
-                    </span>
-                </div>
-            </div>
-            
-            <div style="background: white; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(0,0,0,0.05);">
-                <span style="font-size: 0.65rem; color: #888; font-weight: bold; letter-spacing: 0.3px; text-transform: uppercase;">${statusLabel}</span>
-                <span style="font-size: 0.65rem; color: ${status === 'pending' ? theme.color1 : '#888'}; font-weight: bold;">${subLabel}</span>
-            </div>
-
-            ${(!isMe && status === 'pending') ? `
-                <div style="display: flex; background: white; padding: 0 10px 10px 10px; gap: 8px;">
-                    <button onclick="handleTransferAction('${msgId}', 'accept', ${amount}, '${msg.senderCard}')" 
-                            style="flex: 2; padding: 8px; background: ${theme.color1}; border: none; color: white; border-radius: 6px; font-size: 0.75rem; font-weight: 800; cursor: pointer; transition: 0.2s; box-shadow: 0 2px 6px ${theme.color1}4d;"
-                            onmouseover="this.style.filter='brightness(1.1)'" onmouseout="this.style.filter='none'">NHẬN TIỀN</button>
-                    <button onclick="handleTransferAction('${msgId}', 'refuse', ${amount}, '${msg.senderCard}')" 
-                            style="flex: 1; padding: 8px; background: #fff; border: 1.5px solid ${theme.soft1}; color: ${theme.color1}; border-radius: 6px; font-size: 0.75rem; font-weight: 800; cursor: pointer; transition: 0.2s;"
-                            onmouseover="this.style.background='${theme.bg || '#fff0f5'}'" onmouseout="this.style.background='#fff'">TỪ CHỐI</button>
-                </div>
-            ` : ''}
-        </div>`;
-}
+        const theme = BANK_THEMES[sBankType] || BANK_THEMES['sweetie'];
         
-    // --- CÁC LOGIC CŨ CỦA HENRY (GIỮ NGUYÊN) ---
+        let statusLabel = `${theme.name} Transfer`;
+        let subLabel = "Nhấn để nhận tiền ✨";
+        let cardOpacity = 1;
+        let bgColor = `linear-gradient(135deg, ${theme.color1}, ${theme.color2})`;
+        let iconColor = "#fff";
+
+        if (status === 'accepted') {
+            statusLabel = "Đã nhận tiền";
+            subLabel = "Giao dịch thành công ✅";
+            cardOpacity = 0.8;
+            bgColor = `linear-gradient(135deg, ${theme.soft1}, ${theme.soft2})`;
+        } else if (status === 'refused') {
+            statusLabel = "Giao dịch đã hoàn";
+            subLabel = "Đã từ chối/hoàn tiền ❌";
+            cardOpacity = 0.8;
+            bgColor = "#e0e0e0";
+        }
+
+        bodyContentHtml = `
+            <div class="wechat-pay-card" style="width: 240px; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1); opacity: ${cardOpacity}; font-family: sans-serif; cursor: default;">
+                <div style="background: ${bgColor}; padding: 15px; display: flex; align-items: center; gap: 15px;">
+                    <div style="width: 42px; height: 42px; background: rgba(255,255,255,0.25); border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                        <i class="fas fa-hand-holding-usd" style="color: ${iconColor}; font-size: 1.4rem;"></i>
+                    </div>
+                    <div style="display: flex; flex-direction: column; overflow: hidden;">
+                        <span style="font-size: 0.95rem; color: white; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                            ${amount.toLocaleString()} VNĐ
+                        </span>
+                        <span style="font-size: 0.75rem; color: rgba(255,255,255,0.85); font-weight: 500;">
+                            ${note}
+                        </span>
+                    </div>
+                </div>
+                
+                <div style="background: white; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(0,0,0,0.05);">
+                    <span style="font-size: 0.65rem; color: #888; font-weight: bold; letter-spacing: 0.3px; text-transform: uppercase;">${statusLabel}</span>
+                    <span style="font-size: 0.65rem; color: ${status === 'pending' ? theme.color1 : '#888'}; font-weight: bold;">${subLabel}</span>
+                </div>
+
+                ${(!isMe && status === 'pending') ? `
+                    <div style="display: flex; background: white; padding: 0 10px 10px 10px; gap: 8px;">
+                        <button onclick="handleTransferAction('${msgId}', 'accept', ${amount}, '${msg.senderCard}')" 
+                                style="flex: 2; padding: 8px; background: ${theme.color1}; border: none; color: white; border-radius: 6px; font-size: 0.75rem; font-weight: 800; cursor: pointer; transition: 0.2s; box-shadow: 0 2px 6px ${theme.color1}4d;"
+                                onmouseover="this.style.filter='brightness(1.1)'" onmouseout="this.style.filter='none'">NHẬN TIỀN</button>
+                        <button onclick="handleTransferAction('${msgId}', 'refuse', ${amount}, '${msg.senderCard}')" 
+                                style="flex: 1; padding: 8px; background: #fff; border: 1.5px solid ${theme.soft1}; color: ${theme.color1}; border-radius: 6px; font-size: 0.75rem; font-weight: 800; cursor: pointer; transition: 0.2s;"
+                                onmouseover="this.style.background='${theme.bg || '#fff0f5'}'" onmouseout="this.style.background='#fff'">TỪ CHỐI</button>
+                    </div>
+                ` : ''}
+            </div>`;
+    }
+        
     else if (msg.type === 'call_system') {
         const callIcon = msg.text.includes('video') ? 'fas fa-video' : 'fas fa-phone';
         const themeColor = isMe ? '#ffffff' : (area.style.getPropertyValue('--theme-main-color') || '#ff69b4');
@@ -17320,20 +17373,19 @@ if (msg.type === 'bank_transfer') {
         }
     }
 
-   // --- 5. TEMPLATE HTML (CHỈNH SỬA ĐỂ CARD CHUYỂN TIỀN CÓ KHỐI RIÊNG) ---
+    // --- 5. TEMPLATE HTML ---
     const isSticker = msg.type === 'sticker';
     const isTransfer = msg.type === 'bank_transfer';
     
     let pinMarkerHtml = msg.isPinned ? `<div class="pin-marker" style="font-size: 0.8em; color: #ff1493; margin-bottom: 3px;"><i class="fas fa-thumbtack"></i></div>` : "";
     
-    // Xác định Class cho bong bóng tin nhắn
     let bubbleClass = "";
     if (isSticker) {
-        bubbleClass = "msg-sticker"; // Henry có thể định nghĩa CSS riêng cho Sticker
+        bubbleClass = "msg-sticker";
     } else if (isTransfer) {
-        bubbleClass = "msg-transfer-card"; // Class riêng cho chuyển tiền (Không trong suốt)
+        bubbleClass = "msg-transfer-card";
     } else {
-        bubbleClass = isMe ? "msg-me" : "msg-friend"; // Tin nhắn thường
+        bubbleClass = isMe ? "msg-me" : "msg-friend";
     }
 
     const msgHtml = `
@@ -17382,7 +17434,7 @@ if (msg.type === 'bank_transfer') {
         </div>
 
        <div id="status-${msgId}" class="msg-external-status" 
-             style="display: none; font-size: 0.6em; opacity: 0.7; margin-top: 2px; width: fit-content; ${isMe ? 'margin-right: 5px; text-align: right;' : 'margin-left: 5px; text-align: left;'}">
+            style="display: none; font-size: 0.6em; opacity: 0.7; margin-top: 2px; width: fit-content; ${isMe ? 'margin-right: 5px; text-align: right;' : 'margin-left: 5px; text-align: left;'}">
             ${timeDisplay} • <span class="status-text-val">Đã gửi</span>
         </div>
 
