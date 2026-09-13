@@ -22089,6 +22089,30 @@ async function renderGlobalMessage(id, msg) {
     area.insertAdjacentHTML('beforeend', html);
     area.scrollTop = area.scrollHeight; 
 }
+
+    // --- ĐOẠN CODE MỚI ĐÃ HỖ TRỢ CLICK LINK ---
+} else {
+    const isThanks = msg.text && msg.text.includes('💌');
+    
+    // Mã hóa HTML và chuyển đổi URL thành liên kết nhấp được
+    let formattedText = linkify(msg.text);
+    
+    // Đổi màu link: Trắng (nếu là tin nhắn của mình) hoặc Xanh dương (nếu là tin nhắn người khác)
+    const linkColor = isMe ? '#ffe4e1' : '#007bff';
+    formattedText = formattedText.replace(/<a /g, `<a style="color: ${linkColor}; text-decoration: underline; word-break: break-all;" `);
+
+    messageBodyHtml = `
+        <div style="display: inline-block; padding: 10px 14px; border-radius: 18px; font-size: 0.85em; 
+                    background: ${isMe ? 'linear-gradient(135deg, #ff69b4, #ff1493)' : 'white'}; 
+                    color: ${isMe ? 'white' : '#333'};
+                    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+                    border: ${isMe ? 'none' : '1px solid #ffe4e1'};
+                    ${isMe ? 'border-top-right-radius: 2px;' : 'border-top-left-radius: 2px;'}
+                    ${isThanks ? 'font-style: italic; border: 1px solid #ffb6c1;' : ''}
+                    word-break: break-word;
+                    white-space: pre-wrap;">${formattedText}</div>
+    `;
+}
     
     let mediaLibraryListener = null;
 
