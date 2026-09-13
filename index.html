@@ -21972,6 +21972,28 @@ function escapeHtml(text) {
         .replace(/'/g, "&#039;");
 }
 
+   // Hàm mã hóa chuỗi và chuyển đổi các link thành thẻ <a> có thể click
+function linkify(text, isMe) {
+    if (!text) return "";
+    
+    // 1. Safe escape HTML chống XSS
+    const escaped = escapeHtml(text);
+    
+    // 2. Regex tìm tất cả các đường dẫn URL
+    const urlPattern = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])|(\bwww\.[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;
+    
+    // 3. Chọn màu link: màu trắng nhạt nếu là tin nhắn của mình, xanh dương nếu là người khác
+    const linkColor = isMe ? '#ffe4e1' : '#007bff';
+
+    return escaped.replace(urlPattern, function(match) {
+        let href = match;
+        if (!href.match(/^https?:\/\//i)) {
+            href = 'http://' + href;
+        }
+        return `<a href="${href}" target="_blank" rel="noopener noreferrer" style="color: ${linkColor}; text-decoration: underline; word-break: break-all;" onclick="event.stopPropagation();">${match}</a>`;
+    });
+}
+
 // --- 3. HIỂN THỊ TIN NHẮN ---
 async function renderGlobalMessage(id, msg) {
     const area = document.getElementById('global-messages-area');
@@ -22056,7 +22078,9 @@ async function renderGlobalMessage(id, msg) {
 
     } else {
         const isThanks = msg.text && msg.text.includes('💌');
-        const formattedText = escapeHtml(msg.text);
+        
+        // SỬA TẠI ĐÂY: Dùng linkify thay vì escapeHtml thuần
+        const formattedText = linkify(msg.text, isMe);
 
         messageBodyHtml = `
             <div style="display: inline-block; padding: 10px 14px; border-radius: 18px; font-size: 0.85em; 
@@ -22088,30 +22112,6 @@ async function renderGlobalMessage(id, msg) {
 
     area.insertAdjacentHTML('beforeend', html);
     area.scrollTop = area.scrollHeight; 
-}
-
-    // --- ĐOẠN CODE MỚI ĐÃ HỖ TRỢ CLICK LINK ---
-} else {
-    const isThanks = msg.text && msg.text.includes('💌');
-    
-    // Mã hóa HTML và chuyển đổi URL thành liên kết nhấp được
-    let formattedText = linkify(msg.text);
-    
-    // Đổi màu link: Trắng (nếu là tin nhắn của mình) hoặc Xanh dương (nếu là tin nhắn người khác)
-    const linkColor = isMe ? '#ffe4e1' : '#007bff';
-    formattedText = formattedText.replace(/<a /g, `<a style="color: ${linkColor}; text-decoration: underline; word-break: break-all;" `);
-
-    messageBodyHtml = `
-        <div style="display: inline-block; padding: 10px 14px; border-radius: 18px; font-size: 0.85em; 
-                    background: ${isMe ? 'linear-gradient(135deg, #ff69b4, #ff1493)' : 'white'}; 
-                    color: ${isMe ? 'white' : '#333'};
-                    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-                    border: ${isMe ? 'none' : '1px solid #ffe4e1'};
-                    ${isMe ? 'border-top-right-radius: 2px;' : 'border-top-left-radius: 2px;'}
-                    ${isThanks ? 'font-style: italic; border: 1px solid #ffb6c1;' : ''}
-                    word-break: break-word;
-                    white-space: pre-wrap;">${formattedText}</div>
-    `;
 }
     
     let mediaLibraryListener = null;
