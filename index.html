@@ -11637,26 +11637,25 @@ if (dvElem) {
     updateCardStatus(dvElem, !isDVOpen, dvLabel, dvClass);
 }
 
-    // --- LOGIC SAOGLE QUIZ (Mở tháng 10 hàng năm) ---
-// Mở từ ngày 10 đến hết ngày 15 tháng 10 hàng năm
-const isSQOpen = (month === 9 && date >= 10 && date <= 15);
+        // --- LOGIC SAOGLE QUIZ (Mở tháng 10 hàng năm) ---
+    // Mở từ ngày 10 đến hết ngày 15 tháng 10 hàng năm
+    const isSQOpen = (month === 10 && date >= 10 && date <= 15);
 
-refreshEventTurn('saogleQuiz', isSQOpen);
+    refreshEventTurn('saogleQuiz', isSQOpen);
 
-const sqElem = document.getElementById('saogleQuiz');
-const sqText = document.getElementById('saogleQuizText');
+    const sqElem = document.getElementById('saogleQuiz');
+    const sqText = document.getElementById('saogleQuizText');
 
-let sqStatusLabel = isSQOpen ? "MỞ CỬA" : "HẸN GẶP 10/10";
-let sqStatusClass = isSQOpen ? "status-open" : "status-upcoming";
-let sqDesc = isSQOpen 
-    ? "SỰ KIỆN ĐANG DIỄN RA (10/10 - 15/10)" 
-    : "MỞ LẠI TỪ 10/10 ĐẾN 15/10 HÀNG NĂM";
+    let sqStatusLabel = isSQOpen ? "MỞ CỬA" : "HẸN GẶP 10/10";
+    let sqStatusClass = isSQOpen ? "status-open" : "status-upcoming";
+    let sqDesc = isSQOpen 
+        ? "SỰ KIỆN ĐANG DIỄN RA (10/10 - 15/10)" 
+        : "MỞ LẠI TỪ 10/10 ĐẾN 15/10 HÀNG NĂM";
 
-if (sqElem) {
-    if (sqText) sqText.innerText = sqDesc;
-    updateCardStatus(sqElem, !isSQOpen, sqStatusLabel, sqStatusClass);
-}
-
+    if (sqElem) {
+        if (sqText) sqText.innerText = sqDesc;
+        updateCardStatus(sqElem, !isSQOpen, sqStatusLabel, sqStatusClass);
+    }
 
     // --- LOGIC LÔ TÔ TẾT (06/02 - 28/02) ---
     const lotoStart = new Date(year, 1, 6, 0, 0, 0).getTime();
